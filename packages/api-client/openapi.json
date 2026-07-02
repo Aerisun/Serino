@@ -2600,6 +2600,100 @@
         }
       }
     },
+    "/api/v1/backup/setup/{claim}.sh": {
+      "get": {
+        "tags": [
+          "backup-setup"
+        ],
+        "summary": "下载备份机临时接入脚本",
+        "operationId": "get_backup_setup_script_api_v1_backup_setup__claim__sh_get",
+        "parameters": [
+          {
+            "name": "claim",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Claim"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/backup/setup/{claim}/result": {
+      "post": {
+        "tags": [
+          "backup-setup"
+        ],
+        "summary": "回传备份机临时接入结果",
+        "operationId": "post_backup_setup_result_api_v1_backup_setup__claim__result_post",
+        "parameters": [
+          {
+            "name": "claim",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Claim"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackupBootstrapClaimResultWrite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupBootstrapClaimRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/auth/login": {
       "post": {
         "tags": [
@@ -10026,7 +10120,7 @@
           "admin",
           "admin-system"
         ],
-        "summary": "生成、导出或轮换恢复私钥",
+        "summary": "设置或轮换备份恢复密码",
         "operationId": "export_backup_recovery_key_api_v1_admin_system_backup_sync_recovery_key_export_post",
         "requestBody": {
           "content": {
@@ -10073,7 +10167,7 @@
           "admin",
           "admin-system"
         ],
-        "summary": "确认已复制或下载恢复私钥",
+        "summary": "确认备份恢复密码已设置",
         "operationId": "acknowledge_backup_recovery_key_api_v1_admin_system_backup_sync_recovery_key_acknowledge_post",
         "requestBody": {
           "content": {
@@ -10159,6 +10253,270 @@
             "HTTPBearer": []
           }
         ]
+      }
+    },
+    "/api/v1/admin/system/backup-sync/connection/probe": {
+      "post": {
+        "tags": [
+          "admin",
+          "admin-system"
+        ],
+        "summary": "快速检测备份机连接",
+        "operationId": "probe_backup_machine_connection_api_v1_admin_system_backup_sync_connection_probe_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackupSyncConfigUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupSyncConfigTestRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/system/backup-sync/remote-history/overwrite": {
+      "post": {
+        "tags": [
+          "admin",
+          "admin-system"
+        ],
+        "summary": "归档并覆盖远端备份历史",
+        "operationId": "overwrite_remote_backup_history_api_v1_admin_system_backup_sync_remote_history_overwrite_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackupSyncConfigUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupSyncConfigTestRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/system/backup-sync/reset": {
+      "post": {
+        "tags": [
+          "admin",
+          "admin-system"
+        ],
+        "summary": "重置本机备份系统",
+        "operationId": "reset_backup_sync_system_api_v1_admin_system_backup_sync_reset_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupSystemResetRead"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/system/backup-sync/bootstrap-claims": {
+      "post": {
+        "tags": [
+          "admin",
+          "admin-system"
+        ],
+        "summary": "创建备份机临时接入命令",
+        "operationId": "create_backup_bootstrap_claim_api_v1_admin_system_backup_sync_bootstrap_claims_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackupBootstrapClaimCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupBootstrapClaimRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/system/backup-sync/bootstrap-claims/{claim_id}": {
+      "get": {
+        "tags": [
+          "admin",
+          "admin-system"
+        ],
+        "summary": "获取备份机临时接入状态",
+        "operationId": "get_backup_bootstrap_claim_api_v1_admin_system_backup_sync_bootstrap_claims__claim_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "claim_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Claim Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupBootstrapClaimRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/system/backup-sync/bootstrap-claims/{claim_id}/revoke": {
+      "post": {
+        "tags": [
+          "admin",
+          "admin-system"
+        ],
+        "summary": "撤销备份机临时接入命令",
+        "operationId": "revoke_backup_bootstrap_claim_api_v1_admin_system_backup_sync_bootstrap_claims__claim_id__revoke_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "claim_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Claim Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupBootstrapClaimRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/admin/system/backup-sync/queue": {
@@ -17407,6 +17765,171 @@
         ],
         "title": "AuditLogRead"
       },
+      "BackupBootstrapClaimCreate": {
+        "properties": {
+          "remote_host": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Remote Host"
+          },
+          "remote_port": {
+            "type": "integer",
+            "maximum": 65535.0,
+            "minimum": 1.0,
+            "title": "Remote Port",
+            "default": 22
+          },
+          "remote_path": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Remote Path",
+            "default": "/srv/serino-backups"
+          },
+          "remote_username": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Remote Username",
+            "default": "serino-backup"
+          },
+          "site_slug": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Site Slug",
+            "default": "aerisun"
+          },
+          "credential_ref": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Credential Ref",
+            "default": "aerisun-backup-source"
+          },
+          "ttl_minutes": {
+            "type": "integer",
+            "maximum": 60.0,
+            "minimum": 1.0,
+            "title": "Ttl Minutes",
+            "default": 10
+          }
+        },
+        "type": "object",
+        "required": [
+          "remote_host"
+        ],
+        "title": "BackupBootstrapClaimCreate"
+      },
+      "BackupBootstrapClaimRead": {
+        "properties": {
+          "id": {
+            "title": "Id"
+          },
+          "status": {
+            "title": "Status"
+          },
+          "remote_host": {
+            "title": "Remote Host"
+          },
+          "remote_port": {
+            "title": "Remote Port"
+          },
+          "remote_path": {
+            "title": "Remote Path"
+          },
+          "remote_username": {
+            "title": "Remote Username"
+          },
+          "site_slug": {
+            "title": "Site Slug"
+          },
+          "credential_ref": {
+            "title": "Credential Ref"
+          },
+          "public_key_fingerprint": {
+            "title": "Public Key Fingerprint"
+          },
+          "expires_at": {
+            "title": "Expires At"
+          },
+          "used_at": {
+            "title": "Used At"
+          },
+          "completed_at": {
+            "title": "Completed At"
+          },
+          "revoked_at": {
+            "title": "Revoked At"
+          },
+          "last_error": {
+            "title": "Last Error"
+          },
+          "setup_url": {
+            "title": "Setup Url"
+          },
+          "setup_command": {
+            "title": "Setup Command"
+          },
+          "created_at": {
+            "title": "Created At"
+          },
+          "updated_at": {
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "remote_host",
+          "remote_port",
+          "remote_path",
+          "remote_username",
+          "site_slug",
+          "credential_ref",
+          "public_key_fingerprint",
+          "expires_at",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "BackupBootstrapClaimRead"
+      },
+      "BackupBootstrapClaimResultWrite": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "succeeded",
+              "failed"
+            ],
+            "title": "Status"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "details": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Details"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "BackupBootstrapClaimResultWrite"
+      },
       "BackupCommitRead": {
         "properties": {
           "id": {
@@ -17898,6 +18421,51 @@
             "type": "boolean",
             "title": "Recovery Key Acknowledged",
             "default": false
+          },
+          "remote_history_state": {
+            "type": "string",
+            "enum": [
+              "unreachable",
+              "empty",
+              "current",
+              "foreign",
+              "unknown"
+            ],
+            "title": "Remote History State",
+            "default": "unknown"
+          },
+          "remote_history_summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remote History Summary"
+          },
+          "remote_repo_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remote Repo Id"
+          },
+          "local_repo_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Local Repo Id"
           }
         },
         "type": "object",
@@ -17993,7 +18561,7 @@
           "encrypt_runtime_data": {
             "type": "boolean",
             "title": "Encrypt Runtime Data",
-            "default": false
+            "default": true
           },
           "max_retries": {
             "type": "integer",
@@ -18013,6 +18581,23 @@
         },
         "type": "object",
         "title": "BackupSyncConfigUpdate"
+      },
+      "BackupSystemResetRead": {
+        "properties": {
+          "config": {
+            "$ref": "#/components/schemas/BackupSyncConfig"
+          },
+          "remote_cleanup_command": {
+            "type": "string",
+            "title": "Remote Cleanup Command"
+          }
+        },
+        "type": "object",
+        "required": [
+          "config",
+          "remote_cleanup_command"
+        ],
+        "title": "BackupSystemResetRead"
       },
       "BackupTransportConfig": {
         "properties": {

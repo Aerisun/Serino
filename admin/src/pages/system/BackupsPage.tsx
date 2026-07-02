@@ -25,22 +25,33 @@ import type {
 } from "@serino/api-client/models";
 import {
   acknowledgeBackupRecoveryKey,
+  createBackupBootstrapClaim,
   ensureBackupCredentials,
   exportBackupRecoveryKey,
+  getBackupBootstrapClaim,
+  overwriteRemoteBackupHistory,
+  probeBackupMachineConnection,
+  revokeBackupBootstrapClaim,
+  resetBackupSyncSystem,
   testBackupSyncConfig,
+  type BackupBootstrapClaimRead,
   type BackupCredentialEnsureRead,
-  type BackupCredentialExportRead,
-  type BackupSyncConfigTestRead,
+  type BackupSyncConfigTestResult,
 } from "@/pages/system/api";
 import { DataTable } from "@/components/DataTable";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
-import { ConfigSettingsCard } from "@/components/ConfigSettingsCard";
 import { AdminSectionTabs } from "@/components/ui/AdminSectionTabs";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { CollapsibleSection } from "@/components/ui/CollapsibleSection";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/Dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/Dialog";
 import { Input } from "@/components/ui/Input";
 import { LabelWithHelp } from "@/components/ui/LabelWithHelp";
 import { Tabs, TabsContent } from "@/components/ui/Tabs";
@@ -49,26 +60,35 @@ import { useI18n } from "@/i18n";
 import { extractApiErrorMessage } from "@/lib/api-error";
 import { cn, formatDate } from "@/lib/utils";
 import {
+  AlertTriangle,
   Copy,
   Database,
-  Download,
+  Clock,
+  KeyRound,
   Loader2,
   PauseCircle,
   PlayCircle,
   RefreshCcw,
   RotateCcw,
-  Stethoscope,
+  Save,
   ShieldCheck,
+  SearchCheck,
+  TerminalSquare,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 
 type BackupsSection = "settings" | "records";
-type BackupRecordsSection = "runs" | "commits";
+type BackupRecordsSection = "commits" | "runs";
 
-const REMOTE_PATH_PLACEHOLDER = "/home/<ssh-user>/aerisun-backups";
+const DEFAULT_BACKUP_REMOTE_USERNAME = "serino-backup";
+const DEFAULT_BACKUP_REMOTE_PATH = "/srv/serino-backups";
 const DEFAULT_BACKUP_CREDENTIAL_REF = "aerisun-backup-source";
 const DEFAULT_BACKUP_SITE_SLUG = "aerisun";
 const DEFAULT_BACKUP_CREDENTIAL_DIR = `.store/secrets/backup-sync/${DEFAULT_BACKUP_CREDENTIAL_REF}`;
+const BACKUP_BOOTSTRAP_TTL_MINUTES = 10;
+const REMOTE_CLEANUP_COMMAND =
+  "sudo bash -c 'set -euo pipefail\nuserdel -r serino-backup >/dev/null 2>&1 || true\nrm -rf /srv/serino-backups\necho \"Serino backup user and backup data have been removed.\"'";
 
 const emptyForm: BackupSyncConfigUpdate = {
   enabled: true,
@@ -78,10 +98,10 @@ const emptyForm: BackupSyncConfigUpdate = {
   site_slug: DEFAULT_BACKUP_SITE_SLUG,
   remote_host: "",
   remote_port: 22,
-  remote_path: "",
-  remote_username: "",
+  remote_path: DEFAULT_BACKUP_REMOTE_PATH,
+  remote_username: DEFAULT_BACKUP_REMOTE_USERNAME,
   credential_ref: DEFAULT_BACKUP_CREDENTIAL_REF,
-  encrypt_runtime_data: false,
+  encrypt_runtime_data: true,
   max_retries: 3,
   retry_backoff_seconds: 300,
 };
@@ -91,16 +111,31 @@ export default function BackupsPage() {
   const queryClient = useQueryClient();
   const [form, setForm] = useState<BackupSyncConfigUpdate>(emptyForm);
   const [section, setSection] = useState<BackupsSection>("settings");
-  const [recordsSection, setRecordsSection] = useState<BackupRecordsSection>("runs");
-  const [credentialInfo, setCredentialInfo] = useState<BackupCredentialEnsureRead | null>(null);
+  const [recordsSection, setRecordsSection] =
+    useState<BackupRecordsSection>("commits");
+  const [credentialInfo, setCredentialInfo] =
+    useState<BackupCredentialEnsureRead | null>(null);
   const [isEnsuringCredential, setIsEnsuringCredential] = useState(false);
   const [keyDialogOpen, setKeyDialogOpen] = useState(false);
-  const [keyDialogMode, setKeyDialogMode] = useState<"export" | "rotate">("export");
+  const [keyDialogMode, setKeyDialogMode] = useState<"export" | "rotate">(
+    "export",
+  );
   const [recoveryPassphrase, setRecoveryPassphrase] = useState("");
-  const [recoveryKeyResult, setRecoveryKeyResult] = useState<BackupCredentialExportRead | null>(null);
+  const [recoveryPassphraseConfirm, setRecoveryPassphraseConfirm] =
+    useState("");
   const [isRecoveryKeyPending, setIsRecoveryKeyPending] = useState(false);
   const [recoveryKeyDelivered, setRecoveryKeyDelivered] = useState(false);
-  const [configTestResult, setConfigTestResult] = useState<BackupSyncConfigTestRead | null>(null);
+  const [configTestResult, setConfigTestResult] =
+    useState<BackupSyncConfigTestResult | null>(null);
+  const [configTestMode, setConfigTestMode] = useState<"probe" | "full" | null>(
+    null,
+  );
+  const [hasInitializedForm, setHasInitializedForm] = useState(false);
+  const [bootstrapClaim, setBootstrapClaim] =
+    useState<BackupBootstrapClaimRead | null>(null);
+  const [bootstrapSecondsLeft, setBootstrapSecondsLeft] = useState(0);
+  const [forgotDialogOpen, setForgotDialogOpen] = useState(false);
+  const [resetCommand, setResetCommand] = useState(REMOTE_CLEANUP_COMMAND);
 
   const { data: configRaw, isLoading: isConfigLoading } =
     useGetBackupSyncConfigApiV1AdminSystemBackupSyncConfigGet();
@@ -126,22 +161,42 @@ export default function BackupsPage() {
   const invalidateAll = async () => {
     await Promise.all([
       queryClient.invalidateQueries({
-        queryKey: getGetBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetQueryKey(),
+        queryKey:
+          getGetBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetQueryKey(),
       }),
       queryClient.invalidateQueries({
-        queryKey: getListBackupSyncQueueApiV1AdminSystemBackupSyncQueueGetQueryKey(),
+        queryKey:
+          getListBackupSyncQueueApiV1AdminSystemBackupSyncQueueGetQueryKey(),
       }),
       queryClient.invalidateQueries({
-        queryKey: getListBackupSyncRunsApiV1AdminSystemBackupSyncRunsGetQueryKey(),
+        queryKey:
+          getListBackupSyncRunsApiV1AdminSystemBackupSyncRunsGetQueryKey(),
       }),
       queryClient.invalidateQueries({
-        queryKey: getListBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGetQueryKey(),
+        queryKey:
+          getListBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGetQueryKey(),
       }),
     ]);
   };
 
   useEffect(() => {
     if (!config) {
+      return;
+    }
+    if (config.recovery_key_ready) {
+      setCredentialInfo(
+        (current) =>
+          current ?? {
+            credential_ref: DEFAULT_BACKUP_CREDENTIAL_REF,
+            site_slug: DEFAULT_BACKUP_SITE_SLUG,
+            credential_dir: DEFAULT_BACKUP_CREDENTIAL_DIR,
+            secrets_fingerprint: config.active_recovery_key_fingerprint ?? "",
+            created: false,
+            archived_fingerprints: [],
+          },
+      );
+    }
+    if (hasInitializedForm) {
       return;
     }
     setForm({
@@ -152,36 +207,30 @@ export default function BackupsPage() {
       site_slug: DEFAULT_BACKUP_SITE_SLUG,
       remote_host: config.transport.remote_host ?? "",
       remote_port: config.transport.remote_port ?? 22,
-      remote_path: config.transport.remote_path ?? "",
-      remote_username: config.transport.remote_username ?? "",
+      remote_path: DEFAULT_BACKUP_REMOTE_PATH,
+      remote_username: DEFAULT_BACKUP_REMOTE_USERNAME,
       credential_ref: config.credential_ref ?? DEFAULT_BACKUP_CREDENTIAL_REF,
-      encrypt_runtime_data: config.encrypt_runtime_data ?? false,
+      encrypt_runtime_data: config.encrypt_runtime_data ?? true,
       max_retries: config.max_retries ?? 3,
       retry_backoff_seconds: config.retry_backoff_seconds ?? 300,
     });
-    if (config.recovery_key_ready) {
-      setCredentialInfo((current) => current ?? {
-        credential_ref: DEFAULT_BACKUP_CREDENTIAL_REF,
-        site_slug: DEFAULT_BACKUP_SITE_SLUG,
-        credential_dir: DEFAULT_BACKUP_CREDENTIAL_DIR,
-        secrets_fingerprint: config.active_recovery_key_fingerprint ?? "",
-        created: false,
-        archived_fingerprints: [],
-      });
-    }
-  }, [config]);
+    setHasInitializedForm(true);
+  }, [config, hasInitializedForm]);
 
-  const updateConfig = useUpdateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPut({
-    mutation: {
-      onSuccess: async () => {
-        toast.success(t("common.operationSuccess"));
-        await invalidateAll();
+  const updateConfig =
+    useUpdateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPut({
+      mutation: {
+        onSuccess: async () => {
+          toast.success(t("common.operationSuccess"));
+          await invalidateAll();
+        },
+        onError: (error: any) => {
+          toast.error(
+            extractApiErrorMessage(error, t("common.operationFailed")),
+          );
+        },
       },
-      onError: (error: any) => {
-        toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
-      },
-    },
-  });
+    });
 
   const triggerSync = useTriggerBackupSyncApiV1AdminSystemBackupSyncRunsPost({
     mutation: {
@@ -219,60 +268,133 @@ export default function BackupsPage() {
     },
   });
 
-  const retryRun = useRetryBackupSyncApiV1AdminSystemBackupSyncRunsRunIdRetryPost({
-    mutation: {
-      onSuccess: async () => {
-        toast.success(t("system.backupSyncRetried"));
-        await invalidateAll();
+  const retryRun =
+    useRetryBackupSyncApiV1AdminSystemBackupSyncRunsRunIdRetryPost({
+      mutation: {
+        onSuccess: async () => {
+          toast.success(t("system.backupSyncRetried"));
+          await invalidateAll();
+        },
+        onError: (error: any) => {
+          toast.error(
+            extractApiErrorMessage(error, t("common.operationFailed")),
+          );
+        },
       },
-      onError: (error: any) => {
-        toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
+    });
+
+  const restoreCommit =
+    useRestoreBackupCommitApiV1AdminSystemBackupSyncCommitsCommitIdRestorePost({
+      mutation: {
+        onSuccess: async () => {
+          toast.success(t("common.operationSuccess"));
+          await invalidateAll();
+        },
+        onError: (error: any) => {
+          toast.error(
+            extractApiErrorMessage(error, t("common.operationFailed")),
+          );
+        },
       },
-    },
+    });
+
+  const normalizeBackupConfigPayload = (
+    payload: BackupSyncConfigUpdate,
+  ): BackupSyncConfigUpdate => ({
+    enabled: true,
+    paused: false,
+    interval_minutes: payload.interval_minutes ?? 60,
+    transport_mode: "sftp",
+    site_slug: DEFAULT_BACKUP_SITE_SLUG,
+    remote_host: payload.remote_host ?? "",
+    remote_port: payload.remote_port ?? 22,
+    remote_path: DEFAULT_BACKUP_REMOTE_PATH,
+    remote_username: DEFAULT_BACKUP_REMOTE_USERNAME,
+    credential_ref: DEFAULT_BACKUP_CREDENTIAL_REF,
+    encrypt_runtime_data: Boolean(payload.encrypt_runtime_data),
+    max_retries: payload.max_retries ?? 3,
+    retry_backoff_seconds: payload.retry_backoff_seconds ?? 300,
   });
 
-  const restoreCommit = useRestoreBackupCommitApiV1AdminSystemBackupSyncCommitsCommitIdRestorePost({
-    mutation: {
-      onSuccess: async () => {
-        toast.success(t("common.operationSuccess"));
-        await invalidateAll();
-      },
-      onError: (error: any) => {
-        toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
-      },
+  const probeConnectionMutation = useMutation({
+    mutationFn: async (payload: BackupSyncConfigUpdate) =>
+      probeBackupMachineConnection(normalizeBackupConfigPayload(payload)),
+    onSuccess: (result) => {
+      setConfigTestResult(result);
+      setConfigTestMode("probe");
+      toast.success(
+        result.ok
+          ? t("system.backupProbeSuccess")
+          : t("system.backupProbeFailed"),
+      );
+    },
+    onError: (error: any) => {
+      setConfigTestResult(null);
+      setConfigTestMode(null);
+      toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
     },
   });
 
   const testConfigMutation = useMutation({
     mutationFn: async (payload: BackupSyncConfigUpdate) =>
-      testBackupSyncConfig({
-        enabled: true,
-        paused: false,
-        interval_minutes: payload.interval_minutes ?? 60,
-        transport_mode: "sftp",
-        site_slug: DEFAULT_BACKUP_SITE_SLUG,
-        remote_host: payload.remote_host ?? "",
-        remote_port: payload.remote_port ?? 22,
-        remote_path: payload.remote_path ?? "",
-        remote_username: payload.remote_username ?? "",
-        credential_ref: DEFAULT_BACKUP_CREDENTIAL_REF,
-        encrypt_runtime_data: Boolean(payload.encrypt_runtime_data),
-        max_retries: payload.max_retries ?? 3,
-        retry_backoff_seconds: payload.retry_backoff_seconds ?? 300,
-      }),
+      testBackupSyncConfig(normalizeBackupConfigPayload(payload)),
     onSuccess: (result) => {
       setConfigTestResult(result);
-      toast.success(result.ok ? t("system.backupConfigTestSuccess") : t("system.backupConfigTestFailed"));
+      setConfigTestMode("full");
+      toast.success(
+        result.ok
+          ? t("system.backupConfigTestSuccess")
+          : t("system.backupConfigTestFailed"),
+      );
     },
     onError: (error: any) => {
       setConfigTestResult(null);
+      setConfigTestMode(null);
+      toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
+    },
+  });
+
+  const createBootstrapClaimMutation = useMutation({
+    mutationFn: createBackupBootstrapClaim,
+    onSuccess: (claim) => {
+      setBootstrapClaim(claim);
+      setForm((current) => ({
+        ...current,
+        remote_host: claim.remote_host,
+        remote_port: claim.remote_port,
+        remote_path: claim.remote_path,
+        remote_username: claim.remote_username,
+        credential_ref: claim.credential_ref,
+        site_slug: claim.site_slug,
+      }));
+      toast.success(t("system.backupBootstrapCommandReady"));
+    },
+    onError: (error: any) => {
+      toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
+    },
+  });
+
+  const revokeBootstrapClaimMutation = useMutation({
+    mutationFn: revokeBackupBootstrapClaim,
+    onSuccess: (claim) => {
+      setBootstrapClaim((current) => ({
+        ...claim,
+        setup_command: current?.setup_command ?? claim.setup_command ?? null,
+        setup_url: current?.setup_url ?? claim.setup_url ?? null,
+      }));
+      toast.success(t("system.backupBootstrapRevoked"));
+    },
+    onError: (error: any) => {
       toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
     },
   });
 
   const latestRun = runs[0];
   const activeQueueItem = queue.find(
-    (item) => item.status === "queued" || item.status === "running" || item.status === "retrying",
+    (item) =>
+      item.status === "queued" ||
+      item.status === "running" ||
+      item.status === "retrying",
   );
 
   const configuredTransportMode = config?.transport_mode ?? "sftp";
@@ -292,16 +414,82 @@ export default function BackupsPage() {
     },
   ] as const;
 
-  const setField = <K extends keyof BackupSyncConfigUpdate>(key: K, value: BackupSyncConfigUpdate[K]) => {
+  const setField = <K extends keyof BackupSyncConfigUpdate>(
+    key: K,
+    value: BackupSyncConfigUpdate[K],
+  ) => {
     setConfigTestResult(null);
+    setConfigTestMode(null);
     setForm((current) => ({ ...current, [key]: value }));
   };
+
+  useEffect(() => {
+    if (!bootstrapClaim?.expires_at) {
+      setBootstrapSecondsLeft(0);
+      return;
+    }
+    const tick = () => {
+      const expiresAt = new Date(bootstrapClaim.expires_at).getTime();
+      setBootstrapSecondsLeft(
+        Math.max(0, Math.floor((expiresAt - Date.now()) / 1000)),
+      );
+    };
+    tick();
+    const timer = window.setInterval(tick, 1000);
+    return () => window.clearInterval(timer);
+  }, [bootstrapClaim?.expires_at]);
+
+  useEffect(() => {
+    if (
+      !bootstrapClaim ||
+      (bootstrapClaim.status !== "pending" &&
+        bootstrapClaim.status !== "failed")
+    ) {
+      return;
+    }
+    const claimId = bootstrapClaim.id;
+    const previousStatus = bootstrapClaim.status;
+    const timer = window.setInterval(() => {
+      void getBackupBootstrapClaim(claimId)
+        .then((nextClaim) => {
+          setBootstrapClaim((current) => {
+            if (!current || current.id !== claimId) {
+              return current;
+            }
+            return {
+              ...nextClaim,
+              setup_command:
+                current.setup_command ?? nextClaim.setup_command ?? null,
+              setup_url: current.setup_url ?? nextClaim.setup_url ?? null,
+            };
+          });
+          if (nextClaim.status === "succeeded") {
+            setForm((current) => ({
+              ...current,
+              remote_host: nextClaim.remote_host,
+              remote_port: nextClaim.remote_port,
+              remote_path: nextClaim.remote_path,
+              remote_username: nextClaim.remote_username,
+              credential_ref: nextClaim.credential_ref,
+              site_slug: nextClaim.site_slug,
+            }));
+            if (previousStatus !== "succeeded") {
+              toast.success(t("system.backupBootstrapConnected"));
+            }
+          }
+        })
+        .catch(() => {
+          // The claim poll is best-effort; the visible button can regenerate when needed.
+        });
+    }, 3000);
+    return () => window.clearInterval(timer);
+  }, [bootstrapClaim, t]);
 
   const savedSnapshot = useMemo(
     () => ({
       remote_host: config?.transport.remote_host ?? "",
-      remote_username: config?.transport.remote_username ?? "",
-      remote_path: config?.transport.remote_path ?? "",
+      remote_username: DEFAULT_BACKUP_REMOTE_USERNAME,
+      remote_path: DEFAULT_BACKUP_REMOTE_PATH,
       remote_port: config?.transport.remote_port ?? 22,
       interval_minutes: config?.interval_minutes ?? 60,
       encrypt_runtime_data: Boolean(config?.encrypt_runtime_data),
@@ -314,8 +502,8 @@ export default function BackupsPage() {
   const currentSnapshot = useMemo(
     () => ({
       remote_host: form.remote_host ?? "",
-      remote_username: form.remote_username ?? "",
-      remote_path: form.remote_path ?? "",
+      remote_username: DEFAULT_BACKUP_REMOTE_USERNAME,
+      remote_path: DEFAULT_BACKUP_REMOTE_PATH,
       remote_port: form.remote_port ?? 22,
       interval_minutes: form.interval_minutes ?? 60,
       encrypt_runtime_data: Boolean(form.encrypt_runtime_data),
@@ -325,20 +513,18 @@ export default function BackupsPage() {
     [form],
   );
 
-  const hasConfigChanges = JSON.stringify(savedSnapshot) !== JSON.stringify(currentSnapshot);
+  const hasConfigChanges =
+    JSON.stringify(savedSnapshot) !== JSON.stringify(currentSnapshot);
 
-  const handleSave = async () => {
-    await prepareCredential();
-    await updateConfig.mutateAsync({
-      data: {
-        ...form,
-        enabled: true,
-        transport_mode: "sftp",
-        credential_ref: DEFAULT_BACKUP_CREDENTIAL_REF,
-        site_slug: DEFAULT_BACKUP_SITE_SLUG,
-      },
-    });
-  };
+  const buildConfigPayload = (enabled = true): BackupSyncConfigUpdate => ({
+    ...form,
+    enabled,
+    transport_mode: "sftp",
+    remote_path: DEFAULT_BACKUP_REMOTE_PATH,
+    remote_username: DEFAULT_BACKUP_REMOTE_USERNAME,
+    credential_ref: DEFAULT_BACKUP_CREDENTIAL_REF,
+    site_slug: DEFAULT_BACKUP_SITE_SLUG,
+  });
 
   const prepareCredential = async (force = false) => {
     setIsEnsuringCredential(true);
@@ -349,7 +535,9 @@ export default function BackupsPage() {
         force,
       });
       toast.success(
-        info.created ? t("system.localKeysGenerated") : t("system.localKeysConfirmed"),
+        info.created
+          ? t("system.localKeysGenerated")
+          : t("system.localKeysConfirmed"),
       );
       return info;
     } catch (error: any) {
@@ -363,28 +551,132 @@ export default function BackupsPage() {
   const handleSaveAndRun = async () => {
     await prepareCredential();
     await updateConfig.mutateAsync({
-      data: {
-        ...form,
-        enabled: true,
-        transport_mode: "sftp",
-        credential_ref: DEFAULT_BACKUP_CREDENTIAL_REF,
-        site_slug: DEFAULT_BACKUP_SITE_SLUG,
-      },
+      data: buildConfigPayload(true),
     });
     await triggerSync.mutateAsync();
-    setSection("records");
-    setRecordsSection("runs");
     toast.success(t("system.firstBackupStarted"));
   };
 
-  const handleTestConfig = async () => {
-    await testConfigMutation.mutateAsync(form);
+  const handleTestAndSaveConfig = async () => {
+    const result = await testConfigMutation.mutateAsync(
+      buildConfigPayload(true),
+    );
+    if (!result.ok || result.remote_history_state === "foreign") {
+      return;
+    }
+    if (!canPersistBackupConfig) {
+      openRecoveryKeyDialog("export");
+      return;
+    }
+    await prepareCredential();
+    await updateConfig.mutateAsync({ data: buildConfigPayload(true) });
+    toast.success(t("system.backupConfigSaved"));
+  };
+
+  const handleDetectBackupMachine = async () => {
+    await probeConnectionMutation.mutateAsync(buildConfigPayload(true));
+  };
+
+  const handleGenerateBootstrapCommand = async () => {
+    const remoteHost = String(form.remote_host ?? "").trim();
+    if (!remoteHost) {
+      toast.error(t("system.backupBootstrapHostRequired"));
+      return;
+    }
+    await createBootstrapClaimMutation.mutateAsync({
+      remote_host: remoteHost,
+      remote_port: Number(form.remote_port || 22),
+      remote_path: DEFAULT_BACKUP_REMOTE_PATH,
+      remote_username: DEFAULT_BACKUP_REMOTE_USERNAME,
+      site_slug: DEFAULT_BACKUP_SITE_SLUG,
+      credential_ref: DEFAULT_BACKUP_CREDENTIAL_REF,
+      ttl_minutes: BACKUP_BOOTSTRAP_TTL_MINUTES,
+    });
+  };
+
+  const handleCopyBootstrapCommand = async () => {
+    if (!bootstrapClaim?.setup_command) {
+      return;
+    }
+    await navigator.clipboard.writeText(bootstrapClaim.setup_command);
+    toast.success(t("system.backupBootstrapCommandCopied"));
+  };
+
+  const handleRevokeBootstrapCommand = async () => {
+    if (!bootstrapClaim?.id || bootstrapClaim.status === "revoked") {
+      return;
+    }
+    await revokeBootstrapClaimMutation.mutateAsync(bootstrapClaim.id);
+  };
+
+  const handleStartBackup = async () => {
+    if (config?.enabled) {
+      await triggerSync.mutateAsync();
+      return;
+    }
+    const result =
+      configTestMode === "full" && configTestResult?.ok
+        ? configTestResult
+        : await testConfigMutation.mutateAsync(buildConfigPayload(true));
+    if (!result.ok || result.remote_history_state === "foreign") {
+      return;
+    }
+    if (!canPersistBackupConfig) {
+      openRecoveryKeyDialog("export");
+      return;
+    }
+    await handleSaveAndRun();
+  };
+
+  const handleOverwriteRemoteHistory = async () => {
+    if (!canPersistBackupConfig) {
+      openRecoveryKeyDialog("export");
+      return;
+    }
+    if (!window.confirm(t("system.backupOverwriteHistoryConfirm"))) {
+      return;
+    }
+    try {
+      const result = await overwriteRemoteBackupHistory(
+        buildConfigPayload(true),
+      );
+      setConfigTestResult(result);
+      setConfigTestMode("full");
+      toast.success(t("system.backupOverwriteHistoryDone"));
+    } catch (error: any) {
+      toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
+    }
+  };
+
+  const handleRestoreRemoteHistory = () => {
+    toast.error(t("system.backupRestoreRemoteHistoryPending"));
+  };
+
+  const handleResetBackupSystem = async () => {
+    if (!window.confirm(t("system.resetBackupSystemConfirm"))) {
+      return;
+    }
+    try {
+      const result = await resetBackupSyncSystem();
+      setResetCommand(result.remote_cleanup_command || REMOTE_CLEANUP_COMMAND);
+      setBootstrapClaim(null);
+      setConfigTestResult(null);
+      setConfigTestMode(null);
+      setCredentialInfo(null);
+      setRecoveryKeyDelivered(false);
+      setForm(emptyForm);
+      setHasInitializedForm(true);
+      toast.success(t("system.resetBackupSystemDone"));
+      await invalidateAll();
+    } catch (error: any) {
+      toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
+    }
   };
 
   const openRecoveryKeyDialog = (mode: "export" | "rotate") => {
     setKeyDialogMode(mode);
     setRecoveryPassphrase("");
-    setRecoveryKeyResult(null);
+    setRecoveryPassphraseConfirm("");
     setRecoveryKeyDelivered(false);
     setKeyDialogOpen(true);
   };
@@ -398,7 +690,9 @@ export default function BackupsPage() {
         passphrase: recoveryPassphrase,
         rotate: keyDialogMode === "rotate",
       });
-      setRecoveryKeyResult(result);
+      const updated = await acknowledgeBackupRecoveryKey({
+        credential_ref: DEFAULT_BACKUP_CREDENTIAL_REF,
+      });
       setCredentialInfo({
         credential_ref: result.credential_ref,
         site_slug: result.site_slug,
@@ -407,9 +701,10 @@ export default function BackupsPage() {
         created: false,
         archived_fingerprints: result.archived_fingerprints,
       });
-      toast.success(
-        keyDialogMode === "rotate" ? t("system.recoveryKeyRotated") : t("system.recoveryKeyExported"),
-      );
+      setCredentialInfo(updated);
+      setRecoveryKeyDelivered(true);
+      setKeyDialogOpen(false);
+      toast.success(t("system.recoveryPasswordSet"));
     } catch (error: any) {
       toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
     } finally {
@@ -417,36 +712,45 @@ export default function BackupsPage() {
     }
   };
 
-  const copyRecoveryKey = async (value: string) => {
-    await navigator.clipboard.writeText(value);
-    setRecoveryKeyDelivered(true);
-    const updated = await acknowledgeBackupRecoveryKey({ credential_ref: DEFAULT_BACKUP_CREDENTIAL_REF });
-    setCredentialInfo(updated);
-    toast.success(t("system.recoveryKeyCopied"));
-  };
-
-  const downloadRecoveryKey = async (result: BackupCredentialExportRead) => {
-    const blob = new Blob([result.private_key_pem], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = result.filename;
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-    URL.revokeObjectURL(url);
-    setRecoveryKeyDelivered(true);
-    const updated = await acknowledgeBackupRecoveryKey({ credential_ref: DEFAULT_BACKUP_CREDENTIAL_REF });
-    setCredentialInfo(updated);
-  };
-
-  const recoveryKeyReady = Boolean(config?.recovery_key_ready || credentialInfo);
-  const recoveryKeyAcknowledged = Boolean(config?.recovery_key_acknowledged || recoveryKeyDelivered);
-  const recoveryKeyRequiresDelivery = Boolean(recoveryKeyResult) && !recoveryKeyDelivered;
-  const canPersistBackupConfig = recoveryKeyReady && recoveryKeyAcknowledged && !recoveryKeyRequiresDelivery;
-  const recoveryKeyActionMode: "export" | "rotate" = recoveryKeyReady ? "rotate" : "export";
-  const recoveryKeyActionLabel =
-    recoveryKeyActionMode === "rotate" ? t("system.rotateRecoveryKey") : t("system.exportRecoveryKey");
+  const recoveryKeyReady = Boolean(
+    config?.recovery_key_ready || credentialInfo,
+  );
+  const recoveryKeyAcknowledged = Boolean(
+    config?.recovery_key_acknowledged || recoveryKeyDelivered,
+  );
+  const recoveryKeyRequiresDelivery = false;
+  const canPersistBackupConfig =
+    recoveryKeyReady && recoveryKeyAcknowledged && !recoveryKeyRequiresDelivery;
+  const detectionRequiresBootstrap = Boolean(
+    configTestResult && !configTestResult.ok,
+  );
+  const remoteHistoryIsForeign =
+    configTestResult?.remote_history_state === "foreign";
+  const isProbeResult = configTestMode === "probe";
+  const probeNeedsBootstrap = Boolean(
+    isProbeResult &&
+    configTestResult &&
+    (!configTestResult.ok ||
+      configTestResult.remote_history_state === "unreachable"),
+  );
+  const backupMachineConnectionMeta = probeNeedsBootstrap
+    ? t("system.backupProbeNeedsBootstrap")
+    : configTestResult
+      ? (configTestResult.remote_history_summary ?? configTestResult.summary)
+      : undefined;
+  const backupMachineStatusLabel = isProbeResult
+    ? t("system.backupConnectionStatus")
+    : t("system.backupConfigTestStatus");
+  const backupMachineStatusValue = probeNeedsBootstrap
+    ? t("system.backupConnectionNotConfigured")
+    : configTestResult?.ok
+      ? t("system.backupConfigTestOk")
+      : t("system.backupConfigTestFailed");
+  const backupMachineStatusTone =
+    !configTestResult?.ok && !probeNeedsBootstrap ? "error" : "default";
+  const backupMachineLatencyLabel = isProbeResult
+    ? t("system.backupProbeLatency")
+    : t("system.backupConfigTestLatency");
 
   const isBusy =
     isEnsuringCredential ||
@@ -456,7 +760,15 @@ export default function BackupsPage() {
     pauseSync.isPending ||
     resumeSync.isPending ||
     retryRun.isPending ||
-    restoreCommit.isPending;
+    restoreCommit.isPending ||
+    probeConnectionMutation.isPending ||
+    createBootstrapClaimMutation.isPending ||
+    revokeBootstrapClaimMutation.isPending;
+  const backupMachineHost = String(form.remote_host ?? "").trim();
+  const canUseBackupActions =
+    !isConfigLoading &&
+    !isBusy &&
+    (Boolean(config?.enabled) || Boolean(backupMachineHost));
 
   return (
     <div className="space-y-6">
@@ -476,7 +788,9 @@ export default function BackupsPage() {
             <div className="grid gap-3 sm:grid-cols-2">
               <HeaderMetric
                 title={t("system.queueDepth")}
-                value={String(queue.filter((item) => item.status !== "completed").length)}
+                value={String(
+                  queue.filter((item) => item.status !== "completed").length,
+                )}
                 hint={
                   activeQueueItem
                     ? `${t("common.status")} · ${t(`status.${activeQueueItem.status}`)}`
@@ -485,7 +799,11 @@ export default function BackupsPage() {
               />
               <HeaderMetric
                 title={t("system.transportMode")}
-                value={configuredTransportMode === "sftp" ? t("system.transportSftp") : configuredTransportMode}
+                value={
+                  configuredTransportMode === "sftp"
+                    ? t("system.transportSftp")
+                    : configuredTransportMode
+                }
                 hint={
                   config?.encrypt_runtime_data
                     ? t("system.runtimeEncryptionEnabled")
@@ -497,320 +815,428 @@ export default function BackupsPage() {
         }
       />
 
-      <Tabs value={section} onValueChange={(value) => setSection(value as BackupsSection)}>
+      <Tabs
+        value={section}
+        onValueChange={(value) => setSection(value as BackupsSection)}
+      >
         <TabsContent value="settings" className="mt-0 space-y-6">
-          <ConfigSettingsCard
-            eyebrow={t("nav.system")}
-            title={t("system.backupBasicSettings")}
-            description={
-              !recoveryKeyReady ? (
-                <span className="font-medium text-amber-600 dark:text-amber-300">
-                  {t("system.backupBasicSettingsDescription")}
-                </span>
-              ) : undefined
-            }
-            dirty={hasConfigChanges}
-            saving={isBusy}
-            saveDisabled={isConfigLoading || !canPersistBackupConfig}
-            onSave={() => void handleSave()}
-            statusIndicator={configTestResult ? {
-              label: configTestResult.ok ? t("system.backupConfigTestOk") : t("system.backupConfigTestFailed"),
-              tone: testConfigMutation.isPending
-                ? "checking"
-                : configTestResult.ok
-                  ? "available"
-                  : "invalid",
-            } : undefined}
-            testAction={(
-              <>
-                {config?.enabled ? (
+          <Card>
+            <CardHeader>
+              <div className="flex justify-end">
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  {hasConfigChanges ? (
+                    <span className="rounded-full border border-[rgb(var(--admin-accent-rgb)/0.22)] bg-[rgb(var(--admin-accent-rgb)/0.08)] px-3 py-1 text-xs text-[rgb(var(--admin-accent-rgb)/0.95)]">
+                      {t("common.pendingSave")}
+                    </span>
+                  ) : null}
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     className="gap-2"
-                    onClick={() => (config?.paused ? resumeSync.mutate() : pauseSync.mutate())}
-                    disabled={isBusy}
+                    onClick={() => void handleTestAndSaveConfig()}
+                    disabled={!canUseBackupActions}
                   >
-                    {config?.paused ? <PlayCircle className="h-4 w-4" /> : <PauseCircle className="h-4 w-4" />}
-                    {config?.paused ? t("system.resumeSync") : t("system.pauseSync")}
+                    {testConfigMutation.isPending || updateConfig.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="h-4 w-4" />
+                    )}
+                    {t("system.testAndSave")}
                   </Button>
-                ) : null}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="gap-2"
-                  onClick={() => void handleTestConfig()}
-                  disabled={isBusy}
-                >
-                  {testConfigMutation.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Stethoscope className="h-4 w-4" />
-                  )}
-                  {testConfigMutation.isPending ? t("system.testingBackupConfig") : t("system.testBackupConfig")}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="gap-2"
-                  onClick={() => void handleSaveAndRun()}
-                  disabled={isBusy || isConfigLoading || !canPersistBackupConfig}
-                >
-                  <Database className="h-4 w-4" />
-                  {t("system.saveAndRunFirstBackup")}
-                </Button>
-              </>
-            )}
-          >
-            <div className="space-y-5">
-              {configTestResult ? (
-                <Card surface="soft">
-                  <CardContent className="grid gap-3 p-4 text-sm md:grid-cols-3">
-                    <MetaLine
-                      label={t("system.backupConfigTestStatus")}
-                      value={configTestResult.ok ? t("system.backupConfigTestOk") : t("system.backupConfigTestFailed")}
-                      tone={configTestResult.ok ? "default" : "error"}
-                      formatAsDate={false}
-                    />
-                    <MetaLine
-                      label={t("system.remotePathPreviewTitle")}
-                      value={configTestResult.remote_path_preview}
-                      formatAsDate={false}
-                    />
-                    <MetaLine
-                      label={t("system.backupConfigTestLatency")}
-                      value={configTestResult.latency_ms != null ? `${configTestResult.latency_ms} ms` : "-"}
-                      formatAsDate={false}
-                    />
-                    <div className="md:col-span-3 rounded-[var(--admin-radius-md)] border border-[rgba(var(--admin-border-strong)/var(--admin-border-strong-alpha))] bg-[rgb(var(--admin-surface-1)/0.36)] px-3 py-2 text-sm text-foreground/85">
-                      {configTestResult.summary}
-                    </div>
-                  </CardContent>
-                </Card>
-              ) : null}
-              {recoveryKeyRequiresDelivery ? (
-                <Card surface="soft">
-                  <CardContent className="space-y-2 p-4 text-sm">
-                    <div className="font-medium text-foreground/90">{t("system.recoveryKeyOneTimeWarning")}</div>
-                    <div className="text-muted-foreground">{t("system.recoveryKeyMustBeCopiedBeforeSave")}</div>
-                  </CardContent>
-                </Card>
-              ) : null}
-              <div
-                className={cn(
-                  "grid gap-4",
-                  "md:grid-cols-2",
-                )}
-              >
-                <Field
-                  label={
-                    <LabelWithHelp
-                      label={t("system.sshHostLabel")}
-                      title={t("system.sshHostLabel")}
-                      description={t("system.sshHostDescription")}
-                    />
-                  }
-                >
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="gap-2"
+                    onClick={() => void handleStartBackup()}
+                    disabled={!canUseBackupActions}
+                  >
+                    {triggerSync.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Database className="h-4 w-4" />
+                    )}
+                    {config?.enabled
+                      ? t("system.triggerBackup")
+                      : t("system.startBackupAction")}
+                  </Button>
+                  {config?.enabled ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      onClick={() =>
+                        config?.paused
+                          ? resumeSync.mutate()
+                          : pauseSync.mutate()
+                      }
+                      disabled={isBusy}
+                    >
+                      {config?.paused ? (
+                        <PlayCircle className="h-4 w-4" />
+                      ) : (
+                        <PauseCircle className="h-4 w-4" />
+                      )}
+                      {config?.paused
+                        ? t("system.resumeSync")
+                        : t("system.pauseSync")}
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <SetupRow index="1" title={t("system.backupBootstrapHostTitle")}>
+                <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
                   <Input
                     value={form.remote_host ?? ""}
-                    placeholder="backup.example.com"
+                    placeholder="eg: 10.129.237.34 / aerisun (tailscale主机名)"
                     onChange={(e) => setField("remote_host", e.target.value)}
                   />
-                </Field>
-                <Field
-                  label={
-                    <LabelWithHelp
-                      label={t("system.sshUsernameLabel")}
-                      title={t("system.sshUsernameLabel")}
-                      description={t("system.sshUsernameDescription")}
-                    />
-                  }
-                >
-                  <Input
-                    value={form.remote_username ?? ""}
-                    placeholder="backup-user"
-                    onChange={(e) => setField("remote_username", e.target.value)}
-                  />
-                </Field>
-                <Field
-                  label={
-                    <LabelWithHelp
-                      label={t("system.remoteBackupRootLabel")}
-                      title={t("system.remoteBackupRootLabel")}
-                      description={t("system.remoteBackupRootDescription")}
-                    />
-                  }
-                >
-                  <Input
-                    value={form.remote_path ?? ""}
-                    placeholder={REMOTE_PATH_PLACEHOLDER}
-                    onChange={(e) => setField("remote_path", e.target.value)}
-                  />
-                </Field>
-                <Field
-                  label={
-                    <LabelWithHelp
-                      label={t("system.syncIntervalLabel")}
-                      title={t("system.syncIntervalLabel")}
-                      description={t("system.syncIntervalLabelDescription")}
-                    />
-                  }
-                >
-                  <Input
-                    type="number"
-                    min={1}
-                    value={form.interval_minutes ?? 60}
-                    onChange={(e) => setField("interval_minutes", Number(e.target.value || 60))}
-                  />
-                </Field>
-              </div>
+                  <Button
+                    type="button"
+                    className="gap-2"
+                    onClick={() => void handleDetectBackupMachine()}
+                    disabled={isBusy || !String(form.remote_host ?? "").trim()}
+                  >
+                    {probeConnectionMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <SearchCheck className="h-4 w-4" />
+                    )}
+                    {t("system.detectBackupMachine")}
+                  </Button>
+                </div>
+              </SetupRow>
 
-              <CollapsibleSection
-                title={t("system.advancedOptions")}
-                badge={t("common.optional")}
-                defaultOpen={!credentialInfo}
+              <SetupRow
+                index="2"
+                title={t("system.backupDetectTitle")}
+                meta={backupMachineConnectionMeta}
+                metaTone={probeNeedsBootstrap ? "warning" : "muted"}
+                complete={Boolean(
+                  configTestResult?.ok && !remoteHistoryIsForeign,
+                )}
               >
-                <div className="space-y-4">
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <Field
-                      label={
-                        <LabelWithHelp
-                          label={t("system.runtimeEncryptionLabel")}
-                          title={t("system.runtimeEncryptionLabel")}
-                          description={t("system.runtimeEncryptionDescription")}
-                        />
+                {configTestResult ? (
+                  <div
+                    className={cn(
+                      "mb-3 grid gap-3 text-sm",
+                      probeNeedsBootstrap ? "md:grid-cols-2" : "md:grid-cols-3",
+                    )}
+                  >
+                    <MetaLine
+                      label={backupMachineStatusLabel}
+                      value={backupMachineStatusValue}
+                      tone={backupMachineStatusTone}
+                      formatAsDate={false}
+                    />
+                    {probeNeedsBootstrap ? null : (
+                      <MetaLine
+                        label={t("system.remotePathPreviewTitle")}
+                        value={configTestResult.remote_path_preview}
+                        formatAsDate={false}
+                      />
+                    )}
+                    <MetaLine
+                      label={backupMachineLatencyLabel}
+                      value={
+                        configTestResult.latency_ms != null
+                          ? `${configTestResult.latency_ms} ms`
+                          : "-"
                       }
-                    >
-                      <div
-                        className={cn(
-                          "flex h-10 items-center justify-between rounded-[var(--admin-radius-md)] border px-3 transition-colors",
-                          form.encrypt_runtime_data
-                            ? "border-emerald-500/30 bg-emerald-500/8"
-                            : "border-[rgba(var(--admin-border-strong)/var(--admin-border-strong-alpha))] bg-[rgb(var(--admin-surface-1)/0.36)]",
-                        )}
-                      >
-                        <span className="mr-3 text-xs text-muted-foreground">
-                          {form.encrypt_runtime_data
-                            ? t("system.runtimeEncryptionEnabled")
-                            : t("system.runtimeEncryptionDisabled")}
-                        </span>
-                        <CompactSwitch
-                          checked={Boolean(form.encrypt_runtime_data)}
-                          onCheckedChange={(checked) => setField("encrypt_runtime_data", checked)}
-                          ariaLabel={t("system.runtimeEncryptionLabel")}
-                          disabled={isBusy}
-                        />
-                      </div>
-                    </Field>
-                    <Field
-                      label={
-                        <LabelWithHelp
-                          label={t("system.recoveryKeyActions")}
-                          title={t("system.recoveryKeyActions")}
-                          description={t("system.localBackupKeyDirDescription")}
-                        />
-                      }
-                    >
-                      <div className="space-y-2">
-                        {credentialInfo ? <Input value={credentialInfo.credential_dir} readOnly /> : null}
-                        {credentialInfo ? (
-                          <div className="text-xs text-muted-foreground">
-                            {t("system.recoveryKeyFingerprint")}: {credentialInfo.secrets_fingerprint}
-                          </div>
-                        ) : null}
+                      formatAsDate={false}
+                    />
+                  </div>
+                ) : null}
+
+                {remoteHistoryIsForeign ? (
+                  <div className="mb-3 rounded-[var(--admin-radius-md)] border border-amber-400/35 bg-amber-500/10 px-4 py-3 text-sm text-amber-950 dark:text-amber-100">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                      <div className="min-w-0 space-y-3">
+                        <div>{t("system.backupForeignHistoryWarning")}</div>
                         <div className="flex flex-wrap gap-2">
                           <Button
                             type="button"
                             variant="outline"
                             size="sm"
-                            className={cn(
-                              "border-[rgba(var(--admin-border-strong)/var(--admin-border-strong-alpha))]",
-                              recoveryKeyReady
-                                ? "bg-[rgb(var(--admin-surface-1)/0.36)]"
-                                : "bg-sky-500/10 text-sky-700 hover:bg-sky-500/15 dark:text-sky-200",
-                            )}
-                            onClick={() => openRecoveryKeyDialog(recoveryKeyActionMode)}
-                            disabled={isBusy}
+                            onClick={handleRestoreRemoteHistory}
                           >
-                            {recoveryKeyActionLabel}
+                            <RotateCcw className="mr-2 h-4 w-4" />
+                            {t("system.restoreThisHistory")}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => void handleOverwriteRemoteHistory()}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            {t("system.overwriteRemoteHistory")}
                           </Button>
                         </div>
                       </div>
-                    </Field>
+                    </div>
                   </div>
-                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                    <Field
-                      label={
-                        <LabelWithHelp
-                          label={t("system.sshPortLabel")}
-                          title={t("system.sshPortLabel")}
-                          description={t("system.sshPortDescription")}
-                        />
+                ) : null}
+
+                {detectionRequiresBootstrap ? (
+                  <div className="space-y-3">
+                    <Button
+                      type="button"
+                      className="gap-2"
+                      onClick={() => void handleGenerateBootstrapCommand()}
+                      disabled={
+                        isBusy || !String(form.remote_host ?? "").trim()
                       }
                     >
-                      <Input
-                        type="number"
-                        min={1}
-                        value={form.remote_port ?? 22}
-                        onChange={(e) => setField("remote_port", Number(e.target.value || 22))}
+                      {createBootstrapClaimMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <TerminalSquare className="h-4 w-4" />
+                      )}
+                      {bootstrapClaim
+                        ? t("system.backupBootstrapRegenerate")
+                        : t("system.backupBootstrapGenerate")}
+                    </Button>
+                    {bootstrapClaim ? (
+                      <div className="text-xs leading-5 text-muted-foreground">
+                        {backupBootstrapStatusText(bootstrapClaim, t)}
+                      </div>
+                    ) : null}
+                    {bootstrapClaim?.setup_command ? (
+                      <>
+                        <div className="flex min-w-0 items-center rounded-[var(--admin-radius-md)] border border-[rgba(var(--admin-border-strong)/var(--admin-border-strong-alpha))] bg-[rgb(var(--admin-surface-1)/0.36)]">
+                          <code className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap px-3 py-2 font-mono text-xs text-foreground/85">
+                            {bootstrapClaim.setup_command}
+                          </code>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => void handleCopyBootstrapCommand()}
+                          >
+                            <Copy className="mr-2 h-4 w-4" />
+                            {t("system.copyBootstrapCommand")}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => void handleRevokeBootstrapCommand()}
+                            disabled={
+                              isBusy ||
+                              bootstrapClaim.status === "revoked" ||
+                              bootstrapClaim.status === "succeeded"
+                            }
+                          >
+                            {t("system.backupBootstrapRevoke")}
+                          </Button>
+                          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                            <Clock className="h-3.5 w-3.5" />
+                            {formatCountdown(bootstrapSecondsLeft)}
+                          </span>
+                        </div>
+                      </>
+                    ) : null}
+                  </div>
+                ) : null}
+              </SetupRow>
+
+              <SetupRow
+                index="3"
+                title={
+                  <LabelWithHelp
+                    label={t("system.recoveryPasswordTitle")}
+                    title={t("system.recoveryPasswordTitle")}
+                    description={t(
+                      "system.recoveryPasswordRequiredDescription",
+                    )}
+                  />
+                }
+                meta={
+                  canPersistBackupConfig
+                    ? t("system.recoveryPasswordReadyDescription")
+                    : undefined
+                }
+                complete={canPersistBackupConfig}
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    type="button"
+                    variant={canPersistBackupConfig ? "outline" : "default"}
+                    className="gap-2"
+                    onClick={() => openRecoveryKeyDialog("export")}
+                    disabled={isBusy || canPersistBackupConfig}
+                  >
+                    <KeyRound className="h-4 w-4" />
+                    {canPersistBackupConfig
+                      ? t("system.recoveryPasswordAlreadySet")
+                      : t("system.setRecoveryPassword")}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setForgotDialogOpen(true)}
+                  >
+                    {t("system.forgotRecoveryPassword")}
+                  </Button>
+                </div>
+              </SetupRow>
+
+              <CollapsibleSection
+                title={t("system.advancedOptions")}
+                badge={t("common.optional")}
+                defaultOpen={false}
+              >
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Field
+                    label={
+                      <LabelWithHelp
+                        label={t("system.syncIntervalLabel")}
+                        title={t("system.syncIntervalLabel")}
+                        description={t("system.syncIntervalLabelDescription")}
                       />
-                    </Field>
-                    <Field
-                      label={
-                        <LabelWithHelp
-                          label={t("system.maxRetries")}
-                          title={t("system.maxRetries")}
-                          description={t("system.maxRetriesDescription")}
-                        />
+                    }
+                  >
+                    <Input
+                      type="number"
+                      min={1}
+                      value={form.interval_minutes ?? 60}
+                      onChange={(e) =>
+                        setField(
+                          "interval_minutes",
+                          Number(e.target.value || 60),
+                        )
                       }
-                    >
-                      <Input
-                        type="number"
-                        min={0}
-                        value={form.max_retries ?? 3}
-                        onChange={(e) => setField("max_retries", Number(e.target.value || 0))}
+                    />
+                  </Field>
+                  <Field
+                    label={
+                      <LabelWithHelp
+                        label={t("system.sshPortLabel")}
+                        title={t("system.sshPortLabel")}
+                        description={t("system.sshPortDescription")}
                       />
-                    </Field>
-                    <Field
-                      label={
-                        <LabelWithHelp
-                          label={t("system.retryBackoffSeconds")}
-                          title={t("system.retryBackoffSeconds")}
-                          description={t("system.retryBackoffDescription")}
-                        />
+                    }
+                  >
+                    <Input
+                      type="number"
+                      min={1}
+                      value={form.remote_port ?? 22}
+                      onChange={(e) =>
+                        setField("remote_port", Number(e.target.value || 22))
                       }
-                    >
-                      <Input
-                        type="number"
-                        min={30}
-                        value={form.retry_backoff_seconds ?? 300}
-                        onChange={(e) => setField("retry_backoff_seconds", Number(e.target.value || 300))}
+                    />
+                  </Field>
+                  <Field
+                    label={
+                      <LabelWithHelp
+                        label={t("system.maxRetries")}
+                        title={t("system.maxRetries")}
+                        description={t("system.maxRetriesDescription")}
                       />
-                    </Field>
+                    }
+                  >
+                    <Input
+                      type="number"
+                      min={0}
+                      value={form.max_retries ?? 3}
+                      onChange={(e) =>
+                        setField("max_retries", Number(e.target.value || 0))
+                      }
+                    />
+                  </Field>
+                  <Field
+                    label={
+                      <LabelWithHelp
+                        label={t("system.retryBackoffSeconds")}
+                        title={t("system.retryBackoffSeconds")}
+                        description={t("system.retryBackoffDescription")}
+                      />
+                    }
+                  >
+                    <Input
+                      type="number"
+                      min={30}
+                      value={form.retry_backoff_seconds ?? 300}
+                      onChange={(e) =>
+                        setField(
+                          "retry_backoff_seconds",
+                          Number(e.target.value || 300),
+                        )
+                      }
+                    />
+                  </Field>
+                  <div className="flex min-h-10 items-center justify-between gap-4">
+                    <div className="min-w-0">
+                      <LabelWithHelp
+                        label={
+                          form.encrypt_runtime_data
+                            ? t("system.runtimeEncryptionLabelEnabled")
+                            : t("system.runtimeEncryptionLabelDisabled")
+                        }
+                        title={t("system.runtimeEncryptionLabel")}
+                        description={t("system.runtimeEncryptionDescription")}
+                      />
+                    </div>
+                    <CompactSwitch
+                      checked={Boolean(form.encrypt_runtime_data)}
+                      onCheckedChange={(checked) =>
+                        setField("encrypt_runtime_data", checked)
+                      }
+                      ariaLabel={t("system.runtimeEncryptionLabel")}
+                      disabled={isBusy}
+                    />
+                  </div>
+                  <div className="flex min-h-10 items-center gap-3">
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      className="gap-2"
+                      onClick={() => void handleResetBackupSystem()}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      {t("system.resetBackupSystem")}
+                    </Button>
+                    <LabelWithHelp
+                      hideLabel
+                      label={t("system.resetBackupSystem")}
+                      title={t("system.resetBackupSystem")}
+                      description={t("system.resetBackupSystemDescription")}
+                    />
                   </div>
                 </div>
               </CollapsibleSection>
-            </div>
-          </ConfigSettingsCard>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="records" className="mt-0 space-y-6">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <AdminSectionTabs
               items={[
-                { value: "runs", label: t("system.runRecords") },
                 { value: "commits", label: t("system.commitRecords") },
+                { value: "runs", label: t("system.runRecords") },
               ]}
               value={recordsSection}
-              onValueChange={(value) => setRecordsSection(value as BackupRecordsSection)}
+              onValueChange={(value) =>
+                setRecordsSection(value as BackupRecordsSection)
+              }
               size="sm"
               className="w-fit"
             />
             <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-              <Button variant="outline" onClick={() => invalidateAll()} disabled={isBusy}>
+              <Button
+                variant="outline"
+                onClick={() => invalidateAll()}
+                disabled={isBusy}
+              >
                 <RefreshCcw className="mr-2 h-4 w-4" />
                 {t("common.refresh")}
               </Button>
@@ -821,56 +1247,12 @@ export default function BackupsPage() {
             </div>
           </div>
 
-          <Tabs value={recordsSection} onValueChange={(value) => setRecordsSection(value as BackupRecordsSection)}>
-            <TabsContent value="runs" className="mt-0">
-              <Card>
-                <CardHeader>
-                  <CardTitle>{t("system.runRecords")}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <DataTable<BackupRunRead>
-                    columns={[
-                      { header: t("common.status"), accessor: (row) => <StatusBadge status={row.status} /> },
-                      { header: t("system.transportMode"), accessor: (row) => row.transport || "-" },
-                      { header: t("system.triggerKind"), accessor: (row) => row.trigger_kind || "-" },
-                      { header: t("system.startedAt"), accessor: (row) => formatDate(row.started_at) },
-                      { header: t("system.completed"), accessor: (row) => formatDate(row.finished_at) },
-                      {
-                        header: t("common.actions"),
-                        accessor: (row) =>
-                          row.status === "failed" ? (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                retryRun.mutate({ runId: row.id });
-                              }}
-                            >
-                              <RotateCcw className="mr-1 h-4 w-4" />
-                              {t("system.retryRun")}
-                            </Button>
-                          ) : (
-                            "-"
-                          ),
-                      },
-                    ]}
-                    data={runs}
-                    total={runs.length}
-                    isLoading={isRunsLoading}
-                    renderExpandedRow={(row) => (
-                      <div className="space-y-2 py-4 text-sm">
-                        <div>{row.message || row.last_error || t("system.none")}</div>
-                        <code className="block whitespace-pre-wrap break-all text-xs text-muted-foreground">
-                          {JSON.stringify(row.stats_json ?? {}, null, 2)}
-                        </code>
-                      </div>
-                    )}
-                  />
-                </CardContent>
-              </Card>
-            </TabsContent>
-
+          <Tabs
+            value={recordsSection}
+            onValueChange={(value) =>
+              setRecordsSection(value as BackupRecordsSection)
+            }
+          >
             <TabsContent value="commits" className="mt-0">
               <Card>
                 <CardHeader>
@@ -879,14 +1261,25 @@ export default function BackupsPage() {
                 <CardContent>
                   <DataTable<BackupCommitRead>
                     columns={[
-                      { header: t("system.transportMode"), accessor: "transport" },
-                      { header: t("system.triggerKind"), accessor: "trigger_kind" },
-                      { header: t("system.remoteCommitId"), accessor: "remote_commit_id" },
+                      {
+                        header: t("system.transportMode"),
+                        accessor: "transport",
+                      },
+                      {
+                        header: t("system.triggerKind"),
+                        accessor: "trigger_kind",
+                      },
                       {
                         header: t("system.completed"),
-                        accessor: (row) => formatDate(row.snapshot_finished_at || row.created_at),
+                        accessor: (row) =>
+                          formatDate(
+                            row.snapshot_finished_at || row.created_at,
+                          ),
                       },
-                      { header: t("system.lastRestoreAt"), accessor: (row) => formatDate(row.restored_at) },
+                      {
+                        header: t("system.lastRestoreAt"),
+                        accessor: (row) => formatDate(row.restored_at),
+                      },
                       {
                         header: t("common.actions"),
                         accessor: (row) => (
@@ -912,9 +1305,73 @@ export default function BackupsPage() {
                     isLoading={isCommitsLoading}
                     renderExpandedRow={(row) => (
                       <div className="space-y-2 py-4 text-sm">
-                        <div className="text-muted-foreground">{row.backup_path || "-"}</div>
+                        <div className="text-muted-foreground">
+                          {row.backup_path || "-"}
+                        </div>
                         <code className="block whitespace-pre-wrap break-all text-xs text-muted-foreground">
                           {JSON.stringify(row.datasets, null, 2)}
+                        </code>
+                      </div>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="runs" className="mt-0">
+              <Card>
+                <CardHeader>
+                  <CardTitle>{t("system.runRecords")}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <DataTable<BackupRunRead>
+                    columns={[
+                      {
+                        header: t("common.status"),
+                        accessor: (row) => <StatusBadge status={row.status} />,
+                      },
+                      {
+                        header: t("system.triggerKind"),
+                        accessor: (row) => row.trigger_kind || "-",
+                      },
+                      {
+                        header: t("system.startedAt"),
+                        accessor: (row) => formatDate(row.started_at),
+                      },
+                      {
+                        header: t("system.completed"),
+                        accessor: (row) => formatDate(row.finished_at),
+                      },
+                      {
+                        header: t("common.actions"),
+                        accessor: (row) =>
+                          row.status === "failed" ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                retryRun.mutate({ runId: row.id });
+                              }}
+                            >
+                              <RotateCcw className="mr-1 h-4 w-4" />
+                              {t("system.retryRun")}
+                            </Button>
+                          ) : (
+                            "-"
+                          ),
+                      },
+                    ]}
+                    data={runs}
+                    total={runs.length}
+                    isLoading={isRunsLoading}
+                    renderExpandedRow={(row) => (
+                      <div className="space-y-2 py-4 text-sm">
+                        <div>
+                          {row.message || row.last_error || t("system.none")}
+                        </div>
+                        <code className="block whitespace-pre-wrap break-all text-xs text-muted-foreground">
+                          {JSON.stringify(row.stats_json ?? {}, null, 2)}
                         </code>
                       </div>
                     )}
@@ -926,7 +1383,9 @@ export default function BackupsPage() {
 
           {latestRun?.last_error ? (
             <Card surface="soft" className="border-red-200/60">
-              <CardContent className="p-4 text-sm text-red-600">{latestRun.last_error}</CardContent>
+              <CardContent className="p-4 text-sm text-red-600">
+                {latestRun.last_error}
+              </CardContent>
             </Card>
           ) : null}
         </TabsContent>
@@ -935,85 +1394,206 @@ export default function BackupsPage() {
       <Dialog open={keyDialogOpen} onOpenChange={setKeyDialogOpen}>
         <DialogContent className="max-w-2xl rounded-2xl">
           <DialogHeader className="text-left">
-            <DialogTitle>
-              {keyDialogMode === "rotate" ? t("system.rotateRecoveryKey") : t("system.exportRecoveryKey")}
-            </DialogTitle>
+            <DialogTitle>{t("system.setRecoveryPassword")}</DialogTitle>
             <DialogDescription>
-              {keyDialogMode === "rotate"
-                ? t("system.rotateRecoveryKeyDescription")
-                : t("system.exportRecoveryKeyDescription")}
+              {t("system.setRecoveryPasswordDescription")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            {!recoveryKeyResult ? (
-              <form
-                className="space-y-4"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  if (isRecoveryKeyPending || recoveryPassphrase.length < 8) {
-                    return;
-                  }
-                  void handleRecoveryKeySubmit();
-                }}
-              >
-                <Field
-                  label={
-                    <LabelWithHelp
-                      label={t("system.recoveryKeyPassword")}
-                      title={t("system.recoveryKeyPassword")}
-                      description={t("system.recoveryKeyPasswordDescription")}
-                    />
-                  }
-                >
-                  <Input
-                    type="password"
-                    autoComplete="new-password"
-                    value={recoveryPassphrase}
-                    onChange={(event) => setRecoveryPassphrase(event.target.value)}
-                    placeholder="********"
+            <div className="rounded-[var(--admin-radius-md)] border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-sm leading-6 text-amber-950 dark:text-amber-100">
+              {t("system.recoveryPasswordImportantWarning")}
+            </div>
+            <form
+              className="space-y-4"
+              onSubmit={(event) => {
+                event.preventDefault();
+                if (
+                  isRecoveryKeyPending ||
+                  recoveryPassphrase.length < 8 ||
+                  recoveryPassphrase !== recoveryPassphraseConfirm
+                ) {
+                  return;
+                }
+                void handleRecoveryKeySubmit();
+              }}
+            >
+              <Field
+                label={
+                  <LabelWithHelp
+                    label={t("system.recoveryKeyPassword")}
+                    title={t("system.recoveryKeyPassword")}
+                    description={t("system.recoveryKeyPasswordDescription")}
                   />
-                </Field>
-                <div className="flex justify-end gap-2">
-                    <Button type="button" variant="outline" onClick={() => setKeyDialogOpen(false)} disabled={isRecoveryKeyPending}>
-                      {t("common.cancel")}
-                    </Button>
-                  <Button type="submit" disabled={isRecoveryKeyPending || recoveryPassphrase.length < 8}>
-                    {keyDialogMode === "rotate" ? t("system.rotateRecoveryKey") : t("system.exportRecoveryKey")}
-                  </Button>
+                }
+              >
+                <Input
+                  type="password"
+                  autoComplete="new-password"
+                  value={recoveryPassphrase}
+                  onChange={(event) =>
+                    setRecoveryPassphrase(event.target.value)
+                  }
+                  placeholder="********"
+                />
+              </Field>
+              <Field label={t("system.recoveryPasswordConfirm")}>
+                <Input
+                  type="password"
+                  autoComplete="new-password"
+                  value={recoveryPassphraseConfirm}
+                  onChange={(event) =>
+                    setRecoveryPassphraseConfirm(event.target.value)
+                  }
+                  placeholder="********"
+                />
+              </Field>
+              {recoveryPassphraseConfirm &&
+              recoveryPassphrase !== recoveryPassphraseConfirm ? (
+                <div className="text-sm text-red-600">
+                  {t("system.recoveryPasswordMismatch")}
                 </div>
-              </form>
-            ) : (
-              <>
-                <div className="rounded-[var(--admin-radius-md)] border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-900 dark:text-amber-100">
-                  {t("system.recoveryKeyOneTimeWarning")}
-                </div>
-                <Field
-                  label={
-                    <LabelWithHelp
-                      label={t("system.recoveryKeyPrivatePem")}
-                      title={t("system.recoveryKeyPrivatePem")}
-                      description={t("system.recoveryKeyPrivatePemDescription")}
-                    />
+              ) : null}
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setKeyDialogOpen(false)}
+                  disabled={isRecoveryKeyPending}
+                >
+                  {t("common.cancel")}
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={
+                    isRecoveryKeyPending ||
+                    recoveryPassphrase.length < 8 ||
+                    recoveryPassphrase !== recoveryPassphraseConfirm
                   }
                 >
-                  <Textarea value={recoveryKeyResult.private_key_pem} readOnly rows={10} />
-                </Field>
-                <div className="flex flex-wrap justify-end gap-2">
-                  <Button variant="outline" onClick={() => void copyRecoveryKey(recoveryKeyResult.private_key_pem)}>
-                    <Copy className="mr-2 h-4 w-4" />
-                    {t("system.copyRecoveryKey")}
-                  </Button>
-                  <Button variant="outline" onClick={() => downloadRecoveryKey(recoveryKeyResult)}>
-                    <Download className="mr-2 h-4 w-4" />
-                    {t("system.downloadRecoveryKey")}
-                  </Button>
-                  <Button onClick={() => setKeyDialogOpen(false)}>{t("common.done")}</Button>
-                </div>
-              </>
-            )}
+                  {isRecoveryKeyPending ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : null}
+                  {t("system.confirmSetRecoveryPassword")}
+                </Button>
+              </div>
+            </form>
           </div>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={forgotDialogOpen} onOpenChange={setForgotDialogOpen}>
+        <DialogContent className="max-w-2xl rounded-2xl">
+          <DialogHeader className="text-left">
+            <DialogTitle>{t("system.forgotRecoveryPassword")}</DialogTitle>
+            <DialogDescription>
+              {t("system.forgotRecoveryPasswordDescription")}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Textarea
+              value={resetCommand}
+              readOnly
+              rows={5}
+              className="font-mono text-xs"
+            />
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  void navigator.clipboard.writeText(resetCommand);
+                  toast.success(t("system.backupCleanupCommandCopied"));
+                }}
+              >
+                <Copy className="mr-2 h-4 w-4" />
+                {t("system.copyBootstrapCommand")}
+              </Button>
+              <Button type="button" onClick={() => setForgotDialogOpen(false)}>
+                {t("common.done")}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function formatCountdown(seconds: number) {
+  if (seconds <= 0) {
+    return "00:00";
+  }
+  const minutes = Math.floor(seconds / 60);
+  const rest = seconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(rest).padStart(2, "0")}`;
+}
+
+function backupBootstrapStatusText(
+  claim: BackupBootstrapClaimRead,
+  t: (key: string) => string,
+) {
+  if (claim.status === "succeeded") {
+    return t("system.backupBootstrapStatusSucceeded");
+  }
+  if (claim.status === "failed") {
+    return claim.last_error || t("system.backupBootstrapStatusFailed");
+  }
+  if (claim.status === "expired") {
+    return t("system.backupBootstrapStatusExpired");
+  }
+  if (claim.status === "revoked") {
+    return t("system.backupBootstrapStatusRevoked");
+  }
+  return t("system.backupBootstrapStatusPending");
+}
+
+function SetupRow({
+  index,
+  title,
+  meta,
+  metaTone = "muted",
+  complete = false,
+  children,
+}: {
+  index: string;
+  title: ReactNode;
+  meta?: string;
+  metaTone?: "muted" | "warning";
+  complete?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <div className="grid gap-3 rounded-[var(--admin-radius-md)] border border-[rgba(var(--admin-border-strong)/var(--admin-border-strong-alpha))] bg-[rgb(var(--admin-surface-1)/0.24)] p-4 md:grid-cols-[2.25rem_minmax(0,1fr)]">
+      <div
+        className={cn(
+          "flex h-8 w-8 items-center justify-center rounded-full border text-sm font-semibold",
+          complete
+            ? "border-emerald-500/30 bg-emerald-500/12 text-emerald-700 dark:text-emerald-200"
+            : "border-[rgba(var(--admin-border-strong)/var(--admin-border-strong-alpha))] bg-[rgb(var(--admin-surface-1)/0.52)] text-muted-foreground",
+        )}
+      >
+        {index}
+      </div>
+      <div className="min-w-0 space-y-3">
+        <div className="min-w-0">
+          <div className="text-sm font-semibold text-foreground/90">
+            {title}
+          </div>
+          {meta ? (
+            <div
+              className={cn(
+                "mt-1 text-xs leading-5",
+                metaTone === "warning"
+                  ? "font-medium text-amber-700 dark:text-amber-300"
+                  : "text-muted-foreground",
+              )}
+            >
+              {meta}
+            </div>
+          ) : null}
+        </div>
+        <div>{children}</div>
+      </div>
     </div>
   );
 }
@@ -1030,7 +1610,9 @@ function HeaderMetric({
   return (
     <div className="min-w-0 rounded-[var(--admin-radius-lg)] border border-[rgba(var(--admin-border-strong)/var(--admin-border-strong-alpha))] bg-[rgb(var(--admin-surface-1)/0.34)] px-4 py-3">
       <div className="text-xs text-muted-foreground">{title}</div>
-      <div className="mt-1 truncate text-base font-semibold text-foreground/95">{value}</div>
+      <div className="mt-1 truncate text-base font-semibold text-foreground/95">
+        {value}
+      </div>
       <div className="mt-1 truncate text-xs text-muted-foreground">{hint}</div>
     </div>
   );
@@ -1049,7 +1631,11 @@ function Field({
     <label className="space-y-2">
       <span className="text-sm font-medium text-foreground/90">{label}</span>
       {children}
-      {description ? <span className="block text-xs leading-5 text-muted-foreground">{description}</span> : null}
+      {description ? (
+        <span className="block text-xs leading-5 text-muted-foreground">
+          {description}
+        </span>
+      ) : null}
     </label>
   );
 }
@@ -1105,7 +1691,13 @@ function MetaLine({
   return (
     <div className="rounded-[var(--admin-radius-md)] border border-[rgba(var(--admin-border-strong)/var(--admin-border-strong-alpha))] bg-[rgb(var(--admin-surface-1)/0.36)] px-3 py-2">
       <div className="text-xs text-muted-foreground">{label}</div>
-      <div className={tone === "error" ? "mt-1 text-sm text-red-600" : "mt-1 text-sm text-foreground/90"}>
+      <div
+        className={
+          tone === "error"
+            ? "mt-1 text-sm text-red-600"
+            : "mt-1 text-sm text-foreground/90"
+        }
+      >
         {value ? (formatAsDate ? formatDate(value) || value : value) : "-"}
       </div>
     </div>

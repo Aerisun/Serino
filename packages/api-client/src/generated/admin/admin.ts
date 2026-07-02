@@ -57,6 +57,8 @@ import type {
   AssetUploadCompleteWrite,
   AssetUploadPlanRead,
   AssetUploadPlanWrite,
+  BackupBootstrapClaimCreate,
+  BackupBootstrapClaimRead,
   BackupCommitRead,
   BackupCredentialAcknowledgeWrite,
   BackupCredentialEnsureRead,
@@ -69,6 +71,7 @@ import type {
   BackupSyncConfig,
   BackupSyncConfigTestRead,
   BackupSyncConfigUpdate,
+  BackupSystemResetRead,
   BindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPostParams,
   BodyImportContentApiV1AdminContentImportPost,
   BodyUploadAssetEndpointApiV1AdminAssetsPost,
@@ -12586,7 +12589,7 @@ export const useEnsureBackupCredentialsApiV1AdminSystemBackupSyncCredentialsEnsu
       return useMutation(getEnsureBackupCredentialsApiV1AdminSystemBackupSyncCredentialsEnsurePostMutationOptions(options), queryClient);
     }
     /**
- * @summary 生成、导出或轮换恢复私钥
+ * @summary 设置或轮换备份恢复密码
  */
 export type exportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExportPostResponse200 = {
   data: BackupCredentialExportRead
@@ -12662,7 +12665,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type ExportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExportPostMutationError = ErrorType<HTTPValidationError>
 
     /**
- * @summary 生成、导出或轮换恢复私钥
+ * @summary 设置或轮换备份恢复密码
  */
 export const useExportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExportPost = <TError = ErrorType<HTTPValidationError>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof exportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExportPost>>, TError,{data: BodyType<BackupCredentialExportWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
@@ -12675,7 +12678,7 @@ export const useExportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExpo
       return useMutation(getExportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExportPostMutationOptions(options), queryClient);
     }
     /**
- * @summary 确认已复制或下载恢复私钥
+ * @summary 确认备份恢复密码已设置
  */
 export type acknowledgeBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyAcknowledgePostResponse200 = {
   data: BackupCredentialEnsureRead
@@ -12751,7 +12754,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type AcknowledgeBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyAcknowledgePostMutationError = ErrorType<HTTPValidationError>
 
     /**
- * @summary 确认已复制或下载恢复私钥
+ * @summary 确认备份恢复密码已设置
  */
 export const useAcknowledgeBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyAcknowledgePost = <TError = ErrorType<HTTPValidationError>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acknowledgeBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyAcknowledgePost>>, TError,{data: BodyType<BackupCredentialAcknowledgeWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
@@ -12851,6 +12854,559 @@ export const useTestBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPost = <
         TContext
       > => {
       return useMutation(getTestBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 快速检测备份机连接
+ */
+export type probeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePostResponse200 = {
+  data: BackupSyncConfigTestRead
+  status: 200
+}
+
+export type probeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type probeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePostResponseSuccess = (probeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePostResponse200) & {
+  headers: Headers;
+};
+export type probeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePostResponseError = (probeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePostResponse422) & {
+  headers: Headers;
+};
+
+export type probeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePostResponse = (probeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePostResponseSuccess | probeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePostResponseError)
+
+export const getProbeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePostUrl = () => {
+
+
+
+
+  return `/api/v1/admin/system/backup-sync/connection/probe`
+}
+
+export const probeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePost = async (backupSyncConfigUpdate: BackupSyncConfigUpdate, options?: RequestInit): Promise<probeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePostResponse> => {
+
+  return customInstance<probeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePostResponse>(getProbeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      backupSyncConfigUpdate,)
+  }
+);}
+
+
+
+
+export const getProbeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof probeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePost>>, TError,{data: BodyType<BackupSyncConfigUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof probeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePost>>, TError,{data: BodyType<BackupSyncConfigUpdate>}, TContext> => {
+
+const mutationKey = ['probeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof probeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePost>>, {data: BodyType<BackupSyncConfigUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  probeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePost(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ProbeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePostMutationResult = NonNullable<Awaited<ReturnType<typeof probeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePost>>>
+    export type ProbeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePostMutationBody = BodyType<BackupSyncConfigUpdate>
+    export type ProbeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 快速检测备份机连接
+ */
+export const useProbeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof probeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePost>>, TError,{data: BodyType<BackupSyncConfigUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof probeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePost>>,
+        TError,
+        {data: BodyType<BackupSyncConfigUpdate>},
+        TContext
+      > => {
+      return useMutation(getProbeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 归档并覆盖远端备份历史
+ */
+export type overwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePostResponse200 = {
+  data: BackupSyncConfigTestRead
+  status: 200
+}
+
+export type overwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type overwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePostResponseSuccess = (overwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePostResponse200) & {
+  headers: Headers;
+};
+export type overwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePostResponseError = (overwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePostResponse422) & {
+  headers: Headers;
+};
+
+export type overwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePostResponse = (overwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePostResponseSuccess | overwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePostResponseError)
+
+export const getOverwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePostUrl = () => {
+
+
+
+
+  return `/api/v1/admin/system/backup-sync/remote-history/overwrite`
+}
+
+export const overwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePost = async (backupSyncConfigUpdate: BackupSyncConfigUpdate, options?: RequestInit): Promise<overwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePostResponse> => {
+
+  return customInstance<overwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePostResponse>(getOverwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      backupSyncConfigUpdate,)
+  }
+);}
+
+
+
+
+export const getOverwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof overwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePost>>, TError,{data: BodyType<BackupSyncConfigUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof overwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePost>>, TError,{data: BodyType<BackupSyncConfigUpdate>}, TContext> => {
+
+const mutationKey = ['overwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof overwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePost>>, {data: BodyType<BackupSyncConfigUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  overwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePost(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type OverwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePostMutationResult = NonNullable<Awaited<ReturnType<typeof overwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePost>>>
+    export type OverwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePostMutationBody = BodyType<BackupSyncConfigUpdate>
+    export type OverwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 归档并覆盖远端备份历史
+ */
+export const useOverwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof overwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePost>>, TError,{data: BodyType<BackupSyncConfigUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof overwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePost>>,
+        TError,
+        {data: BodyType<BackupSyncConfigUpdate>},
+        TContext
+      > => {
+      return useMutation(getOverwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 重置本机备份系统
+ */
+export type resetBackupSyncSystemApiV1AdminSystemBackupSyncResetPostResponse200 = {
+  data: BackupSystemResetRead
+  status: 200
+}
+
+export type resetBackupSyncSystemApiV1AdminSystemBackupSyncResetPostResponseSuccess = (resetBackupSyncSystemApiV1AdminSystemBackupSyncResetPostResponse200) & {
+  headers: Headers;
+};
+;
+
+export type resetBackupSyncSystemApiV1AdminSystemBackupSyncResetPostResponse = (resetBackupSyncSystemApiV1AdminSystemBackupSyncResetPostResponseSuccess)
+
+export const getResetBackupSyncSystemApiV1AdminSystemBackupSyncResetPostUrl = () => {
+
+
+
+
+  return `/api/v1/admin/system/backup-sync/reset`
+}
+
+export const resetBackupSyncSystemApiV1AdminSystemBackupSyncResetPost = async ( options?: RequestInit): Promise<resetBackupSyncSystemApiV1AdminSystemBackupSyncResetPostResponse> => {
+
+  return customInstance<resetBackupSyncSystemApiV1AdminSystemBackupSyncResetPostResponse>(getResetBackupSyncSystemApiV1AdminSystemBackupSyncResetPostUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getResetBackupSyncSystemApiV1AdminSystemBackupSyncResetPostMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resetBackupSyncSystemApiV1AdminSystemBackupSyncResetPost>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof resetBackupSyncSystemApiV1AdminSystemBackupSyncResetPost>>, TError,void, TContext> => {
+
+const mutationKey = ['resetBackupSyncSystemApiV1AdminSystemBackupSyncResetPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof resetBackupSyncSystemApiV1AdminSystemBackupSyncResetPost>>, void> = () => {
+
+
+          return  resetBackupSyncSystemApiV1AdminSystemBackupSyncResetPost(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ResetBackupSyncSystemApiV1AdminSystemBackupSyncResetPostMutationResult = NonNullable<Awaited<ReturnType<typeof resetBackupSyncSystemApiV1AdminSystemBackupSyncResetPost>>>
+
+    export type ResetBackupSyncSystemApiV1AdminSystemBackupSyncResetPostMutationError = ErrorType<unknown>
+
+    /**
+ * @summary 重置本机备份系统
+ */
+export const useResetBackupSyncSystemApiV1AdminSystemBackupSyncResetPost = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resetBackupSyncSystemApiV1AdminSystemBackupSyncResetPost>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof resetBackupSyncSystemApiV1AdminSystemBackupSyncResetPost>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getResetBackupSyncSystemApiV1AdminSystemBackupSyncResetPostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 创建备份机临时接入命令
+ */
+export type createBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsPostResponse201 = {
+  data: BackupBootstrapClaimRead
+  status: 201
+}
+
+export type createBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsPostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type createBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsPostResponseSuccess = (createBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsPostResponse201) & {
+  headers: Headers;
+};
+export type createBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsPostResponseError = (createBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsPostResponse422) & {
+  headers: Headers;
+};
+
+export type createBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsPostResponse = (createBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsPostResponseSuccess | createBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsPostResponseError)
+
+export const getCreateBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsPostUrl = () => {
+
+
+
+
+  return `/api/v1/admin/system/backup-sync/bootstrap-claims`
+}
+
+export const createBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsPost = async (backupBootstrapClaimCreate: BackupBootstrapClaimCreate, options?: RequestInit): Promise<createBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsPostResponse> => {
+
+  return customInstance<createBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsPostResponse>(getCreateBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsPostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      backupBootstrapClaimCreate,)
+  }
+);}
+
+
+
+
+export const getCreateBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsPost>>, TError,{data: BodyType<BackupBootstrapClaimCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof createBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsPost>>, TError,{data: BodyType<BackupBootstrapClaimCreate>}, TContext> => {
+
+const mutationKey = ['createBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsPost>>, {data: BodyType<BackupBootstrapClaimCreate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsPost(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsPostMutationResult = NonNullable<Awaited<ReturnType<typeof createBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsPost>>>
+    export type CreateBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsPostMutationBody = BodyType<BackupBootstrapClaimCreate>
+    export type CreateBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsPostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 创建备份机临时接入命令
+ */
+export const useCreateBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsPost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsPost>>, TError,{data: BodyType<BackupBootstrapClaimCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsPost>>,
+        TError,
+        {data: BodyType<BackupBootstrapClaimCreate>},
+        TContext
+      > => {
+      return useMutation(getCreateBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsPostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 获取备份机临时接入状态
+ */
+export type getBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdGetResponse200 = {
+  data: BackupBootstrapClaimRead
+  status: 200
+}
+
+export type getBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdGetResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type getBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdGetResponseSuccess = (getBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdGetResponse200) & {
+  headers: Headers;
+};
+export type getBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdGetResponseError = (getBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdGetResponse422) & {
+  headers: Headers;
+};
+
+export type getBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdGetResponse = (getBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdGetResponseSuccess | getBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdGetResponseError)
+
+export const getGetBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdGetUrl = (claimId: string,) => {
+
+
+
+
+  return `/api/v1/admin/system/backup-sync/bootstrap-claims/${claimId}`
+}
+
+export const getBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdGet = async (claimId: string, options?: RequestInit): Promise<getBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdGetResponse> => {
+
+  return customInstance<getBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdGetResponse>(getGetBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdGetUrl(claimId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdGetQueryKey = (claimId: string,) => {
+    return [
+    `/api/v1/admin/system/backup-sync/bootstrap-claims/${claimId}`
+    ] as const;
+    }
+
+
+export const getGetBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdGetQueryOptions = <TData = Awaited<ReturnType<typeof getBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdGet>>, TError = ErrorType<HTTPValidationError>>(claimId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdGetQueryKey(claimId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdGet>>> = ({ signal }) => getBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdGet(claimId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(claimId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdGetQueryResult = NonNullable<Awaited<ReturnType<typeof getBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdGet>>>
+export type GetBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdGetQueryError = ErrorType<HTTPValidationError>
+
+
+export function useGetBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdGet<TData = Awaited<ReturnType<typeof getBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdGet>>, TError = ErrorType<HTTPValidationError>>(
+ claimId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdGet>>,
+          TError,
+          Awaited<ReturnType<typeof getBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdGet<TData = Awaited<ReturnType<typeof getBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdGet>>, TError = ErrorType<HTTPValidationError>>(
+ claimId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdGet>>,
+          TError,
+          Awaited<ReturnType<typeof getBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdGet<TData = Awaited<ReturnType<typeof getBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdGet>>, TError = ErrorType<HTTPValidationError>>(
+ claimId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取备份机临时接入状态
+ */
+
+export function useGetBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdGet<TData = Awaited<ReturnType<typeof getBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdGet>>, TError = ErrorType<HTTPValidationError>>(
+ claimId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdGetQueryOptions(claimId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 撤销备份机临时接入命令
+ */
+export type revokeBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdRevokePostResponse200 = {
+  data: BackupBootstrapClaimRead
+  status: 200
+}
+
+export type revokeBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdRevokePostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type revokeBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdRevokePostResponseSuccess = (revokeBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdRevokePostResponse200) & {
+  headers: Headers;
+};
+export type revokeBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdRevokePostResponseError = (revokeBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdRevokePostResponse422) & {
+  headers: Headers;
+};
+
+export type revokeBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdRevokePostResponse = (revokeBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdRevokePostResponseSuccess | revokeBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdRevokePostResponseError)
+
+export const getRevokeBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdRevokePostUrl = (claimId: string,) => {
+
+
+
+
+  return `/api/v1/admin/system/backup-sync/bootstrap-claims/${claimId}/revoke`
+}
+
+export const revokeBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdRevokePost = async (claimId: string, options?: RequestInit): Promise<revokeBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdRevokePostResponse> => {
+
+  return customInstance<revokeBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdRevokePostResponse>(getRevokeBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdRevokePostUrl(claimId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getRevokeBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdRevokePostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdRevokePost>>, TError,{claimId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof revokeBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdRevokePost>>, TError,{claimId: string}, TContext> => {
+
+const mutationKey = ['revokeBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdRevokePost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof revokeBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdRevokePost>>, {claimId: string}> = (props) => {
+          const {claimId} = props ?? {};
+
+          return  revokeBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdRevokePost(claimId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RevokeBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdRevokePostMutationResult = NonNullable<Awaited<ReturnType<typeof revokeBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdRevokePost>>>
+
+    export type RevokeBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdRevokePostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 撤销备份机临时接入命令
+ */
+export const useRevokeBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdRevokePost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdRevokePost>>, TError,{claimId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof revokeBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdRevokePost>>,
+        TError,
+        {claimId: string},
+        TContext
+      > => {
+      return useMutation(getRevokeBackupBootstrapClaimApiV1AdminSystemBackupSyncBootstrapClaimsClaimIdRevokePostMutationOptions(options), queryClient);
     }
     /**
  * @summary 获取备份同步队列

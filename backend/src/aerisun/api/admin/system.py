@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request, status
 from sqlalchemy.orm import Session
 
+from aerisun.api.request_base import public_base_url_from_request
 from aerisun.core.db import get_session
 from aerisun.core.settings import get_settings
 from aerisun.domain.agent.schemas import McpAdminConfigRead, McpAdminConfigUpdate
@@ -28,7 +29,13 @@ from aerisun.domain.ops.backup_sync import (
     acknowledge_backup_recovery_key as _acknowledge_backup_recovery_key,
 )
 from aerisun.domain.ops.backup_sync import (
+    create_backup_bootstrap_claim as _create_backup_bootstrap_claim,
+)
+from aerisun.domain.ops.backup_sync import (
     ensure_backup_credentials as _ensure_backup_credentials,
+)
+from aerisun.domain.ops.backup_sync import (
+    get_backup_bootstrap_claim as _get_backup_bootstrap_claim,
 )
 from aerisun.domain.ops.backup_sync import (
     get_backup_sync_config as _get_backup_sync_config,
@@ -49,7 +56,16 @@ from aerisun.domain.ops.backup_sync import (
     list_backup_sync_runs as _list_backup_sync_runs,
 )
 from aerisun.domain.ops.backup_sync import (
+    overwrite_remote_backup_history as _overwrite_remote_backup_history,
+)
+from aerisun.domain.ops.backup_sync import (
     pause_backup_sync as _pause_backup_sync,
+)
+from aerisun.domain.ops.backup_sync import (
+    probe_backup_machine_connection as _probe_backup_machine_connection,
+)
+from aerisun.domain.ops.backup_sync import (
+    reset_backup_sync_system as _reset_backup_sync_system,
 )
 from aerisun.domain.ops.backup_sync import (
     restore_backup_commit as _restore_backup_commit,
@@ -64,6 +80,9 @@ from aerisun.domain.ops.backup_sync import (
     retry_backup_sync_run as _retry_backup_sync_run,
 )
 from aerisun.domain.ops.backup_sync import (
+    revoke_backup_bootstrap_claim as _revoke_backup_bootstrap_claim,
+)
+from aerisun.domain.ops.backup_sync import (
     test_backup_sync_config as _test_backup_sync_config,
 )
 from aerisun.domain.ops.backup_sync import (
@@ -75,6 +94,8 @@ from aerisun.domain.ops.backup_sync import (
 from aerisun.domain.ops.config_revisions import capture_config_resource, create_config_revision
 from aerisun.domain.ops.schemas import (
     AuditLogRead,
+    BackupBootstrapClaimCreate,
+    BackupBootstrapClaimRead,
     BackupCommitRead,
     BackupCredentialAcknowledgeWrite,
     BackupCredentialEnsureRead,
@@ -87,6 +108,7 @@ from aerisun.domain.ops.schemas import (
     BackupSyncConfig,
     BackupSyncConfigTestRead,
     BackupSyncConfigUpdate,
+    BackupSystemResetRead,
     ConfigRevisionDetailRead,
     ConfigRevisionListItemRead,
     ConfigRevisionRestoreWrite,
@@ -349,7 +371,7 @@ def ensure_backup_credentials(
 @router.post(
     "/backup-sync/recovery-key/export",
     response_model=BackupCredentialExportRead,
-    summary="生成、导出或轮换恢复私钥",
+    summary="设置或轮换备份恢复密码",
 )
 def export_backup_recovery_key(
     payload: BackupCredentialExportWrite,
@@ -362,7 +384,7 @@ def export_backup_recovery_key(
 @router.post(
     "/backup-sync/recovery-key/acknowledge",
     response_model=BackupCredentialEnsureRead,
-    summary="确认已复制或下载恢复私钥",
+    summary="确认备份恢复密码已设置",
 )
 def acknowledge_backup_recovery_key(
     payload: BackupCredentialAcknowledgeWrite,
@@ -388,6 +410,86 @@ def test_backup_sync_config(
     session: Session = Depends(get_session),
 ) -> BackupSyncConfigTestRead:
     return _test_backup_sync_config(session, payload)
+
+
+@router.post(
+    "/backup-sync/connection/probe",
+    response_model=BackupSyncConfigTestRead,
+    summary="快速检测备份机连接",
+)
+def probe_backup_machine_connection(
+    payload: BackupSyncConfigUpdate,
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> BackupSyncConfigTestRead:
+    return _probe_backup_machine_connection(session, payload)
+
+
+@router.post(
+    "/backup-sync/remote-history/overwrite",
+    response_model=BackupSyncConfigTestRead,
+    summary="归档并覆盖远端备份历史",
+)
+def overwrite_remote_backup_history(
+    payload: BackupSyncConfigUpdate,
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> BackupSyncConfigTestRead:
+    return _overwrite_remote_backup_history(session, payload)
+
+
+@router.post("/backup-sync/reset", response_model=BackupSystemResetRead, summary="重置本机备份系统")
+def reset_backup_sync_system(
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> BackupSystemResetRead:
+    return _reset_backup_sync_system(session)
+
+
+@router.post(
+    "/backup-sync/bootstrap-claims",
+    response_model=BackupBootstrapClaimRead,
+    status_code=status.HTTP_201_CREATED,
+    summary="创建备份机临时接入命令",
+)
+def create_backup_bootstrap_claim(
+    payload: BackupBootstrapClaimCreate,
+    request: Request,
+    admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> BackupBootstrapClaimRead:
+    return _create_backup_bootstrap_claim(
+        session,
+        payload,
+        created_by_admin_id=admin.id,
+        public_base_url=public_base_url_from_request(request),
+    )
+
+
+@router.get(
+    "/backup-sync/bootstrap-claims/{claim_id}",
+    response_model=BackupBootstrapClaimRead,
+    summary="获取备份机临时接入状态",
+)
+def get_backup_bootstrap_claim(
+    claim_id: str,
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> BackupBootstrapClaimRead:
+    return _get_backup_bootstrap_claim(session, claim_id)
+
+
+@router.post(
+    "/backup-sync/bootstrap-claims/{claim_id}/revoke",
+    response_model=BackupBootstrapClaimRead,
+    summary="撤销备份机临时接入命令",
+)
+def revoke_backup_bootstrap_claim(
+    claim_id: str,
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> BackupBootstrapClaimRead:
+    return _revoke_backup_bootstrap_claim(session, claim_id)
 
 
 @router.get("/backup-sync/queue", response_model=list[BackupQueueItemRead], summary="获取备份同步队列")

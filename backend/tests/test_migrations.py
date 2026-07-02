@@ -9,7 +9,7 @@ from alembic.script import ScriptDirectory
 from aerisun.core.db import dispose_engine, run_database_migrations
 from aerisun.core.settings import get_settings
 
-CURRENT_SCHEMA_HEAD = "0008_visit_record_order_index"
+CURRENT_SCHEMA_HEAD = "0009_backup_bootstrap_claims"
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
 
@@ -69,6 +69,7 @@ def test_active_alembic_history_is_reset_to_single_production_baseline_head() ->
         "0006_visit_record_user_agent_fields.py",
         "0007_comment_feedback_config.py",
         "0008_visit_record_order_index.py",
+        "0009_backup_bootstrap_claims.py",
     ]
     assert not (BACKEND_ROOT / "alembic" / "legacy_versions").exists()
 
@@ -84,6 +85,7 @@ def test_run_database_migrations_creates_baseline_schema_and_journal(tmp_path, m
     assert "site_profile" in tables
     assert "community_config" in tables
     assert "config_revisions" in tables
+    assert "backup_bootstrap_claims" in tables
     assert "_aerisun_data_migrations" in tables
     assert "page_display_options" not in tables
     assert "admin_email_password_hash" not in _get_columns(db_path, "site_auth_config")

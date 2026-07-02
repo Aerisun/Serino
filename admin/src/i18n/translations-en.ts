@@ -579,40 +579,88 @@ export const enTranslations: TranslationDict = {
     "system.localKeysGenerated": "Local backup keys generated",
     "system.localKeysConfirmed": "Local backup keys confirmed",
     "system.localKeysReady": "Local backup keys are ready",
-    "system.exportRecoveryKey": "Get Recovery Key",
+    "system.exportRecoveryKey": "Set Recovery Password",
     "system.rotateRecoveryKey": "Rotate Recovery Key",
     "system.rotateRecoveryKeyDescription":
       "This creates a new recovery key for future backups. Historical keys stay on the server so older backups remain restorable.",
     "system.exportRecoveryKeyDescription":
-      "Enter a password and the system will re-wrap the database escrow copy, then show you the current private key for copying and offline storage.",
-    "system.recoveryKeyPassword": "Recovery Key Password",
+      "Enter a recovery password. Serino will use it to protect the recovery key package without showing the underlying key in the normal flow.",
+    "system.recoveryKeyPassword": "Recovery Password",
     "system.recoveryKeyPasswordDescription":
-      "This password encrypts the recovery-key escrow copy stored in the database. If only the database survives, you can still extract the key with this password and the companion tool.",
+      "This password protects the recovery key package. If the Serino host is lost and only the backup machine remains, this password is required to restore data.",
     "system.recoveryKeyOneTimeWarning":
-      "Copy and store this recovery key now. The server keeps an encrypted escrow copy, but you should still keep your own offline copy.",
-    "system.recoveryKeyPrivatePem": "Recovery Private Key",
+      "Store the recovery password carefully. If it is forgotten, old backups cannot be decrypted.",
+    "system.recoveryKeyPrivatePem": "Recovery Key",
     "system.recoveryKeyPrivatePemDescription":
-      "This is the raw PEM-formatted recovery private key. Copy or download it and store it somewhere safe.",
+      "This is low-level recovery key material kept only for compatibility with older tools. The normal backup flow does not show it.",
     "system.copyRecoveryKey": "Copy Recovery Key",
     "system.downloadRecoveryKey": "Download Recovery Key",
     "system.recoveryKeyCopied": "Recovery key copied",
-    "system.recoveryKeyExported": "Recovery key exported",
-    "system.recoveryKeyRotated": "A new recovery key has been created",
+    "system.recoveryKeyExported": "Recovery password set",
+    "system.recoveryKeyRotated": "Recovery key rotated",
+    "system.setRecoveryPassword": "Set Recovery Password",
+    "system.confirmSetRecoveryPassword": "Confirm",
+    "system.recoveryPasswordSet": "Recovery password has been set",
+    "system.setRecoveryPasswordDescription":
+      "This password is never stored in plaintext. Use a password you can keep long term; if it is forgotten, old backups cannot be recovered.",
+    "system.recoveryPasswordImportantWarning":
+      "Important: this password is required for disaster recovery. If it is forgotten, old backups cannot be decrypted.",
+    "system.recoveryPasswordConfirm": "Enter recovery password again",
+    "system.recoveryPasswordMismatch": "The two recovery passwords do not match",
     "system.testBackupConfig": "Test Config",
     "system.testingBackupConfig": "Testing...",
     "system.backupConfigTestSuccess": "Backup configuration test passed",
     "system.backupConfigTestFailed": "Backup configuration test failed",
+    "system.backupProbeSuccess": "Backup machine check complete",
+    "system.backupProbeFailed": "Backup machine is not connected yet",
+    "system.backupProbeNeedsBootstrap": "Generate a temporary command and run it in the backup machine terminal.",
+    "system.backupConnectionStatus": "Connection Status",
+    "system.backupConnectionNotConfigured": "Not Connected",
+    "system.fixedBackupDirectory": "Fixed Backup Directory",
+    "system.backupProbeLatency": "Check Time",
     "system.backupConfigTestStatus": "Test Result",
     "system.backupConfigTestOk": "Reachable",
     "system.backupConfigTestLatency": "Latency",
     "system.recoveryKeyRequiredBeforeSave":
-      "Before the first backup can be configured, you must generate the recovery key, set a password, and copy or download the key for safekeeping. Saving is blocked until that step is complete.",
+      "Before the first backup can be configured, set a recovery password. Saving is blocked until that step is complete.",
     "system.recoveryKeyMustBeCopiedBeforeSave":
-      "You just generated a new recovery key. Copy or download it before saving the backup configuration.",
+      "Confirm the recovery password before saving the backup configuration.",
     "system.prepareLocalKeys": "Prepare Local Keys",
     "system.saveAndRunFirstBackup": "Save and Run First Backup",
+    "system.testAndStartBackup": "Test and Start Backup",
+    "system.testAndSave": "Test and Save",
+    "system.backupConfigSaved": "Backup configuration saved",
+    "system.startBackupAction": "Start Backup",
+    "system.detectBackupMachine": "Detect",
     "system.firstBackupStarted":
       "Settings saved and the first backup has been triggered",
+    "system.backupBootstrapStepHost": "Step 1",
+    "system.backupBootstrapStepCommand": "Step 2",
+    "system.backupBootstrapStepStart": "Step 3",
+    "system.backupBootstrapHostTitle": "Enter Backup Machine Address",
+    "system.backupBootstrapCommandTitle": "Run command on backup machine",
+    "system.backupBootstrapConnected": "Connected",
+    "system.backupBootstrapAwaiting": "Waiting for command",
+    "system.backupMachineAddress": "Backup Machine Address",
+    "system.backupMachineFixedDefaults":
+      "Only the address is required. Serino always uses the serino-backup user and /srv/serino-backups directory.",
+    "system.backupDetectTitle": "Connect Backup Machine",
+    "system.backupDetectDescription": "Connect the backup machine.",
+    "system.backupBootstrapGenerate": "Generate Temporary Command",
+    "system.backupBootstrapRegenerate": "Regenerate",
+    "system.backupBootstrapRevoke": "Revoke Command",
+    "system.copyBootstrapCommand": "Copy Command",
+    "system.backupBootstrapCommandReady": "Temporary command generated",
+    "system.backupBootstrapCommandCopied": "Command copied",
+    "system.backupBootstrapRevoked": "Temporary command revoked",
+    "system.backupBootstrapHostRequired": "Enter the backup machine address first",
+    "system.backupBootstrapCommandEmpty":
+      "A temporary command will appear here after generation.",
+    "system.backupBootstrapStatusPending": "Waiting to run",
+    "system.backupBootstrapStatusSucceeded": "Script completed",
+    "system.backupBootstrapStatusFailed": "Script failed",
+    "system.backupBootstrapStatusExpired": "Temporary command expired",
+    "system.backupBootstrapStatusRevoked": "Temporary command revoked",
     "system.quickSetupTitle": "Lower-Friction Setup",
     "system.quickSetupDescription":
       "Saving now automatically confirms or generates local backup keys. For a new setup, the fastest path is Save and Run First Backup.",
@@ -629,12 +677,44 @@ export const enTranslations: TranslationDict = {
     "system.backupsTabs.records": "Records",
     "system.backupsTabs.recordsDescription":
       "Queues, runs, and restoreable commits",
+    "system.backupConnectTitle": "Connect Backup Machine",
+    "system.backupForeignHistoryWarning":
+      "This backup machine already has another backup history. To avoid data mixing, Serino will not write to it directly.",
+    "system.restoreThisHistory": "Restore This History",
+    "system.overwriteRemoteHistory": "Overwrite Remote History",
+    "system.backupOverwriteHistoryConfirm":
+      "Overwrite the remote backup history? Serino will archive the old history first, then create a new history for this site.",
+    "system.backupOverwriteHistoryDone": "Remote history overwritten",
+    "system.backupRestoreRemoteHistoryPending":
+      "Disaster recovery import still needs recovery password and backup-version selection. This version blocks direct writes first.",
+    "system.recoveryPasswordTitle": "Set Recovery Password",
+    "system.recoveryPasswordReadyDescription":
+      "The recovery password is set. It cannot be set again while continuing the same backup history.",
+    "system.recoveryPasswordRequiredDescription":
+      "Set a recovery password before creating or overwriting backup history. Disaster recovery will require it.",
+    "system.recoveryPasswordAlreadySet": "Already Set",
+    "system.forgotRecoveryPassword": "Forgot Password?",
+    "system.forgotRecoveryPasswordDescription":
+      "The recovery password cannot be recovered. Run this command as a sudo user on the backup machine to clear the remote backup and backup user, then reset the local backup system in Advanced Options.",
+    "system.backupCleanupCommandCopied": "Cleanup command copied",
+    "system.startBackupTitle": "Start Backup",
+    "system.startBackupDescription":
+      "After detection is safe and the recovery password is set, start the first backup.",
+    "system.startBackupAfterDetection":
+      "Run detection first and resolve any remote history conflict.",
+    "system.startBackupNow": "Start Backup",
+    "system.resetBackupSystem": "Reset Backup System",
+    "system.resetBackupSystemDescription":
+      "Clear local backup settings, recovery password state, queues, and run records, then start setup again. Content data is not deleted.",
+    "system.resetBackupSystemConfirm":
+      "Reset the local backup system? This clears local backup settings and recovery password state, but does not delete site content.",
+    "system.resetBackupSystemDone": "Local backup system reset",
     "system.backupBasicSettings": "Basic Settings",
     "system.backupBasicSettingsDescription":
-      "Start with the SFTP connection and scheduled sync. The recovery key directory lives in advanced settings.",
+      "Enter the backup machine address, run detection, then set the recovery password.",
     "system.backupAdvancedSettings": "Advanced Settings",
     "system.backupAdvancedSettingsDescription":
-      "This section contains the credential directory reference, plus site and retry settings that rarely change.",
+      "This section contains rarely changed retry, port, and reset options.",
     "system.advancedOptions": "Advanced Options",
     "system.backupScheduleTitle": "Scheduled Sync",
     "system.backupScheduleAlwaysOnDescription":
@@ -659,9 +739,6 @@ export const enTranslations: TranslationDict = {
     "system.credentialRef": "Credential Ref",
     "system.credentialRefDescription":
       "The recommended default is aerisun-backup-source, which maps to the credential directory name.",
-    "system.localBackupKeyDirLabel": "Local Backup Key Directory",
-    "system.localBackupKeyDirDescription":
-      "This is not your SSH login credential. The system reads this local recovery key set to encrypt the secrets backup, and it is also used later to decrypt runtime data when advanced encryption is enabled.",
     "system.credentialRefGuideTitle": "Credential Directory",
     "system.credentialRefGuideDescription":
       "The credential reference maps to a subdirectory under the default backup-sync path. The recommended default is aerisun-backup-source. Make sure the four files below exist inside that directory.",
@@ -695,12 +772,12 @@ export const enTranslations: TranslationDict = {
     "system.sshUsernameDescription":
       "This is the username for logging into the SFTP server. It is not the local backup key directory name.",
     "system.runtimeEncryptionLabel": "Encrypt Database and Media Backups",
+    "system.runtimeEncryptionLabelEnabled": "Database and Media Backup Encryption On",
+    "system.runtimeEncryptionLabelDisabled": "Database and Media Backup Encryption Off",
     "system.runtimeEncryptionDescription":
       "When off, databases, media, and workflow files are stored remotely as compressed payloads. When on, runtime data is encrypted before upload. Secrets are always encrypted.",
     "system.runtimeEncryptionEnabled": "Runtime data encryption is enabled",
     "system.runtimeEncryptionDisabled": "Runtime data encryption is disabled",
-    "system.recoveryKeyFingerprint": "Recovery Key Fingerprint",
-    "system.recoveryKeyActions": "Recovery Key Management",
     "system.syncEnabled": "Enable scheduled secure sync",
     "system.syncEnabledDescription":
       "When enabled, the system will enqueue and execute incremental syncs on schedule.",

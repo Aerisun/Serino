@@ -6,6 +6,8 @@ import json
 import logging
 import os
 import re
+import secrets
+import shlex
 import shutil
 import sqlite3
 import subprocess
@@ -19,6 +21,7 @@ from datetime import datetime, timedelta
 from pathlib import Path, PurePosixPath
 from types import SimpleNamespace
 from typing import Any, Protocol
+from urllib.parse import urlparse
 
 import zstandard as zstd
 from cryptography.hazmat.primitives import hashes, serialization
@@ -35,6 +38,9 @@ from aerisun.core.time import normalize_shanghai_datetime, shanghai_now
 from aerisun.domain.exceptions import ResourceNotFound, StateConflict, ValidationError
 from aerisun.domain.ops import repository as repo
 from aerisun.domain.ops.schemas import (
+    BackupBootstrapClaimCreate,
+    BackupBootstrapClaimRead,
+    BackupBootstrapClaimResultWrite,
     BackupCommitRead,
     BackupCredentialAcknowledgeWrite,
     BackupCredentialEnsureRead,
@@ -46,6 +52,7 @@ from aerisun.domain.ops.schemas import (
     BackupSyncConfig,
     BackupSyncConfigTestRead,
     BackupSyncConfigUpdate,
+    BackupSystemResetRead,
     BackupTransportConfig,
 )
 
@@ -53,11 +60,20 @@ CHUNK_SIZE_BYTES = 8 * 1024 * 1024
 BACKUP_JOB_NAME = "backup_sync"
 CHUNK_DIGEST_ALGORITHM = "sha256"
 MANIFEST_VERSION = 1
+BACKUP_BOOTSTRAP_DEFAULT_TTL_MINUTES = 10
+BACKUP_BOOTSTRAP_DEFAULT_REMOTE_USERNAME = "serino-backup"
+BACKUP_BOOTSTRAP_DEFAULT_REMOTE_PATH = "/srv/serino-backups"
+BACKUP_BOOTSTRAP_DEFAULT_CREDENTIAL_REF = "aerisun-backup-source"
+BACKUP_BOOTSTRAP_SSH_KEY_NAME = "serino_backup_ed25519"
+BACKUP_REPO_IDENTITY_VERSION = 1
+BACKUP_SYNC_CONFIG_TEST_TIMEOUT_SECONDS = 3
 
 _restore_lock = threading.Lock()
 _restore_in_progress = threading.Event()
 
 _SFTP_UNSAFE_RE = re.compile(r"[\n\r]")
+_SSH_NAME_RE = re.compile(r"^[A-Za-z0-9._-]+$")
+_SSH_HOST_UNSAFE_RE = re.compile(r"[\s/@]")
 
 logger = logging.getLogger(__name__)
 
@@ -463,6 +479,483 @@ def acknowledge_backup_recovery_key(
     )
 
 
+def _token_hash(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def _backup_ssh_dir() -> Path:
+    return get_settings().data_dir / ".ssh"
+
+
+def _backup_ssh_private_key_path() -> Path:
+    return _backup_ssh_dir() / BACKUP_BOOTSTRAP_SSH_KEY_NAME
+
+
+def _backup_ssh_public_key_path() -> Path:
+    return _backup_ssh_dir() / f"{BACKUP_BOOTSTRAP_SSH_KEY_NAME}.pub"
+
+
+def _backup_ssh_config_path() -> Path:
+    return _backup_ssh_dir() / "config"
+
+
+def _backup_ssh_known_hosts_path() -> Path:
+    return _backup_ssh_dir() / "known_hosts"
+
+
+def backup_remote_cleanup_command() -> str:
+    return "sudo bash -c " + shlex.quote(
+        "set -euo pipefail\n"
+        f"userdel -r {BACKUP_BOOTSTRAP_DEFAULT_REMOTE_USERNAME} >/dev/null 2>&1 || true\n"
+        f"rm -rf {BACKUP_BOOTSTRAP_DEFAULT_REMOTE_PATH}\n"
+        'echo "Serino backup user and backup data have been removed."'
+    )
+
+
+def _local_repo_id(*, site_slug: str, credential_ref: str, recovery_key_fingerprint: str) -> str:
+    payload = f"{site_slug}:{credential_ref}:{recovery_key_fingerprint}"
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _repo_identity_payload(config, credentials: BackupCredentialBundle) -> dict[str, Any]:
+    repo_id = _local_repo_id(
+        site_slug=str(config.site_slug),
+        credential_ref=str(config.credential_ref),
+        recovery_key_fingerprint=credentials.secrets_fingerprint,
+    )
+    return {
+        "version": BACKUP_REPO_IDENTITY_VERSION,
+        "repo_id": repo_id,
+        "site_slug": str(config.site_slug),
+        "credential_ref": str(config.credential_ref),
+        "recovery_key_fingerprint": credentials.secrets_fingerprint,
+        "created_at": _utcnow().isoformat(),
+    }
+
+
+def _active_local_repo_id(session: Session, *, site_slug: str, credential_ref: str | None) -> str | None:
+    if not credential_ref:
+        return None
+    active = repo.get_active_backup_recovery_key(session, credential_ref=credential_ref)
+    if active is None:
+        return None
+    return _local_repo_id(
+        site_slug=site_slug,
+        credential_ref=credential_ref,
+        recovery_key_fingerprint=active.secrets_fingerprint,
+    )
+
+
+def _fingerprint_openssh_public_key(public_key: str) -> str:
+    parts = public_key.strip().split()
+    try:
+        raw_key = base64.b64decode(parts[1]) if len(parts) >= 2 else public_key.encode("utf-8")
+    except Exception:
+        raw_key = public_key.encode("utf-8")
+    digest = base64.b64encode(hashlib.sha256(raw_key).digest()).decode("ascii").rstrip("=")
+    return f"SHA256:{digest}"
+
+
+def ensure_backup_ssh_keypair() -> tuple[str, str]:
+    ssh_dir = _backup_ssh_dir()
+    private_path = _backup_ssh_private_key_path()
+    public_path = _backup_ssh_public_key_path()
+    ssh_dir.mkdir(parents=True, exist_ok=True)
+    os.chmod(ssh_dir, 0o700)
+
+    if not private_path.exists():
+        proc = subprocess.run(
+            [
+                "ssh-keygen",
+                "-t",
+                "ed25519",
+                "-f",
+                str(private_path),
+                "-N",
+                "",
+                "-C",
+                "serino-backup",
+            ],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        if proc.returncode != 0:
+            raise ValidationError(proc.stderr.strip() or "Failed to generate backup SSH key")
+    elif not public_path.exists():
+        proc = subprocess.run(
+            ["ssh-keygen", "-y", "-f", str(private_path)],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        if proc.returncode != 0:
+            raise ValidationError(proc.stderr.strip() or "Failed to derive backup SSH public key")
+        public_path.write_text(proc.stdout.strip() + "\n", encoding="utf-8")
+
+    if not public_path.exists():
+        raise ValidationError("Backup SSH public key was not generated")
+    os.chmod(private_path, 0o600)
+    os.chmod(public_path, 0o644)
+    public_key = public_path.read_text(encoding="utf-8").strip()
+    if not public_key.startswith(("ssh-ed25519 ", "ecdsa-", "ssh-rsa ")):
+        raise ValidationError("Backup SSH public key has an unsupported format")
+    return public_key, _fingerprint_openssh_public_key(public_key)
+
+
+def _normalize_bootstrap_host(remote_host: str) -> tuple[str, int | None]:
+    value = remote_host.strip()
+    parsed_port: int | None = None
+    if "://" in value:
+        parsed = urlparse(value)
+        value = parsed.hostname or ""
+        parsed_port = parsed.port
+    elif value.count(":") == 1 and value.rsplit(":", 1)[1].isdigit():
+        value, raw_port = value.rsplit(":", 1)
+        parsed_port = int(raw_port)
+    value = value.strip().rstrip(".")
+    if not value or _SSH_HOST_UNSAFE_RE.search(value):
+        raise ValidationError("请填写备份机 IPv4 地址或域名，不要包含用户名、路径或空格。")
+    if _SFTP_UNSAFE_RE.search(value):
+        raise ValidationError("Backup host contains unsafe characters")
+    return value, parsed_port
+
+
+def _normalize_bootstrap_username(remote_username: str) -> str:
+    value = remote_username.strip() or BACKUP_BOOTSTRAP_DEFAULT_REMOTE_USERNAME
+    if not _SSH_NAME_RE.match(value):
+        raise ValidationError("备份机用户名只能包含字母、数字、点、下划线或短横线。")
+    return value
+
+
+def _normalize_bootstrap_path(remote_path: str) -> str:
+    value = remote_path.strip() or BACKUP_BOOTSTRAP_DEFAULT_REMOTE_PATH
+    if _SFTP_UNSAFE_RE.search(value):
+        raise ValidationError("Backup path contains unsafe characters")
+    if not value.startswith("/"):
+        raise ValidationError("备份目录必须是绝对路径，例如 /srv/serino-backups。")
+    return value.rstrip("/") or "/"
+
+
+def _normalize_public_base_url(public_base_url: str | None = None) -> str:
+    value = (public_base_url or get_settings().site_url or "").strip().rstrip("/")
+    if not value:
+        value = "http://localhost:8000"
+    return value
+
+
+def _bootstrap_setup_url(*, token: str, public_base_url: str | None = None) -> str:
+    return f"{_normalize_public_base_url(public_base_url)}/api/v1/backup/setup/{token}.sh"
+
+
+def _bootstrap_result_url(*, token: str, public_base_url: str | None = None) -> str:
+    return f"{_normalize_public_base_url(public_base_url)}/api/v1/backup/setup/{token}/result"
+
+
+def _bootstrap_setup_command(*, token: str, public_base_url: str | None = None) -> str:
+    return f"curl -fsSL {shlex.quote(_bootstrap_setup_url(token=token, public_base_url=public_base_url))} | sudo bash"
+
+
+def _write_backup_ssh_config(*, remote_host: str, remote_port: int, remote_username: str) -> None:
+    ssh_dir = _backup_ssh_dir()
+    ssh_dir.mkdir(parents=True, exist_ok=True)
+    os.chmod(ssh_dir, 0o700)
+    config_path = _backup_ssh_config_path()
+    private_path = _backup_ssh_private_key_path()
+    known_hosts_path = _backup_ssh_known_hosts_path()
+    marker = f"SERINO BACKUP {remote_host}:{remote_port}:{remote_username}"
+    begin = f"# BEGIN {marker}"
+    end = f"# END {marker}"
+    block = "\n".join(
+        [
+            begin,
+            f"Host {remote_host}",
+            f"  HostName {remote_host}",
+            f"  User {remote_username}",
+            f"  Port {remote_port}",
+            f"  IdentityFile {private_path}",
+            "  IdentitiesOnly yes",
+            "  StrictHostKeyChecking accept-new",
+            f"  UserKnownHostsFile {known_hosts_path}",
+            end,
+            "",
+        ]
+    )
+    existing = config_path.read_text(encoding="utf-8") if config_path.exists() else ""
+    lines = existing.splitlines()
+    next_lines: list[str] = []
+    skipping = False
+    for line in lines:
+        if line == begin:
+            skipping = True
+            continue
+        if skipping and line == end:
+            skipping = False
+            continue
+        if not skipping:
+            next_lines.append(line)
+    content = "\n".join(line for line in next_lines if line is not None).rstrip()
+    config_path.write_text((content + "\n\n" if content else "") + block, encoding="utf-8")
+    os.chmod(config_path, 0o600)
+
+
+def _claim_read(
+    claim,
+    *,
+    token: str | None = None,
+    public_base_url: str | None = None,
+) -> BackupBootstrapClaimRead:
+    return BackupBootstrapClaimRead(
+        id=claim.id,
+        status=claim.status,
+        remote_host=claim.remote_host,
+        remote_port=claim.remote_port,
+        remote_path=claim.remote_path,
+        remote_username=claim.remote_username,
+        site_slug=claim.site_slug,
+        credential_ref=claim.credential_ref,
+        public_key_fingerprint=claim.public_key_fingerprint,
+        expires_at=claim.expires_at,
+        used_at=claim.used_at,
+        completed_at=claim.completed_at,
+        revoked_at=claim.revoked_at,
+        last_error=claim.last_error,
+        setup_url=_bootstrap_setup_url(token=token, public_base_url=public_base_url) if token else None,
+        setup_command=_bootstrap_setup_command(token=token, public_base_url=public_base_url) if token else None,
+        created_at=claim.created_at,
+        updated_at=claim.updated_at,
+    )
+
+
+def _expire_claim_if_needed(session: Session, claim) -> None:
+    if claim.status in ("pending", "failed") and _utcnow() > normalize_shanghai_datetime(claim.expires_at):
+        claim.status = "expired"
+        claim.last_error = claim.last_error or "临时接入链接已过期。"
+        session.commit()
+        session.refresh(claim)
+
+
+def create_backup_bootstrap_claim(
+    session: Session,
+    payload: BackupBootstrapClaimCreate,
+    *,
+    created_by_admin_id: str | None,
+    public_base_url: str | None = None,
+) -> BackupBootstrapClaimRead:
+    host, parsed_port = _normalize_bootstrap_host(payload.remote_host)
+    port = int(parsed_port or payload.remote_port or 22)
+    username = BACKUP_BOOTSTRAP_DEFAULT_REMOTE_USERNAME
+    remote_path = BACKUP_BOOTSTRAP_DEFAULT_REMOTE_PATH
+    site_slug = payload.site_slug.strip() or get_settings().backup_sync_default_site_slug
+    credential_ref = payload.credential_ref.strip() or BACKUP_BOOTSTRAP_DEFAULT_CREDENTIAL_REF
+    public_key, fingerprint = ensure_backup_ssh_keypair()
+    _write_backup_ssh_config(remote_host=host, remote_port=port, remote_username=username)
+
+    now = _utcnow()
+    for old in repo.list_pending_backup_bootstrap_claims_for_target(
+        session,
+        created_by_admin_id=created_by_admin_id,
+        remote_host=host,
+        remote_port=port,
+        remote_username=username,
+        remote_path=remote_path,
+    ):
+        old.status = "revoked"
+        old.revoked_at = now
+        old.last_error = "已生成新的临时接入命令，旧命令自动失效。"
+
+    token = secrets.token_urlsafe(32)
+    claim = repo.create_backup_bootstrap_claim(
+        session,
+        token_hash=_token_hash(token),
+        status="pending",
+        created_by_admin_id=created_by_admin_id,
+        site_slug=site_slug,
+        credential_ref=credential_ref,
+        remote_host=host,
+        remote_port=port,
+        remote_username=username,
+        remote_path=remote_path,
+        public_key_pem=public_key,
+        public_key_fingerprint=fingerprint,
+        expires_at=now + timedelta(minutes=payload.ttl_minutes or BACKUP_BOOTSTRAP_DEFAULT_TTL_MINUTES),
+        result_json={},
+    )
+    session.commit()
+    session.refresh(claim)
+    return _claim_read(claim, token=token, public_base_url=public_base_url)
+
+
+def get_backup_bootstrap_claim(session: Session, claim_id: str) -> BackupBootstrapClaimRead:
+    claim = repo.get_backup_bootstrap_claim(session, claim_id)
+    if claim is None:
+        raise ResourceNotFound("Backup bootstrap claim not found")
+    _expire_claim_if_needed(session, claim)
+    return _claim_read(claim)
+
+
+def revoke_backup_bootstrap_claim(session: Session, claim_id: str) -> BackupBootstrapClaimRead:
+    claim = repo.get_backup_bootstrap_claim(session, claim_id)
+    if claim is None:
+        raise ResourceNotFound("Backup bootstrap claim not found")
+    _expire_claim_if_needed(session, claim)
+    if claim.status in ("pending", "failed"):
+        claim.status = "revoked"
+        claim.revoked_at = _utcnow()
+        claim.last_error = "已撤销临时接入命令。"
+        session.commit()
+        session.refresh(claim)
+    return _claim_read(claim)
+
+
+def _usable_claim_by_token(session: Session, token: str):
+    claim = repo.get_backup_bootstrap_claim_by_token_hash(session, _token_hash(token))
+    if claim is None:
+        raise ResourceNotFound("Backup setup link not found")
+    _expire_claim_if_needed(session, claim)
+    if claim.status == "expired":
+        raise StateConflict("Backup setup link has expired")
+    if claim.status == "revoked":
+        raise StateConflict("Backup setup link has been revoked")
+    if claim.status == "succeeded":
+        raise StateConflict("Backup setup link has already been used")
+    return claim
+
+
+def render_backup_bootstrap_script(
+    session: Session,
+    *,
+    token: str,
+    public_base_url: str | None = None,
+) -> str:
+    claim = _usable_claim_by_token(session, token)
+    now = _utcnow()
+    claim.used_at = claim.used_at or now
+    session.commit()
+    session.refresh(claim)
+    return _render_backup_bootstrap_script(claim, token=token, public_base_url=public_base_url)
+
+
+def register_backup_bootstrap_result(
+    session: Session,
+    *,
+    token: str,
+    payload: BackupBootstrapClaimResultWrite,
+) -> BackupBootstrapClaimRead:
+    claim = _usable_claim_by_token(session, token)
+    now = _utcnow()
+    message = (payload.message or "").strip()
+    claim.result_json = {"status": payload.status, "message": message, "details": payload.details}
+    if payload.status == "succeeded":
+        claim.status = "succeeded"
+        claim.completed_at = now
+        claim.last_error = None
+        _write_backup_ssh_config(
+            remote_host=claim.remote_host,
+            remote_port=claim.remote_port,
+            remote_username=claim.remote_username,
+        )
+    else:
+        claim.status = "failed"
+        claim.last_error = message or "备份机脚本执行失败。"
+    session.commit()
+    session.refresh(claim)
+    return _claim_read(claim)
+
+
+def _render_backup_bootstrap_script(claim, *, token: str, public_base_url: str | None = None) -> str:
+    result_url = _bootstrap_result_url(token=token, public_base_url=public_base_url)
+    return f"""#!/usr/bin/env bash
+set -Eeuo pipefail
+
+CLAIM_RESULT_URL={shlex.quote(result_url)}
+REMOTE_USER={shlex.quote(claim.remote_username)}
+REMOTE_PATH={shlex.quote(claim.remote_path)}
+PUBLIC_KEY={shlex.quote(claim.public_key_pem.strip())}
+KEY_FINGERPRINT={shlex.quote(claim.public_key_fingerprint)}
+
+REPORTED=0
+
+json_escape() {{
+  printf '%s' "$1" | sed 's/\\\\/\\\\\\\\/g; s/"/\\\\"/g'
+}}
+
+post_result() {{
+  local status="$1"
+  local message="$2"
+  local escaped
+  escaped="$(json_escape "$message")"
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsS -X POST "$CLAIM_RESULT_URL" \\
+      -H 'Content-Type: application/json' \\
+      --data "{{\\"status\\":\\"$status\\",\\"message\\":\\"$escaped\\"}}" >/dev/null 2>&1 || true
+  fi
+}}
+
+fail() {{
+  local message="$1"
+  echo "ERROR: $message" >&2
+  REPORTED=1
+  post_result failed "$message"
+  exit 1
+}}
+
+trap 'rc=$?; if [ "$rc" -ne 0 ] && [ "$REPORTED" != "1" ]; then post_result failed "setup script failed with exit code $rc"; fi' EXIT
+
+[ "$(id -u)" -eq 0 ] || fail "please run this command with sudo"
+command -v curl >/dev/null 2>&1 || fail "curl is required"
+command -v id >/dev/null 2>&1 || fail "id is required"
+command -v getent >/dev/null 2>&1 || fail "getent is required"
+command -v install >/dev/null 2>&1 || fail "install is required"
+command -v awk >/dev/null 2>&1 || fail "awk is required"
+
+if ! id "$REMOTE_USER" >/dev/null 2>&1; then
+  if command -v useradd >/dev/null 2>&1; then
+    useradd --system --create-home --shell /bin/sh "$REMOTE_USER"
+  elif command -v adduser >/dev/null 2>&1; then
+    adduser --system --home "/home/$REMOTE_USER" --shell /bin/sh "$REMOTE_USER"
+  else
+    fail "useradd or adduser is required"
+  fi
+fi
+
+REMOTE_GROUP="$(id -gn "$REMOTE_USER")"
+REMOTE_HOME="$(getent passwd "$REMOTE_USER" | awk -F: '{{print $6}}')"
+[ -n "$REMOTE_HOME" ] || REMOTE_HOME="/home/$REMOTE_USER"
+
+install -d -m 0700 -o "$REMOTE_USER" -g "$REMOTE_GROUP" "$REMOTE_HOME/.ssh"
+install -d -m 0700 -o "$REMOTE_USER" -g "$REMOTE_GROUP" "$REMOTE_PATH"
+
+AUTHORIZED_KEYS="$REMOTE_HOME/.ssh/authorized_keys"
+TEMP_AUTH="$(mktemp)"
+if [ -f "$AUTHORIZED_KEYS" ]; then
+  awk '
+    index($0, "# BEGIN SERINO BACKUP ") == 1 {{ skip = 1; next }}
+    index($0, "# END SERINO BACKUP ") == 1 {{ skip = 0; next }}
+    skip != 1 {{ print }}
+  ' "$AUTHORIZED_KEYS" > "$TEMP_AUTH"
+else
+  : > "$TEMP_AUTH"
+fi
+
+{{
+  printf '# BEGIN SERINO BACKUP %s\\n' "$KEY_FINGERPRINT"
+  printf 'command="internal-sftp",no-pty,no-port-forwarding,no-X11-forwarding,no-agent-forwarding %s\\n' "$PUBLIC_KEY"
+  printf '# END SERINO BACKUP %s\\n' "$KEY_FINGERPRINT"
+}} >> "$TEMP_AUTH"
+
+install -m 0600 -o "$REMOTE_USER" -g "$REMOTE_GROUP" "$TEMP_AUTH" "$AUTHORIZED_KEYS"
+rm -f "$TEMP_AUTH"
+
+REPORTED=1
+post_result succeeded "backup machine is connected"
+cat <<'MESSAGE'
+Backup machine is connected.
+Return to the Serino admin page and click "Test and Start Backup".
+MESSAGE
+"""
+
+
 def _build_transport_config(config) -> BackupTransportConfig:
     return BackupTransportConfig(
         mode=config.transport_mode,
@@ -553,8 +1046,8 @@ def _config_object_from_payload(payload: BackupSyncConfigUpdate):
         site_slug=payload.site_slug.strip() or settings.backup_sync_default_site_slug,
         remote_host=payload.remote_host,
         remote_port=payload.remote_port or 22,
-        remote_path=payload.remote_path,
-        remote_username=payload.remote_username,
+        remote_path=BACKUP_BOOTSTRAP_DEFAULT_REMOTE_PATH,
+        remote_username=BACKUP_BOOTSTRAP_DEFAULT_REMOTE_USERNAME,
         credential_ref=payload.credential_ref or "aerisun-backup-source",
         encrypt_runtime_data=bool(payload.encrypt_runtime_data),
         enabled=bool(payload.enabled),
@@ -578,7 +1071,10 @@ def get_or_create_backup_sync_config(session: Session):
             transport_mode="sftp",
             site_slug=settings.backup_sync_default_site_slug,
             remote_port=22,
-            credential_ref="aerisun-backup-source",
+            remote_path=BACKUP_BOOTSTRAP_DEFAULT_REMOTE_PATH,
+            remote_username=BACKUP_BOOTSTRAP_DEFAULT_REMOTE_USERNAME,
+            credential_ref=BACKUP_BOOTSTRAP_DEFAULT_CREDENTIAL_REF,
+            encrypt_runtime_data=True,
             max_retries=3,
             retry_backoff_seconds=300,
         )
@@ -589,6 +1085,114 @@ def get_or_create_backup_sync_config(session: Session):
 
 def get_backup_sync_config(session: Session) -> BackupSyncConfig:
     return _config_read(get_or_create_backup_sync_config(session))
+
+
+def _inspect_remote_history(session: Session, *, config, transport) -> dict[str, Any]:
+    local_repo_id = _active_local_repo_id(
+        session,
+        site_slug=str(config.site_slug),
+        credential_ref=str(config.credential_ref) if config.credential_ref else None,
+    )
+    if not hasattr(transport, "fetch_repo_identity"):
+        return {
+            "remote_history_state": "unknown",
+            "remote_history_summary": "备份机可连接，但当前传输层不支持仓库身份检测。",
+            "remote_repo_id": None,
+            "local_repo_id": local_repo_id,
+        }
+    identity = transport.fetch_repo_identity()
+    if identity is None:
+        return {
+            "remote_history_state": "empty",
+            "remote_history_summary": "备份机可连接，未发现历史备份。",
+            "remote_repo_id": None,
+            "local_repo_id": local_repo_id,
+        }
+    remote_repo_id = str(identity.get("repo_id") or "")
+    if local_repo_id and remote_repo_id == local_repo_id:
+        return {
+            "remote_history_state": "current",
+            "remote_history_summary": "发现当前站点的备份历史，可继续增量备份。",
+            "remote_repo_id": remote_repo_id,
+            "local_repo_id": local_repo_id,
+        }
+    return {
+        "remote_history_state": "foreign",
+        "remote_history_summary": "这台备份机上已有另一套备份历史。为避免数据混乱，不能直接写入。",
+        "remote_repo_id": remote_repo_id or None,
+        "local_repo_id": local_repo_id,
+    }
+
+
+def _history_from_identity(session: Session, *, config, identity: dict[str, Any] | None) -> dict[str, Any]:
+    local_repo_id = _active_local_repo_id(
+        session,
+        site_slug=str(config.site_slug),
+        credential_ref=str(config.credential_ref) if config.credential_ref else None,
+    )
+    if identity is None:
+        return {
+            "remote_history_state": "empty",
+            "remote_history_summary": "备份机可连接，未发现历史备份。",
+            "remote_repo_id": None,
+            "local_repo_id": local_repo_id,
+        }
+    remote_repo_id = str(identity.get("repo_id") or "")
+    if local_repo_id and remote_repo_id == local_repo_id:
+        return {
+            "remote_history_state": "current",
+            "remote_history_summary": "发现当前站点的备份历史，可继续增量备份。",
+            "remote_repo_id": remote_repo_id,
+            "local_repo_id": local_repo_id,
+        }
+    return {
+        "remote_history_state": "foreign",
+        "remote_history_summary": "这台备份机上已有另一套备份历史。为避免数据混乱，不能直接写入。",
+        "remote_repo_id": remote_repo_id or None,
+        "local_repo_id": local_repo_id,
+    }
+
+
+def probe_backup_machine_connection(session: Session, payload: BackupSyncConfigUpdate) -> BackupSyncConfigTestRead:
+    config = _config_object_from_payload(payload)
+    _validate_config(config)
+    recovery_ready, recovery_acknowledged, _, _ = _recovery_key_status(session, credential_ref=config.credential_ref)
+    transport = SftpTransport(
+        host=config.remote_host,
+        port=config.remote_port or 22,
+        username=config.remote_username,
+        remote_root=config.remote_path,
+        site_slug=config.site_slug,
+    )
+    started_at = time.perf_counter()
+    connected = False
+    identity: dict[str, Any] | None = None
+    _error_message: str | None = None
+    if hasattr(transport, "probe_repo_identity"):
+        connected, identity, _error_message = transport.probe_repo_identity(timeout_seconds=3)
+    latency_ms = int((time.perf_counter() - started_at) * 1000)
+    if not connected:
+        summary = "还没有接入这台备份机。请生成临时命令，并在备份机上执行。"
+        return BackupSyncConfigTestRead(
+            ok=False,
+            summary=summary,
+            latency_ms=latency_ms,
+            remote_path_preview=str(config.remote_path or ""),
+            recovery_key_ready=recovery_ready,
+            recovery_key_acknowledged=recovery_acknowledged,
+            remote_history_state="unreachable",
+            remote_history_summary=summary,
+        )
+    history = _history_from_identity(session, config=config, identity=identity)
+    return BackupSyncConfigTestRead(
+        ok=True,
+        summary=history["remote_history_summary"] or "备份机可连接。",
+        latency_ms=latency_ms,
+        remote_path_preview=str(config.remote_path or ""),
+        recovery_key_ready=recovery_ready,
+        recovery_key_acknowledged=recovery_acknowledged,
+        **history,
+    )
 
 
 def test_backup_sync_config(session: Session, payload: BackupSyncConfigUpdate) -> BackupSyncConfigTestRead:
@@ -604,8 +1208,8 @@ def test_backup_sync_config(session: Session, payload: BackupSyncConfigUpdate) -
     )
     started_at = time.perf_counter()
     try:
-        transport.begin_session()
-        transport.probe_write_access()
+        transport.begin_session(timeout_seconds=BACKUP_SYNC_CONFIG_TEST_TIMEOUT_SECONDS)
+        transport.probe_write_access(timeout_seconds=BACKUP_SYNC_CONFIG_TEST_TIMEOUT_SECONDS)
     except ValidationError as exc:
         latency_ms = int((time.perf_counter() - started_at) * 1000)
         return BackupSyncConfigTestRead(
@@ -615,15 +1219,19 @@ def test_backup_sync_config(session: Session, payload: BackupSyncConfigUpdate) -
             remote_path_preview=str(config.remote_path or ""),
             recovery_key_ready=recovery_ready,
             recovery_key_acknowledged=recovery_acknowledged,
+            remote_history_state="unreachable",
+            remote_history_summary="无法使用 serino-backup 连接备份机，需要先执行临时接入命令。",
         )
+    history = _inspect_remote_history(session, config=config, transport=transport)
     latency_ms = int((time.perf_counter() - started_at) * 1000)
     return BackupSyncConfigTestRead(
         ok=True,
-        summary="SFTP 连接正常，远端目录可写。",
+        summary=history["remote_history_summary"] or "SFTP 连接正常，远端目录可写。",
         latency_ms=latency_ms,
         remote_path_preview=str(config.remote_path or ""),
         recovery_key_ready=recovery_ready,
         recovery_key_acknowledged=recovery_acknowledged,
+        **history,
     )
 
 
@@ -641,8 +1249,8 @@ def update_backup_sync_config(session: Session, payload: BackupSyncConfigUpdate)
     config.site_slug = payload.site_slug.strip() or get_settings().backup_sync_default_site_slug
     config.remote_host = payload.remote_host
     config.remote_port = payload.remote_port
-    config.remote_path = payload.remote_path
-    config.remote_username = payload.remote_username
+    config.remote_path = BACKUP_BOOTSTRAP_DEFAULT_REMOTE_PATH
+    config.remote_username = BACKUP_BOOTSTRAP_DEFAULT_REMOTE_USERNAME
     config.credential_ref = payload.credential_ref
     config.encrypt_runtime_data = bool(payload.encrypt_runtime_data)
     config.max_retries = max(payload.max_retries, 0)
@@ -651,9 +1259,9 @@ def update_backup_sync_config(session: Session, payload: BackupSyncConfigUpdate)
     _validate_config(config)
     active_recovery_key = repo.get_active_backup_recovery_key(session, credential_ref=str(config.credential_ref))
     if active_recovery_key is None:
-        raise ValidationError("请先获取恢复私钥并妥善保存，然后再保存备份配置。")
+        raise ValidationError("请先设置恢复密码，然后再保存备份配置。")
     if active_recovery_key.acknowledged_at is None:
-        raise ValidationError("请先复制或下载恢复私钥，然后再保存备份配置。")
+        raise ValidationError("请先确认恢复密码，然后再保存备份配置。")
     session.commit()
     session.refresh(config)
     emit_backup_config_updated(
@@ -665,6 +1273,75 @@ def update_backup_sync_config(session: Session, payload: BackupSyncConfigUpdate)
         interval_minutes=int(config.interval_minutes),
     )
     return _config_read(config)
+
+
+def overwrite_remote_backup_history(session: Session, payload: BackupSyncConfigUpdate) -> BackupSyncConfigTestRead:
+    update_backup_sync_config(session, payload)
+    config = get_or_create_backup_sync_config(session)
+    _validate_config(config)
+    active_recovery_key = repo.get_active_backup_recovery_key(session, credential_ref=str(config.credential_ref))
+    if active_recovery_key is None or active_recovery_key.acknowledged_at is None:
+        raise ValidationError("请先设置恢复密码，然后再覆盖远端历史。")
+    credentials = load_backup_credentials(str(config.credential_ref))
+    transport = build_transport(config, credentials)
+    started_at = time.perf_counter()
+    transport.begin_session()
+    remote_repo_id: str | None = None
+    if hasattr(transport, "fetch_repo_identity"):
+        identity = transport.fetch_repo_identity()
+        if identity is not None:
+            remote_repo_id = str(identity.get("repo_id") or "") or None
+    if hasattr(transport, "archive_current_repo"):
+        transport.archive_current_repo(remote_repo_id=remote_repo_id)
+    if hasattr(transport, "write_repo_identity"):
+        transport.write_repo_identity(_repo_identity_payload(config, credentials))
+    latency_ms = int((time.perf_counter() - started_at) * 1000)
+    local_repo_id = _local_repo_id(
+        site_slug=str(config.site_slug),
+        credential_ref=str(config.credential_ref),
+        recovery_key_fingerprint=credentials.secrets_fingerprint,
+    )
+    return BackupSyncConfigTestRead(
+        ok=True,
+        summary="已归档旧备份历史，并为当前站点初始化新的备份历史。",
+        latency_ms=latency_ms,
+        remote_path_preview=str(config.remote_path or BACKUP_BOOTSTRAP_DEFAULT_REMOTE_PATH),
+        recovery_key_ready=True,
+        recovery_key_acknowledged=True,
+        remote_history_state="current",
+        remote_history_summary="当前站点的新备份历史已准备好。",
+        remote_repo_id=local_repo_id,
+        local_repo_id=local_repo_id,
+    )
+
+
+def reset_backup_sync_system(session: Session) -> BackupSystemResetRead:
+    config = get_or_create_backup_sync_config(session)
+    credential_ref = str(config.credential_ref or BACKUP_BOOTSTRAP_DEFAULT_CREDENTIAL_REF)
+    repo.reset_backup_sync_records(session, credential_ref=credential_ref, job_name=BACKUP_JOB_NAME)
+    config.enabled = False
+    config.paused = False
+    config.interval_minutes = get_settings().backup_sync_default_interval_minutes
+    config.transport_mode = "sftp"
+    config.site_slug = get_settings().backup_sync_default_site_slug
+    config.remote_host = ""
+    config.remote_port = 22
+    config.remote_path = BACKUP_BOOTSTRAP_DEFAULT_REMOTE_PATH
+    config.remote_username = BACKUP_BOOTSTRAP_DEFAULT_REMOTE_USERNAME
+    config.credential_ref = BACKUP_BOOTSTRAP_DEFAULT_CREDENTIAL_REF
+    config.encrypt_runtime_data = True
+    config.max_retries = 3
+    config.retry_backoff_seconds = 300
+    config.max_retention_count = 0
+    config.last_scheduled_at = None
+    config.last_synced_at = None
+    config.last_error = None
+    shutil.rmtree(_credential_dir(credential_ref), ignore_errors=True)
+    for path in (_backup_ssh_private_key_path(), _backup_ssh_public_key_path(), _backup_ssh_config_path()):
+        path.unlink(missing_ok=True)
+    session.commit()
+    session.refresh(config)
+    return BackupSystemResetRead(config=_config_read(config), remote_cleanup_command=backup_remote_cleanup_command())
 
 
 def pause_backup_sync(session: Session) -> BackupSyncConfig:
@@ -1001,6 +1678,7 @@ def _execute_run(*, run_id: str, queue_item_id: str) -> None:
     try:
         transport = build_transport(config, credentials)
         transport.begin_session()
+        _ensure_remote_repo_identity(config, credentials, transport)
         commit_id = str(uuid.uuid4())
         manifest = build_manifest(
             commit_id=commit_id,
@@ -1478,6 +2156,18 @@ def build_transport(config, _credentials: BackupCredentialBundle) -> BackupTrans
     )
 
 
+def _ensure_remote_repo_identity(config, credentials: BackupCredentialBundle, transport: BackupTransport) -> None:
+    expected = _repo_identity_payload(config, credentials)
+    if not hasattr(transport, "fetch_repo_identity") or not hasattr(transport, "write_repo_identity"):
+        return
+    current = transport.fetch_repo_identity()
+    if current is None:
+        transport.write_repo_identity(expected)
+        return
+    if current.get("repo_id") != expected["repo_id"]:
+        raise ValidationError("远端备份历史属于另一套 Serino。请先在后台选择恢复这套历史或覆盖远端历史。")
+
+
 class SftpTransport:
     def __init__(self, *, host: str, port: int, username: str, remote_root: str, site_slug: str) -> None:
         self._host = host
@@ -1486,18 +2176,29 @@ class SftpTransport:
         self._remote_root = remote_root.rstrip("/")
         self._site_slug = site_slug
 
-    def begin_session(self) -> dict[str, Any]:
-        self._mkdirs(self._site_root(), self._catalog_root(), self._commits_root(), self._datasets_root())
+    def begin_session(self, *, timeout_seconds: int | None = None) -> dict[str, Any]:
+        self._mkdirs(
+            self._remote_root,
+            self._site_root(),
+            self._catalog_root(),
+            self._commits_root(),
+            self._datasets_root(),
+            timeout_seconds=timeout_seconds,
+        )
         return {"session_id": uuid_str(), "site_slug": self._site_slug}
 
-    def probe_write_access(self) -> None:
+    def probe_write_access(self, *, timeout_seconds: int | None = None) -> None:
         with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False) as tmp:
             tmp.write("backup-probe\n")
             tmp_path = Path(tmp.name)
         probe_remote = f"{self._catalog_root()}/probes/{uuid_str()}.txt"
         try:
-            self._mkdirs(str(PurePosixPath(probe_remote).parent))
-            self._run_batch([f"put {tmp_path} {probe_remote}", f"rm {probe_remote}"])
+            self._mkdirs(str(PurePosixPath(probe_remote).parent), timeout_seconds=timeout_seconds)
+            self._run_batch(
+                [f"put {tmp_path} {probe_remote}", f"rm {probe_remote}"],
+                timeout=float(timeout_seconds) if timeout_seconds is not None else None,
+                quick_connect=timeout_seconds is not None,
+            )
         finally:
             tmp_path.unlink(missing_ok=True)
 
@@ -1507,21 +2208,55 @@ class SftpTransport:
             raise ValidationError(f"SFTP path contains unsafe characters: {path!r}")
         return path
 
-    def _run_batch(self, commands: list[str], *, check: bool = True) -> subprocess.CompletedProcess[str]:
+    def _run_batch(
+        self,
+        commands: list[str],
+        *,
+        check: bool = True,
+        timeout: float | None = None,
+        quick_connect: bool = False,
+    ) -> subprocess.CompletedProcess[str]:
         sanitized = [self._sanitize_sftp_path(cmd) for cmd in commands]
         payload = "\n".join(sanitized) + "\n"
-        proc = subprocess.run(
-            ["sftp", "-P", str(self._port), "-b", "-", f"{self._username}@{self._host}"],
-            input=payload,
-            text=True,
-            capture_output=True,
-            check=False,
-        )
+        args = ["sftp"]
+        if quick_connect:
+            timeout_seconds = max(1, int(timeout or 3))
+            args.extend(
+                [
+                    "-o",
+                    "BatchMode=yes",
+                    "-o",
+                    f"ConnectTimeout={timeout_seconds}",
+                    "-o",
+                    "ConnectionAttempts=1",
+                    "-o",
+                    "ServerAliveInterval=2",
+                    "-o",
+                    "ServerAliveCountMax=1",
+                ]
+            )
+        args.extend(["-P", str(self._port)])
+        ssh_config = _backup_ssh_config_path()
+        if ssh_config.exists():
+            args.extend(["-F", str(ssh_config)])
+        args.extend(["-b", "-", f"{self._username}@{self._host}"])
+        run_kwargs: dict[str, Any] = {
+            "input": payload,
+            "text": True,
+            "capture_output": True,
+            "check": False,
+        }
+        if timeout is not None:
+            run_kwargs["timeout"] = timeout + 1
+        try:
+            proc = subprocess.run(args, **run_kwargs)
+        except subprocess.TimeoutExpired as exc:
+            raise ValidationError("连接备份机超时，请执行临时接入命令。") from exc
         if check and proc.returncode != 0:
             raise ValidationError(proc.stderr.strip() or "SFTP command failed")
         return proc
 
-    def _mkdirs(self, *paths: str) -> None:
+    def _mkdirs(self, *paths: str, timeout_seconds: int | None = None) -> None:
         commands: list[str] = []
         seen: set[str] = set()
         for remote_path in paths:
@@ -1535,10 +2270,18 @@ class SftpTransport:
                 if posix not in seen:
                     seen.add(posix)
                     commands.append(f"-mkdir {posix}")
-        self._run_batch(commands, check=False)
+        self._run_batch(
+            commands,
+            check=False,
+            timeout=float(timeout_seconds) if timeout_seconds is not None else None,
+            quick_connect=timeout_seconds is not None,
+        )
 
     def _site_root(self) -> str:
-        return self._remote_root
+        return f"{self._remote_root}/current"
+
+    def _archive_root(self) -> str:
+        return f"{self._remote_root}/archived"
 
     def _catalog_root(self) -> str:
         return f"{self._site_root()}/catalog"
@@ -1558,9 +2301,80 @@ class SftpTransport:
     def _commit_index_path(self, commit_id: str) -> str:
         return f"{self._catalog_root()}/commit-index/{commit_id}.json"
 
+    def _repo_identity_path(self) -> str:
+        return f"{self._site_root()}/repo.json"
+
     def _human_commit_dir(self, commit_id: str, created_at: str) -> str:
         dt = datetime.fromisoformat(created_at)
         return f"{self._commits_root()}/{dt:%Y/%m/%d}/{dt:%Y%m%dT%H%M%SZ}-{commit_id}"
+
+    def fetch_repo_identity(self) -> dict[str, Any] | None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            local_path = Path(temp_dir) / "repo.json"
+            proc = self._run_batch([f"get {self._repo_identity_path()} {local_path}"], check=False)
+            if proc.returncode != 0 or not local_path.exists():
+                return None
+            try:
+                return json.loads(local_path.read_text(encoding="utf-8"))
+            except json.JSONDecodeError as exc:
+                raise ValidationError("远端备份仓库身份文件无法解析。") from exc
+
+    def probe_repo_identity(
+        self,
+        *,
+        timeout_seconds: int = 3,
+    ) -> tuple[bool, dict[str, Any] | None, str | None]:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            local_path = Path(temp_dir) / "repo.json"
+            try:
+                proc = self._run_batch(
+                    [f"get {self._repo_identity_path()} {local_path}"],
+                    check=False,
+                    timeout=float(timeout_seconds),
+                    quick_connect=True,
+                )
+            except ValidationError as exc:
+                return False, None, str(exc)
+            if proc.returncode == 0 and local_path.exists():
+                try:
+                    return True, json.loads(local_path.read_text(encoding="utf-8")), None
+                except json.JSONDecodeError:
+                    return False, None, "远端备份仓库身份文件无法解析。"
+
+            output = f"{proc.stderr or ''}\n{proc.stdout or ''}".strip()
+            lowered = output.lower()
+            missing_markers = (
+                "no such file",
+                "not found",
+                "couldn't stat remote file",
+                "cannot stat",
+                "does not exist",
+            )
+            if any(marker in lowered for marker in missing_markers):
+                return True, None, None
+            return (
+                False,
+                None,
+                output or "无法使用 serino-backup 快速连接备份机，需要执行临时接入命令。",
+            )
+
+    def write_repo_identity(self, payload: dict[str, Any]) -> None:
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False) as tmp:
+            tmp.write(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+            tmp_path = Path(tmp.name)
+        try:
+            self._mkdirs(self._site_root())
+            self._run_batch([f"put {tmp_path} {self._repo_identity_path()}"])
+        finally:
+            tmp_path.unlink(missing_ok=True)
+
+    def archive_current_repo(self, *, remote_repo_id: str | None = None) -> str:
+        safe_repo_id = re.sub(r"[^A-Za-z0-9._-]", "-", remote_repo_id or "unknown")[:48] or "unknown"
+        archive_dir = f"{self._archive_root()}/{_utcnow():%Y%m%dT%H%M%S}-{safe_repo_id}"
+        self._mkdirs(self._archive_root())
+        self._run_batch([f"rename {self._site_root()} {archive_dir}"], check=False)
+        self.begin_session()
+        return archive_dir
 
     def has_chunk(self, digest: str) -> bool:
         proc = self._run_batch([f"ls {self._chunk_path(digest)}"], check=False)

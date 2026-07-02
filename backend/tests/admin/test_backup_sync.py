@@ -4,7 +4,9 @@ import json
 import sqlite3
 import subprocess
 import time
+from datetime import datetime, timedelta
 from pathlib import Path
+from urllib.parse import urlparse
 
 import pytest
 from cryptography.hazmat.primitives import serialization
@@ -140,8 +142,8 @@ def test_sftp_has_chunks_treats_unlisted_digests_as_missing(monkeypatch) -> None
         missing_digest: False,
     }
     assert captured["input"].splitlines() == [
-        f"-ls /remote/catalog/chunks/aa/aa/{existing_digest}",
-        f"-ls /remote/catalog/chunks/bb/bb/{missing_digest}",
+        f"-ls /remote/current/catalog/chunks/aa/aa/{existing_digest}",
+        f"-ls /remote/current/catalog/chunks/bb/bb/{missing_digest}",
     ]
 
 
@@ -324,6 +326,111 @@ def _corrupt_first_chunk(fake_transport: FakeBackupTransport, entry: dict) -> No
     fake_transport.chunks[digest] = b"corrupted-" + fake_transport.chunks[digest]
 
 
+def _bootstrap_claim_payload(**overrides) -> dict:
+    payload = {
+        "remote_host": "10.129.246.56",
+        "remote_port": 22,
+        "remote_path": "/srv/serino-backups",
+        "remote_username": "serino-backup",
+        "site_slug": "aerisun",
+        "credential_ref": "aerisun-backup-source",
+        "ttl_minutes": 10,
+    }
+    payload.update(overrides)
+    return payload
+
+
+def _create_bootstrap_claim(client, admin_headers, **overrides) -> dict:
+    response = client.post(
+        f"{BASE}/backup-sync/bootstrap-claims",
+        headers=admin_headers,
+        json=_bootstrap_claim_payload(**overrides),
+    )
+    assert response.status_code == 201
+    return response.json()
+
+
+def _script_path(claim: dict) -> str:
+    setup_url = claim["setup_url"]
+    assert setup_url
+    return urlparse(setup_url).path
+
+
+def _result_path(claim: dict) -> str:
+    token = _script_path(claim).rsplit("/", 1)[-1].removesuffix(".sh")
+    return f"/api/v1/backup/setup/{token}/result"
+
+
+def test_backup_bootstrap_claim_generates_safe_temporary_script(client, admin_headers) -> None:
+    claim = _create_bootstrap_claim(client, admin_headers)
+
+    assert claim["status"] == "pending"
+    assert claim["setup_command"].startswith("curl -fsSL http://testserver/api/v1/backup/setup/")
+    assert claim["setup_command"].endswith(" | sudo bash")
+    assert "PRIVATE KEY" not in claim["setup_command"]
+    assert "Authorization" not in claim["setup_command"]
+
+    script_response = client.get(_script_path(claim))
+    assert script_response.status_code == 200
+    script = script_response.text
+    assert "useradd --system --create-home --shell /bin/sh" in script
+    assert "authorized_keys" in script
+    assert 'command="internal-sftp",no-pty,no-port-forwarding,no-X11-forwarding,no-agent-forwarding' in script
+    assert "ssh-ed25519 " in script
+    assert "BEGIN OPENSSH PRIVATE KEY" not in script
+    assert "BEGIN PRIVATE KEY" not in script
+    assert "Authorization" not in script
+    assert RECOVERY_PASSPHRASE not in script
+
+    result_response = client.post(
+        _result_path(claim),
+        json={"status": "succeeded", "message": "connected"},
+    )
+    assert result_response.status_code == 200
+    assert result_response.json()["status"] == "succeeded"
+
+    second_download = client.get(_script_path(claim))
+    assert second_download.status_code == 409
+    second_result = client.post(_result_path(claim), json={"status": "succeeded"})
+    assert second_result.status_code == 409
+
+
+def test_backup_bootstrap_claim_revokes_old_pending_for_same_target(client, admin_headers) -> None:
+    first = _create_bootstrap_claim(client, admin_headers)
+    second = _create_bootstrap_claim(client, admin_headers)
+
+    assert first["id"] != second["id"]
+    first_status = client.get(f"{BASE}/backup-sync/bootstrap-claims/{first['id']}", headers=admin_headers)
+    assert first_status.status_code == 200
+    assert first_status.json()["status"] == "revoked"
+    assert client.get(_script_path(first)).status_code == 409
+    assert second["status"] == "pending"
+
+
+def test_backup_bootstrap_claim_can_be_revoked(client, admin_headers) -> None:
+    claim = _create_bootstrap_claim(client, admin_headers)
+    revoke_response = client.post(
+        f"{BASE}/backup-sync/bootstrap-claims/{claim['id']}/revoke",
+        headers=admin_headers,
+    )
+
+    assert revoke_response.status_code == 200
+    assert revoke_response.json()["status"] == "revoked"
+    assert client.get(_script_path(claim)).status_code == 409
+    assert client.post(_result_path(claim), json={"status": "succeeded"}).status_code == 409
+
+
+def test_backup_bootstrap_claim_expires_after_ttl(client, admin_headers, monkeypatch) -> None:
+    claim = _create_bootstrap_claim(client, admin_headers, ttl_minutes=1)
+    expires_at = datetime.fromisoformat(claim["expires_at"])
+    monkeypatch.setattr("aerisun.domain.ops.backup_sync._utcnow", lambda: expires_at + timedelta(seconds=1))
+
+    assert client.get(_script_path(claim)).status_code == 409
+    status_response = client.get(f"{BASE}/backup-sync/bootstrap-claims/{claim['id']}", headers=admin_headers)
+    assert status_response.status_code == 200
+    assert status_response.json()["status"] == "expired"
+
+
 def test_backup_sync_endpoints_create_run_commit_and_restore(client, admin_headers, monkeypatch) -> None:
     fake_transport = FakeBackupTransport()
     monkeypatch.setattr("aerisun.domain.ops.backup_sync.build_transport", lambda config, credentials: fake_transport)
@@ -431,11 +538,21 @@ def test_backup_restore_corrupt_chunk_fails_before_replacing_runtime_data(
 
 
 def test_backup_sync_config_test_endpoint_reports_connectivity(client, admin_headers, monkeypatch) -> None:
+    timeouts: list[tuple[str, int | None]] = []
+
+    def fake_begin_session(self, *, timeout_seconds=None):
+        timeouts.append(("begin_session", timeout_seconds))
+        return {"session_id": "s", "site_slug": "test-site"}
+
+    def fake_probe_write_access(self, *, timeout_seconds=None):
+        timeouts.append(("probe_write_access", timeout_seconds))
+
     monkeypatch.setattr(
         "aerisun.domain.ops.backup_sync.SftpTransport.begin_session",
-        lambda self: {"session_id": "s", "site_slug": "test-site"},
+        fake_begin_session,
     )
-    monkeypatch.setattr("aerisun.domain.ops.backup_sync.SftpTransport.probe_write_access", lambda self: None)
+    monkeypatch.setattr("aerisun.domain.ops.backup_sync.SftpTransport.probe_write_access", fake_probe_write_access)
+    monkeypatch.setattr("aerisun.domain.ops.backup_sync.SftpTransport.fetch_repo_identity", lambda self: None)
 
     response = client.post(
         "/api/v1/admin/system/backup-sync/config/test",
@@ -459,9 +576,53 @@ def test_backup_sync_config_test_endpoint_reports_connectivity(client, admin_hea
     assert response.status_code == 200
     payload = response.json()
     assert payload["ok"] is True
-    assert payload["remote_path_preview"] == "/srv/aerisun/backup"
+    assert payload["remote_path_preview"] == "/srv/serino-backups"
+    assert payload["remote_history_state"] == "empty"
     assert payload["recovery_key_ready"] is False
     assert payload["recovery_key_acknowledged"] is False
+    assert timeouts == [("begin_session", 3), ("probe_write_access", 3)]
+
+
+def test_backup_machine_connection_probe_is_fast_and_read_only(client, admin_headers, monkeypatch) -> None:
+    def forbidden(*_args, **_kwargs):
+        raise AssertionError("quick probe must not create a session or write probe files")
+
+    monkeypatch.setattr("aerisun.domain.ops.backup_sync.SftpTransport.begin_session", forbidden)
+    monkeypatch.setattr("aerisun.domain.ops.backup_sync.SftpTransport.probe_write_access", forbidden)
+    monkeypatch.setattr(
+        "aerisun.domain.ops.backup_sync.SftpTransport.probe_repo_identity",
+        lambda self, timeout_seconds=3: (
+            False,
+            None,
+            "无法使用 serino-backup 快速连接备份机，需要执行临时接入命令。",
+        ),
+    )
+
+    response = client.post(
+        "/api/v1/admin/system/backup-sync/connection/probe",
+        headers=admin_headers,
+        json={
+            "enabled": True,
+            "paused": False,
+            "interval_minutes": 60,
+            "transport_mode": "sftp",
+            "site_slug": "test-site",
+            "remote_host": "backup.example.com",
+            "remote_port": 222,
+            "remote_path": "/srv/aerisun/backup",
+            "remote_username": "backup-user",
+            "credential_ref": "default",
+            "encrypt_runtime_data": False,
+            "max_retries": 2,
+            "retry_backoff_seconds": 60,
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["ok"] is False
+    assert payload["remote_history_state"] == "unreachable"
+    assert "临时命令" in payload["summary"]
 
 
 def test_ensure_backup_credentials_endpoint_creates_and_reuses_keys(client, admin_headers) -> None:
@@ -511,7 +672,7 @@ def test_backup_sync_config_requires_recovery_key_export_first(client, admin_hea
         },
     )
     assert response.status_code == 422
-    assert "恢复私钥" in response.json()["detail"]
+    assert "恢复密码" in response.json()["detail"]
 
 
 def test_backup_sync_config_requires_recovery_key_acknowledgement(client, admin_headers) -> None:
@@ -548,7 +709,7 @@ def test_backup_sync_config_requires_recovery_key_acknowledgement(client, admin_
         },
     )
     assert response.status_code == 422
-    assert "复制或下载" in response.json()["detail"]
+    assert "确认恢复密码" in response.json()["detail"]
 
 
 def test_export_and_rotate_recovery_key(client, admin_headers) -> None:

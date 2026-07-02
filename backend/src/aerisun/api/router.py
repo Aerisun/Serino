@@ -5,6 +5,7 @@ from fastapi import APIRouter
 from .admin import admin_router
 from .agent import router as agent_router
 from .automation import router as automation_router
+from .backup_setup import router as backup_setup_router
 from .mcp import router as mcp_router
 from .site import public_router as public_site_router
 from .site import router as site_router
@@ -22,5 +23,6 @@ api_router.include_router(site_search_router)
 api_router.include_router(subscriptions_router)
 api_router.include_router(agent_router)
 api_router.include_router(automation_router)
+api_router.include_router(backup_setup_router)
 api_router.include_router(mcp_router)
 api_router.include_router(admin_router)

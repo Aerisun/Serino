@@ -4,6 +4,7 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { BackupSyncConfigTestReadRemoteHistoryState } from './backupSyncConfigTestReadRemoteHistoryState';
 
 export interface BackupSyncConfigTestRead {
   ok: boolean;
@@ -12,4 +13,8 @@ export interface BackupSyncConfigTestRead {
   remote_path_preview: string;
   recovery_key_ready?: boolean;
   recovery_key_acknowledged?: boolean;
+  remote_history_state?: BackupSyncConfigTestReadRemoteHistoryState;
+  remote_history_summary?: string | null;
+  remote_repo_id?: string | null;
+  local_repo_id?: string | null;
 }

@@ -89,7 +89,7 @@ class BackupTargetConfig(Base, TimestampMixin):
     remote_path: Mapped[str | None] = mapped_column(String(500))
     remote_username: Mapped[str | None] = mapped_column(String(255))
     credential_ref: Mapped[str | None] = mapped_column(String(255))
-    encrypt_runtime_data: Mapped[bool] = mapped_column(Boolean(), nullable=False, default=False)
+    encrypt_runtime_data: Mapped[bool] = mapped_column(Boolean(), nullable=False, default=True)
     max_retries: Mapped[int] = mapped_column(Integer(), nullable=False, default=3)
     retry_backoff_seconds: Mapped[int] = mapped_column(Integer(), nullable=False, default=300)
     max_retention_count: Mapped[int] = mapped_column(Integer(), nullable=False, default=0)
@@ -148,6 +148,42 @@ class BackupRecoveryKey(Base, TimestampMixin):
     archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_exported_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class BackupBootstrapClaim(Base, TimestampMixin):
+    __tablename__ = "backup_bootstrap_claims"
+    __table_args__ = (
+        Index("ix_backup_bootstrap_claims_token_hash", "token_hash", unique=True),
+        Index("ix_backup_bootstrap_claims_status_expires", "status", "expires_at"),
+        Index(
+            "ix_backup_bootstrap_claims_actor_target",
+            "created_by_admin_id",
+            "remote_host",
+            "remote_port",
+            "remote_username",
+            "remote_path",
+            "status",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    token_hash: Mapped[str] = mapped_column(String(128), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="pending")
+    created_by_admin_id: Mapped[str | None] = mapped_column(String(36))
+    site_slug: Mapped[str] = mapped_column(String(120), nullable=False, default="aerisun")
+    credential_ref: Mapped[str] = mapped_column(String(255), nullable=False, default="aerisun-backup-source")
+    remote_host: Mapped[str] = mapped_column(String(255), nullable=False)
+    remote_port: Mapped[int] = mapped_column(Integer(), nullable=False, default=22)
+    remote_username: Mapped[str] = mapped_column(String(255), nullable=False, default="serino-backup")
+    remote_path: Mapped[str] = mapped_column(String(500), nullable=False, default="/srv/serino-backups")
+    public_key_pem: Mapped[str] = mapped_column(Text, nullable=False)
+    public_key_fingerprint: Mapped[str] = mapped_column(String(255), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_error: Mapped[str | None] = mapped_column(Text)
+    result_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
 
 
 class TrafficDailySnapshot(Base, TimestampMixin):

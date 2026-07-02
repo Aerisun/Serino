@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from aerisun.core.time import beijing_date, beijing_day_bounds, beijing_today, normalize_shanghai_datetime
 from aerisun.domain.ops.models import (
     AuditLog,
+    BackupBootstrapClaim,
     BackupCommit,
     BackupQueueItem,
     BackupRecoveryKey,
@@ -284,6 +285,48 @@ def create_backup_recovery_key(session: Session, **kwargs) -> BackupRecoveryKey:
     return item
 
 
+def create_backup_bootstrap_claim(session: Session, **kwargs) -> BackupBootstrapClaim:
+    item = BackupBootstrapClaim(**kwargs)
+    session.add(item)
+    return item
+
+
+def get_backup_bootstrap_claim(session: Session, claim_id: str) -> BackupBootstrapClaim | None:
+    return session.get(BackupBootstrapClaim, claim_id)
+
+
+def get_backup_bootstrap_claim_by_token_hash(session: Session, token_hash: str) -> BackupBootstrapClaim | None:
+    return (
+        session.query(BackupBootstrapClaim)
+        .filter(BackupBootstrapClaim.token_hash == token_hash)
+        .order_by(BackupBootstrapClaim.created_at.desc())
+        .first()
+    )
+
+
+def list_pending_backup_bootstrap_claims_for_target(
+    session: Session,
+    *,
+    created_by_admin_id: str | None,
+    remote_host: str,
+    remote_port: int,
+    remote_username: str,
+    remote_path: str,
+) -> list[BackupBootstrapClaim]:
+    query = session.query(BackupBootstrapClaim).filter(
+        BackupBootstrapClaim.status == "pending",
+        BackupBootstrapClaim.remote_host == remote_host,
+        BackupBootstrapClaim.remote_port == remote_port,
+        BackupBootstrapClaim.remote_username == remote_username,
+        BackupBootstrapClaim.remote_path == remote_path,
+    )
+    if created_by_admin_id is None:
+        query = query.filter(BackupBootstrapClaim.created_by_admin_id.is_(None))
+    else:
+        query = query.filter(BackupBootstrapClaim.created_by_admin_id == created_by_admin_id)
+    return list(query.order_by(BackupBootstrapClaim.created_at.desc()).all())
+
+
 def list_sync_runs(session: Session) -> list[SyncRun]:
     return list(session.query(SyncRun).order_by(SyncRun.created_at.desc()).all())
 
@@ -305,6 +348,19 @@ def find_running_sync_run(session: Session, *, job_name: str) -> SyncRun | None:
         .order_by(SyncRun.created_at.asc())
         .first()
     )
+
+
+def reset_backup_sync_records(session: Session, *, credential_ref: str, job_name: str) -> None:
+    session.query(BackupQueueItem).delete(synchronize_session=False)
+    session.query(BackupCommit).delete(synchronize_session=False)
+    session.query(SyncRun).filter(SyncRun.job_name == job_name).delete(synchronize_session=False)
+    session.query(BackupRecoveryKey).filter(BackupRecoveryKey.credential_ref == credential_ref).delete(
+        synchronize_session=False
+    )
+    for claim in session.query(BackupBootstrapClaim).filter(BackupBootstrapClaim.status.in_(("pending", "failed"))):
+        claim.status = "revoked"
+        claim.revoked_at = normalize_shanghai_datetime(datetime.now())
+        claim.last_error = "备份系统已重置，临时命令自动失效。"
 
 
 # -- Stats helpers --

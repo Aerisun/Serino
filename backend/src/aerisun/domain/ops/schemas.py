@@ -123,7 +123,7 @@ class BackupSyncConfig(ModelBase):
     transport_mode: str = "sftp"
     site_slug: str = "aerisun"
     credential_ref: str | None = None
-    encrypt_runtime_data: bool = False
+    encrypt_runtime_data: bool = True
     max_retries: int = 3
     retry_backoff_seconds: int = 300
     max_retention_count: int = 0
@@ -150,7 +150,7 @@ class BackupSyncConfigUpdate(BaseModel):
     remote_path: str | None = None
     remote_username: str | None = None
     credential_ref: str | None = None
-    encrypt_runtime_data: bool = False
+    encrypt_runtime_data: bool = True
     max_retries: int = 3
     retry_backoff_seconds: int = 300
     max_retention_count: int = 0
@@ -200,6 +200,52 @@ class BackupSyncConfigTestRead(BaseModel):
     remote_path_preview: str
     recovery_key_ready: bool = False
     recovery_key_acknowledged: bool = False
+    remote_history_state: Literal["unreachable", "empty", "current", "foreign", "unknown"] = "unknown"
+    remote_history_summary: str | None = None
+    remote_repo_id: str | None = None
+    local_repo_id: str | None = None
+
+
+class BackupBootstrapClaimCreate(BaseModel):
+    remote_host: str = Field(min_length=1, max_length=255)
+    remote_port: int = Field(default=22, ge=1, le=65535)
+    remote_path: str = Field(default="/srv/serino-backups", min_length=1, max_length=500)
+    remote_username: str = Field(default="serino-backup", min_length=1, max_length=255)
+    site_slug: str = Field(default="aerisun", min_length=1, max_length=120)
+    credential_ref: str = Field(default="aerisun-backup-source", min_length=1, max_length=255)
+    ttl_minutes: int = Field(default=10, ge=1, le=60)
+
+
+class BackupBootstrapClaimRead(ModelBase):
+    id: str
+    status: Literal["pending", "succeeded", "failed", "expired", "revoked"]
+    remote_host: str
+    remote_port: int
+    remote_path: str
+    remote_username: str
+    site_slug: str
+    credential_ref: str
+    public_key_fingerprint: str
+    expires_at: datetime
+    used_at: datetime | None = None
+    completed_at: datetime | None = None
+    revoked_at: datetime | None = None
+    last_error: str | None = None
+    setup_url: str | None = None
+    setup_command: str | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class BackupBootstrapClaimResultWrite(BaseModel):
+    status: Literal["succeeded", "failed"]
+    message: str | None = Field(default=None, max_length=2000)
+    details: dict[str, Any] = Field(default_factory=dict)
+
+
+class BackupSystemResetRead(BaseModel):
+    config: BackupSyncConfig
+    remote_cleanup_command: str
 
 
 class BackupQueueItemRead(ModelBase):
