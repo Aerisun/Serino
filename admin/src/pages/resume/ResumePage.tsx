@@ -255,7 +255,7 @@ export default function ResumePage() {
       />
 
       <div className="mt-4 space-y-5 sm:mt-5 sm:space-y-6">
-        <Card className="resume-edit-surface rounded-[1.35rem] border sm:rounded-[1.8rem] sm:border-white/60 sm:bg-[rgba(255,255,255,0.72)] sm:shadow-[0_24px_70px_rgba(15,23,42,0.07)]">
+        <Card className="resume-edit-surface rounded-[1.35rem] border sm:rounded-[1.8rem] sm:border-[rgba(var(--admin-border-subtle)/var(--admin-border-subtle-alpha))] sm:bg-[rgb(var(--admin-surface-strong)/var(--admin-surface-alpha-strong))] sm:shadow-[var(--admin-shadow-md)]">
           <CardContent className="p-4 sm:p-6">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">

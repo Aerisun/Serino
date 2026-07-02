@@ -349,6 +349,7 @@ export default function ContentListPage({ config }: ContentListPageProps) {
       <PageHeader
         title={t(config.titleKey)}
         description={t(config.descriptionKey)}
+        inlineActionsOnMobile
         actions={
           <Button onClick={() => navigate(config.newPath)}>
             <Plus className="h-4 w-4 mr-2" /> {t(config.newButtonLabelKey)}
@@ -356,14 +357,18 @@ export default function ContentListPage({ config }: ContentListPageProps) {
         }
       />
 
-      <div className="mb-4 grid min-w-0 gap-3">
+      <div
+        role="toolbar"
+        aria-label={t("common.contentFiltersAndSort")}
+        className="mb-4 flex min-w-0 flex-col gap-3 md:flex-row md:items-start"
+      >
         <Input
           placeholder={t("common.searchPlaceholder")}
-          className="min-w-0"
+          className="min-w-0 md:w-72 md:shrink-0"
           value={search}
           onChange={(e) => handleSearch(e.target.value)}
         />
-        <div className="flex min-w-0 items-start justify-between gap-2">
+        <div className="flex min-w-0 items-start justify-between gap-2 md:flex-1">
           <div
             className={cn(
               "flex min-w-0 items-center gap-2",
@@ -430,7 +435,7 @@ export default function ContentListPage({ config }: ContentListPageProps) {
                 setPage(1);
               }}
               aria-label={t("common.sortBy")}
-              containerClassName="w-[clamp(9.25rem,48vw,13.75rem)] min-w-0 shrink-0"
+              containerClassName="w-[clamp(8.75rem,42vw,12rem)] min-w-0 shrink-0 md:w-48"
               className="h-9 min-w-0 rounded-md px-3 text-sm"
             >
               {sortOptions.map((opt) => (

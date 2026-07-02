@@ -64,6 +64,7 @@ export const zhTranslations: TranslationDict = {
   "common.sortRecordedAtAsc": "按显示时间升序",
   "common.sortLastUpdatedDesc": "按最后更新时间降序",
   "common.searchPlaceholder": "搜索标题、内容...",
+  "common.contentFiltersAndSort": "内容筛选和排序",
   "common.operationSuccess": "操作成功",
   "common.operationFailed": "操作失败",
   "common.pendingSave": "待保存",

@@ -63,6 +63,7 @@ export const enTranslations: TranslationDict = {
     "common.sortRecordedAtAsc": "Sort by article mark time asc",
     "common.sortLastUpdatedDesc": "Sort by last updated desc",
     "common.searchPlaceholder": "Search title, content...",
+    "common.contentFiltersAndSort": "Content filters and sort",
     "common.operationSuccess": "Operation successful",
     "common.operationFailed": "Operation failed",
     "common.pendingSave": "Unsaved",

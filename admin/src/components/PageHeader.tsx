@@ -7,6 +7,7 @@ interface PageHeaderProps {
   actions?: ReactNode;
   secondary?: ReactNode;
   className?: string;
+  inlineActionsOnMobile?: boolean;
 }
 
 export function PageHeader({
@@ -15,6 +16,7 @@ export function PageHeader({
   actions,
   secondary,
   className,
+  inlineActionsOnMobile = false,
 }: PageHeaderProps) {
   return (
     <div
@@ -23,14 +25,29 @@ export function PageHeader({
         className,
       )}
     >
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
-        <div className="flex-1">
+      <div
+        className={cn(
+          inlineActionsOnMobile
+            ? "flex items-start justify-between gap-3"
+            : "flex flex-col gap-4 lg:flex-row lg:items-start",
+        )}
+      >
+        <div className="min-w-0 flex-1">
           <h1 className="text-2xl font-semibold tracking-tight text-foreground/95">{title}</h1>
           {description ? (
             <p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground/90">{description}</p>
           ) : null}
         </div>
-        {actions ? <div className="flex items-center gap-2 lg:ml-auto">{actions}</div> : null}
+        {actions ? (
+          <div
+            className={cn(
+              "flex items-center gap-2",
+              inlineActionsOnMobile ? "shrink-0" : "lg:ml-auto",
+            )}
+          >
+            {actions}
+          </div>
+        ) : null}
       </div>
       {secondary ? <div className="pt-2">{secondary}</div> : null}
     </div>
