@@ -1299,6 +1299,10 @@ def test_deploy_contract_reuses_shared_env_keys():
     assert "WALINE_JWT_TOKEN: ${WALINE_JWT_TOKEN}" in compose_text
     assert "AERISUN_SEED_REFERENCE_DATA" not in release_compose_text
     assert "AERISUN_DATA_BACKFILL_ENABLED" not in release_compose_text
+    release_api_block = release_compose_text.split("  api:\n", 1)[1].split("\n  waline:\n", 1)[0]
+    assert "    healthcheck:" in release_api_block
+    assert "      retries: 10" in release_api_block
+    assert "      start_period: 90s" in release_api_block
     assert "AERISUN_API_BASE_PATH: ${AERISUN_API_BASE_PATH:-/api}" in compose_text
     assert "AERISUN_ADMIN_BASE_PATH: ${AERISUN_ADMIN_BASE_PATH:-/admin/}" in compose_text
     assert "AERISUN_WALINE_BASE_PATH: ${AERISUN_WALINE_BASE_PATH:-/waline}" in compose_text

@@ -41,8 +41,8 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:${AERISUN_PORT:-8000}${AERISUN_HEALTHCHECK_PATH:-/api/v1/site/readyz}"]
       interval: 15s
       timeout: 5s
-      retries: 3
-      start_period: 10s
+      retries: 10
+      start_period: 90s
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
