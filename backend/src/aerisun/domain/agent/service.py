@@ -47,6 +47,10 @@ def _absolute_url(base_url: str, path: str) -> str:
     return f"{base_url}{path if path.startswith('/') else '/' + path}"
 
 
+def _mcp_streamable_url(base_url: str) -> str:
+    return _absolute_url(base_url, "/api/mcp/")
+
+
 def _build_usage_endpoints(base_url: str) -> list[AgentUsageEndpointRead]:
     return [
         AgentUsageEndpointRead(
@@ -59,7 +63,7 @@ def _build_usage_endpoints(base_url: str) -> list[AgentUsageEndpointRead]:
         ),
         AgentUsageEndpointRead(
             id="mcp_streamable_http",
-            url=_absolute_url(base_url, "/api/mcp"),
+            url=_mcp_streamable_url(base_url),
             method="POST",
             description="Primary MCP streamable-http endpoint",
             required_headers=["Authorization: Bearer <API_KEY>", "Content-Type: application/json"],
@@ -86,7 +90,7 @@ def _build_usage_endpoints(base_url: str) -> list[AgentUsageEndpointRead]:
 
 def _build_quickstart(base_url: str) -> AgentUsageQuickstartRead:
     usage_url = _absolute_url(base_url, "/api/agent/usage")
-    mcp_url = _absolute_url(base_url, "/api/mcp")
+    mcp_url = _mcp_streamable_url(base_url)
     return AgentUsageQuickstartRead(
         summary="Validate auth, confirm capabilities, and execute one safe MCP read call.",
         environment={
@@ -135,7 +139,7 @@ def _playbook_step(
     )
 
 
-def _build_playbooks(base_url: str, tool_names: set[str]) -> list[AgentUsagePlaybookRead]:
+def _build_playbooks(tool_names: set[str]) -> list[AgentUsagePlaybookRead]:
     list_available = "list_admin_content" in tool_names
     delete_available = "delete_admin_content" in tool_names
     private_available = "update_admin_content" in tool_names
@@ -167,20 +171,18 @@ def _build_playbooks(base_url: str, tool_names: set[str]) -> list[AgentUsagePlay
                 ),
                 _playbook_step(
                     2,
-                    "REST fallback",
-                    "curl",
+                    "MCP detail call",
+                    "mcp_call",
                     {
-                        "command": (
-                            'curl -sS -H "Authorization: Bearer $KEY" '
-                            f'"{_absolute_url(base_url, "/api/v1/admin/posts/?page=1&page_size=20&sort_by=created_at&sort_order=desc")}"'
-                        )
+                        "tool": "get_admin_content",
+                        "arguments": {"content_type": "posts", "item_id": "<SELECTED_ID>"},
                     },
-                    "HTTP 200 with paginated items",
+                    "Response includes the selected item's full body and metadata",
                 ),
             ],
             verification=[
                 "At least one item has id/title/visibility fields.",
-                "Selected IDs are copied for delete/private operations.",
+                "Selected IDs are copied from list_admin_content before delete/private operations.",
             ],
         ),
         AgentUsagePlaybookRead(
@@ -203,19 +205,16 @@ def _build_playbooks(base_url: str, tool_names: set[str]) -> list[AgentUsagePlay
                 ),
                 _playbook_step(
                     2,
-                    "REST fallback",
-                    "curl",
+                    "MCP verify deletion",
+                    "mcp_call",
                     {
-                        "command": (
-                            'curl -sS -X DELETE -H "Authorization: Bearer $KEY" '
-                            f'"{_absolute_url(base_url, "/api/v1/admin/posts/")}<DELETE_ID>"'
-                        )
+                        "tool": "list_admin_content",
+                        "arguments": {"content_type": "posts", "page": 1, "page_size": 50},
                     },
-                    "HTTP 204 No Content",
+                    "Returned items do not include <DELETE_ID>",
                 ),
             ],
             verification=[
-                "GET /api/v1/admin/posts/<DELETE_ID> returns 404.",
                 "Listing no longer contains deleted ID.",
             ],
         ),
@@ -243,20 +242,17 @@ def _build_playbooks(base_url: str, tool_names: set[str]) -> list[AgentUsagePlay
                 ),
                 _playbook_step(
                     2,
-                    "REST fallback",
-                    "curl",
+                    "MCP verify visibility",
+                    "mcp_call",
                     {
-                        "command": (
-                            'curl -sS -X PUT -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" '
-                            '-d \'{"visibility":"private"}\' '
-                            f'"{_absolute_url(base_url, "/api/v1/admin/posts/")}<PRIVATE_ID>"'
-                        )
+                        "tool": "get_admin_content",
+                        "arguments": {"content_type": "posts", "item_id": "<PRIVATE_ID>"},
                     },
-                    "HTTP 200 with visibility=private",
+                    "Returned item.visibility is private",
                 ),
             ],
             verification=[
-                "GET /api/v1/admin/posts/<PRIVATE_ID> returns visibility=private.",
+                "get_admin_content(<PRIVATE_ID>) returns visibility=private.",
             ],
         ),
     ]
@@ -275,10 +271,12 @@ def _build_troubleshooting(missing_scopes: list[str]) -> list[AgentUsageTroubles
                 "Missing Authorization header",
                 "Expired or malformed API key",
                 "Using admin session token instead of API key",
+                "Using an MCP API key against admin REST endpoints that require an admin session token",
             ],
             fixes=[
                 "Use Authorization: Bearer <API_KEY>.",
                 "Regenerate API key if token was exposed or expired.",
+                "For agent automation, prefer /api/mcp/ tools instead of admin REST fallbacks.",
             ],
         ),
         AgentUsageTroubleshootingRead(
@@ -488,7 +486,7 @@ def build_agent_usage(
                 recommended_scopes.append(scope)
 
     missing_scopes = [scope for scope in recommended_scopes if scope not in set(available_scope_list)]
-    mcp_endpoint = _absolute_url(base_url, "/api/mcp")
+    mcp_endpoint = _mcp_streamable_url(base_url)
 
     return AgentUsageRead(
         schema_version="2026-03-usage-v2",
@@ -506,7 +504,7 @@ def build_agent_usage(
             example="Authorization: Bearer <API_KEY>",
             notes=[
                 "Use API key tokens from admin integrations API keys, not admin session tokens.",
-                "Always send the auth header to /api/agent/usage, /api/mcp-meta, and /api/mcp.",
+                "Always send the auth header to /api/agent/usage, /api/mcp-meta, and /api/mcp/.",
             ],
         ),
         endpoints=_build_usage_endpoints(base_url),
@@ -517,7 +515,7 @@ def build_agent_usage(
             missing_recommended_scopes=missing_scopes,
         ),
         quickstart=_build_quickstart(base_url),
-        playbooks=_build_playbooks(base_url, tool_names),
+        playbooks=_build_playbooks(tool_names),
         mcp=AgentUsageMcpRead(
             endpoint=mcp_endpoint,
             transport="streamable-http",
@@ -575,7 +573,7 @@ def build_mcp_admin_config(session: Session, site_url: str, api_key_id: str | No
         enabled_capability_count=len(enabled_ids),
         available_capability_count=len(all_capabilities),
         usage_url=_absolute_url(base_url, "/api/agent/usage"),
-        endpoint=_absolute_url(base_url, "/api/mcp"),
+        endpoint=_mcp_streamable_url(base_url),
         transport="streamable-http",
         required_scopes=[AGENT_CONNECT],
         recommended_scopes=recommended_scopes,

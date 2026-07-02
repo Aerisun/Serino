@@ -799,6 +799,7 @@ def list_visitor_records(
     ip: str | None = None,
     date_from: str | None = None,
     date_to: str | None = None,
+    include_bots: bool = True,
 ) -> dict:
     items, total = repo.find_visit_records_paginated(
         session,
@@ -808,7 +809,7 @@ def list_visitor_records(
         ip=ip,
         date_from=date_from,
         date_to=date_to,
-        include_bots=True,
+        include_bots=include_bots,
     )
     enriched_items = _enrich_visit_records(list(items))
     return {

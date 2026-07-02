@@ -3,7 +3,7 @@ from __future__ import annotations
 import inspect
 import types
 from dataclasses import dataclass, field
-from typing import Any, Literal, Union, get_args, get_origin
+from typing import Any, Literal, Union, get_args, get_origin, get_type_hints
 
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -214,6 +214,10 @@ def _json_schema_for_annotation(annotation: Any) -> dict[str, Any]:
 
 def _build_input_schema(handler: Any) -> dict[str, Any]:
     signature = inspect.signature(handler)
+    try:
+        type_hints = get_type_hints(handler, include_extras=True)
+    except Exception:
+        type_hints = {}
     properties: dict[str, Any] = {}
     required: list[str] = []
     for index, parameter in enumerate(signature.parameters.values()):
@@ -221,7 +225,7 @@ def _build_input_schema(handler: Any) -> dict[str, Any]:
             continue
         if parameter.kind in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD):
             continue
-        properties[parameter.name] = _json_schema_for_annotation(parameter.annotation)
+        properties[parameter.name] = _json_schema_for_annotation(type_hints.get(parameter.name, parameter.annotation))
         if parameter.default is inspect.Signature.empty:
             required.append(parameter.name)
     schema: dict[str, Any] = {"type": "object", "properties": properties}
@@ -232,7 +236,11 @@ def _build_input_schema(handler: Any) -> dict[str, Any]:
 
 def _build_output_schema(handler: Any) -> dict[str, Any]:
     signature = inspect.signature(handler)
-    return _json_schema_for_annotation(signature.return_annotation)
+    try:
+        type_hints = get_type_hints(handler, include_extras=True)
+    except Exception:
+        type_hints = {}
+    return _json_schema_for_annotation(type_hints.get("return", signature.return_annotation))
 
 
 @dataclass(frozen=True, slots=True)
@@ -858,7 +866,14 @@ _CAPABILITIES: tuple[AgentCapabilityDefinition, ...] = (
             {
                 "arguments": {
                     "content_type": "posts",
-                    "items": [{"title": "导入文章", "body": "正文内容", "visibility": "private"}],
+                    "items": [
+                        {
+                            "slug": "imported-private-post",
+                            "title": "导入文章",
+                            "body": "正文内容",
+                            "visibility": "private",
+                        }
+                    ],
                 },
                 "scenario": "导入一篇私密文章。",
             }
@@ -917,7 +932,7 @@ _CAPABILITIES: tuple[AgentCapabilityDefinition, ...] = (
         help_text="对单条评论执行通过、拒绝或删除操作。",
         help_text_en="Approve, reject, or delete one comment.",
         ai_usage_hint="审核一条评论。comment_id 必传，action 必传 (approve/reject/delete)。可选 reason（审核理由）。",
-        examples=[{"arguments": {"comment_id": "123", "action": "approve"}, "scenario": "通过一条评论。"}],
+        examples=[{"arguments": {"comment_id": "<COMMENT_ID>", "action": "approve"}, "scenario": "通过一条评论。"}],
         domain="moderation",
         group_label="审核",
         risk_level="medium",
@@ -1059,7 +1074,7 @@ _CAPABILITIES: tuple[AgentCapabilityDefinition, ...] = (
         help_text="按 resource 类型和 ID 获取单条通用后台记录详情。",
         help_text_en="Get one generic admin record by resource type and ID.",
         ai_usage_hint="获取单条通用记录。resource 必传，item_id 必传。",
-        examples=[{"arguments": {"resource": "friends", "item_id": "friend-123"}, "scenario": "获取单条友链详情。"}],
+        examples=[{"arguments": {"resource": "friends", "item_id": "<FRIEND_ID>"}, "scenario": "获取单条友链详情。"}],
         domain="site",
         group_label="站点",
     ),
@@ -1182,7 +1197,7 @@ _CAPABILITIES: tuple[AgentCapabilityDefinition, ...] = (
         help_text="按 ID 获取单个后台资源的完整元信息。",
         help_text_en="Get one admin asset by ID with full metadata.",
         ai_usage_hint="获取单个资源详情。asset_id 必传。",
-        examples=[{"arguments": {"asset_id": "asset-123"}, "scenario": "获取单个资源详情。"}],
+        examples=[{"arguments": {"asset_id": "<ASSET_ID>"}, "scenario": "获取单个资源详情。"}],
         domain="assets",
         group_label="资源",
     ),
@@ -1278,7 +1293,7 @@ _CAPABILITIES: tuple[AgentCapabilityDefinition, ...] = (
         help_text="按 friend_id 读取友链站点配置的 RSS 订阅源列表。",
         help_text_en="List RSS feed sources configured for a friend site.",
         ai_usage_hint="获取指定友链的订阅源列表。friend_id 必传。",
-        examples=[{"arguments": {"friend_id": "friend-123"}, "scenario": "查看某个友链的 RSS 源。"}],
+        examples=[{"arguments": {"friend_id": "<FRIEND_ID>"}, "scenario": "查看某个友链的 RSS 源。"}],
         domain="social",
         group_label="社交",
     ),
@@ -1455,7 +1470,13 @@ _CAPABILITIES: tuple[AgentCapabilityDefinition, ...] = (
         help_text="发送一封测试邮件以验证 SMTP 配置是否正确。",
         help_text_en="Send a test email to verify SMTP configuration.",
         ai_usage_hint="测试 SMTP 发信。payload 必传（含收件人等配置），persist_success 可选(默认false,为true时测试成功后保存配置)。",
-        examples=[{"arguments": {"payload": {"to_email": "test@example.com"}}, "scenario": "发送一封 SMTP 测试邮件。"}],
+        examples=[
+            {
+                "arguments": {"payload": {"to_email": "<TO_EMAIL>"}},
+                "scenario": "发送一封 SMTP 测试邮件。",
+                "requires": ["configured SMTP settings"],
+            }
+        ],
         domain="subscriptions",
         group_label="订阅",
         risk_level="medium",
@@ -1472,7 +1493,7 @@ _CAPABILITIES: tuple[AgentCapabilityDefinition, ...] = (
         help_text="启用或停用一个邮件订阅者。",
         help_text_en="Enable or disable an email subscriber.",
         ai_usage_hint="更新订阅者状态。email 必传（订阅者邮箱），is_active 必传 (true/false)。",
-        examples=[{"arguments": {"email": "user@example.com", "is_active": False}, "scenario": "停用一个订阅者。"}],
+        examples=[{"arguments": {"email": "<SUBSCRIBER_EMAIL>", "is_active": False}, "scenario": "停用一个订阅者。"}],
         domain="subscriptions",
         group_label="订阅",
         risk_level="medium",
@@ -1488,7 +1509,7 @@ _CAPABILITIES: tuple[AgentCapabilityDefinition, ...] = (
         help_text="永久删除一个邮件订阅者。",
         help_text_en="Delete an email subscriber permanently.",
         ai_usage_hint="删除订阅者。email 必传（订阅者邮箱）。操作不可恢复。",
-        examples=[{"arguments": {"email": "user@example.com"}, "scenario": "删除一个订阅者。"}],
+        examples=[{"arguments": {"email": "<SUBSCRIBER_EMAIL>"}, "scenario": "删除一个订阅者。"}],
         domain="subscriptions",
         group_label="订阅",
         risk_level="high",
@@ -1824,7 +1845,13 @@ _CAPABILITIES: tuple[AgentCapabilityDefinition, ...] = (
         help_text="测试出站代理是否能正常连通。",
         help_text_en="Test outbound proxy connectivity.",
         ai_usage_hint="测试出站代理连通性。payload 必传（代理配置字典）。",
-        examples=[{"arguments": {"payload": {"proxy_url": "http://proxy:8080"}}, "scenario": "测试代理是否可连通。"}],
+        examples=[
+            {
+                "arguments": {"payload": {"proxy_port": "<PROXY_PORT>"}},
+                "scenario": "测试代理是否可连通。",
+                "requires": ["configured local outbound proxy"],
+            }
+        ],
         domain="network",
         group_label="网络",
         risk_level="medium",
@@ -2015,7 +2042,13 @@ _CAPABILITIES: tuple[AgentCapabilityDefinition, ...] = (
         help_text="创建当前状态的备份快照。",
         help_text_en="Create a backup snapshot of the current state.",
         ai_usage_hint="创建备份快照。不需要参数。",
-        examples=[{"arguments": {}, "scenario": "创建当前状态的备份快照。"}],
+        examples=[
+            {
+                "arguments": {},
+                "scenario": "创建当前状态的备份快照。",
+                "requires": ["configured backup sync transport"],
+            }
+        ],
         domain="backup",
         group_label="备份",
         risk_level="high",
@@ -2049,7 +2082,13 @@ _CAPABILITIES: tuple[AgentCapabilityDefinition, ...] = (
         help_text="更新备份同步配置。",
         help_text_en="Update backup sync configuration.",
         ai_usage_hint="更新备份同步配置。传入 payload 字典，字段：git_remote, schedule, enabled 等。",
-        examples=[{"arguments": {"payload": {"enabled": True}}, "scenario": "启用自动备份同步。"}],
+        examples=[
+            {
+                "arguments": {"payload": {"enabled": True}},
+                "scenario": "启用自动备份同步。",
+                "requires": ["configured backup sync credentials and remote path"],
+            }
+        ],
         domain="backup",
         group_label="备份",
         risk_level="high",
@@ -2066,7 +2105,13 @@ _CAPABILITIES: tuple[AgentCapabilityDefinition, ...] = (
         help_text="立即触发一次备份同步。",
         help_text_en="Trigger an immediate backup sync.",
         ai_usage_hint="立即触发备份同步。不需要参数。异步执行。",
-        examples=[{"arguments": {}, "scenario": "立即触发一次备份同步。"}],
+        examples=[
+            {
+                "arguments": {},
+                "scenario": "立即触发一次备份同步。",
+                "requires": ["configured backup sync transport"],
+            }
+        ],
         domain="backup",
         group_label="备份",
         risk_level="medium",
@@ -2134,7 +2179,7 @@ _CAPABILITIES: tuple[AgentCapabilityDefinition, ...] = (
         help_text="从备份仓库的某个 Git 提交恢复系统状态。操作会覆盖当前数据。",
         help_text_en="Restore from a backup Git commit. Overwrites current data.",
         ai_usage_hint="从 Git 提交恢复。commit_id 必传。操作覆盖当前数据，建议先备份。",
-        examples=[{"arguments": {"commit_id": "abc1234"}, "scenario": "从备份仓库的某个提交恢复。"}],
+        examples=[{"arguments": {"commit_id": "<COMMIT_ID>"}, "scenario": "从备份仓库的某个提交恢复。"}],
         domain="backup",
         group_label="备份",
         risk_level="critical",
@@ -2151,7 +2196,13 @@ _CAPABILITIES: tuple[AgentCapabilityDefinition, ...] = (
         help_text="测试备份同步配置的连通性（Git 远程是否可达）。",
         help_text_en="Test backup sync config connectivity.",
         ai_usage_hint="测试备份配置连通性。payload 必传（备份同步配置字典，或用当前已保存的配置）。",
-        examples=[{"arguments": {"payload": {}}, "scenario": "测试备份同步配置的连通性。"}],
+        examples=[
+            {
+                "arguments": {"payload": {}},
+                "scenario": "测试备份同步配置的连通性。",
+                "requires": ["configured backup sync transport"],
+            }
+        ],
         domain="backup",
         group_label="备份",
         risk_level="medium",
@@ -2256,8 +2307,15 @@ _CAPABILITIES: tuple[AgentCapabilityDefinition, ...] = (
         ai_usage_hint="创建工作流。payload 必传，含 name(名称), nodes(节点列表), edges(边列表) 等。",
         examples=[
             {
-                "arguments": {"payload": {"name": "内容审核流", "nodes": [], "edges": []}},
+                "arguments": {
+                    "payload": {
+                        "key": "<WORKFLOW_KEY>",
+                        "name": "内容审核流",
+                        "graph": {"nodes": [], "edges": []},
+                    }
+                },
                 "scenario": "创建一个新的工作流。",
+                "requires": ["valid workflow graph"],
             }
         ],
         domain="automation",
@@ -2278,7 +2336,7 @@ _CAPABILITIES: tuple[AgentCapabilityDefinition, ...] = (
         ai_usage_hint="更新工作流。workflow_key 必传，payload 必传（含修改后的工作流定义）。",
         examples=[
             {
-                "arguments": {"workflow_key": "content-review", "payload": {"name": "内容审核流 v2"}},
+                "arguments": {"workflow_key": "<WORKFLOW_KEY>", "payload": {"name": "内容审核流 v2"}},
                 "scenario": "更新工作流名称。",
             }
         ],
@@ -2298,7 +2356,7 @@ _CAPABILITIES: tuple[AgentCapabilityDefinition, ...] = (
         help_text="永久删除代理工作流定义。",
         help_text_en="Delete an agent workflow definition permanently.",
         ai_usage_hint="删除工作流。workflow_key 必传。操作不可恢复。",
-        examples=[{"arguments": {"workflow_key": "content-review"}, "scenario": "删除一个工作流。"}],
+        examples=[{"arguments": {"workflow_key": "<WORKFLOW_KEY>"}, "scenario": "删除一个工作流。"}],
         domain="automation",
         group_label="自动化",
         risk_level="critical",
@@ -2317,7 +2375,13 @@ _CAPABILITIES: tuple[AgentCapabilityDefinition, ...] = (
         ai_usage_hint="校验工作流定义。payload 必传（工作流定义 JSON）。只做校验不保存，返回校验结果。",
         examples=[
             {
-                "arguments": {"payload": {"name": "测试流", "nodes": [], "edges": []}},
+                "arguments": {
+                    "payload": {
+                        "key": "test-flow",
+                        "name": "测试流",
+                        "graph": {"nodes": [], "edges": []},
+                    }
+                },
                 "scenario": "校验工作流定义是否合法。",
             }
         ],
@@ -2361,7 +2425,7 @@ _CAPABILITIES: tuple[AgentCapabilityDefinition, ...] = (
         ai_usage_hint="测试运行工作流。workflow_key 必传，payload 必传（运行参数）。不会产生实际副作用。",
         examples=[
             {
-                "arguments": {"workflow_key": "content-review", "payload": {"inputs": {}}},
+                "arguments": {"workflow_key": "<WORKFLOW_KEY>", "payload": {"inputs": {}}},
                 "scenario": "测试运行工作流（不产生副作用）。",
             }
         ],
@@ -2507,13 +2571,14 @@ _CAPABILITIES: tuple[AgentCapabilityDefinition, ...] = (
         label_en="Create webhook",
         help_text="创建新的 Webhook 订阅。",
         help_text_en="Create a new webhook subscription.",
-        ai_usage_hint="创建 Webhook 订阅。payload 必传，含 url(目标地址), events(监听事件列表), secret(可选签名密钥)。",
+        ai_usage_hint="创建 Webhook 订阅。payload 必传，含 target_url(目标地址), event_types(监听事件列表), secret(可选签名密钥)。",
         examples=[
             {
                 "arguments": {
                     "payload": {
-                        "url": "https://example.com/webhook",
-                        "events": ["content.published"],
+                        "name": "内容发布 Webhook",
+                        "target_url": "https://example.com/webhook",
+                        "event_types": ["content.published"],
                         "secret": "my-secret",
                     }
                 },
@@ -2537,7 +2602,7 @@ _CAPABILITIES: tuple[AgentCapabilityDefinition, ...] = (
         ai_usage_hint="测试 Webhook。payload 必传（测试载荷），subscription_id 可选（指定要测试的订阅）。",
         examples=[
             {
-                "arguments": {"payload": {"url": "https://example.com/webhook"}, "subscription_id": "sub-123"},
+                "arguments": {"payload": {"target_url": "https://example.com/webhook"}, "subscription_id": "sub-123"},
                 "scenario": "向指定 Webhook 发送测试载荷。",
             }
         ],

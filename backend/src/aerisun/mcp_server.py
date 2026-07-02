@@ -4,12 +4,14 @@ import inspect
 import json
 import re
 from typing import Any
+from urllib.parse import urlsplit
 
 from fastapi.encoders import jsonable_encoder
 from pydantic import AnyHttpUrl, BaseModel
 
 from aerisun.api.admin.scopes import AGENT_CONNECT
 from aerisun.core.db import get_session_factory
+from aerisun.core.settings import Settings, get_settings
 from aerisun.domain.agent.capabilities.registry import (
     AgentCapabilityDefinition,
     list_capability_definitions,
@@ -126,7 +128,15 @@ def _serialize_tool_result(result: Any) -> Any:
 
 def _build_wrapper_signature(capability: AgentCapabilityDefinition, *, include_ctx: bool) -> inspect.Signature:
     handler_signature = inspect.signature(capability.handler)
-    parameters = [parameter.replace(annotation=Any) for parameter in handler_signature.parameters.values()]
+    try:
+        type_hints = inspect.get_annotations(capability.handler, eval_str=True)
+    except Exception:
+        type_hints = {}
+
+    parameters = [
+        parameter.replace(annotation=type_hints.get(parameter.name, parameter.annotation))
+        for parameter in handler_signature.parameters.values()
+    ]
     if parameters and parameters[0].name == "session":
         parameters = parameters[1:]
     if include_ctx:
@@ -142,7 +152,9 @@ def _build_wrapper_signature(capability: AgentCapabilityDefinition, *, include_c
                 insert_at = index
                 break
         parameters = [*parameters[:insert_at], ctx_param, *parameters[insert_at:]]
-    return_annotation: Any = str if capability.kind == "resource" else dict[str, Any]
+    return_annotation: Any = (
+        str if capability.kind == "resource" else type_hints.get("return", handler_signature.return_annotation)
+    )
     return handler_signature.replace(parameters=parameters, return_annotation=return_annotation)
 
 
@@ -156,6 +168,75 @@ def _build_wrapper_annotations(signature: inspect.Signature) -> dict[str, Any]:
         annotations[name] = Any if parameter.annotation is inspect._empty else parameter.annotation
     annotations["return"] = Any if signature.return_annotation is inspect._empty else signature.return_annotation
     return annotations
+
+
+def _append_unique(values: list[str], value: str) -> None:
+    item = value.strip()
+    if item and item not in values:
+        values.append(item)
+
+
+def _host_pattern(hostname: str) -> str:
+    host = hostname.strip()
+    if not host:
+        return ""
+    if ":" in host and not host.startswith("["):
+        return f"[{host}]"
+    return host
+
+
+def _add_url_security_values(url: str, *, allowed_hosts: list[str], allowed_origins: list[str]) -> None:
+    parsed = urlsplit(url.strip())
+    if not parsed.scheme or not parsed.netloc:
+        return
+
+    _append_unique(allowed_origins, f"{parsed.scheme}://{parsed.netloc}")
+
+    host_base = _host_pattern(parsed.hostname or "")
+    if parsed.netloc:
+        _append_unique(allowed_hosts, parsed.netloc)
+    if host_base:
+        _append_unique(allowed_hosts, host_base)
+        _append_unique(allowed_hosts, f"{host_base}:*")
+        _append_unique(allowed_origins, f"{parsed.scheme}://{host_base}")
+        _append_unique(allowed_origins, f"{parsed.scheme}://{host_base}:*")
+
+
+def build_mcp_transport_security(settings: Settings | None = None):
+    """Allow MCP requests for the configured public site and local dev origins."""
+
+    from mcp.server.transport_security import TransportSecuritySettings
+
+    resolved = settings or get_settings()
+    allowed_hosts: list[str] = []
+    allowed_origins: list[str] = []
+
+    for origin in (
+        "http://127.0.0.1",
+        "http://localhost",
+        "http://[::1]",
+        resolved.site_url,
+        *resolved.cors_origins,
+    ):
+        _add_url_security_values(origin, allowed_hosts=allowed_hosts, allowed_origins=allowed_origins)
+
+    host = _host_pattern(resolved.host)
+    if host:
+        _append_unique(allowed_hosts, host)
+        _append_unique(allowed_hosts, f"{host}:*")
+
+    return TransportSecuritySettings(
+        enable_dns_rebinding_protection=True,
+        allowed_hosts=allowed_hosts,
+        allowed_origins=allowed_origins,
+    )
+
+
+def mcp_streamable_http_url(base_url: str) -> str:
+    base = base_url.rstrip("/")
+    if not base:
+        return "/api/mcp/"
+    return f"{base}/api/mcp/"
 
 
 def _build_resource_wrapper(capability: AgentCapabilityDefinition, session_factory):
@@ -210,20 +291,24 @@ def build_mcp():
     from mcp.server.auth.settings import AuthSettings
     from mcp.server.fastmcp import FastMCP
 
+    settings = get_settings()
     session_factory = get_session_factory()
     capabilities = list_capability_definitions()
+    mcp_url = mcp_streamable_http_url(settings.site_url)
 
     mcp = FastMCP(
         "Aerisun",
         json_response=True,
         stateless_http=True,
         streamable_http_path="/",
+        host=settings.host,
         token_verifier=AerisunMcpTokenVerifier(session_factory),
         auth=AuthSettings(
             issuer_url=AnyHttpUrl("https://aerisun.invalid"),
-            resource_server_url=AnyHttpUrl("http://localhost"),
+            resource_server_url=AnyHttpUrl(mcp_url),
             required_scopes=[AGENT_CONNECT],
         ),
+        transport_security=build_mcp_transport_security(settings),
     )
 
     for capability in capabilities:

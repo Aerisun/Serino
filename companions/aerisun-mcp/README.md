@@ -44,7 +44,18 @@ companions/aerisun-mcp/
    python3 companions/aerisun-mcp/scripts/prepare_ai_bundle.py
    ```
 
-4. 把下面这些东西交给 AI：
+4. 可选：跑一次 MCP smoke test，确认 usage、meta、health、tools/resources 和只读示例调用都正常：
+
+   ```bash
+   set -a
+   source companions/aerisun-mcp/.env
+   set +a
+   uv run --directory backend python ../scripts/mcp-smoke.py \
+     --base-url "$AERISUN_MCP_BASE_URL" \
+     --api-key "$AERISUN_MCP_API_KEY"
+   ```
+
+5. 把下面这些东西交给 AI：
 
    - `companions/aerisun-mcp/skills/`
    - `companions/aerisun-mcp/runtime/briefing.md`

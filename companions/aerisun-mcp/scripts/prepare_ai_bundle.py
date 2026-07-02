@@ -4,7 +4,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import sys
 from pathlib import Path
 from typing import Any
 from urllib import error, request
@@ -51,9 +50,14 @@ def normalize_url(value: str) -> str:
     return value.rstrip("/")
 
 
+def normalize_mcp_endpoint(value: str) -> str:
+    normalized = normalize_url(value)
+    return f"{normalized}/" if normalized else ""
+
+
 def resolve_settings(values: dict[str, str]) -> dict[str, Any]:
     base_url = normalize_url(env_value(values, "AERISUN_MCP_BASE_URL"))
-    endpoint = normalize_url(env_value(values, "AERISUN_MCP_ENDPOINT"))
+    endpoint = normalize_mcp_endpoint(env_value(values, "AERISUN_MCP_ENDPOINT"))
     usage_url = normalize_url(env_value(values, "AERISUN_MCP_USAGE_URL"))
     meta_url = normalize_url(env_value(values, "AERISUN_MCP_META_URL"))
     api_key = env_value(values, "AERISUN_MCP_API_KEY")
@@ -61,7 +65,7 @@ def resolve_settings(values: dict[str, str]) -> dict[str, Any]:
     if not endpoint:
         if not base_url:
             raise SystemExit("Missing AERISUN_MCP_BASE_URL or AERISUN_MCP_ENDPOINT")
-        endpoint = f"{base_url}/api/mcp"
+        endpoint = f"{base_url}/api/mcp/"
 
     if not usage_url:
         if not base_url:
@@ -117,11 +121,11 @@ def write_json(path: Path, data: dict[str, Any]) -> None:
 def read_skill_frontmatter(path: Path) -> dict[str, str]:
     text = path.read_text(encoding="utf-8")
     if not text.startswith("---\n"):
-      return {}
+        return {}
 
     closing = text.find("\n---\n", 4)
     if closing == -1:
-      return {}
+        return {}
 
     frontmatter = text[4:closing]
     result: dict[str, str] = {}
@@ -174,9 +178,7 @@ def is_read_only_tool_name(name: str) -> bool:
 def build_openai_tool_templates(settings: dict[str, Any], usage: dict[str, Any]) -> dict[str, Any]:
     mcp = usage.get("mcp", {})
     discovered_tools = [
-        item.get("name", "").strip()
-        for item in mcp.get("tools", [])
-        if isinstance(item, dict) and item.get("name")
+        item.get("name", "").strip() for item in mcp.get("tools", []) if isinstance(item, dict) and item.get("name")
     ]
     read_only_tools = [name for name in discovered_tools if is_read_only_tool_name(name)]
     guarded_write_tools = sorted(set(read_only_tools + settings["allowed_write_tools"]))
@@ -286,6 +288,13 @@ def build_briefing(settings: dict[str, Any], usage: dict[str, Any], meta: dict[s
         "## Available MCP capabilities",
         f"- Tools: `{len(tool_names)}`",
         f"- Resources: `{len(resource_names)}`",
+        "",
+        "## Smoke test",
+        "- From the Aerisun repo root, run:",
+        (
+            "  `uv run --directory backend python ../scripts/mcp-smoke.py "
+            '--base-url "$AERISUN_MCP_BASE_URL" --api-key "$AERISUN_MCP_API_KEY"`'
+        ),
         "",
         "### Tool names",
         *tool_lines,

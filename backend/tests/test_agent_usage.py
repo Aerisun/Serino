@@ -24,9 +24,10 @@ from aerisun.api.admin.scopes import (
     VISITORS_WRITE,
 )
 from aerisun.core.db import get_session_factory
-from aerisun.core.settings import get_settings
+from aerisun.core.settings import Settings, get_settings
 from aerisun.domain.agent.service import build_workflow_planning_usage_context
 from aerisun.domain.iam.models import ApiKey
+from aerisun.mcp_server import build_mcp_transport_security, mcp_streamable_http_url
 
 READONLY_PRESET_SCOPES = [
     AGENT_CONNECT,
@@ -156,12 +157,13 @@ class TestAgentUsage:
         assert data["schema_version"] == "2026-03-usage-v2"
         endpoint_map = {item["id"]: item for item in data["endpoints"]}
         assert endpoint_map["usage_document"]["url"].endswith("/api/agent/usage")
-        assert endpoint_map["mcp_streamable_http"]["url"].endswith("/api/mcp")
+        assert endpoint_map["mcp_streamable_http"]["url"].endswith("/api/mcp/")
         assert data["scope_guide"]["available_on_current_key"] == [AGENT_CONNECT, CONTENT_READ]
         assert data["quickstart"]["steps"][0]["order"] == 1
         assert any(item["id"] == "list-content" for item in data["playbooks"])
+        assert all(step["action_type"] != "curl" for item in data["playbooks"] for step in item["steps"])
         assert any(item["code"] == "403" for item in data["troubleshooting"])
-        assert data["mcp"]["endpoint"].endswith("/api/mcp")
+        assert data["mcp"]["endpoint"].endswith("/api/mcp/")
         assert data["mcp"]["available_scopes"] == [AGENT_CONNECT, CONTENT_READ]
         tool_names = {item["name"] for item in data["mcp"]["tools"]}
         resource_names = {item["name"] for item in data["mcp"]["resources"]}
@@ -188,7 +190,12 @@ class TestAgentUsage:
         }.issubset(resource_names)
         assert data["skill_maps"][0]["id"] == "comment-moderation"
         assert data["skill_maps"][0]["docs_url"].endswith("/api/agent/usage")
-        assert data["skill_maps"][0]["where"]["endpoint"].endswith("/api/mcp")
+        assert data["skill_maps"][0]["where"]["endpoint"].endswith("/api/mcp/")
+
+        list_posts = next(item for item in data["mcp"]["tools"] if item["name"] == "list_posts")
+        list_posts_props = list_posts["invocation"]["input_schema"]["properties"]
+        assert list_posts_props["limit"]["type"] == "integer"
+        assert list_posts_props["offset"]["type"] == "integer"
 
     def test_agent_usage_rejects_disabled_api_key(self, client, admin_headers):
         self._enable_mcp(client, admin_headers)
@@ -279,6 +286,22 @@ class TestAgentUsage:
         assert "usage_document" in endpoint_ids
         assert "mcp_streamable_http" in endpoint_ids
         assert "list-content" in playbook_ids
+
+    def test_mcp_transport_security_allows_configured_public_host(self):
+        settings = Settings(
+            site_url="http://10.129.242.83",
+            cors_origins=["http://admin.example.test:5173"],
+            host="0.0.0.0",
+        )
+
+        security = build_mcp_transport_security(settings)
+
+        assert mcp_streamable_http_url(settings.site_url) == "http://10.129.242.83/api/mcp/"
+        assert "10.129.242.83" in security.allowed_hosts
+        assert "10.129.242.83:*" in security.allowed_hosts
+        assert "admin.example.test:5173" in security.allowed_hosts
+        assert "http://10.129.242.83" in security.allowed_origins
+        assert "http://admin.example.test:5173" in security.allowed_origins
 
     def test_api_key_scope_presets_drive_agent_usage(self, client, admin_headers):
         self._enable_mcp(client, admin_headers)
