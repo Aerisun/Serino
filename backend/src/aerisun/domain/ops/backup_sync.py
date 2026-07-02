@@ -29,7 +29,7 @@ from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
 from sqlalchemy.orm import Session
 
 from aerisun.core.base import uuid_str
-from aerisun.core.db import get_session_factory
+from aerisun.core.db import dispose_engine, get_session_factory
 from aerisun.core.settings import get_settings
 from aerisun.core.time import normalize_shanghai_datetime, shanghai_now
 from aerisun.domain.exceptions import ResourceNotFound, StateConflict, ValidationError
@@ -114,6 +114,8 @@ class BackupTransport(Protocol):
     def fetch_manifest(self, digest: str) -> dict[str, Any]: ...
 
     def read_chunk(self, digest: str) -> bytes: ...
+
+    def download_chunks(self, digests: list[str], destination_dir: Path) -> dict[str, Path]: ...
 
 
 def _utcnow() -> datetime:
@@ -1250,6 +1252,18 @@ def _atomic_file_replace(source: Path, target: Path) -> None:
         raise
 
 
+def _sqlite_sidecar_paths(target: Path) -> tuple[Path, Path]:
+    return (Path(f"{target}-wal"), Path(f"{target}-shm"))
+
+
+def _atomic_sqlite_replace(source: Path, target: Path) -> None:
+    for sidecar in _sqlite_sidecar_paths(target):
+        sidecar.unlink(missing_ok=True)
+    _atomic_file_replace(source, target)
+    for sidecar in _sqlite_sidecar_paths(target):
+        sidecar.unlink(missing_ok=True)
+
+
 def _zstd_compress_file(source: Path, dest: Path) -> None:
     compressor = zstd.ZstdCompressor(level=6)
     with source.open("rb") as src, dest.open("wb") as dst:
@@ -1520,7 +1534,7 @@ class SftpTransport:
                 posix = current.as_posix()
                 if posix not in seen:
                     seen.add(posix)
-                    commands.append(f"mkdir {posix}")
+                    commands.append(f"-mkdir {posix}")
         self._run_batch(commands, check=False)
 
     def _site_root(self) -> str:
@@ -1556,19 +1570,16 @@ class SftpTransport:
         """Check existence of multiple chunks in a single SFTP session."""
         if not digests:
             return {}
-        commands = [f"ls {self._chunk_path(d)}" for d in digests]
+        commands = [f"-ls {self._chunk_path(d)}" for d in digests]
         proc = self._run_batch(commands, check=False)
-        stdout_lines = (proc.stdout or "").splitlines()
-        stderr_text = proc.stderr or ""
+        stdout_lines = [
+            line.strip()
+            for line in (proc.stdout or "").splitlines()
+            if line.strip() and not line.lstrip().startswith("sftp>")
+        ]
         result: dict[str, bool] = {}
         for d in digests:
-            chunk_path = self._chunk_path(d)
-            if "not found" in stderr_text and chunk_path in stderr_text:
-                result[d] = False
-            elif any(d in line for line in stdout_lines):
-                result[d] = True
-            else:
-                result[d] = "Cannot stat" not in stderr_text or chunk_path not in stderr_text
+            result[d] = any(d in line for line in stdout_lines)
         return result
 
     def upload_chunk(self, digest: str, chunk_path: Path) -> None:
@@ -1663,6 +1674,15 @@ class SftpTransport:
             self._run_batch([f"get {self._chunk_path(digest)} {local_path}"])
             return local_path.read_bytes()
 
+    def download_chunks(self, digests: list[str], destination_dir: Path) -> dict[str, Path]:
+        if not digests:
+            return {}
+        destination_dir.mkdir(parents=True, exist_ok=True)
+        unique_digests = list(dict.fromkeys(digests))
+        commands = [f"get {self._chunk_path(digest)} {destination_dir / digest}" for digest in unique_digests]
+        self._run_batch(commands)
+        return {digest: destination_dir / digest for digest in unique_digests}
+
 
 def restore_backup_commit(session: Session, commit_id: str) -> BackupCommitRead:
     commit = repo.get_backup_commit(session, commit_id)
@@ -1673,20 +1693,44 @@ def restore_backup_commit(session: Session, commit_id: str) -> BackupCommitRead:
     transport = build_transport(config, credentials)
     commit_payload = transport.fetch_commit(commit.remote_commit_id)
     manifest = transport.fetch_manifest(commit_payload["manifest_digest"])
+    response = _commit_read(commit)
+    session.close()
     _restore_from_manifest(manifest, transport, credentials)
-    commit.restored_at = _utcnow()
-    session.commit()
-    session.refresh(commit)
-    return _commit_read(commit)
+    restored_at = _utcnow()
+    try:
+        with get_session_factory()() as restored_session:
+            _repair_restored_backup_runtime_state(restored_session, restored_at=restored_at)
+            restored_commit = repo.get_backup_commit(restored_session, commit_id)
+            if restored_commit is not None:
+                restored_commit.restored_at = restored_at
+            restored_session.commit()
+    except Exception:
+        logger.warning("Failed to persist backup restored_at after runtime restore", exc_info=True)
+    return response.model_copy(update={"restored_at": restored_at})
 
 
 def restore_backup_snapshot(session: Session, snapshot_id: str) -> BackupSnapshotRead:
     commit = repo.get_backup_commit(session, snapshot_id)
     if commit is None:
         raise ResourceNotFound("Backup snapshot not found")
-    restore_backup_commit(session, snapshot_id)
-    session.refresh(commit)
-    return _to_snapshot(commit)
+    restored = restore_backup_commit(session, snapshot_id)
+    return _to_snapshot(restored)
+
+
+def _repair_restored_backup_runtime_state(session: Session, *, restored_at: datetime) -> None:
+    message = "Backup run was interrupted by a runtime restore"
+    for run in repo.list_sync_runs(session):
+        if run.job_name == BACKUP_JOB_NAME and run.status == "running":
+            run.status = "failed"
+            run.finished_at = restored_at
+            run.last_error = message
+            run.message = message
+    for item in repo.list_backup_queue_items(session):
+        if item.status in {"queued", "running", "retrying"}:
+            item.status = "failed"
+            item.finished_at = restored_at
+            item.next_retry_at = None
+            item.last_error = message
 
 
 def _restore_from_manifest(
@@ -1697,22 +1741,39 @@ def _restore_from_manifest(
     settings = get_settings()
     temp_dir = settings.backup_sync_tmp_dir / f"restore-{uuid.uuid4().hex}"
     temp_dir.mkdir(parents=True, exist_ok=True)
+    staging_media: Path | None = None
+    staging_secrets: Path | None = None
+    staging_packs: Path | None = None
+    media_swapped = False
+    secrets_swapped = False
+    packs_swapped = False
 
     with _restore_lock:
         _restore_in_progress.set()
     try:
         datasets = manifest["datasets"]
+        chunk_cache = _prefetch_manifest_chunks(temp_dir, manifest, transport)
 
-        aerisun_zst = _materialize_manifest_payload(temp_dir, datasets["aerisun_db"], transport, credentials)
-        waline_zst = _materialize_manifest_payload(temp_dir, datasets["waline_db"], transport, credentials)
+        aerisun_zst = _materialize_manifest_payload(
+            temp_dir, datasets["aerisun_db"], transport, credentials, chunk_cache=chunk_cache
+        )
+        waline_zst = _materialize_manifest_payload(
+            temp_dir, datasets["waline_db"], transport, credentials, chunk_cache=chunk_cache
+        )
         workflow_entry = datasets.get("workflow_db")
         workflow_zst = (
-            _materialize_manifest_payload(temp_dir, workflow_entry, transport, credentials) if workflow_entry else None
+            _materialize_manifest_payload(temp_dir, workflow_entry, transport, credentials, chunk_cache=chunk_cache)
+            if workflow_entry
+            else None
         )
-        secrets_enc = _materialize_manifest_file(temp_dir, datasets["secrets"], transport)
+        secrets_zst = _materialize_manifest_payload(
+            temp_dir, datasets["secrets"], transport, credentials, chunk_cache=chunk_cache
+        )
         automation_packs_entry = datasets.get("automation_packs")
         automation_packs_zst = (
-            _materialize_manifest_payload(temp_dir, automation_packs_entry, transport, credentials)
+            _materialize_manifest_payload(
+                temp_dir, automation_packs_entry, transport, credentials, chunk_cache=chunk_cache
+            )
             if automation_packs_entry
             else None
         )
@@ -1720,7 +1781,6 @@ def _restore_from_manifest(
         aerisun_restore = temp_dir / "aerisun.restore.sqlite"
         waline_restore = temp_dir / "waline.restore.sqlite"
         workflow_restore = temp_dir / "workflow.restore.sqlite"
-        secrets_zst = temp_dir / "secrets.tar.zst"
         secrets_tar = temp_dir / "secrets.tar"
         automation_packs_tar = temp_dir / "automation-packs.tar"
 
@@ -1728,18 +1788,11 @@ def _restore_from_manifest(
         _zstd_decompress_file(waline_zst, waline_restore)
         if workflow_zst is not None:
             _zstd_decompress_file(workflow_zst, workflow_restore)
-        _decrypt_backup_file(secrets_enc, secrets_zst, credentials.secrets_private_key)
         _zstd_decompress_file(secrets_zst, secrets_tar)
         if automation_packs_zst is not None:
             _zstd_decompress_file(automation_packs_zst, automation_packs_tar)
 
-        # --- Atomic swap: databases via temp file + os.replace ---
-        _atomic_file_replace(aerisun_restore, settings.db_path)
-        _atomic_file_replace(waline_restore, settings.waline_db_path)
-        if workflow_zst is not None:
-            _atomic_file_replace(workflow_restore, settings.workflow_db_path)
-
-        # --- Media: stage into sibling dir, then swap ---
+        # Materialize and verify every non-database payload before swapping runtime data.
         staging_media = settings.media_dir.parent / f".media-staging-{uuid.uuid4().hex}"
         staging_media.mkdir(parents=True, exist_ok=True)
         for file_entry in datasets["media"]["files"]:
@@ -1747,16 +1800,11 @@ def _restore_from_manifest(
             if not str(target_path).startswith(str(staging_media.resolve())):
                 raise ValidationError("Refusing to restore media file outside media directory")
             target_path.parent.mkdir(parents=True, exist_ok=True)
-            source_path = _materialize_manifest_payload(temp_dir, file_entry, transport, credentials)
+            source_path = _materialize_manifest_payload(
+                temp_dir, file_entry, transport, credentials, chunk_cache=chunk_cache
+            )
             shutil.copy2(source_path, target_path)
-        old_media = settings.media_dir.parent / f".media-old-{uuid.uuid4().hex}"
-        if settings.media_dir.exists():
-            os.rename(settings.media_dir, old_media)
-        os.rename(staging_media, settings.media_dir)
-        if old_media.exists():
-            shutil.rmtree(old_media, ignore_errors=True)
 
-        # --- Secrets: stage, then swap (preserve backup-sync dir) ---
         staging_secrets = settings.secrets_dir.parent / f".secrets-staging-{uuid.uuid4().hex}"
         staging_secrets.mkdir(parents=True, exist_ok=True)
         _restore_secrets_tar(secrets_tar, staging_secrets)
@@ -1764,33 +1812,99 @@ def _restore_from_manifest(
             backup_sync_dir = settings.secrets_dir / "backup-sync"
             if backup_sync_dir.exists():
                 shutil.copytree(backup_sync_dir, staging_secrets / "backup-sync", dirs_exist_ok=True)
-        old_secrets = settings.secrets_dir.parent / f".secrets-old-{uuid.uuid4().hex}"
-        if settings.secrets_dir.exists():
-            os.rename(settings.secrets_dir, old_secrets)
-        os.rename(staging_secrets, settings.secrets_dir)
-        if old_secrets.exists():
-            shutil.rmtree(old_secrets, ignore_errors=True)
 
-        # --- Automation packs: stage, then swap ---
         if automation_packs_zst is not None:
             automation_packs_root = settings.data_dir / "automation" / "packs"
             staging_packs = automation_packs_root.parent / f".packs-staging-{uuid.uuid4().hex}"
             staging_packs.mkdir(parents=True, exist_ok=True)
             _restore_tar_directory(automation_packs_tar, staging_packs)
+
+        # --- Atomic swap: databases via temp file + os.replace ---
+        dispose_engine()
+        _atomic_sqlite_replace(aerisun_restore, settings.db_path)
+        _atomic_sqlite_replace(waline_restore, settings.waline_db_path)
+        if workflow_zst is not None:
+            _atomic_sqlite_replace(workflow_restore, settings.workflow_db_path)
+
+        # --- Media: swap the already verified staging tree ---
+        old_media = settings.media_dir.parent / f".media-old-{uuid.uuid4().hex}"
+        if settings.media_dir.exists():
+            os.rename(settings.media_dir, old_media)
+        os.rename(staging_media, settings.media_dir)
+        media_swapped = True
+        if old_media.exists():
+            shutil.rmtree(old_media, ignore_errors=True)
+
+        # --- Secrets: swap the already verified staging tree ---
+        old_secrets = settings.secrets_dir.parent / f".secrets-old-{uuid.uuid4().hex}"
+        if settings.secrets_dir.exists():
+            os.rename(settings.secrets_dir, old_secrets)
+        os.rename(staging_secrets, settings.secrets_dir)
+        secrets_swapped = True
+        if old_secrets.exists():
+            shutil.rmtree(old_secrets, ignore_errors=True)
+
+        # --- Automation packs: swap the already verified staging tree ---
+        if staging_packs is not None:
+            automation_packs_root = settings.data_dir / "automation" / "packs"
             old_packs = automation_packs_root.parent / f".packs-old-{uuid.uuid4().hex}"
             if automation_packs_root.exists():
                 os.rename(automation_packs_root, old_packs)
             os.rename(staging_packs, automation_packs_root)
+            packs_swapped = True
             if old_packs.exists():
                 shutil.rmtree(old_packs, ignore_errors=True)
     finally:
         _restore_in_progress.clear()
+        if staging_media is not None and not media_swapped and staging_media.exists():
+            shutil.rmtree(staging_media, ignore_errors=True)
+        if staging_secrets is not None and not secrets_swapped and staging_secrets.exists():
+            shutil.rmtree(staging_secrets, ignore_errors=True)
+        if staging_packs is not None and not packs_swapped and staging_packs.exists():
+            shutil.rmtree(staging_packs, ignore_errors=True)
         shutil.rmtree(temp_dir, ignore_errors=True)
 
 
-def _materialize_manifest_file(temp_dir: Path, entry: dict[str, Any], transport: BackupTransport) -> Path:
+def _manifest_chunk_digests(manifest: dict[str, Any]) -> list[str]:
+    digests: list[str] = []
+    seen: set[str] = set()
+
+    def add_entry(entry: dict[str, Any]) -> None:
+        for chunk in entry.get("chunks", []):
+            digest = str(chunk["digest"])
+            if digest not in seen:
+                seen.add(digest)
+                digests.append(digest)
+
+    for dataset_key, entry in manifest["datasets"].items():
+        if dataset_key == "media":
+            for file_entry in entry.get("files", []):
+                add_entry(file_entry)
+        elif isinstance(entry, dict):
+            add_entry(entry)
+    return digests
+
+
+def _prefetch_manifest_chunks(
+    temp_dir: Path,
+    manifest: dict[str, Any],
+    transport: BackupTransport,
+) -> dict[str, Path]:
+    if not hasattr(transport, "download_chunks"):
+        return {}
+    digests = _manifest_chunk_digests(manifest)
+    return transport.download_chunks(digests, temp_dir / "chunk-cache")
+
+
+def _materialize_manifest_file(
+    temp_dir: Path,
+    entry: dict[str, Any],
+    transport: BackupTransport,
+    *,
+    chunk_cache: dict[str, Path] | None = None,
+) -> Path:
     local_path = temp_dir / Path(entry["path"]).name
-    _write_chunks_to_path(entry["chunks"], local_path, transport)
+    _write_chunks_to_path(entry["chunks"], local_path, transport, chunk_cache=chunk_cache)
     if _sha256_file(local_path) != entry["digest"]:
         raise ValidationError(f"Checksum mismatch while restoring {entry['path']}")
     return local_path
@@ -1801,8 +1915,10 @@ def _materialize_manifest_payload(
     entry: dict[str, Any],
     transport: BackupTransport,
     credentials: BackupCredentialBundle,
+    *,
+    chunk_cache: dict[str, Path] | None = None,
 ) -> Path:
-    payload_path = _materialize_manifest_file(temp_dir, entry, transport)
+    payload_path = _materialize_manifest_file(temp_dir, entry, transport, chunk_cache=chunk_cache)
     encryption = entry.get("encryption") or {}
     if not encryption:
         return payload_path
@@ -1817,11 +1933,19 @@ def _materialize_manifest_payload(
     return plaintext_path
 
 
-def _write_chunks_to_path(chunks: list[dict[str, Any]], destination: Path, transport: BackupTransport) -> None:
+def _write_chunks_to_path(
+    chunks: list[dict[str, Any]],
+    destination: Path,
+    transport: BackupTransport,
+    *,
+    chunk_cache: dict[str, Path] | None = None,
+) -> None:
     destination.parent.mkdir(parents=True, exist_ok=True)
     with destination.open("wb") as fh:
         for chunk in chunks:
-            payload = transport.read_chunk(chunk["digest"])
+            digest = chunk["digest"]
+            cached_path = chunk_cache.get(digest) if chunk_cache else None
+            payload = cached_path.read_bytes() if cached_path is not None else transport.read_chunk(digest)
             if _sha256_bytes(payload) != chunk["digest"]:
                 raise ValidationError("Downloaded backup chunk digest mismatch")
             fh.write(payload)

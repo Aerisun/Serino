@@ -1602,6 +1602,9 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     assert "run_backend_python()" in runtime_lib_text
     assert "run_backend_alembic()" in runtime_lib_text
     assert "run_backend_uvicorn()" in runtime_lib_text
+    assert "ensure_runtime_identity()" in runtime_lib_text
+    assert "NSS_WRAPPER_PASSWD" in runtime_lib_text
+    assert "LD_PRELOAD" in runtime_lib_text
     assert 'source "${SCRIPT_DIR}/runtime-lib.sh"' in backend_bootstrap_text
     assert "run_backend_alembic upgrade head" in backend_bootstrap_text
     assert 'bash "${SCRIPT_DIR}/data-migrate.sh" apply --mode blocking --progress' in backend_bootstrap_text
@@ -1635,6 +1638,7 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     )[0]
     assert "record_daily_traffic_snapshot(session)" not in start_block
     assert "uv sync --frozen --no-dev --no-editable" in backend_dockerfile_text
+    assert "libnss-wrapper" in backend_dockerfile_text
     assert 'CMD ["/bin/bash", "/app/backend/scripts/bootstrap.sh"]' in backend_dockerfile_text
     assert 'command: ["/bin/bash", "/app/backend/scripts/bootstrap.sh"]' not in compose_text
     assert 'command: ["/bin/bash", "/app/backend/scripts/serve.sh"]' not in compose_text

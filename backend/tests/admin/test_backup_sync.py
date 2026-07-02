@@ -2,12 +2,19 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import subprocess
+import time
 from pathlib import Path
 
+import pytest
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import x25519
 
 from aerisun.core.settings import get_settings
+
+BASE = "/api/v1/admin/system"
+RECOVERY_PASSPHRASE = "correct horse battery staple"
+RESTORE_SPEED_LIMIT_SECONDS = 5.0
 
 
 class FakeBackupTransport:
@@ -15,6 +22,7 @@ class FakeBackupTransport:
         self.chunks: dict[str, bytes] = {}
         self.manifests: dict[str, dict] = {}
         self.commits: dict[str, dict] = {}
+        self.downloaded_chunk_batches: list[list[str]] = []
 
     def begin_session(self) -> dict[str, str]:
         return {"session_id": "fake-session", "site_slug": "test-site"}
@@ -52,6 +60,123 @@ class FakeBackupTransport:
     def read_chunk(self, digest: str) -> bytes:
         return self.chunks[digest]
 
+    def download_chunks(self, digests: list[str], destination_dir: Path) -> dict[str, Path]:
+        self.downloaded_chunk_batches.append(list(digests))
+        destination_dir.mkdir(parents=True, exist_ok=True)
+        paths: dict[str, Path] = {}
+        for digest in digests:
+            path = destination_dir / digest
+            path.write_bytes(self.chunks[digest])
+            paths[digest] = path
+        return paths
+
+
+def test_sftp_mkdirs_keep_batch_running_when_parent_exists(monkeypatch) -> None:
+    from aerisun.domain.ops.backup_sync import SftpTransport
+
+    batches: list[str] = []
+
+    def fake_run(args, *, input, text, capture_output, check):
+        batches.append(input)
+        return subprocess.CompletedProcess(args, 0, "", "")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    transport = SftpTransport(
+        host="backup.example.test",
+        port=22,
+        username="ubuntu",
+        remote_root="/home/ubuntu/aerisun-backup-test/site",
+        site_slug="site",
+    )
+    transport._mkdirs("/home/ubuntu/aerisun-backup-test/site/catalog/probes")
+
+    assert batches
+    assert batches[-1].splitlines() == [
+        "-mkdir /home",
+        "-mkdir /home/ubuntu",
+        "-mkdir /home/ubuntu/aerisun-backup-test",
+        "-mkdir /home/ubuntu/aerisun-backup-test/site",
+        "-mkdir /home/ubuntu/aerisun-backup-test/site/catalog",
+        "-mkdir /home/ubuntu/aerisun-backup-test/site/catalog/probes",
+    ]
+
+
+def test_sftp_has_chunks_treats_unlisted_digests_as_missing(monkeypatch) -> None:
+    from aerisun.domain.ops.backup_sync import SftpTransport
+
+    existing_digest = "a" * 64
+    missing_digest = "b" * 64
+    captured: dict[str, str] = {}
+
+    def fake_run(args, *, input, text, capture_output, check):
+        captured["input"] = input
+        return subprocess.CompletedProcess(
+            args,
+            0,
+            stdout="\n".join(
+                [
+                    f"sftp> -ls /remote/catalog/chunks/aa/aa/{existing_digest}",
+                    f"/remote/catalog/chunks/aa/aa/{existing_digest}",
+                    f"sftp> -ls /remote/catalog/chunks/bb/bb/{missing_digest}",
+                    "",
+                ]
+            ),
+            stderr=f'File "/remote/catalog/chunks/bb/bb/{missing_digest}" not found.\n',
+        )
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    transport = SftpTransport(
+        host="backup.example.test",
+        port=22,
+        username="ubuntu",
+        remote_root="/remote",
+        site_slug="site",
+    )
+
+    assert transport.has_chunks([existing_digest, missing_digest]) == {
+        existing_digest: True,
+        missing_digest: False,
+    }
+    assert captured["input"].splitlines() == [
+        f"-ls /remote/catalog/chunks/aa/aa/{existing_digest}",
+        f"-ls /remote/catalog/chunks/bb/bb/{missing_digest}",
+    ]
+
+
+def test_atomic_sqlite_replace_removes_stale_sidecars(tmp_path: Path) -> None:
+    from aerisun.domain.ops.backup_sync import _atomic_sqlite_replace
+
+    source = tmp_path / "source.sqlite"
+    target = tmp_path / "aerisun.db"
+    _write_sqlite_note(source, "backup_probe_main", "restored")
+    _write_sqlite_note(target, "backup_probe_main", "destroyed")
+    Path(f"{target}-wal").write_bytes(b"stale wal")
+    Path(f"{target}-shm").write_bytes(b"stale shm")
+
+    _atomic_sqlite_replace(source, target)
+
+    assert _read_sqlite_note(target, "backup_probe_main") == "restored"
+    assert not Path(f"{target}-wal").exists()
+    assert not Path(f"{target}-shm").exists()
+
+
+def _write_sqlite_note(path: Path, table_name: str, note: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with sqlite3.connect(path) as connection:
+        connection.execute(f"create table if not exists {table_name} (id integer primary key, note text)")
+        connection.execute(f"delete from {table_name}")
+        connection.execute(f"insert into {table_name} (note) values (?)", (note,))
+        connection.commit()
+
+
+def _read_sqlite_note(path: Path, table_name: str) -> str:
+    with sqlite3.connect(path) as connection:
+        row = connection.execute(f"select note from {table_name} order by id asc limit 1").fetchone()
+    assert row is not None
+    return str(row[0])
+
 
 def _write_backup_credentials(secrets_dir: Path, credential_ref: str) -> None:
     key_dir = secrets_dir / "backup-sync" / credential_ref
@@ -75,44 +200,90 @@ def _write_backup_credentials(secrets_dir: Path, credential_ref: str) -> None:
     )
 
 
-def test_backup_sync_endpoints_create_run_commit_and_restore(client, admin_headers, monkeypatch) -> None:
-    fake_transport = FakeBackupTransport()
-    monkeypatch.setattr("aerisun.domain.ops.backup_sync.build_transport", lambda config, credentials: fake_transport)
-
-    from aerisun.core.settings import get_settings
-
+def _write_runtime_sentinels(label: str, *, include_automation_pack: bool = True) -> dict[str, Path]:
     app_settings = get_settings()
-    _write_backup_credentials(app_settings.secrets_dir, "default")
     app_settings.media_dir.mkdir(parents=True, exist_ok=True)
-    app_settings.media_dir.joinpath("nested").mkdir(parents=True, exist_ok=True)
-    app_settings.media_dir.joinpath("nested/hello.txt").write_text("hello backup", encoding="utf-8")
-    app_settings.secrets_dir.joinpath("app-secret.txt").write_text("super-secret", encoding="utf-8")
-    with sqlite3.connect(app_settings.workflow_db_path) as connection:
-        connection.execute("create table if not exists backup_probe (id integer primary key, note text)")
-        connection.execute("delete from backup_probe")
-        connection.execute("insert into backup_probe (note) values (?)", ("workflow-backup",))
-        connection.commit()
+    app_settings.secrets_dir.mkdir(parents=True, exist_ok=True)
+
+    media_path = app_settings.media_dir / "nested" / "hello.txt"
+    media_path.parent.mkdir(parents=True, exist_ok=True)
+    media_path.write_text(f"media-{label}", encoding="utf-8")
+
+    secret_path = app_settings.secrets_dir / "app-secret.txt"
+    secret_path.write_text(f"secret-{label}", encoding="utf-8")
+
+    pack_path = app_settings.data_dir / "automation" / "packs" / "backup_probe_pack" / "backup-marker.txt"
+    if include_automation_pack:
+        pack_path.parent.mkdir(parents=True, exist_ok=True)
+        pack_path.parent.joinpath("manifest.yaml").write_text(
+            "\n".join(
+                [
+                    "key: backup_probe_pack",
+                    "name: Backup Probe Pack",
+                    "description: Backup fixture pack for restore tests.",
+                    "enabled: false",
+                    "schema_version: 2",
+                    "built_in: false",
+                    "",
+                ]
+            ),
+            encoding="utf-8",
+        )
+        pack_path.parent.joinpath("workflow.graph.json").write_text(
+            json.dumps({"version": 2, "nodes": [], "edges": [], "viewport": {"x": 0, "y": 0, "zoom": 1}}) + "\n",
+            encoding="utf-8",
+        )
+        pack_path.write_text(f"pack-{label}", encoding="utf-8")
+
+    _write_sqlite_note(app_settings.db_path, "backup_probe_main", f"main-{label}")
+    _write_sqlite_note(app_settings.waline_db_path, "backup_probe_waline", f"waline-{label}")
+    _write_sqlite_note(app_settings.workflow_db_path, "backup_probe_workflow", f"workflow-{label}")
+
+    return {
+        "media": media_path,
+        "secret": secret_path,
+        "pack": pack_path,
+    }
+
+
+def _assert_runtime_sentinels(label: str) -> None:
+    app_settings = get_settings()
+    assert _read_sqlite_note(app_settings.db_path, "backup_probe_main") == f"main-{label}"
+    assert _read_sqlite_note(app_settings.waline_db_path, "backup_probe_waline") == f"waline-{label}"
+    assert _read_sqlite_note(app_settings.workflow_db_path, "backup_probe_workflow") == f"workflow-{label}"
+    assert (app_settings.media_dir / "nested" / "hello.txt").read_text(encoding="utf-8") == f"media-{label}"
+    assert (app_settings.secrets_dir / "app-secret.txt").read_text(encoding="utf-8") == f"secret-{label}"
+    assert (app_settings.data_dir / "automation" / "packs" / "backup_probe_pack" / "backup-marker.txt").read_text(
+        encoding="utf-8"
+    ) == f"pack-{label}"
+
+
+def _configure_backup(client, admin_headers, *, credential_ref: str = "default", encrypt_runtime_data: bool = True):
+    app_settings = get_settings()
+    _write_backup_credentials(app_settings.secrets_dir, credential_ref)
 
     export_response = client.post(
-        "/api/v1/admin/system/backup-sync/recovery-key/export",
+        f"{BASE}/backup-sync/recovery-key/export",
         headers=admin_headers,
         json={
-            "credential_ref": "default",
+            "credential_ref": credential_ref,
             "site_slug": "test-site",
-            "passphrase": "correct horse battery staple",
+            "passphrase": RECOVERY_PASSPHRASE,
             "rotate": False,
         },
     )
     assert export_response.status_code == 200
+    export_payload = export_response.json()
+
     acknowledge_response = client.post(
-        "/api/v1/admin/system/backup-sync/recovery-key/acknowledge",
+        f"{BASE}/backup-sync/recovery-key/acknowledge",
         headers=admin_headers,
-        json={"credential_ref": "default"},
+        json={"credential_ref": credential_ref},
     )
     assert acknowledge_response.status_code == 200
 
     update_response = client.put(
-        "/api/v1/admin/system/backup-sync/config",
+        f"{BASE}/backup-sync/config",
         headers=admin_headers,
         json={
             "enabled": True,
@@ -124,60 +295,139 @@ def test_backup_sync_endpoints_create_run_commit_and_restore(client, admin_heade
             "remote_port": 22,
             "remote_path": "/srv/aerisun/backup",
             "remote_username": "backup-user",
-            "credential_ref": "default",
-            "encrypt_runtime_data": True,
+            "credential_ref": credential_ref,
+            "encrypt_runtime_data": encrypt_runtime_data,
             "max_retries": 2,
             "retry_backoff_seconds": 60,
         },
     )
     assert update_response.status_code == 200
+    return export_payload
 
-    pack_dir = app_settings.data_dir / "automation" / "packs" / "community_moderation_v1"
-    pack_dir.mkdir(parents=True, exist_ok=True)
-    marker_path = pack_dir / "backup-marker.txt"
-    marker_path.write_text("pack-backup", encoding="utf-8")
 
-    run_response = client.post("/api/v1/admin/system/backup-sync/runs", headers=admin_headers)
+def _trigger_backup(client, admin_headers) -> tuple[str, dict]:
+    run_response = client.post(f"{BASE}/backup-sync/runs", headers=admin_headers)
     assert run_response.status_code == 201
     run_payload = run_response.json()
     assert run_payload["status"] == "completed"
     assert run_payload["commit_id"]
 
+    commits_response = client.get(f"{BASE}/backup-sync/commits", headers=admin_headers)
+    assert commits_response.status_code == 200
+    commits = commits_response.json()
+    assert len(commits) == 1
+    return commits[0]["id"], commits[0]
+
+
+def _corrupt_first_chunk(fake_transport: FakeBackupTransport, entry: dict) -> None:
+    digest = entry["chunks"][0]["digest"]
+    fake_transport.chunks[digest] = b"corrupted-" + fake_transport.chunks[digest]
+
+
+def test_backup_sync_endpoints_create_run_commit_and_restore(client, admin_headers, monkeypatch) -> None:
+    fake_transport = FakeBackupTransport()
+    monkeypatch.setattr("aerisun.domain.ops.backup_sync.build_transport", lambda config, credentials: fake_transport)
+
+    app_settings = get_settings()
+    _write_runtime_sentinels("backup", include_automation_pack=False)
+    first_key = _configure_backup(client, admin_headers, encrypt_runtime_data=True)
+    _write_runtime_sentinels("backup")
+
+    commit_id, commit = _trigger_backup(client, admin_headers)
+    assert commit["datasets"]["aerisun_db"]["encryption"]["scheme"] == "x25519-aesgcm"
+    assert commit["datasets"]["waline_db"]["encryption"]["scheme"] == "x25519-aesgcm"
+    assert commit["datasets"]["workflow_db"]["encryption"]["scheme"] == "x25519-aesgcm"
+    assert commit["datasets"]["secrets"]["encryption"]["scheme"] == "x25519-aesgcm"
+    assert commit["datasets"]["automation_packs"]["encryption"]["scheme"] == "x25519-aesgcm"
+    assert commit["datasets"]["media"]["files"]
+    assert commit["datasets"]["media"]["files"][0]["encryption"]["scheme"] == "x25519-aesgcm"
+
+    backups_response = client.get(f"{BASE}/backups", headers=admin_headers)
+    assert backups_response.status_code == 200
+    assert backups_response.json()[0]["id"] == commit_id
+
+    rotate_response = client.post(
+        f"{BASE}/backup-sync/recovery-key/export",
+        headers=admin_headers,
+        json={
+            "credential_ref": "default",
+            "site_slug": "test-site",
+            "passphrase": RECOVERY_PASSPHRASE,
+            "rotate": True,
+        },
+    )
+    assert rotate_response.status_code == 200
+    assert first_key["secrets_fingerprint"] in rotate_response.json()["archived_fingerprints"]
+    acknowledge_rotated_response = client.post(
+        f"{BASE}/backup-sync/recovery-key/acknowledge",
+        headers=admin_headers,
+        json={"credential_ref": "default"},
+    )
+    assert acknowledge_rotated_response.status_code == 200
+
     queue_response = client.get("/api/v1/admin/system/backup-sync/queue", headers=admin_headers)
     assert queue_response.status_code == 200
     assert queue_response.json()[0]["status"] == "completed"
 
-    commits_response = client.get("/api/v1/admin/system/backup-sync/commits", headers=admin_headers)
-    assert commits_response.status_code == 200
-    commits = commits_response.json()
-    assert len(commits) == 1
-    commit_id = commits[0]["id"]
-    assert commits[0]["datasets"]["media"]["files"]
-    assert commits[0]["datasets"]["aerisun_db"]["encryption"]["scheme"] == "x25519-aesgcm"
-    assert commits[0]["datasets"]["media"]["files"][0]["encryption"]["scheme"] == "x25519-aesgcm"
-
-    backups_response = client.get("/api/v1/admin/system/backups", headers=admin_headers)
-    assert backups_response.status_code == 200
-    assert backups_response.json()[0]["id"] == commit_id
-
-    app_settings.media_dir.joinpath("nested/hello.txt").unlink()
+    app_settings.media_dir.joinpath("nested/hello.txt").write_text("media-damaged", encoding="utf-8")
+    app_settings.secrets_dir.joinpath("app-secret.txt").write_text("secret-damaged", encoding="utf-8")
+    (app_settings.data_dir / "automation" / "packs" / "backup_probe_pack" / "backup-marker.txt").write_text(
+        "pack-damaged", encoding="utf-8"
+    )
     app_settings.db_path.unlink(missing_ok=True)
     app_settings.waline_db_path.unlink(missing_ok=True)
     app_settings.workflow_db_path.unlink(missing_ok=True)
-    marker_path.unlink()
 
-    restore_response = client.post(
-        f"/api/v1/admin/system/backup-sync/commits/{commit_id}/restore", headers=admin_headers
-    )
+    started_at = time.perf_counter()
+    restore_response = client.post(f"{BASE}/backup-sync/commits/{commit_id}/restore", headers=admin_headers)
+    restore_elapsed = time.perf_counter() - started_at
     assert restore_response.status_code == 200
+    assert restore_elapsed <= RESTORE_SPEED_LIMIT_SECONDS, f"restore took {restore_elapsed:.3f}s"
     assert restore_response.json()["restored_at"] is not None
-    assert app_settings.media_dir.joinpath("nested/hello.txt").read_text(encoding="utf-8") == "hello backup"
-    assert app_settings.secrets_dir.joinpath("app-secret.txt").read_text(encoding="utf-8") == "super-secret"
-    with sqlite3.connect(app_settings.workflow_db_path) as connection:
-        restored = connection.execute("select note from backup_probe order by id asc").fetchone()
-    assert restored is not None
-    assert restored[0] == "workflow-backup"
-    assert marker_path.read_text(encoding="utf-8") == "pack-backup"
+    assert fake_transport.downloaded_chunk_batches
+    _assert_runtime_sentinels("backup")
+    assert (app_settings.secrets_dir / "backup-sync" / "default" / "secrets_x25519.pem").exists()
+    assert (
+        app_settings.secrets_dir
+        / "backup-sync"
+        / "default"
+        / "archived"
+        / first_key["secrets_fingerprint"]
+        / "secrets_x25519.pem"
+    ).exists()
+    rerun_response = client.post(f"{BASE}/backup-sync/runs", headers=admin_headers)
+    assert rerun_response.status_code == 201
+    assert rerun_response.json()["status"] == "completed"
+
+
+@pytest.mark.parametrize(
+    ("dataset_key", "expected_detail"),
+    [
+        ("aerisun_db", "Downloaded backup chunk digest mismatch"),
+        ("media", "Downloaded backup chunk digest mismatch"),
+    ],
+)
+def test_backup_restore_corrupt_chunk_fails_before_replacing_runtime_data(
+    client, admin_headers, monkeypatch, dataset_key: str, expected_detail: str
+) -> None:
+    fake_transport = FakeBackupTransport()
+    monkeypatch.setattr("aerisun.domain.ops.backup_sync.build_transport", lambda config, credentials: fake_transport)
+
+    _write_runtime_sentinels("backup", include_automation_pack=False)
+    _configure_backup(client, admin_headers, encrypt_runtime_data=True)
+    _write_runtime_sentinels("backup")
+    commit_id, commit = _trigger_backup(client, admin_headers)
+
+    _write_runtime_sentinels("live")
+    if dataset_key == "media":
+        _corrupt_first_chunk(fake_transport, commit["datasets"]["media"]["files"][0])
+    else:
+        _corrupt_first_chunk(fake_transport, commit["datasets"][dataset_key])
+
+    restore_response = client.post(f"{BASE}/backup-sync/commits/{commit_id}/restore", headers=admin_headers)
+    assert restore_response.status_code == 422
+    assert expected_detail in restore_response.json()["detail"]
+    _assert_runtime_sentinels("live")
 
 
 def test_backup_sync_config_test_endpoint_reports_connectivity(client, admin_headers, monkeypatch) -> None:

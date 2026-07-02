@@ -27,7 +27,8 @@ run_backend_ops_tests() {
       tests/test_bootstrap_seed.py \
       tests/test_data_backfills.py \
       tests/test_runtime_path_contracts.py \
-      tests/test_installer_lifecycle.py
+      tests/test_installer_lifecycle.py \
+      tests/admin/test_backup_sync.py
   )
 }
 

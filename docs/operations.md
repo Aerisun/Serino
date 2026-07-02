@@ -200,7 +200,7 @@ bash scripts/release-smoke-gate.sh
 它默认会串行执行三层检查：
 
 - shell 语法检查：安装器、`sercli`、关键 backend runtime 脚本
-- 运维核心回归：baseline、data migration、`sercli`、install/upgrade/rollback 生命周期测试
+- 运维核心回归：baseline、data migration、`sercli`、install/upgrade/rollback 生命周期测试、备份同步与恢复测试
 - Docker release smoke：真实构建 release 镜像并校验首页、admin、Waline、`readyz`
 
 如果本地只想先跑前两层，可以先跳过容器烟测：
