@@ -214,6 +214,34 @@ def _login_site_user(
     return client.post("/api/v1/site-auth/email", json=payload)
 
 
+def test_bound_admin_email_login_is_rate_limited(client) -> None:
+    from aerisun.core.rate_limit import limiter
+
+    email = "rate-limited-admin@example.com"
+    _seed_bound_admin_email(email=email)
+
+    limiter.enabled = True
+    limiter.reset()
+    try:
+        for _ in range(10):
+            response = _login_site_user(
+                client,
+                email=email,
+                admin_password="wrong-password",
+            )
+            assert response.status_code == 401
+
+        limited_response = _login_site_user(
+            client,
+            email=email,
+            admin_password="wrong-password",
+        )
+        assert limited_response.status_code == 429
+    finally:
+        limiter.reset()
+        limiter.enabled = False
+
+
 def test_bound_admin_email_requires_admin_console_password_before_site_login(client) -> None:
     email = "bound-admin@example.com"
     _seed_bound_admin_email(email=email)
