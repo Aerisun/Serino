@@ -7,7 +7,7 @@
 
 Serino 设计初衷是打造一个专注内容、方便配置、探索融入 Agent 与自动化的个人博客项目。
 
-> 🙏 **致谢**：本项目参考了 [waline](https://github.com/walinejs/waline)、[Shiro](https://github.com/Innei/Shiro) 、[astro-theme-pure](https://github.com/cworld1/astro-theme-pure)、 [Claude Code](https://github.com/anthropics/claude-code) ，我深深地沉醉于他们的匠心设计，在此由衷感谢和致敬这些项目作者的开源精神。
+> 🙏 **致谢**：本项目参考了 [waline](https://github.com/walinejs/waline)、[Shiro](https://github.com/Innei/Shiro) 、[astro-theme-pure](https://github.com/cworld1/astro-theme-pure)、 [Yohaku](https://github.com/Innei/Yohaku) ，我深深地沉醉于他们的匠心设计，在此由衷感谢和致敬这些项目作者的开源精神。
 
 ## ✨ 示例站点
 
@@ -72,14 +72,13 @@ curl -fsSL https://install.aerisun.top/serino/install.sh | bash
 - [x] 访客追踪系统的 debug
 - [x] 优化后端管理台的概览页面信息密度与实用性
 - [x] MCP 服务测试通过，真实可用
+- [x] 备份服务做了简化和完善，测试通过
 
 **有待努力**
 
 - [ ] 添加日常自动诊断的功能
-- [ ] 备份服务的测试
 - [ ] 对 MCP 服务进行进一步拓展和完善，进行现代化封装
 - [ ] Agent 系统的通用性和编排体验
-- [ ] 在 `sercli` 实现命令式本地备份恢复数据包
 - [ ] 实现生产环境自动发现更新，提醒更新，自动更新
 - [ ] 管理台中，站点配置管理、集成系统等高级功能的移动端适配效果
 - [ ] 更完整的 `sercli` 运维命令集
