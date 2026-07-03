@@ -57,3 +57,6 @@ venv/
 
 # Companion local secret env files
 companions/**/.env
+
+# temp
+tmp/

@@ -11,9 +11,12 @@ Serino 设计初衷是打造一个专注内容、方便配置、探索融入 Age
 
 ## ✨ 示例站点
 
-- [Aerisun](https://aerisun.top/)
+- **[Aerisun](https://aerisun.top/)**
 
-欢迎体验 Serino 带来的极简之美与灵活运转之便！
+| | |
+| --- | --- |
+| ![效果展示](docs/assets/showcase/home.png) | ![效果展示](docs/assets/showcase/post.png) |
+| ![效果展示](docs/assets/showcase/admin-home.png) | ![效果展示](docs/assets/showcase/admin-mcp.png) |
 
 ---
 
@@ -24,6 +27,7 @@ Serino 设计初衷是打造一个专注内容、方便配置、探索融入 Age
 ```bash
 curl -fsSL https://install.aerisun.top/serino/install.sh | bash
 ```
+[**点击查看《详细的部署与使用指南》**](https://aerisun.top/posts/15)
 
 <details>
 <summary>安装器会干什么：</summary>
