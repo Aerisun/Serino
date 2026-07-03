@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+import tomllib
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -1820,6 +1821,22 @@ def test_installer_systemd_units_switch_to_serino_names():
     assert (PROJECT_ROOT / "installer/systemd/serino-upgrade.timer").exists()
     assert not (PROJECT_ROOT / "installer/systemd/aerisun-upgrade.service").exists()
     assert not (PROJECT_ROOT / "installer/systemd/aerisun-upgrade.timer").exists()
+
+
+def test_project_readme_and_backend_metadata_do_not_keep_scaffold_values():
+    readme_text = read_project_file("README.md")
+    backend_metadata = tomllib.loads(read_project_file("backend/pyproject.toml"))
+    frontend_package = json.loads(read_project_file("frontend/package.json"))
+    admin_package = json.loads(read_project_file("admin/package.json"))
+
+    assert frontend_package["dependencies"]["react"].startswith("^19.")
+    assert admin_package["dependencies"]["react"].startswith("^19.")
+    assert "Frontend-React_19-blue.svg" in readme_text
+    assert "Frontend-React_18-blue.svg" not in readme_text
+    assert "raw.githubusercontent.com/Aerisun/Serino/main/docker-compose.release.yml" in readme_text
+    assert "raw.githubusercontent.com/Aerisun/Serino/main/.env.production.local.example" in readme_text
+    assert "raw.githubusercontent.com/Aerisun/Aerisun" not in readme_text
+    assert backend_metadata["project"]["description"] == "Serino FastAPI backend service"
 
 
 def test_legacy_backend_process_scripts_are_removed():

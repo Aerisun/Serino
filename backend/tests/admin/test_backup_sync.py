@@ -442,6 +442,13 @@ def _commit_chunk_digests(commit: dict) -> set[str]:
     return set(_manifest_chunk_digests({"datasets": commit["datasets"]}))
 
 
+def _media_chunk_digests(commit: dict, relative_path: str) -> set[str]:
+    for entry in commit["datasets"]["media"]["files"]:
+        if entry["path"] == relative_path:
+            return {chunk["digest"] for chunk in entry["chunks"]}
+    raise AssertionError(f"media file not found in backup manifest: {relative_path}")
+
+
 def test_trigger_backup_sync_uses_queue_item_id_before_dispatch(monkeypatch) -> None:
     from aerisun.domain.ops import backup_sync
 
@@ -1009,8 +1016,7 @@ def test_retention_retries_hidden_object_cleanup_after_chunk_delete_failure(clie
     _write_runtime_sentinels("retention-retry-one")
     _configure_backup(client, admin_headers, encrypt_runtime_data=False, max_retention_count=1)
     first_commit_id, first_commit = _trigger_backup(client, admin_headers)
-    first_chunks = _commit_chunk_digests(first_commit)
-    blocked_chunk = next(iter(first_chunks))
+    blocked_chunk = next(iter(_media_chunk_digests(first_commit, "media/nested/hello.txt")))
     fake_transport.fail_delete_chunks.add(blocked_chunk)
 
     _write_runtime_sentinels("retention-retry-two")
@@ -1020,6 +1026,7 @@ def test_retention_retries_hidden_object_cleanup_after_chunk_delete_failure(clie
     visible_response = client.get(f"{BASE}/backup-sync/commits", headers=admin_headers)
     assert visible_response.status_code == 200
     assert [commit["id"] for commit in visible_response.json()] == [second_run_response.json()["commit_id"]]
+    assert blocked_chunk not in _commit_chunk_digests(visible_response.json()[0])
     assert blocked_chunk in fake_transport.chunks
 
     with get_session_factory()() as session:

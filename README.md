@@ -1,7 +1,7 @@
 # Serino
 
 ![License](https://img.shields.io/badge/License-MIT-yellow.svg)
-![Frontend](https://img.shields.io/badge/Frontend-React_18-blue.svg)
+![Frontend](https://img.shields.io/badge/Frontend-React_19-blue.svg)
 ![Backend](https://img.shields.io/badge/Backend-FastAPI-009688.svg)
 ![Agent](https://img.shields.io/badge/Agent-LangGraph-6f42c1.svg)
 
@@ -103,8 +103,8 @@ curl -fsSL https://install.aerisun.top/serino/install.sh | bash
 
 ```bash
 mkdir aerisun && cd aerisun
-wget https://raw.githubusercontent.com/Aerisun/Aerisun/main/docker-compose.release.yml
-wget https://raw.githubusercontent.com/Aerisun/Aerisun/main/.env.production.local.example -O .env.production.local
+wget https://raw.githubusercontent.com/Aerisun/Serino/main/docker-compose.release.yml
+wget https://raw.githubusercontent.com/Aerisun/Serino/main/.env.production.local.example -O .env.production.local
 
 vim .env.production.local # 必须填写初始化管理员账号、密码等必要配置
 docker compose --env-file .env.production.local -f docker-compose.release.yml pull

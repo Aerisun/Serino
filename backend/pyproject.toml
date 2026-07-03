@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "aerisun-backend"
 version = "0.1.0"
-description = "Aerisun v1 backend skeleton"
+description = "Serino FastAPI backend service"
 requires-python = ">=3.12"
 dependencies = [
   "alembic>=1.18.4",
