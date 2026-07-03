@@ -95,7 +95,7 @@ function PostPreview({ data }: { data: ContentPreviewData }) {
           </span>
         </div>
 
-        <h1 className="text-2xl sm:text-3xl font-heading italic tracking-tight text-foreground leading-tight">
+        <h1 className="text-3xl sm:text-4xl font-heading font-bold not-italic tracking-normal text-foreground leading-[1.08]">
           {data.title || t("common.untitled")}
         </h1>
 

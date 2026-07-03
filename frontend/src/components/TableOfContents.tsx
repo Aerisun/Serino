@@ -16,7 +16,6 @@ interface TableOfContentsProps {
   content: unknown[];
 }
 
-const TARGET_FLASH_DURATION_MS = 2000;
 const TableOfContents = ({ containerRef, content }: TableOfContentsProps) => {
   const { t } = useFrontendI18n();
   const [headings, setHeadings] = useState<Heading[]>([]);
@@ -29,8 +28,6 @@ const TableOfContents = ({ containerRef, content }: TableOfContentsProps) => {
   const scrollRafRef = useRef<number | null>(null);
   const clickActiveLockRef = useRef<string | null>(null);
   const clickActiveLockTimerRef = useRef<number | null>(null);
-  const targetFlashTimerRef = useRef<number | null>(null);
-  const targetFlashElementRef = useRef<HTMLHeadingElement | null>(null);
 
   const clearClickActiveLock = useCallback(() => {
     if (clickActiveLockTimerRef.current !== null) {
@@ -40,27 +37,18 @@ const TableOfContents = ({ containerRef, content }: TableOfContentsProps) => {
     clickActiveLockRef.current = null;
   }, []);
 
-  const clearTargetFlashTimer = useCallback(() => {
-    if (targetFlashTimerRef.current !== null) {
-      window.clearTimeout(targetFlashTimerRef.current);
-      targetFlashTimerRef.current = null;
-    }
-    targetFlashElementRef.current?.classList.remove("markdown-target-flash");
-    targetFlashElementRef.current = null;
-  }, []);
-
   useEffect(() => {
     const parseHeadings = () => {
       const container = containerRef.current;
       const scoped = Array.from(
-        container?.querySelectorAll<HTMLHeadingElement>("h2, h3, h4") ?? [],
+        container?.querySelectorAll<HTMLHeadingElement>("h1, h2, h3, h4") ?? [],
       );
       const fallback =
         scoped.length > 0
           ? scoped
           : Array.from(
               document.querySelectorAll<HTMLHeadingElement>(
-                "article h2, article h3, article h4",
+                "article h1, article h2, article h3, article h4",
               ),
             );
 
@@ -216,7 +204,7 @@ const TableOfContents = ({ containerRef, content }: TableOfContentsProps) => {
       const viewportHeight = viewport.clientHeight;
       const top = activeItem.offsetTop - viewport.scrollTop;
       const bottom = top + activeItem.offsetHeight;
-      const padding = 12;
+      const padding = 28;
       const needsScroll =
         top < padding || bottom > viewportHeight - padding;
 
@@ -251,6 +239,7 @@ const TableOfContents = ({ containerRef, content }: TableOfContentsProps) => {
   useEffect(() => {
     if (!expanded || !activeId) return;
     if (followResumeTimerRef.current !== null) return;
+    if (clickActiveLockRef.current) return;
     ensureActiveVisible("smooth");
   }, [activeId, expanded, ensureActiveVisible]);
 
@@ -268,43 +257,40 @@ const TableOfContents = ({ containerRef, content }: TableOfContentsProps) => {
     return () => {
       clearFollowResumeTimer();
       clearClickActiveLock();
-      clearTargetFlashTimer();
     };
-  }, [clearClickActiveLock, clearFollowResumeTimer, clearTargetFlashTimer]);
+  }, [clearClickActiveLock, clearFollowResumeTimer]);
 
   const scrollTo = useCallback(
     (heading: Heading) => {
       clearFollowResumeTimer();
       clearClickActiveLock();
-      clearTargetFlashTimer();
 
       const { element, id } = heading;
       clickActiveLockRef.current = id;
       setActiveId(id);
       setMobileOpen(false);
 
-      element.classList.remove("markdown-target-flash");
-      element.classList.remove("markdown-target-hover");
-      void element.offsetWidth;
-      element.classList.add("markdown-target-flash");
-      targetFlashElementRef.current = element;
-      targetFlashTimerRef.current = window.setTimeout(() => {
-        element.classList.remove("markdown-target-flash");
-        targetFlashElementRef.current = null;
-        targetFlashTimerRef.current = null;
-      }, TARGET_FLASH_DURATION_MS);
+      if (element.classList.contains("markdown-target-hover")) {
+        element.classList.remove("markdown-target-hover");
+      }
 
       const nextHash = `#${encodeURIComponent(id)}`;
       if (window.location.hash !== nextHash) {
         window.history.replaceState(window.history.state, "", nextHash);
       }
 
+      autoScrollingRef.current = true;
       element.scrollIntoView({ behavior: "smooth", block: "start" });
+      stopAutoScrollFlagLater(900);
       clickActiveLockTimerRef.current = window.setTimeout(() => {
         clearClickActiveLock();
       }, 1100);
     },
-    [clearClickActiveLock, clearFollowResumeTimer, clearTargetFlashTimer],
+    [
+      clearClickActiveLock,
+      clearFollowResumeTimer,
+      stopAutoScrollFlagLater,
+    ],
   );
 
   const setTargetHover = useCallback((heading: Heading, hovered: boolean) => {
@@ -322,7 +308,9 @@ const TableOfContents = ({ containerRef, content }: TableOfContentsProps) => {
             ? "pl-8"
             : heading.level === 3
               ? "pl-5"
-              : "pl-2";
+              : heading.level === 2
+                ? "pl-2"
+                : "pl-0";
 
         return (
           <div

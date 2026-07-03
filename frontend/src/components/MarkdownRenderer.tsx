@@ -1,5 +1,6 @@
 import {
   Children,
+  cloneElement,
   Fragment,
   isValidElement,
   startTransition,
@@ -10,6 +11,7 @@ import {
   useState,
   type ComponentPropsWithoutRef,
   type CSSProperties,
+  type HTMLAttributes,
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent,
   type ReactNode,
@@ -81,6 +83,10 @@ type MarkdownAnchorProps = ComponentPropsWithoutRef<"a"> & {
 };
 
 type MarkdownAdmonitionType = "tip" | "warning" | "note" | "info" | "danger" | "success";
+type MarkdownHeadingLevel = "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
+type MarkdownHeadingProps = HTMLAttributes<HTMLHeadingElement> & {
+  level: MarkdownHeadingLevel;
+};
 
 const envApiBaseUrl =
   (typeof __AERISUN_API_BASE_URL__ === "string" ? __AERISUN_API_BASE_URL__ : "").replace(/\/+$/, "");
@@ -206,23 +212,6 @@ const showCopyToast = (message: string) => {
   }, 1500);
 };
 
-const flashMarkdownTarget = (id: string) => {
-  if (typeof document === "undefined") {
-    return;
-  }
-
-  const element = document.getElementById(id);
-  if (!element) {
-    return;
-  }
-
-  element.classList.remove("markdown-target-flash");
-  window.requestAnimationFrame(() => {
-    element.classList.add("markdown-target-flash");
-    window.setTimeout(() => element.classList.remove("markdown-target-flash"), 1600);
-  });
-};
-
 const navigateToMarkdownTarget = (href: string) => {
   if (typeof window === "undefined" || !href.startsWith("#")) {
     return false;
@@ -243,12 +232,52 @@ const navigateToMarkdownTarget = (href: string) => {
     block: "center",
   });
   window.history.pushState(null, "", href);
-  flashMarkdownTarget(targetId);
   return true;
 };
 
 const cleanChildrenArray = (children: ReactNode) =>
   Children.toArray(children).filter((child) => !(typeof child === "string" && child.trim() === ""));
+
+const headingNumberPattern = /^(\d+(?:\.\d+)+\.?|\d+\.)(?=\s*(?:[\p{Script=Han}A-Za-z]|$))/u;
+
+const formatHeadingNumberSpacing = (children: ReactNode): ReactNode => {
+  let matched = false;
+
+  const formatNode = (node: ReactNode): ReactNode => {
+    if (matched) {
+      return node;
+    }
+
+    if (typeof node === "string" || typeof node === "number") {
+      const value = String(node);
+      const match = value.match(headingNumberPattern);
+      if (!match) {
+        return node;
+      }
+
+      matched = true;
+      const sectionNumber = match[1];
+      const headingTitle = value.slice(sectionNumber.length).replace(/^\s+/, "");
+
+      return (
+        <>
+          <span className="markdown-heading-number">{sectionNumber}</span>
+          {headingTitle}
+        </>
+      );
+    }
+
+    if (isValidElement<{ children?: ReactNode }>(node) && node.props.children !== undefined) {
+      return cloneElement(node, undefined, formatChildren(node.props.children));
+    }
+
+    return node;
+  };
+
+  const formatChildren = (value: ReactNode): ReactNode => Children.map(value, formatNode);
+
+  return formatChildren(children);
+};
 
 const getHostnameLabel = (hostname: string) => hostname.replace(/^www\./, "");
 
@@ -1127,6 +1156,36 @@ function MarkdownSup({ children, className, ...props }: ComponentPropsWithoutRef
   );
 }
 
+function MarkdownHeading({
+  level,
+  children,
+  className,
+  ...props
+}: MarkdownHeadingProps) {
+  const headingClassName = [
+    `markdown-heading markdown-heading--${level}`,
+    className ?? "",
+  ].join(" ").trim();
+  const content = formatHeadingNumberSpacing(children);
+
+  switch (level) {
+    case "h1":
+      return <h1 className={headingClassName} {...props}>{content}</h1>;
+    case "h2":
+      return <h2 className={headingClassName} {...props}>{content}</h2>;
+    case "h3":
+      return <h3 className={headingClassName} {...props}>{content}</h3>;
+    case "h4":
+      return <h4 className={headingClassName} {...props}>{content}</h4>;
+    case "h5":
+      return <h5 className={headingClassName} {...props}>{content}</h5>;
+    case "h6":
+      return <h6 className={headingClassName} {...props}>{content}</h6>;
+    default:
+      return <h2 className={headingClassName} {...props}>{content}</h2>;
+  }
+}
+
 function MarkdownPre({ children, className, ...props }: ComponentPropsWithoutRef<"pre">) {
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
   const lang = getFrontendLang();
@@ -1197,14 +1256,12 @@ function MarkdownPre({ children, className, ...props }: ComponentPropsWithoutRef
 }
 
 const components = {
-  h2: ({ children, ...props }: ComponentPropsWithoutRef<"h2">) => (
-    <h2
-      className="border-l-2 border-[rgb(var(--shiro-accent-rgb)/0.34)] pl-3"
-      {...props}
-    >
-      {children}
-    </h2>
-  ),
+  h1: (props: ComponentPropsWithoutRef<"h1">) => <MarkdownHeading level="h1" {...props} />,
+  h2: (props: ComponentPropsWithoutRef<"h2">) => <MarkdownHeading level="h2" {...props} />,
+  h3: (props: ComponentPropsWithoutRef<"h3">) => <MarkdownHeading level="h3" {...props} />,
+  h4: (props: ComponentPropsWithoutRef<"h4">) => <MarkdownHeading level="h4" {...props} />,
+  h5: (props: ComponentPropsWithoutRef<"h5">) => <MarkdownHeading level="h5" {...props} />,
+  h6: (props: ComponentPropsWithoutRef<"h6">) => <MarkdownHeading level="h6" {...props} />,
   a: MarkdownAnchor,
   p: MarkdownParagraph,
   img: MarkdownImage,

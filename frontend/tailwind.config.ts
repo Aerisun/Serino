@@ -61,7 +61,7 @@ export default {
       typography: {
         DEFAULT: {
           css: {
-            "--tw-prose-body": "hsl(var(--foreground) / 0.55)",
+            "--tw-prose-body": "hsl(var(--foreground) / 0.68)",
             "--tw-prose-headings": "hsl(var(--foreground) / 0.9)",
             "--tw-prose-links": "rgb(var(--shiro-accent-rgb) / 0.82)",
             "--tw-prose-bold": "hsl(var(--foreground) / 0.75)",
@@ -78,7 +78,9 @@ export default {
             "--tw-prose-captions": "hsl(var(--foreground) / 0.35)",
             "h1, h2, h3, h4": {
               fontFamily: "'Instrument Serif', serif",
-              fontStyle: "italic",
+              fontStyle: "normal",
+              fontWeight: "700",
+              letterSpacing: "0",
             },
             a: {
               textDecoration: "none",

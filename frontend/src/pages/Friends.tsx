@@ -602,7 +602,7 @@ const Friends = () => {
           >
             <ArticleMarkdownRenderer
               content={applicationMarkdown}
-              className="prose-headings:font-heading prose-headings:italic prose-headings:text-foreground prose-p:text-[15px] prose-p:leading-8 prose-li:text-[15px] prose-li:leading-8 prose-strong:text-foreground prose-a:text-[rgb(var(--shiro-accent-rgb)/0.88)]"
+              className="prose-headings:font-heading prose-headings:not-italic prose-headings:font-bold prose-headings:tracking-normal prose-headings:text-foreground prose-p:text-[15px] prose-p:leading-8 prose-li:text-[15px] prose-li:leading-8 prose-strong:text-foreground prose-a:text-[rgb(var(--shiro-accent-rgb)/0.88)]"
             />
           </motion.section>
         ) : null}

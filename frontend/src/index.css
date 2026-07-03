@@ -899,6 +899,8 @@
     scrollbar-width: none;
     touch-action: pan-y;
     -webkit-overflow-scrolling: touch;
+    padding-bottom: calc(var(--toc-mask-size) + 0.75rem);
+    scroll-padding-block: var(--toc-mask-size);
     -webkit-mask-image: linear-gradient(
       to bottom,
       transparent 0,
