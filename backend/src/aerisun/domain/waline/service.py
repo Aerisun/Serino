@@ -599,6 +599,44 @@ def set_counter_value(
         connection.commit()
 
 
+def increment_counter_pageview(
+    *,
+    url: str,
+    db_path: Path | None = None,
+) -> None:
+    normalized_url = (url or "").strip()
+    if not normalized_url:
+        return
+
+    timestamp = _to_sql_timestamp(None)
+    with connect_waline_db(db_path) as connection:
+        row = connection.execute(
+            "SELECT id FROM wl_counter WHERE url = ? ORDER BY id ASC LIMIT 1",
+            (normalized_url,),
+        ).fetchone()
+        if row is not None:
+            connection.execute(
+                """
+                UPDATE wl_counter
+                SET time = COALESCE(time, 0) + 1, updatedAt = ?
+                WHERE id = ?
+                """,
+                (timestamp, row["id"]),
+            )
+        else:
+            columns = ["url", "time", *WALINE_REACTION_COLUMNS]
+            placeholders = ", ".join("?" for _ in columns)
+            values = [normalized_url, 1, *[0 for _ in WALINE_REACTION_COLUMNS]]
+            connection.execute(
+                f"""
+                INSERT INTO wl_counter ({", ".join(columns)}, createdAt, updatedAt)
+                VALUES ({placeholders}, ?, ?)
+                """,
+                [*values, timestamp, timestamp],
+            )
+        connection.commit()
+
+
 def list_counter_history_by_date(
     *,
     db_path: Path | None = None,

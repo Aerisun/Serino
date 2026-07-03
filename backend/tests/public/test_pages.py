@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from aerisun.core.db import get_session_factory
+from aerisun.core.time import shanghai_now
 from aerisun.domain.content.models import PostEntry
 from aerisun.domain.engagement.models import Reaction
+from aerisun.domain.ops.models import VisitRecord
 from aerisun.domain.waline.service import connect_waline_db
 
 
@@ -104,3 +106,56 @@ def test_public_content_stats_prefer_waline_counters(client) -> None:
     assert detail["view_count"] == 4321
     assert detail["like_count"] == 10
     assert detail["comment_count"] == 2
+
+
+def test_public_content_view_count_uses_recorded_page_visits_when_waline_counter_is_empty(client) -> None:
+    slug = "why-i-choose-indie-design"
+    path = f"/posts/{slug}"
+
+    with connect_waline_db() as connection:
+        connection.execute(
+            """
+            UPDATE wl_counter
+            SET time = 0, updatedAt = CURRENT_TIMESTAMP
+            WHERE url = ?
+            """,
+            (path,),
+        )
+        connection.commit()
+
+    session_factory = get_session_factory()
+    with session_factory() as session:
+        post = session.query(PostEntry).filter(PostEntry.slug == slug).first()
+        assert post is not None
+        post.view_count = 0
+        now = shanghai_now()
+        session.add_all(
+            [
+                VisitRecord(
+                    visited_at=now,
+                    path=path,
+                    ip_address="203.0.113.201",
+                    user_agent="Mozilla/5.0",
+                    status_code=200,
+                    duration_ms=120,
+                    is_bot=False,
+                ),
+                VisitRecord(
+                    visited_at=now,
+                    path=path,
+                    ip_address="203.0.113.202",
+                    user_agent="Mozilla/5.0",
+                    status_code=200,
+                    duration_ms=140,
+                    is_bot=False,
+                ),
+            ]
+        )
+        session.commit()
+
+    collection = client.get("/api/v1/site/posts").json()["items"]
+    detail = client.get(f"/api/v1/site/posts/{slug}").json()
+    post = next(item for item in collection if item["slug"] == slug)
+
+    assert post["view_count"] == 2
+    assert detail["view_count"] == 2

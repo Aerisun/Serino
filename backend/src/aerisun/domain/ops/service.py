@@ -51,7 +51,12 @@ from aerisun.domain.ops.schemas import (
 from aerisun.domain.ops.user_agent import parse_user_agent
 from aerisun.domain.ops.visit_tracking import compute_visitor_id, parse_referer, parse_utm, split_path_query
 from aerisun.domain.social.models import Friend
-from aerisun.domain.waline.service import count_waline_records, list_counter_history_by_date, list_counter_stats
+from aerisun.domain.waline.service import (
+    count_waline_records,
+    increment_counter_pageview,
+    list_counter_history_by_date,
+    list_counter_stats,
+)
 
 _STARTUP_TIME = time.time()
 _UPTIME_STARTED_AT_FILENAME = ".serino-uptime-started-at"
@@ -142,6 +147,76 @@ class VisitRecordPayload:
     utm_campaign: str | None = None
     utm_term: str | None = None
     utm_content: str | None = None
+    increment_public_counter: bool = True
+
+
+_CONTENT_PAGEVIEW_PREFIXES = ("/posts/", "/diary/", "/thoughts/", "/excerpts/")
+
+
+def _should_increment_content_pageview(payload: VisitRecordPayload) -> bool:
+    return (
+        payload.status_code < 400
+        and not payload.is_bot
+        and any(payload.path.startswith(prefix) for prefix in _CONTENT_PAGEVIEW_PREFIXES)
+    )
+
+
+def persist_visit_record_payload(session: Session, payload: VisitRecordPayload) -> None:
+    repo.create_visit_record(
+        session,
+        visited_at=payload.visited_at,
+        path=payload.path,
+        query=payload.query,
+        ip_address=payload.ip_address,
+        visitor_id=payload.visitor_id,
+        user_agent=payload.user_agent,
+        browser=payload.browser,
+        browser_version=payload.browser_version,
+        os=payload.os,
+        os_version=payload.os_version,
+        device_type=payload.device_type,
+        screen=payload.screen,
+        language=payload.language,
+        referer=payload.referer,
+        referer_domain=payload.referer_domain,
+        utm_source=payload.utm_source,
+        utm_medium=payload.utm_medium,
+        utm_campaign=payload.utm_campaign,
+        utm_term=payload.utm_term,
+        utm_content=payload.utm_content,
+        status_code=payload.status_code,
+        duration_ms=payload.duration_ms,
+        is_bot=payload.is_bot,
+    )
+    session.commit()
+
+    if payload.increment_public_counter and _should_increment_content_pageview(payload):
+        increment_counter_pageview(url=payload.path)
+
+
+def _persist_visit_record_payload_inline(payload: VisitRecordPayload) -> bool:
+    try:
+        from aerisun.core.db import get_session_factory
+
+        session_factory = get_session_factory()
+        with session_factory() as session:
+            persist_visit_record_payload(session, payload)
+    except Exception:
+        _visit_logger.exception("visit_record_inline_persist_failed", path=payload.path)
+        return False
+    return True
+
+
+def _increment_public_counter_before_queue(payload: VisitRecordPayload) -> bool:
+    if not _should_increment_content_pageview(payload):
+        return False
+    try:
+        increment_counter_pageview(url=payload.path)
+    except Exception:
+        _visit_logger.exception("visit_public_counter_increment_failed", path=payload.path)
+        return False
+    payload.increment_public_counter = False
+    return True
 
 
 class VisitRecordQueue:
@@ -207,33 +282,7 @@ class VisitRecordQueue:
                 break
             try:
                 with session_factory() as session:
-                    repo.create_visit_record(
-                        session,
-                        visited_at=payload.visited_at,
-                        path=payload.path,
-                        query=payload.query,
-                        ip_address=payload.ip_address,
-                        visitor_id=payload.visitor_id,
-                        user_agent=payload.user_agent,
-                        browser=payload.browser,
-                        browser_version=payload.browser_version,
-                        os=payload.os,
-                        os_version=payload.os_version,
-                        device_type=payload.device_type,
-                        screen=payload.screen,
-                        language=payload.language,
-                        referer=payload.referer,
-                        referer_domain=payload.referer_domain,
-                        utm_source=payload.utm_source,
-                        utm_medium=payload.utm_medium,
-                        utm_campaign=payload.utm_campaign,
-                        utm_term=payload.utm_term,
-                        utm_content=payload.utm_content,
-                        status_code=payload.status_code,
-                        duration_ms=payload.duration_ms,
-                        is_bot=payload.is_bot,
-                    )
-                    session.commit()
+                    persist_visit_record_payload(session, payload)
             except Exception:
                 _visit_logger.exception("visit_record_persist_failed", path=payload.path)
             finally:
@@ -325,7 +374,10 @@ def record_page_visit(
         utm_term=utm.term,
         utm_content=utm.content,
     )
-    return enqueue_visit_record(payload)
+    counter_incremented = _increment_public_counter_before_queue(payload)
+    if enqueue_visit_record(payload):
+        return True
+    return _persist_visit_record_payload_inline(payload) or counter_incremented
 
 
 async def start_visit_record_worker() -> None:

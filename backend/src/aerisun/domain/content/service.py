@@ -24,6 +24,7 @@ from aerisun.domain.content.schemas import (
     ContentTitleSuggestionRead,
 )
 from aerisun.domain.exceptions import ResourceNotFound, StateConflict, ValidationError
+from aerisun.domain.ops import repository as ops_repo
 from aerisun.domain.waline.service import build_comment_path, count_records_by_urls, get_counter_stats_by_urls
 
 ContentModel = TypeVar("ContentModel", PostEntry, DiaryEntry, ThoughtEntry, ExcerptEntry)
@@ -607,20 +608,28 @@ def _format_relative_date(value: datetime | None) -> str | None:
     return f"{max(1, total_days // 365)} 年前"
 
 
-def _engagement_stats_by_slug(content_type: str, slugs: list[str]) -> dict[str, dict[str, int | None]]:
+def _engagement_stats_by_slug(
+    session: Session,
+    content_type: str,
+    slugs: list[str],
+) -> dict[str, dict[str, int | None]]:
     if not slugs:
         return {}
 
     paths = [build_comment_path(content_type, slug) for slug in slugs]
     counts_by_path = count_records_by_urls(urls=paths, status="approved")
     counter_stats_by_path = get_counter_stats_by_urls(urls=paths)
+    visit_counts_by_path = ops_repo.count_successful_visit_records_by_paths(session, paths=paths)
     stats_by_slug: dict[str, dict[str, int | None]] = {}
     for slug in slugs:
         path = build_comment_path(content_type, slug)
         counter_stats = counter_stats_by_path.get(path)
+        counter_view_count = counter_stats.pageview_count if counter_stats is not None else None
+        visit_view_count = visit_counts_by_path.get(path)
+        view_count_candidates = [value for value in (counter_view_count, visit_view_count) if value is not None]
         stats_by_slug[slug] = {
             "comment_count": counts_by_path.get(path, 0),
-            "view_count": counter_stats.pageview_count if counter_stats is not None else None,
+            "view_count": max(view_count_candidates) if view_count_candidates else None,
             "like_count": counter_stats.reaction_count if counter_stats is not None else 0,
         }
     return stats_by_slug
@@ -642,8 +651,8 @@ def _to_entry(
     source = getattr(item, "source", None)
     fallback_view_count = getattr(item, "view_count", 0) or 0
     stats = engagement_stats.get(item.slug, {})
-    waline_view_count = stats.get("view_count")
-    view_count = fallback_view_count if waline_view_count is None else waline_view_count
+    measured_view_count = stats.get("view_count")
+    view_count = max(value for value in (fallback_view_count, measured_view_count) if value is not None)
 
     return ContentEntryRead(
         slug=item.slug,
@@ -688,7 +697,7 @@ def _list_entries(
         include_private=include_private,
     )
     slugs = [item.slug for item in items]
-    engagement_stats = _engagement_stats_by_slug(content_type, slugs)
+    engagement_stats = _engagement_stats_by_slug(session, content_type, slugs)
     return ContentCollectionRead(
         items=[_to_entry(row, content_type, engagement_stats) for row in items],
         total=total,
@@ -707,7 +716,7 @@ def _get_by_slug(
     item = repo.find_by_slug(session, model, slug, include_private=include_private)
     if item is None:
         raise ResourceNotFound(f"{model.__name__} with slug '{slug}' was not found")
-    engagement_stats = _engagement_stats_by_slug(content_type, [item.slug])
+    engagement_stats = _engagement_stats_by_slug(session, content_type, [item.slug])
     return _to_entry(item, content_type, engagement_stats)
 
 

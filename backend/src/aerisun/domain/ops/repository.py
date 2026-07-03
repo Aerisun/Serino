@@ -985,6 +985,23 @@ def list_visit_top_pages(
     return list(query.all())
 
 
+def count_successful_visit_records_by_paths(session: Session, *, paths: list[str]) -> dict[str, int]:
+    if not paths:
+        return {}
+
+    rows = (
+        session.query(VisitRecord.path, func.count(VisitRecord.id).label("views"))
+        .filter(
+            VisitRecord.path.in_(paths),
+            VisitRecord.status_code < 400,
+            VisitRecord.is_bot.is_(False),
+        )
+        .group_by(VisitRecord.path)
+        .all()
+    )
+    return {str(path): int(views) for path, views in rows}
+
+
 def list_visit_history_by_day(
     session: Session,
     *,

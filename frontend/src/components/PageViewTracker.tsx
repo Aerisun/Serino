@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "react-router-dom";
 import {
   currentLanguage,
@@ -6,6 +7,7 @@ import {
   navigationLoadMs,
   reportPageView,
 } from "@/lib/visit-beacon";
+import { incrementPostViewCountInCache } from "@/lib/content-view-cache";
 
 // Paths that should never be counted as public page views.
 const IGNORED_PREFIXES = ["/preview", "/admin"];
@@ -14,6 +16,11 @@ function isIgnored(pathname: string): boolean {
   return IGNORED_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );
+}
+
+export function resolvePostDetailSlug(pathname: string): string | null {
+  const match = pathname.match(/^\/posts\/([^/]+)\/?$/);
+  return match ? decodeURIComponent(match[1]) : null;
 }
 
 /**
@@ -29,6 +36,7 @@ function isIgnored(pathname: string): boolean {
  */
 export default function PageViewTracker() {
   const location = useLocation();
+  const queryClient = useQueryClient();
   const lastReportedRef = useRef<string | null>(null);
   const isFirstReportRef = useRef(true);
   const transitionMsRef = useRef<number | null>(null);
@@ -80,10 +88,15 @@ export default function PageViewTracker() {
         language: currentLanguage(),
         loadMs,
       });
+
+      const postSlug = resolvePostDetailSlug(location.pathname);
+      if (postSlug) {
+        incrementPostViewCountInCache(queryClient, postSlug);
+      }
     }, 300);
 
     return () => window.clearTimeout(timer);
-  }, [location.pathname, location.search]);
+  }, [location.pathname, location.search, queryClient]);
 
   return null;
 }
