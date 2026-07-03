@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { lazy, Suspense, useState, useCallback, useRef, useEffect, useMemo, useLayoutEffect } from "react";
 import { createPortal } from "react-dom";
 import {
   Bold,
@@ -69,6 +69,11 @@ function getIsMobileEditorViewport() {
     return false;
   }
   return window.matchMedia(MOBILE_EDITOR_QUERY).matches;
+}
+
+function parsePixelHeight(value: string) {
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 export function MarkdownEditor({
@@ -206,7 +211,7 @@ export function MarkdownEditor({
     return () => cancelAnimationFrame(frame);
   }, [mobileComposerOpen, preview, useMobileFullscreen]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (useMobileFullscreen && mobileComposerOpen) {
       return;
     }
@@ -218,9 +223,11 @@ export function MarkdownEditor({
     if (!textarea) {
       return;
     }
-    textarea.style.height = "0px";
-    const nextHeight = Math.max(textarea.scrollHeight, minHeightPx);
-    setEditorHeight(`${nextHeight}px`);
+    const measuredHeight = Math.max(textarea.scrollHeight, minHeightPx);
+    setEditorHeight((currentHeight) => {
+      const nextHeight = Math.max(measuredHeight, parsePixelHeight(currentHeight));
+      return `${nextHeight}px`;
+    });
   }, [autoExpand, minHeight, minHeightPx, mobileComposerOpen, useMobileFullscreen, value]);
 
   const insertMarkdown = useCallback((action: string) => {
@@ -452,7 +459,9 @@ export function MarkdownEditor({
         style={
           fullScreen
             ? { minHeight: 0 }
-            : { minHeight, height: autoExpand ? editorHeight : minHeight }
+            : autoExpand
+              ? { minHeight, height: editorHeight }
+              : { minHeight }
         }
         value={value}
         onChange={(e) => onChange(e.target.value)}
