@@ -12,6 +12,7 @@ from aerisun.api.deps.site_auth import (
     get_current_site_user_optional,
 )
 from aerisun.core.db import get_session
+from aerisun.core.rate_limit import RATE_AUTH_LOGIN, limiter
 from aerisun.domain.exceptions import DomainError
 from aerisun.domain.site_auth.models import SiteUser, SiteUserSession
 from aerisun.domain.site_auth.oauth import parse_oauth_state_cookie
@@ -185,6 +186,7 @@ def read_avatar_candidates(
 
 
 @base_router.post("/email", response_model=EmailLoginResponse, summary="通过邮箱识别登录")
+@limiter.limit(RATE_AUTH_LOGIN)
 def email_login(
     request: Request,
     payload: EmailLoginRequest,
