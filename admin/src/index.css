@@ -129,6 +129,24 @@ body {
   min-height: 100vh;
 }
 
+.markdown-preview-image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.markdown-preview-image--portrait {
+  max-width: min(100%, 24rem);
+}
+
+@media (max-width: 640px) {
+  .markdown-preview-image--portrait {
+    max-width: min(78%, 16rem);
+  }
+}
+
 .dark body {
   background: linear-gradient(135deg, hsl(240 10% 6.5%) 0%, hsl(255 7% 8.5%) 48%, hsl(170 10% 9%) 100%);
   background-attachment: fixed;

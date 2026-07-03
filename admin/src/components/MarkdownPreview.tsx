@@ -7,6 +7,7 @@ import {
   useState,
   type ComponentPropsWithoutRef,
   type ReactNode,
+  type SyntheticEvent,
 } from "react";
 import { ExternalLink, Link2 } from "lucide-react";
 import ReactMarkdown, { type Components } from "react-markdown";
@@ -313,19 +314,44 @@ function MarkdownParagraph({ children, ...props }: ComponentPropsWithoutRef<"p">
   return <p {...props}>{children}</p>;
 }
 
-const components = {
-  a: MarkdownAnchor,
-  p: MarkdownParagraph,
-  img: ({ alt = "", src, ...props }: ComponentPropsWithoutRef<"img">) => (
+function MarkdownPreviewImage({
+  alt = "",
+  src,
+  className,
+  onLoad,
+  ...props
+}: ComponentPropsWithoutRef<"img">) {
+  const [isPortrait, setIsPortrait] = useState(false);
+  const imageClassName = [
+    "markdown-preview-image",
+    "rounded-2xl",
+    isPortrait ? "markdown-preview-image--portrait" : "",
+    className ?? "",
+  ].join(" ").trim();
+
+  const handleImageLoad = (event: SyntheticEvent<HTMLImageElement>) => {
+    const image = event.currentTarget;
+    setIsPortrait(image.naturalHeight > image.naturalWidth);
+    onLoad?.(event);
+  };
+
+  return (
     <img
       src={src}
       alt={alt}
       loading="lazy"
       decoding="async"
-      className="rounded-2xl"
+      className={imageClassName}
+      onLoad={handleImageLoad}
       {...props}
     />
-  ),
+  );
+}
+
+const components = {
+  a: MarkdownAnchor,
+  p: MarkdownParagraph,
+  img: MarkdownPreviewImage,
   code: ({ className, children, ...props }: ComponentPropsWithoutRef<"code">) => {
     const content = String(children ?? "");
     const isBlock = /\n/.test(content) || Boolean(className);

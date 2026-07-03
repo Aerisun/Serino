@@ -13,6 +13,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent,
   type ReactNode,
+  type SyntheticEvent,
 } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -544,12 +545,31 @@ function MarkdownRichLinkCard({ href }: { href: string }) {
   );
 }
 
-function MarkdownImage({ src, alt, title, ...props }: ComponentPropsWithoutRef<"img">) {
+function MarkdownImage({
+  src,
+  alt,
+  title,
+  className,
+  onLoad,
+  ...props
+}: ComponentPropsWithoutRef<"img">) {
   const [open, setOpen] = useState(false);
+  const [isPortrait, setIsPortrait] = useState(false);
   const caption = title?.trim() || alt?.trim();
   const resolvedSrc = resolveMarkdownImageSrc(src);
   const closeLabel = getText("markdown.imageClose", "关闭大图");
   const zoomLabel = getText("markdown.imageZoom", "查看大图");
+  const imageClassName = [
+    "markdown-figure-image",
+    isPortrait ? "markdown-figure-image--portrait" : "",
+    className ?? "",
+  ].join(" ").trim();
+
+  const handleImageLoad = (event: SyntheticEvent<HTMLImageElement>) => {
+    const image = event.currentTarget;
+    setIsPortrait(image.naturalHeight > image.naturalWidth);
+    onLoad?.(event);
+  };
 
   useEffect(() => {
     if (!open || typeof window === "undefined") {
@@ -584,8 +604,9 @@ function MarkdownImage({ src, alt, title, ...props }: ComponentPropsWithoutRef<"
           <img
             src={resolvedSrc}
             alt={alt}
-            className="markdown-figure-image"
+            className={imageClassName}
             loading="lazy"
+            onLoad={handleImageLoad}
             {...props}
           />
         </button>

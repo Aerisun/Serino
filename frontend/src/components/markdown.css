@@ -379,6 +379,16 @@ code:not([class*="language-"]) {
     inset 0 1px 0 rgb(255 255 255 / 0.08);
 }
 
+.prose .markdown-figure-image--portrait {
+  max-width: min(100%, 24rem);
+}
+
+@media (max-width: 640px) {
+  .prose .markdown-figure-image--portrait {
+    max-width: min(78%, 16rem);
+  }
+}
+
 .prose .markdown-figure-caption {
   display: block;
   max-width: min(100%, 42rem);
@@ -867,6 +877,19 @@ code:not([class*="language-"]) {
 .prose .markdown-grid-images .markdown-figure .markdown-figure-image,
 .prose .markdown-gallery .markdown-figure .markdown-figure-image {
   width: 100%;
+}
+
+.prose .markdown-grid-images .markdown-figure .markdown-figure-image--portrait,
+.prose .markdown-gallery .markdown-figure .markdown-figure-image--portrait {
+  width: auto;
+  max-width: min(100%, 24rem);
+}
+
+@media (max-width: 640px) {
+  .prose .markdown-grid-images .markdown-figure .markdown-figure-image--portrait,
+  .prose .markdown-gallery .markdown-figure .markdown-figure-image--portrait {
+    max-width: min(78%, 16rem);
+  }
 }
 
 /* Tabs */
