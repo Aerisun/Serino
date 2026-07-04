@@ -34,6 +34,7 @@ import type {
   ContentSubscriptionPublicRead,
   ContentSubscriptionPublicStatusRead,
   ContentSubscriptionPublicUnsubscribeResult,
+  ContentSummaryCollectionRead,
   FriendCollectionRead,
   FriendFeedCollectionRead,
   HTTPValidationError,
@@ -1219,7 +1220,7 @@ export function useReadLinkPreviewImageApiV1SiteLinkPreviewImageGet<TData = Awai
  * @summary 获取已发布文章列表
  */
 export type readPostsApiV1SitePostsGetResponse200 = {
-  data: ContentCollectionRead
+  data: ContentSummaryCollectionRead
   status: 200
 }
 
@@ -1460,7 +1461,7 @@ export function useReadPostApiV1SitePostsSlugGet<TData = Awaited<ReturnType<type
  * @summary 获取日记列表
  */
 export type readDiaryApiV1SiteDiaryGetResponse200 = {
-  data: ContentCollectionRead
+  data: ContentSummaryCollectionRead
   status: 200
 }
 

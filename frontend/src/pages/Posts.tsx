@@ -11,7 +11,7 @@ import { useFrontendI18n } from "@/i18n";
 import { formatPostCount } from "@/lib/format";
 import { formatPublishedDate } from "@/lib/api/utils";
 import { readPostApiV1SitePostsSlugGet, readPostsApiV1SitePostsGet } from "@serino/api-client/site";
-import type { ContentEntryRead } from "@serino/api-client/models";
+import type { ContentSummaryRead } from "@serino/api-client/models";
 import type { BaseViewPageConfig } from "@/lib/page-config";
 import { useInfiniteList } from "@/hooks/use-infinite-list";
 import { clampPageSize } from "@/lib/page-size";
@@ -36,10 +36,10 @@ interface PostsPageConfig extends BaseViewPageConfig {
   };
 }
 
-const mapRemotePost = (entry: ContentEntryRead): Post => ({
+const mapRemotePost = (entry: ContentSummaryRead): Post => ({
   slug: entry.slug,
   title: entry.title,
-  excerpt: entry.summary ?? entry.body,
+  excerpt: entry.summary ?? "",
   date: entry.relative_date ?? (formatPublishedDate(entry.published_at) || ""),
   isArchived: entry.visibility === "private",
   category: entry.category || entry.tags[0] || "",

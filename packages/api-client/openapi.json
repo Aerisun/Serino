@@ -370,7 +370,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ContentCollectionRead"
+                  "$ref": "#/components/schemas/ContentSummaryCollectionRead"
                 }
               }
             }
@@ -500,7 +500,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ContentCollectionRead"
+                  "$ref": "#/components/schemas/ContentSummaryCollectionRead"
                 }
               }
             }
@@ -20455,10 +20455,6 @@
             "title": "Summary",
             "description": "Brief summary or excerpt"
           },
-          "body": {
-            "title": "Body",
-            "description": "Full content body in Markdown"
-          },
           "tags": {
             "title": "Tags",
             "description": "List of tag names"
@@ -20530,6 +20526,10 @@
           "source": {
             "title": "Source",
             "description": "Source URL or reference"
+          },
+          "body": {
+            "title": "Body",
+            "description": "Full content body in Markdown"
           }
         },
         "type": "object",
@@ -20537,12 +20537,12 @@
           "slug",
           "title",
           "summary",
-          "body",
           "tags",
           "visibility",
           "published_at",
           "created_at",
-          "updated_at"
+          "updated_at",
+          "body"
         ],
         "title": "ContentEntryRead"
       },
@@ -21221,6 +21221,127 @@
           "recipient"
         ],
         "title": "ContentSubscriptionTestResult"
+      },
+      "ContentSummaryCollectionRead": {
+        "properties": {
+          "items": {
+            "title": "Items",
+            "description": "List of content summaries"
+          },
+          "total": {
+            "title": "Total",
+            "description": "Total number of matching entries"
+          },
+          "has_more": {
+            "title": "Has More",
+            "description": "Whether more entries are available"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "ContentSummaryCollectionRead"
+      },
+      "ContentSummaryRead": {
+        "properties": {
+          "slug": {
+            "title": "Slug",
+            "description": "URL-friendly unique identifier"
+          },
+          "title": {
+            "title": "Title",
+            "description": "Content display title"
+          },
+          "summary": {
+            "title": "Summary",
+            "description": "Brief summary or excerpt"
+          },
+          "tags": {
+            "title": "Tags",
+            "description": "List of tag names"
+          },
+          "visibility": {
+            "title": "Visibility",
+            "description": "Visibility level"
+          },
+          "published_at": {
+            "title": "Published At",
+            "description": "Publication timestamp"
+          },
+          "created_at": {
+            "title": "Created At",
+            "description": "Creation timestamp"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "description": "Last update timestamp"
+          },
+          "category": {
+            "title": "Category",
+            "description": "Content category"
+          },
+          "read_time": {
+            "title": "Read Time",
+            "description": "Estimated reading time"
+          },
+          "display_date": {
+            "title": "Display Date",
+            "description": "Formatted display date string"
+          },
+          "relative_date": {
+            "title": "Relative Date",
+            "description": "Relative time string (e.g. 3 days ago)"
+          },
+          "view_count": {
+            "title": "View Count",
+            "description": "Total page views"
+          },
+          "comment_count": {
+            "title": "Comment Count",
+            "description": "Number of comments"
+          },
+          "like_count": {
+            "title": "Like Count",
+            "description": "Number of likes"
+          },
+          "repost_count": {
+            "title": "Repost Count",
+            "description": "Number of reposts"
+          },
+          "mood": {
+            "title": "Mood",
+            "description": "Author mood (diary-specific)"
+          },
+          "weather": {
+            "title": "Weather",
+            "description": "Weather description (diary-specific)"
+          },
+          "poem": {
+            "title": "Poem",
+            "description": "Associated poem text"
+          },
+          "author": {
+            "title": "Author",
+            "description": "Original author name"
+          },
+          "source": {
+            "title": "Source",
+            "description": "Source URL or reference"
+          }
+        },
+        "type": "object",
+        "required": [
+          "slug",
+          "title",
+          "summary",
+          "tags",
+          "visibility",
+          "published_at",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ContentSummaryRead"
       },
       "ContentTitleSuggestionRead": {
         "properties": {

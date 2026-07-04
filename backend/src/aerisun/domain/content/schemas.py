@@ -8,11 +8,10 @@ from pydantic import BaseModel, Field
 from aerisun.core.schemas import ModelBase
 
 
-class ContentEntryRead(ModelBase):
+class ContentSummaryRead(ModelBase):
     slug: str = Field(description="URL-friendly unique identifier")
     title: str = Field(description="Content display title")
     summary: str | None = Field(description="Brief summary or excerpt")
-    body: str = Field(description="Full content body in Markdown")
     tags: list[str] = Field(description="List of tag names")
     visibility: str = Field(description="Visibility level")
     published_at: datetime | None = Field(description="Publication timestamp")
@@ -31,6 +30,16 @@ class ContentEntryRead(ModelBase):
     poem: str | None = Field(default=None, description="Associated poem text")
     author: str | None = Field(default=None, description="Original author name")
     source: str | None = Field(default=None, description="Source URL or reference")
+
+
+class ContentEntryRead(ContentSummaryRead):
+    body: str = Field(description="Full content body in Markdown")
+
+
+class ContentSummaryCollectionRead(ModelBase):
+    items: list[ContentSummaryRead] = Field(description="List of content summaries")
+    total: int = Field(default=0, description="Total number of matching entries")
+    has_more: bool = Field(default=False, description="Whether more entries are available")
 
 
 class ContentCollectionRead(ModelBase):

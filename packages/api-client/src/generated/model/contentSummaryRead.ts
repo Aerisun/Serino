@@ -5,7 +5,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface ContentEntryRead {
+export interface ContentSummaryRead {
   /** URL-friendly unique identifier */
   slug: unknown;
   /** Content display title */
@@ -48,6 +48,4 @@ export interface ContentEntryRead {
   author?: unknown;
   /** Source URL or reference */
   source?: unknown;
-  /** Full content body in Markdown */
-  body: unknown;
 }

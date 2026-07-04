@@ -21,6 +21,8 @@ from aerisun.domain.content.schemas import (
     ContentCategoryRead,
     ContentCollectionRead,
     ContentEntryRead,
+    ContentSummaryCollectionRead,
+    ContentSummaryRead,
     ContentTitleSuggestionRead,
 )
 from aerisun.domain.exceptions import ResourceNotFound, StateConflict, ValidationError
@@ -569,8 +571,12 @@ def normalize_content_update_state(session: Session, existing: ContentModel, pat
     return normalized
 
 
+def _estimate_read_time_for_length(value: int) -> str:
+    return f"{max(1, round(value / 180))} 分钟"
+
+
 def _estimate_read_time(value: str) -> str:
-    return f"{max(1, round(len(value) / 180))} 分钟"
+    return _estimate_read_time_for_length(len(value))
 
 
 def _format_display_date(value: datetime | None) -> str | None:
@@ -635,11 +641,26 @@ def _engagement_stats_by_slug(
     return stats_by_slug
 
 
-def _to_entry(
+def _summary_fallback_from_body(value: str, *, max_length: int = 500) -> str | None:
+    for paragraph in re.split(r"\n{2,}", value):
+        normalized = " ".join(paragraph.split())
+        if not normalized:
+            continue
+        if len(normalized) <= max_length:
+            return normalized
+        return normalized[: max_length - 1].rstrip() + "…"
+    return None
+
+
+def _content_summary_payload(
     item: ContentModel,
     content_type: str,
     engagement_stats: dict[str, dict[str, int | None]],
-) -> ContentEntryRead:
+    *,
+    include_read_time: bool,
+    summary_fallback_body: str | None = None,
+    read_time_body_length: int | None = None,
+) -> dict:
     published_reference = item.published_at or item.created_at
 
     # Read type-specific fields directly from the model
@@ -654,29 +675,69 @@ def _to_entry(
     measured_view_count = stats.get("view_count")
     view_count = max(value for value in (fallback_view_count, measured_view_count) if value is not None)
 
+    summary = item.summary
+    if not (summary or "").strip() and summary_fallback_body:
+        summary = _summary_fallback_from_body(summary_fallback_body)
+
+    return {
+        "slug": item.slug,
+        "title": item.title,
+        "summary": summary,
+        "tags": item.tags,
+        "visibility": item.visibility,
+        "published_at": item.published_at,
+        "created_at": item.created_at,
+        "updated_at": item.updated_at,
+        "category": category,
+        "read_time": (
+            _estimate_read_time(item.body)
+            if include_read_time
+            else _estimate_read_time_for_length(read_time_body_length)
+            if read_time_body_length is not None
+            else None
+        ),
+        "display_date": _format_display_date(published_reference),
+        "relative_date": _format_relative_date(published_reference),
+        "view_count": view_count,
+        "comment_count": stats.get("comment_count", 0),
+        "like_count": stats.get("like_count", 0),
+        "repost_count": 0,
+        "mood": mood,
+        "weather": weather,
+        "poem": poem,
+        "author": author_name,
+        "source": source,
+    }
+
+
+def _to_summary_entry(
+    item: ContentModel,
+    content_type: str,
+    engagement_stats: dict[str, dict[str, int | None]],
+    *,
+    summary_fallback_body: str | None = None,
+    read_time_body_length: int | None = None,
+) -> ContentSummaryRead:
+    return ContentSummaryRead(
+        **_content_summary_payload(
+            item,
+            content_type,
+            engagement_stats,
+            include_read_time=False,
+            summary_fallback_body=summary_fallback_body,
+            read_time_body_length=read_time_body_length,
+        ),
+    )
+
+
+def _to_entry(
+    item: ContentModel,
+    content_type: str,
+    engagement_stats: dict[str, dict[str, int | None]],
+) -> ContentEntryRead:
     return ContentEntryRead(
-        slug=item.slug,
-        title=item.title,
-        summary=item.summary,
+        **_content_summary_payload(item, content_type, engagement_stats, include_read_time=True),
         body=item.body,
-        tags=item.tags,
-        visibility=item.visibility,
-        published_at=item.published_at,
-        created_at=item.created_at,
-        updated_at=item.updated_at,
-        category=category,
-        read_time=_estimate_read_time(item.body),
-        display_date=_format_display_date(published_reference),
-        relative_date=_format_relative_date(published_reference),
-        view_count=view_count,
-        comment_count=stats.get("comment_count", 0),
-        like_count=stats.get("like_count", 0),
-        repost_count=0,
-        mood=mood,
-        weather=weather,
-        poem=poem,
-        author=author_name,
-        source=source,
     )
 
 
@@ -705,6 +766,45 @@ def _list_entries(
     )
 
 
+def _list_summary_entries(
+    session: Session,
+    model: type[ContentModel],
+    content_type: str,
+    limit: int,
+    offset: int = 0,
+    *,
+    include_private: bool = False,
+) -> ContentSummaryCollectionRead:
+    items, total = repo.find_published(
+        session,
+        model,
+        limit=limit,
+        offset=offset,
+        include_private=include_private,
+        load_body=False,
+    )
+    slugs = [item.slug for item in items]
+    item_ids = [item.id for item in items]
+    engagement_stats = _engagement_stats_by_slug(session, content_type, slugs)
+    missing_summary_ids = [item.id for item in items if not (item.summary or "").strip()]
+    body_lengths = repo.load_body_lengths_by_ids(session, model, item_ids)
+    summary_fallback_bodies = repo.load_bodies_by_ids(session, model, missing_summary_ids)
+    return ContentSummaryCollectionRead(
+        items=[
+            _to_summary_entry(
+                row,
+                content_type,
+                engagement_stats,
+                summary_fallback_body=summary_fallback_bodies.get(row.id),
+                read_time_body_length=body_lengths.get(row.id),
+            )
+            for row in items
+        ],
+        total=total,
+        has_more=offset + limit < total,
+    )
+
+
 def _get_by_slug(
     session: Session,
     model: type[ContentModel],
@@ -726,8 +826,8 @@ def list_public_posts(
     offset: int = 0,
     *,
     include_private: bool = False,
-) -> ContentCollectionRead:
-    return _list_entries(session, PostEntry, "posts", limit, offset, include_private=include_private)
+) -> ContentSummaryCollectionRead:
+    return _list_summary_entries(session, PostEntry, "posts", limit, offset, include_private=include_private)
 
 
 def get_public_post(session: Session, slug: str, *, include_private: bool = False) -> ContentEntryRead:
@@ -740,8 +840,8 @@ def list_public_diary_entries(
     offset: int = 0,
     *,
     include_private: bool = False,
-) -> ContentCollectionRead:
-    return _list_entries(session, DiaryEntry, "diary", limit, offset, include_private=include_private)
+) -> ContentSummaryCollectionRead:
+    return _list_summary_entries(session, DiaryEntry, "diary", limit, offset, include_private=include_private)
 
 
 def get_public_diary_entry(session: Session, slug: str, *, include_private: bool = False) -> ContentEntryRead:

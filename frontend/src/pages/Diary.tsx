@@ -13,12 +13,12 @@ import { staggerItem } from "@/config";
 import { usePageConfig } from "@/contexts/runtime-config";
 import { useFrontendI18n, type FrontendLang } from "@/i18n";
 import { useInfiniteList } from "@/hooks/use-infinite-list";
-import { formatPublishedDate, splitContentParagraphs } from "@/lib/api/utils";
+import { formatPublishedDate } from "@/lib/api/utils";
 import { clampPageSize } from "@/lib/page-size";
 import { warmInternalHref } from "@/lib/route-preload";
 import { formatDateInBeijing, getBeijingDateParts } from "@/lib/time";
 import { readDiaryApiV1SiteDiaryGet } from "@serino/api-client/site";
-import type { ContentEntryRead } from "@serino/api-client/models";
+import type { ContentSummaryRead } from "@serino/api-client/models";
 import type { BaseViewPageConfig } from "@/lib/page-config";
 import {
   DIARY_WEATHER_ICONS,
@@ -74,12 +74,11 @@ const splitPoemAuthor = (poem?: string) => {
 };
 
 const mapRemoteDiaryEntry = (
-  entry: ContentEntryRead,
+  entry: ContentSummaryRead,
   index: number,
   t: (key: string, values?: Record<string, string | number>, fallback?: string) => string,
   lang: FrontendLang,
 ): DiaryEntry => {
-  const paragraphs = splitContentParagraphs(entry.body);
   const weather = normalizeDiaryWeather(entry.weather);
   const weatherLabelKey = getDiaryWeatherLabelKey(entry.weather);
 
@@ -93,7 +92,7 @@ const mapRemoteDiaryEntry = (
     weather,
     weatherLabel: weatherLabelKey ? t(weatherLabelKey) : "",
     mood: entry.mood ?? undefined,
-    content: entry.summary?.trim() || paragraphs[0] || entry.body || entry.title,
+    content: entry.summary?.trim() || entry.title,
     poem: entry.poem?.trim() || undefined,
   };
 };

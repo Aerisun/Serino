@@ -151,7 +151,7 @@ export const ReadPostsApiV1SitePostsGetQueryParams = zod.object({
 })
 
 export const ReadPostsApiV1SitePostsGetResponse = zod.object({
-  "items": zod.unknown().describe('List of content entries'),
+  "items": zod.unknown().describe('List of content summaries'),
   "total": zod.unknown().optional().describe('Total number of matching entries'),
   "has_more": zod.unknown().optional().describe('Whether more entries are available')
 })
@@ -168,7 +168,6 @@ export const ReadPostApiV1SitePostsSlugGetResponse = zod.object({
   "slug": zod.unknown().describe('URL-friendly unique identifier'),
   "title": zod.unknown().describe('Content display title'),
   "summary": zod.unknown().describe('Brief summary or excerpt'),
-  "body": zod.unknown().describe('Full content body in Markdown'),
   "tags": zod.unknown().describe('List of tag names'),
   "visibility": zod.unknown().describe('Visibility level'),
   "published_at": zod.unknown().describe('Publication timestamp'),
@@ -186,7 +185,8 @@ export const ReadPostApiV1SitePostsSlugGetResponse = zod.object({
   "weather": zod.unknown().optional().describe('Weather description (diary-specific)'),
   "poem": zod.unknown().optional().describe('Associated poem text'),
   "author": zod.unknown().optional().describe('Original author name'),
-  "source": zod.unknown().optional().describe('Source URL or reference')
+  "source": zod.unknown().optional().describe('Source URL or reference'),
+  "body": zod.unknown().describe('Full content body in Markdown')
 })
 
 
@@ -207,7 +207,7 @@ export const ReadDiaryApiV1SiteDiaryGetQueryParams = zod.object({
 })
 
 export const ReadDiaryApiV1SiteDiaryGetResponse = zod.object({
-  "items": zod.unknown().describe('List of content entries'),
+  "items": zod.unknown().describe('List of content summaries'),
   "total": zod.unknown().optional().describe('Total number of matching entries'),
   "has_more": zod.unknown().optional().describe('Whether more entries are available')
 })
@@ -224,7 +224,6 @@ export const ReadDiaryEntryApiV1SiteDiarySlugGetResponse = zod.object({
   "slug": zod.unknown().describe('URL-friendly unique identifier'),
   "title": zod.unknown().describe('Content display title'),
   "summary": zod.unknown().describe('Brief summary or excerpt'),
-  "body": zod.unknown().describe('Full content body in Markdown'),
   "tags": zod.unknown().describe('List of tag names'),
   "visibility": zod.unknown().describe('Visibility level'),
   "published_at": zod.unknown().describe('Publication timestamp'),
@@ -242,7 +241,8 @@ export const ReadDiaryEntryApiV1SiteDiarySlugGetResponse = zod.object({
   "weather": zod.unknown().optional().describe('Weather description (diary-specific)'),
   "poem": zod.unknown().optional().describe('Associated poem text'),
   "author": zod.unknown().optional().describe('Original author name'),
-  "source": zod.unknown().optional().describe('Source URL or reference')
+  "source": zod.unknown().optional().describe('Source URL or reference'),
+  "body": zod.unknown().describe('Full content body in Markdown')
 })
 
 

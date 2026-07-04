@@ -28,7 +28,7 @@ from aerisun.domain.activity.service import (
     list_calendar_events,
     list_recent_activity,
 )
-from aerisun.domain.content.schemas import ContentCollectionRead, ContentEntryRead
+from aerisun.domain.content.schemas import ContentCollectionRead, ContentEntryRead, ContentSummaryCollectionRead
 from aerisun.domain.content.service import (
     get_public_diary_entry,
     get_public_post,
@@ -338,7 +338,7 @@ def read_link_preview_image(
     )
 
 
-@base_router.get("/posts", response_model=ContentCollectionRead, summary="获取已发布文章列表")
+@base_router.get("/posts", response_model=ContentSummaryCollectionRead, summary="获取已发布文章列表")
 def read_posts(
     request: Request = None,
     limit: int = Query(default=20, ge=1, le=100),
@@ -346,7 +346,7 @@ def read_posts(
     session: Session = Depends(get_session),
     current_user: SiteUser | None = Depends(get_current_site_user_optional),
     current_site_session: SiteUserSession | None = Depends(get_current_site_session_optional),
-) -> ContentCollectionRead | Response:
+) -> ContentSummaryCollectionRead | Response:
     payload = list_public_posts(
         session,
         limit=limit,
@@ -376,7 +376,7 @@ def read_post(
     return _build_conditional_json_response(request, payload=payload)
 
 
-@base_router.get("/diary", response_model=ContentCollectionRead, summary="获取日记列表")
+@base_router.get("/diary", response_model=ContentSummaryCollectionRead, summary="获取日记列表")
 def read_diary(
     request: Request = None,
     limit: int = Query(default=20, ge=1, le=100),
@@ -384,7 +384,7 @@ def read_diary(
     session: Session = Depends(get_session),
     current_user: SiteUser | None = Depends(get_current_site_user_optional),
     current_site_session: SiteUserSession | None = Depends(get_current_site_session_optional),
-) -> ContentCollectionRead | Response:
+) -> ContentSummaryCollectionRead | Response:
     payload = list_public_diary_entries(
         session,
         limit=limit,

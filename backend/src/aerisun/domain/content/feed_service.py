@@ -8,7 +8,7 @@ from xml.etree.ElementTree import Element, SubElement, tostring
 from sqlalchemy.orm import Session
 
 from aerisun.core.time import to_beijing_datetime
-from aerisun.domain.content.schemas import ContentCollectionRead
+from aerisun.domain.content.schemas import ContentCollectionRead, ContentSummaryCollectionRead
 from aerisun.domain.content.service import (
     list_public_diary_entries,
     list_public_excerpts,
@@ -26,7 +26,7 @@ class FeedDefinition:
     feed_path: str
     channel_path: str
     item_path_template: str
-    list_items: Callable[[Session, int, int], ContentCollectionRead]
+    list_items: Callable[[Session, int, int], ContentCollectionRead | ContentSummaryCollectionRead]
     limit: int = 20
 
 
@@ -139,7 +139,8 @@ def build_feed_rss_xml(session: Session, site_url: str, feed_key: str, *, limit:
         SubElement(entry, "title").text = item.title
         SubElement(entry, "link").text = item_url
         SubElement(entry, "guid").text = item_url
-        description = item.summary or _strip_html(item.body)
+        body = getattr(item, "body", "")
+        description = item.summary or _strip_html(body)
         SubElement(entry, "description").text = description
 
         published_at = item.published_at or item.created_at

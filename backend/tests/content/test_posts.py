@@ -13,6 +13,30 @@ def test_read_posts_returns_seeded_collection(client) -> None:
     assert len(payload["items"]) == 8
     assert payload["items"][0]["slug"] == "from-zero-design-system"
     assert payload["items"][1]["slug"] == "liquid-glass-css-notes"
+    assert "body" not in payload["items"][0]
+
+
+def test_read_posts_summary_list_preserves_body_excerpt_fallback(client, admin_headers) -> None:
+    body = "这是旧列表会显示的正文第一段。\n\n这是第二段，不应该进入列表摘要。"
+    create_response = client.post(
+        "/api/v1/admin/posts/",
+        json={
+            "slug": "post-without-summary",
+            "title": "未填写摘要的文章",
+            "body": body,
+            "tags": ["fallback"],
+            "visibility": "public",
+        },
+        headers=admin_headers,
+    )
+    assert create_response.status_code == 201
+
+    response = client.get("/api/v1/site/posts?limit=100")
+
+    assert response.status_code == 200
+    entry = next(item for item in response.json()["items"] if item["slug"] == "post-without-summary")
+    assert entry["summary"] == "这是旧列表会显示的正文第一段。"
+    assert "body" not in entry
 
 
 def test_read_posts_supports_conditional_get(client) -> None:
@@ -48,6 +72,8 @@ def test_read_post_returns_seeded_detail(client) -> None:
     assert payload["title"] == "从零搭建个人设计系统的完整思路"
     assert "status" not in payload
     assert payload["visibility"] == "public"
+    assert isinstance(payload["body"], str)
+    assert payload["body"]
 
 
 def test_read_post_returns_404_for_unknown_slug(client) -> None:

@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import TypeVar
 
 from sqlalchemy import Select, desc, func, or_, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, load_only
 
 from aerisun.domain.content.models import (
     ContentCategory,
@@ -32,6 +32,28 @@ def _public_filter(model: type[ContentModel], *, include_private: bool = False) 
     return select(model).where(visibility_filter).order_by(desc(model.published_at), desc(model.created_at))
 
 
+def _summary_load_attributes(model: type[ContentModel]) -> list:
+    fields = [
+        "id",
+        "slug",
+        "title",
+        "summary",
+        "category",
+        "tags",
+        "visibility",
+        "published_at",
+        "created_at",
+        "updated_at",
+        "view_count",
+        "mood",
+        "weather",
+        "poem",
+        "author_name",
+        "source",
+    ]
+    return [getattr(model, field) for field in fields if hasattr(model, field)]
+
+
 def find_published(
     session: Session,
     model: type[ContentModel],
@@ -39,12 +61,29 @@ def find_published(
     limit: int,
     offset: int = 0,
     include_private: bool = False,
+    load_body: bool = True,
 ) -> tuple[list, int]:
     """Paginated query for public content. Returns (items, total)."""
     base = _public_filter(model, include_private=include_private)
     total = session.scalar(select(func.count()).select_from(base.subquery())) or 0
+    if not load_body:
+        base = base.options(load_only(*_summary_load_attributes(model)))
     items = list(session.scalars(base.offset(offset).limit(limit)).all())
     return items, total
+
+
+def load_bodies_by_ids(session: Session, model: type[ContentModel], ids: list[str]) -> dict[str, str]:
+    if not ids:
+        return {}
+    rows = session.execute(select(model.id, model.body).where(model.id.in_(ids))).all()
+    return {item_id: body for item_id, body in rows}
+
+
+def load_body_lengths_by_ids(session: Session, model: type[ContentModel], ids: list[str]) -> dict[str, int]:
+    if not ids:
+        return {}
+    rows = session.execute(select(model.id, func.length(model.body)).where(model.id.in_(ids))).all()
+    return {item_id: int(length or 0) for item_id, length in rows}
 
 
 def find_by_slug(

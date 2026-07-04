@@ -254,6 +254,8 @@ export * from './contentSubscriptionPublicRead';
 export * from './contentSubscriptionPublicStatusRead';
 export * from './contentSubscriptionPublicUnsubscribeResult';
 export * from './contentSubscriptionTestResult';
+export * from './contentSummaryCollectionRead';
+export * from './contentSummaryRead';
 export * from './contentTitleSuggestionRead';
 export * from './contentUpdate';
 export * from './dashboardAuxMetrics';
