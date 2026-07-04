@@ -50,7 +50,7 @@ def test_robots_txt(client):
     assert "Sitemap:" in r.text
 
 
-def test_robots_txt_balances_ai_discovery_and_training_opt_out(client):
+def test_robots_txt_allows_discovery_without_overblocking_general_crawlers(client):
     r = client.get("/robots.txt")
     assert r.status_code == 200
 
@@ -74,7 +74,8 @@ def test_robots_txt_balances_ai_discovery_and_training_opt_out(client):
         assert f"User-agent: {user_agent}\nAllow: /" in r.text
 
     for user_agent in ("GPTBot", "Google-Extended", "ClaudeBot", "CCBot"):
-        assert f"User-agent: {user_agent}\nDisallow: /" in r.text
+        assert f"User-agent: {user_agent}\nDisallow: /" not in r.text
+        assert f"User-agent: {user_agent}" not in r.text
 
 
 def test_robots_txt_uses_configured_admin_base_path():

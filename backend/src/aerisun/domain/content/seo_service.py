@@ -111,12 +111,6 @@ def build_robots_txt(site_url: str, *, admin_base_path: str = "/admin/", api_bas
         "Google-NotebookLM",
         "Google-Read-Aloud",
     ]
-    training_agents = [
-        "GPTBot",
-        "Google-Extended",
-        "ClaudeBot",
-        "CCBot",
-    ]
     groups: list[str] = []
 
     for user_agent in allowed_search_agents:
@@ -126,16 +120,6 @@ def build_robots_txt(site_url: str, *, admin_base_path: str = "/admin/", api_bas
                     f"User-agent: {user_agent}",
                     "Allow: /",
                     *protected_paths,
-                ]
-            )
-        )
-
-    for user_agent in training_agents:
-        groups.append(
-            "\n".join(
-                [
-                    f"User-agent: {user_agent}",
-                    "Disallow: /",
                 ]
             )
         )
