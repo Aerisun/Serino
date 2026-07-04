@@ -19,10 +19,13 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         waline_url = settings.waline_server_url.strip()
         parsed_waline_url = urlparse(waline_url)
         waline_origin = waline_url if parsed_waline_url.scheme and parsed_waline_url.netloc else ""
-        script_sources = _build_source_list("'self'", waline_origin)
+        script_sources = _build_source_list("'self'", "'unsafe-inline'", waline_origin)
         connect_sources = _build_source_list("'self'", waline_origin)
         frame_sources = _build_source_list("'self'", waline_origin)
         self.is_production = settings.environment == "production"
+        # script-src 允许内联：公开站点和管理端 index.html 需要同步注入主题、站点图标和
+        # 资源预连接提示，SEO HTML 也复用这些启动脚本。收紧到 hash/nonce 会让构建和配置
+        # 变更很容易造成白屏。
         # style-src 保留 'unsafe-inline'：motion (framer-motion) 和 Waline 通过 JS
         # 动态创建 <style> 标签，CSP nonce 对此无效，移除会导致动画和评论样式全部失效。
         self.csp = "; ".join(
@@ -31,6 +34,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
                 f"script-src {script_sources}",
                 "style-src 'self' 'unsafe-inline'",
                 "img-src 'self' data: https: blob:",
+                "media-src 'self' data: blob: https:",
                 "font-src 'self' data:",
                 f"connect-src {connect_sources}",
                 f"frame-src {frame_sources}",
