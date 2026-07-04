@@ -205,7 +205,15 @@ def test_private_diary_machine_readable_surfaces_do_not_expose_details(client) -
     assert any(item["type"] == "diary" for item in calendar.json()["events"])
 
     assert activity.status_code == 200
-    assert all(item["kind"] != "publish_diary" for item in activity.json()["items"])
+    activity_items = activity.json()["items"]
+    diary_activity = next(item for item in activity_items if item["href"] == f"/diary/{DIARY_SLUG}")
+    assert diary_activity["kind"] == "publish_diary"
+    assert diary_activity["target_title"] == "春分，天气转暖"
+    assert diary_activity["excerpt"] == "阳光从窗帘缝隙里漏进来，整个房间都有一点松动感。"
+    assert "今天把博客首页重新整理了一遍" not in activity.text
+    assert all(
+        item["kind"] == "publish_diary" or not str(item["href"]).startswith("/diary/") for item in activity_items
+    )
 
     assert collection_html.status_code == 200
     assert DIARY_SLUG not in collection_html.text

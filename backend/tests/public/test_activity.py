@@ -6,8 +6,10 @@ import aerisun.domain.activity.service as activity_service
 from aerisun.core.db import get_session_factory
 from aerisun.core.settings import get_settings
 from aerisun.core.time import BEIJING_TZ
-from aerisun.domain.content.models import PostEntry
+from aerisun.domain.content.models import DiaryEntry, PostEntry
+from aerisun.domain.diary_access.service import DIARY_PRIVATE_FEATURE_FLAG
 from aerisun.domain.engagement.models import Reaction
+from aerisun.domain.site_config.models import SiteProfile
 from aerisun.domain.waline.service import connect_waline_db
 
 
@@ -80,6 +82,54 @@ def test_read_recent_activity_falls_back_to_published_content_when_no_interactio
     assert payload["items"]
     assert all(item["kind"].startswith("publish_") for item in payload["items"])
     assert any((item["target_title"] or item["excerpt"]) for item in payload["items"])
+
+
+def test_read_recent_activity_keeps_private_diary_publish_visible_with_preview(client) -> None:
+    session_factory = get_session_factory()
+    with session_factory() as session:
+        profile = session.query(SiteProfile).one()
+        profile.feature_flags = {
+            **dict(profile.feature_flags or {}),
+            DIARY_PRIVATE_FEATURE_FLAG: True,
+        }
+        session.add(
+            DiaryEntry(
+                slug="private-recent-activity-diary",
+                title="Hidden Diary Title",
+                summary="Hidden diary summary",
+                body="Hidden diary body",
+                tags=[],
+                visibility="public",
+                published_at=datetime(2026, 4, 2, 12, tzinfo=BEIJING_TZ),
+            )
+        )
+        session.add(
+            DiaryEntry(
+                slug="private-recent-activity-body-only-diary",
+                title="Body Only Diary Title",
+                summary=None,
+                body="Body-only diary secret should never appear in recent activity.",
+                tags=[],
+                visibility="public",
+                published_at=datetime(2026, 4, 3, 12, tzinfo=BEIJING_TZ),
+            )
+        )
+        session.commit()
+
+    response = client.get("/api/v1/site/recent-activity?limit=8")
+
+    assert response.status_code == 200
+    items = response.json()["items"]
+    diary_item = next(item for item in items if item["href"] == "/diary/private-recent-activity-diary")
+    assert diary_item["kind"] == "publish_diary"
+    assert diary_item["target_title"] == "Hidden Diary Title"
+    assert diary_item["excerpt"] == "Hidden diary summary"
+    body_only_diary_item = next(
+        item for item in items if item["href"] == "/diary/private-recent-activity-body-only-diary"
+    )
+    assert body_only_diary_item["kind"] == "publish_diary"
+    assert body_only_diary_item["target_title"] == "Body Only Diary Title"
+    assert body_only_diary_item["excerpt"] is None
 
 
 def test_read_activity_heatmap_returns_weeks(client) -> None:
