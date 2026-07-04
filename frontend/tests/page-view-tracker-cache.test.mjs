@@ -9,16 +9,12 @@ const repoRoot = resolve(frontendRoot, "..");
 
 const readSource = (path) => readFileSync(resolve(repoRoot, path), "utf8");
 
-test("post detail page-view reports update cached post view counts without refetching lists", () => {
+test("post detail page-view reports do not optimistically mutate cached post view counts", () => {
   const trackerSource = readSource("frontend/src/components/PageViewTracker.tsx");
-  const cacheSource = readSource("frontend/src/lib/content-view-cache.ts");
 
-  assert.match(trackerSource, /useQueryClient/);
-  assert.match(trackerSource, /resolvePostDetailSlug/);
-  assert.match(trackerSource, /incrementPostViewCountInCache\(queryClient,\s*postSlug\)/);
+  assert.match(trackerSource, /reportPageView/);
+  assert.doesNotMatch(trackerSource, /useQueryClient/);
+  assert.doesNotMatch(trackerSource, /content-view-cache/);
+  assert.doesNotMatch(trackerSource, /resolvePostDetailSlug/);
   assert.doesNotMatch(trackerSource, /invalidateQueries\(\{\s*queryKey:\s*\["site",\s*"posts"\]/);
-
-  assert.match(cacheSource, /setQueriesData<InfiniteContentList>/);
-  assert.match(cacheSource, /setQueryData<ContentDetailResponse>/);
-  assert.doesNotMatch(cacheSource, /invalidateQueries/);
 });

@@ -4,8 +4,9 @@ import { BookOpen, FileText, Heart, MessageCircle, PencilLine, Quote } from "luc
 import { useNavigate } from "react-router-dom";
 import { useReadRecentActivityApiV1SiteRecentActivityGet } from "@serino/api-client/site";
 import type { RecentActivityItemRead } from "@serino/api-client/models";
+import { useDiaryAccessPrompt } from "@/components/DiaryAccessPrompt";
 import { useFrontendI18n } from "@/i18n";
-import { usePageConfig } from "@/contexts/runtime-config";
+import { useFeatureFlags, usePageConfig } from "@/contexts/runtime-config";
 import { useContainedWheelScroll } from "@/hooks/use-contained-wheel-scroll";
 import { useDeferredActivation } from "@/hooks/useDeferredActivation";
 import { warmInternalHref } from "@/lib/route-preload";
@@ -28,6 +29,28 @@ interface ActivityItem {
   detail?: string;
   date: string;
   href?: string;
+}
+
+type RecentActivityNavigation =
+  | { kind: "none" }
+  | { kind: "navigate"; href: string }
+  | { kind: "blocked-diary"; href: string };
+
+export function resolveRecentActivityNavigation({
+  href,
+  diaryPrivateEnabled,
+}: {
+  type?: ActivityType;
+  href?: string;
+  diaryPrivateEnabled: boolean;
+}): RecentActivityNavigation {
+  if (!href) {
+    return { kind: "none" };
+  }
+  if (diaryPrivateEnabled && href.startsWith("/diary/")) {
+    return { kind: "blocked-diary", href };
+  }
+  return { kind: "navigate", href };
 }
 
 const GUESTBOOK_ROUTE = "/guestbook";
@@ -257,6 +280,9 @@ const RecentActivity = ({ enabled = true }: RecentActivityProps) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const pages = usePageConfig();
+  const featureFlags = useFeatureFlags();
+  const diaryPrivateEnabled = featureFlags.diary_private_enabled !== false;
+  const { promptNode, ensureDiaryAccess } = useDiaryAccessPrompt({ diaryPrivateEnabled });
   const queryEnabled = useDeferredActivation(enabled, [enabled]);
   const { regionRef, scrollViewportRef } =
     useContainedWheelScroll<HTMLDivElement>();
@@ -270,13 +296,30 @@ const RecentActivity = ({ enabled = true }: RecentActivityProps) => {
   const retryLabel = String(config.recentActivityRetryLabel ?? t("recentActivity.retryLabel"));
   const emptyMessage = String(config.recentActivityEmptyMessage ?? t("recentActivity.emptyMessage"));
   const warmHref = useCallback(
-    (href: string | undefined) => {
-      if (!href) {
+    (navigation: RecentActivityNavigation) => {
+      if (navigation.kind !== "navigate") {
         return;
       }
-      void warmInternalHref({ href, queryClient, pages });
+      void warmInternalHref({ href: navigation.href, queryClient, pages });
     },
     [pages, queryClient],
+  );
+  const handleActivityClick = useCallback(
+    async (navigation: RecentActivityNavigation) => {
+      if (navigation.kind === "none") {
+        return;
+      }
+      if (navigation.kind === "blocked-diary") {
+        const allowed = await ensureDiaryAccess();
+        if (!allowed) {
+          return;
+        }
+        navigate(navigation.href);
+        return;
+      }
+      navigate(navigation.href);
+    },
+    [ensureDiaryAccess, navigate],
   );
 
   const { data: response, isLoading, isError, error, refetch } =
@@ -436,15 +479,21 @@ const RecentActivity = ({ enabled = true }: RecentActivityProps) => {
                 </div>
               );
 
-              return item.href ? (
+              const navigation = resolveRecentActivityNavigation({
+                type: item.type,
+                href: item.href,
+                diaryPrivateEnabled,
+              });
+
+              return navigation.kind !== "none" ? (
                 <button
                   key={`${item.type}-${item.user}-${item.date}-${index}`}
                   type="button"
                   className="block w-full pb-5 last:pb-0"
-                  onMouseEnter={() => warmHref(item.href)}
-                  onFocus={() => warmHref(item.href)}
-                  onTouchStart={() => warmHref(item.href)}
-                  onClick={() => navigate(item.href!)}
+                  onMouseEnter={() => warmHref(navigation)}
+                  onFocus={() => warmHref(navigation)}
+                  onTouchStart={() => warmHref(navigation)}
+                  onClick={() => void handleActivityClick(navigation)}
                 >
                   {content}
                 </button>
@@ -460,6 +509,7 @@ const RecentActivity = ({ enabled = true }: RecentActivityProps) => {
           </div>
         ) : null}
       </div>
+      {promptNode}
     </div>
   );
 };

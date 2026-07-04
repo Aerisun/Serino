@@ -13,6 +13,9 @@ const baseSite = {
   ogImage: "https://example.com/og.png",
 };
 
+const jsonLdGraph = (metadata: ReturnType<typeof buildSearchMetadata>) =>
+  metadata.siteJsonLd["@graph"] as Array<Record<string, unknown>>;
+
 describe("search optimization metadata", () => {
   it("normalizes stored feature flag values for SEO and GEO", () => {
     const config = normalizeSearchOptimization({
@@ -54,47 +57,44 @@ describe("search optimization metadata", () => {
       pathname: "/",
     });
 
-    expect(metadata.title).toBe("Rowan Zhu");
+    expect(metadata.title).toBe("Serino Notes");
     expect(metadata.shareTitle).toBe("Rowan - Frontend and AI Automation");
     expect(metadata.description).toBe("Rowan Zhu (Serino Notes). Notes, projects, and public writing by Rowan.");
     expect(metadata.author).toBe("Rowan Zhu");
     expect(metadata.keywords).toBe("frontend, AI automation");
     expect(metadata.robots).toBe(DEFAULT_ROBOTS_DIRECTIVE);
     expect(metadata.canonicalUrl).toBe("https://example.com/");
-    expect(metadata.siteJsonLd).toMatchObject({
-      "@context": "https://schema.org",
-      "@graph": [
-        {
-          "@type": "Person",
-          name: "Rowan Zhu",
-          alternateName: ["Serino Notes"],
-          description: "Rowan Zhu (Serino Notes). A concise source of truth for Rowan's work and expertise.",
-          sameAs: ["https://github.com/example"],
-          knowsAbout: ["Frontend architecture", "Search optimization"],
-          mainEntityOfPage: {
-            "@id": "https://example.com/resume#profile",
-          },
-        },
-        {
-          "@type": "WebSite",
-          name: "Serino Notes",
-          alternateName: "Rowan - Frontend and AI Automation",
-          about: {
-            "@id": "https://example.com#person",
-          },
-          mainEntity: {
-            "@id": "https://example.com#person",
-          },
-        },
-        {
-          "@type": "ProfilePage",
-          "@id": "https://example.com/resume#profile",
-          url: "https://example.com/resume",
-          mainEntity: {
-            "@id": "https://example.com#person",
-          },
-        },
-      ],
+    expect(metadata.siteJsonLd["@context"]).toBe("https://schema.org");
+    const [person, webSite, profilePage] = jsonLdGraph(metadata);
+    expect(person).toMatchObject({
+      "@type": "Person",
+      name: "Rowan Zhu",
+      alternateName: ["Serino Notes"],
+      description: "Rowan Zhu (Serino Notes). A concise source of truth for Rowan's work and expertise.",
+      sameAs: ["https://github.com/example"],
+      knowsAbout: ["Frontend architecture", "Search optimization"],
+      mainEntityOfPage: {
+        "@id": "https://example.com/resume#profile",
+      },
+    });
+    expect(webSite).toMatchObject({
+      "@type": "WebSite",
+      name: "Serino Notes",
+      alternateName: "Rowan - Frontend and AI Automation",
+      about: {
+        "@id": "https://example.com#person",
+      },
+      mainEntity: {
+        "@id": "https://example.com#person",
+      },
+    });
+    expect(profilePage).toMatchObject({
+      "@type": "ProfilePage",
+      "@id": "https://example.com/resume#profile",
+      url: "https://example.com/resume",
+      mainEntity: {
+        "@id": "https://example.com#person",
+      },
     });
   });
 
@@ -116,24 +116,21 @@ describe("search optimization metadata", () => {
     expect(metadata.title).toBe("Aerisun");
     expect(metadata.description).toContain("Configured Person (Aerisun)");
     expect(metadata.author).toBe("Configured Person");
-    expect(metadata.siteJsonLd).toMatchObject({
-      "@graph": [
-        {
-          "@type": "Person",
-          name: "Configured Person",
-          alternateName: ["Aerisun"],
-        },
-        {
-          "@type": "WebSite",
-          name: "Aerisun",
-          about: {
-            "@id": "https://example.com#person",
-          },
-          mainEntity: {
-            "@id": "https://example.com#person",
-          },
-        },
-      ],
+    const [person, webSite] = jsonLdGraph(metadata);
+    expect(person).toMatchObject({
+      "@type": "Person",
+      name: "Configured Person",
+      alternateName: ["Aerisun"],
+    });
+    expect(webSite).toMatchObject({
+      "@type": "WebSite",
+      name: "Aerisun",
+      about: {
+        "@id": "https://example.com#person",
+      },
+      mainEntity: {
+        "@id": "https://example.com#person",
+      },
     });
   });
 
@@ -149,25 +146,21 @@ describe("search optimization metadata", () => {
       pathname: "/resume",
     });
 
-    expect(metadata.title).toBe("Serino Notes");
+    expect(metadata.title).toBe("Rowan Zhu");
     expect(metadata.shareTitle).toBe("Rowan Zhu Resume · Serino Notes");
     expect(metadata.canonicalUrl).toBe("https://example.com/resume");
-    expect(metadata.siteJsonLd).toMatchObject({
-      "@graph": [
-        {
-          "@type": "Person",
-          name: "Rowan Zhu",
-          mainEntityOfPage: {
-            "@id": "https://example.com/resume#profile",
-          },
-        },
-        {},
-        {
-          "@type": "ProfilePage",
-          "@id": "https://example.com/resume#profile",
-          url: "https://example.com/resume",
-        },
-      ],
+    const [person, , profilePage] = jsonLdGraph(metadata);
+    expect(person).toMatchObject({
+      "@type": "Person",
+      name: "Rowan Zhu",
+      mainEntityOfPage: {
+        "@id": "https://example.com/resume#profile",
+      },
+    });
+    expect(profilePage).toMatchObject({
+      "@type": "ProfilePage",
+      "@id": "https://example.com/resume#profile",
+      url: "https://example.com/resume",
     });
   });
 });

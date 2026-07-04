@@ -15,6 +15,11 @@ import JsonLd from "@/components/JsonLd";
 import PreviewModeBadge from "@/components/PreviewModeBadge";
 import LazyOnVisible from "@/components/LazyOnVisible";
 import ArticleEnhancements from "@/components/ArticleEnhancements";
+import {
+  getDiaryAccessErrorMessage,
+  getDiaryAccessErrorStatus,
+  useDiaryAccessPrompt,
+} from "@/components/DiaryAccessPrompt";
 import { useFeatureFlags, usePageConfig } from "@/contexts/runtime-config";
 import { useFrontendI18n, type FrontendLang } from "@/i18n";
 import { formatPublishedDate } from "@/lib/api/utils";
@@ -139,6 +144,11 @@ const DiaryDetail = () => {
   const retryLabel = diaryConfig.retryLabel ?? t("common.retry");
   const articleRef = useRef<HTMLDivElement>(null);
   const previewStorageKey = searchParams.get("previewStorageKey") || "";
+  const diaryPrivateEnabled = featureFlags.diary_private_enabled !== false;
+  const { promptNode, openLoginDialog, openRequestDialog } =
+    useDiaryAccessPrompt({
+      diaryPrivateEnabled,
+    });
 
   const slug = id ? decodeURIComponent(id) : "";
   const { data: previewData, isLoading: isPreviewLoading } =
@@ -154,6 +164,13 @@ const DiaryDetail = () => {
       enabled: !!id,
       staleTime: 60_000,
       gcTime: 20 * 60_000,
+      retry: (failureCount, requestError) => {
+        const statusCode = getDiaryAccessErrorStatus(requestError);
+        if (statusCode === 401 || statusCode === 403 || statusCode === 404) {
+          return false;
+        }
+        return failureCount < 2;
+      },
     },
   });
 
@@ -168,10 +185,20 @@ const DiaryDetail = () => {
     typeof error === "object" &&
     "response" in error &&
     (error as { response?: { status?: number } }).response?.status === 404;
-  const status: "loading" | "ready" | "empty" | "error" = previewEntry
+  const accessErrorStatus = getDiaryAccessErrorStatus(error);
+  const accessBlocked = isError && (accessErrorStatus === 401 || accessErrorStatus === 403);
+  const rawAccessErrorMessage = getDiaryAccessErrorMessage(error);
+  const accessErrorMessage =
+    accessErrorStatus === 401
+      ? t("diaryAccess.loginRequired")
+      : rawAccessErrorMessage ||
+        t("diaryAccess.noPermission", { username: t("diaryAccess.defaultOwner") });
+  const status: "loading" | "ready" | "empty" | "error" | "blocked" = previewEntry
     ? "ready"
     : isLoading
       ? "loading"
+      : accessBlocked
+        ? "blocked"
       : isError
         ? is404
           ? "empty"
@@ -179,10 +206,12 @@ const DiaryDetail = () => {
         : entry
           ? "ready"
           : "empty";
-  const pageStatus: "loading" | "ready" | "empty" | "error" =
+  const pageStatus: "loading" | "ready" | "empty" | "error" | "blocked" =
     isPreviewLoading && !previewEntry ? "loading" : status;
   const errorMessage = isError
-    ? is404
+    ? accessBlocked
+      ? accessErrorMessage
+      : is404
       ? detailMissingDescription
       : error instanceof Error
         ? error.message
@@ -207,11 +236,12 @@ const DiaryDetail = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      {promptNode}
       <PageMeta
         title={entry ? publicDiaryLabel : (status === "error" ? errorTitle : detailMissingTitle)}
         description={
           entry?.body.slice(0, 150) ??
-          (errorMessage || detailMissingDescription)
+          (pageStatus === "blocked" ? t("diaryAccess.privateDescription") : errorMessage || detailMissingDescription)
         }
       />
       {entry && (
@@ -282,6 +312,29 @@ const DiaryDetail = () => {
               ))}
             </motion.div>
           </>
+        ) : pageStatus === "blocked" ? (
+          <motion.div
+            className="liquid-glass mx-auto max-w-xl rounded-[2rem] border border-[rgb(var(--shiro-border-rgb)/0.18)] px-6 py-8 text-center shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur-xl"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <p className="text-base font-heading text-foreground/78">
+              {t("diaryAccess.privateTitle")}
+            </p>
+            <p className="mt-3 text-sm font-body leading-7 text-foreground/48">
+              {accessErrorMessage || t("diaryAccess.privateDescription")}
+            </p>
+            <div className="mt-6 flex items-center justify-center">
+              <button
+                type="button"
+                onClick={accessErrorStatus === 401 ? openLoginDialog : openRequestDialog}
+                className="inline-flex items-center justify-center rounded-full border border-[rgb(var(--shiro-border-rgb)/0.24)] bg-[rgb(var(--shiro-panel-rgb)/0.28)] px-5 py-2 text-sm font-semibold text-foreground/76 shadow-[0_10px_28px_rgba(15,23,42,0.08)] transition hover:border-[rgb(var(--shiro-border-rgb)/0.36)] hover:bg-[rgb(var(--shiro-panel-rgb)/0.42)] hover:text-foreground/90"
+              >
+                {accessErrorStatus === 401 ? t("navbar.login") : t("diaryAccess.apply")}
+              </button>
+            </div>
+          </motion.div>
         ) : entry ? (
           <>
             <motion.div

@@ -595,7 +595,7 @@ export function ExternalConfigSection() {
               ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/16"
               : "",
           ].join(" ")}
-          onClick={() => void runMailCheck()}
+          onClick={() => void runMailCheck({ persistSuccess: true })}
           disabled={!canTestSend || isTesting || saveSubscription.isPending || isSavingWithCheck}
         >
           {isTesting ? (

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, RotateCcw } from "lucide-react";
 import {
   getGetContentSubscriptionConfigApiV1AdminSubscriptionsConfigGetQueryKey,
   getGetProfileApiV1AdminSiteConfigProfileGetQueryKey,
@@ -12,6 +12,7 @@ import {
 import type { SiteProfileAdminRead } from "@serino/api-client/models";
 import { toast } from "sonner";
 import { AppleSwitch } from "@/components/ui/AppleSwitch";
+import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import { DirtySaveButton, PendingSaveBadge } from "@/components/ui/DirtySaveButton";
 import { Input } from "@/components/ui/Input";
@@ -22,7 +23,7 @@ import { useI18n } from "@/i18n";
 import { extractApiErrorMessage } from "@/lib/api-error";
 import { cn } from "@/lib/utils";
 
-const FEATURE_FLAGS = ["toc", "reading_progress"] as const;
+const FEATURE_FLAGS = ["toc", "reading_progress", "diary_private_enabled"] as const;
 const SUBSCRIPTION_CONTENT_OPTIONS = [
   { key: "posts", label: "文章" },
   { key: "diary", label: "日记" },
@@ -235,6 +236,11 @@ export function FeatureTogglesSection() {
       label: t("siteConfig.featureReadingProgress"),
       desc: t("siteConfig.featureReadingProgressDesc"),
     },
+    {
+      key: "diary_private_enabled",
+      label: t("siteConfig.featureDiaryPrivate"),
+      desc: t("siteConfig.featureDiaryPrivateDesc"),
+    },
   ] as const;
 
   const buildSaveData = (nextFeatureFlags: Record<string, boolean>) => ({
@@ -307,6 +313,14 @@ export function FeatureTogglesSection() {
           .filter((item) => nextTypes.includes(item)),
       };
     });
+  };
+
+  const restoreAdvancedDefaults = () => {
+    setAdvancedForm(createAdvancedSubscriptionForm());
+  };
+
+  const restoreCommentFeedbackDefaults = () => {
+    setCommentFeedbackForm(createCommentFeedbackForm());
   };
 
   const saveAdvancedSettings = async () => {
@@ -412,8 +426,19 @@ export function FeatureTogglesSection() {
                         <h4 className="text-sm font-semibold">
                           {t("siteConfig.contentSubscriptionAdvancedTitle")}
                         </h4>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center justify-end gap-2">
                           {advancedDirty ? <PendingSaveBadge /> : null}
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="gap-2"
+                            onClick={restoreAdvancedDefaults}
+                            disabled={saveSubscription.isPending}
+                          >
+                            <RotateCcw className="h-4 w-4" />
+                            {t("siteConfig.mailTemplateRestoreDefault")}
+                          </Button>
                           <DirtySaveButton
                             dirty={advancedDirty}
                             saving={saveSubscription.isPending}
@@ -551,8 +576,19 @@ export function FeatureTogglesSection() {
                       <h4 className="text-sm font-semibold">
                         {t("siteConfig.commentFeedbackAdvancedTitle")}
                       </h4>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center justify-end gap-2">
                         {commentFeedbackDirty ? <PendingSaveBadge /> : null}
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="gap-2"
+                          onClick={restoreCommentFeedbackDefaults}
+                          disabled={saveSubscription.isPending}
+                        >
+                          <RotateCcw className="h-4 w-4" />
+                          {t("siteConfig.mailTemplateRestoreDefault")}
+                        </Button>
                         <DirtySaveButton
                           dirty={commentFeedbackDirty}
                           saving={saveSubscription.isPending}

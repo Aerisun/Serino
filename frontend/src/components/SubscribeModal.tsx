@@ -10,7 +10,11 @@ import {
   Rss,
   X,
 } from "lucide-react";
-import { subscribeToContentApiV1SiteSubscriptionsPost } from "@serino/api-client/site";
+import {
+  subscribeToContentApiV1SiteSubscriptionsPost,
+  useReadMyDiaryAccessApiV1SiteDiaryAccessMeGet,
+} from "@serino/api-client/site";
+import { useFeatureFlags } from "@/contexts/runtime-config";
 import { useFrontendI18n } from "@/i18n";
 import { trackSubscriptionEmail } from "@/lib/subscription-tracker";
 
@@ -63,10 +67,29 @@ const isSubscriptionSuccessPayload = (
 
 const SubscribeModal = ({ open, onClose, enabled }: SubscribeModalProps) => {
   const { t } = useFrontendI18n();
+  const featureFlags = useFeatureFlags();
+  const diaryPrivateEnabled = featureFlags.diary_private_enabled !== false;
+  const { data: diaryAccessResponse } = useReadMyDiaryAccessApiV1SiteDiaryAccessMeGet({
+    query: {
+      enabled: open && diaryPrivateEnabled,
+      staleTime: 30_000,
+    },
+  });
+  const diaryAccessAllowed = !diaryPrivateEnabled || Boolean(diaryAccessResponse?.data?.has_access);
+  const contentOptions = useMemo(() => CONTENT_OPTIONS, []);
+  const isDiaryDisabled = useCallback(
+    (key: ContentType) => diaryPrivateEnabled && !diaryAccessAllowed && key === "diary",
+    [diaryAccessAllowed, diaryPrivateEnabled],
+  );
+  const availableContentOptions = useMemo(
+    () => contentOptions.filter((item) => !isDiaryDisabled(item.key)),
+    [contentOptions, isDiaryDisabled],
+  );
   const [email, setEmail] = useState("");
   const [selectedTypes, setSelectedTypes] = useState<ContentType[]>(
-    CONTENT_OPTIONS.map((item) => item.key),
+    availableContentOptions.map((item) => item.key),
   );
+  const [selectionTouched, setSelectionTouched] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{
@@ -85,22 +108,32 @@ const SubscribeModal = ({ open, onClose, enabled }: SubscribeModalProps) => {
       typeof window !== "undefined"
         ? window.location.origin.replace(/\/+$/, "")
         : "";
-    return CONTENT_OPTIONS.map((item) => ({
-      ...item,
-      url: `${origin}${item.feedPath}`,
-    }));
-  }, []);
+    return contentOptions
+      .filter((item) => item.key !== "diary" || !diaryPrivateEnabled)
+      .map((item) => ({
+        ...item,
+        disabled: isDiaryDisabled(item.key),
+        url: `${origin}${item.feedPath}`,
+      }));
+  }, [contentOptions, diaryPrivateEnabled, isDiaryDisabled]);
 
   useEffect(() => {
     if (!open) return;
     setEmail("");
-    setSelectedTypes(CONTENT_OPTIONS.map((item) => item.key));
+    setSelectionTouched(false);
     setCopiedKey(null);
     setFeedback(null);
     setToast(null);
     const timer = window.setTimeout(() => inputRef.current?.focus(), 100);
     return () => window.clearTimeout(timer);
   }, [open]);
+
+  useEffect(() => {
+    if (!open || selectionTouched) {
+      return;
+    }
+    setSelectedTypes(availableContentOptions.map((item) => item.key));
+  }, [availableContentOptions, open, selectionTouched]);
 
   useEffect(() => {
     return () => {
@@ -137,6 +170,10 @@ const SubscribeModal = ({ open, onClose, enabled }: SubscribeModalProps) => {
   }, [open, onClose]);
 
   const toggleType = (key: ContentType) => {
+    if (isDiaryDisabled(key)) {
+      return;
+    }
+    setSelectionTouched(true);
     setSelectedTypes((current) =>
       current.includes(key)
         ? current.filter((item) => item !== key)
@@ -170,7 +207,8 @@ const SubscribeModal = ({ open, onClose, enabled }: SubscribeModalProps) => {
       pushToast("error", message);
       return;
     }
-    if (selectedTypes.length === 0) {
+    const subscribableTypes = selectedTypes.filter((key) => !isDiaryDisabled(key));
+    if (subscribableTypes.length === 0) {
       const message = t("subscribe.typeRequired");
       setFeedback({ kind: "error", message });
       pushToast("error", message);
@@ -182,7 +220,7 @@ const SubscribeModal = ({ open, onClose, enabled }: SubscribeModalProps) => {
     try {
       const response = await subscribeToContentApiV1SiteSubscriptionsPost({
         email: email.trim(),
-        content_types: selectedTypes,
+        content_types: subscribableTypes,
       });
       const subscribed = response.data;
       if (!isSubscriptionSuccessPayload(subscribed)) {
@@ -345,7 +383,8 @@ const SubscribeModal = ({ open, onClose, enabled }: SubscribeModalProps) => {
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
-                        {CONTENT_OPTIONS.map((item) => {
+                        {contentOptions.map((item) => {
+                          const disabled = isDiaryDisabled(item.key);
                           const checked = selectedTypes.includes(item.key);
                           return (
                             <button
@@ -353,9 +392,12 @@ const SubscribeModal = ({ open, onClose, enabled }: SubscribeModalProps) => {
                               type="button"
                               onClick={() => toggleType(item.key)}
                               aria-pressed={checked}
-                              disabled={!enabled || submitting}
+                              aria-disabled={disabled}
+                              disabled={!enabled || submitting || disabled}
                               className={`group relative flex h-[58px] items-center justify-between gap-2.5 overflow-hidden rounded-[18px] border px-3.5 text-left transition sm:h-[68px] sm:gap-3 sm:rounded-[20px] sm:px-4 ${
-                                checked
+                                disabled
+                                  ? "cursor-not-allowed border-[rgb(var(--shiro-border-rgb)/0.14)] bg-foreground/[0.035] opacity-45 grayscale"
+                                  : checked
                                   ? "border-[rgb(var(--shiro-accent-rgb)/0.34)] bg-[linear-gradient(135deg,rgb(var(--shiro-accent-rgb)/0.13),rgb(var(--shiro-accent-rgb)/0.08))] shadow-[0_12px_24px_rgba(15,23,42,0.06)]"
                                   : "border-[rgb(var(--shiro-border-rgb)/0.18)] bg-white/36 hover:bg-white/54 hover:shadow-[0_10px_22px_rgba(15,23,42,0.04)] dark:bg-black/10 dark:hover:bg-black/16"
                               } ${!enabled ? "cursor-not-allowed opacity-55" : ""}`}
@@ -426,7 +468,12 @@ const SubscribeModal = ({ open, onClose, enabled }: SubscribeModalProps) => {
                       {feedLinks.map((item) => (
                         <div
                           key={item.key}
-                          className="rounded-[18px] border border-[rgb(var(--shiro-border-rgb)/0.18)] bg-white/40 px-3.5 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.42)] transition hover:bg-white/50 dark:bg-black/10 dark:hover:bg-black/16 sm:rounded-[20px] sm:px-4 sm:py-3"
+                          aria-disabled={item.disabled}
+                          className={`rounded-[18px] border px-3.5 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.42)] transition sm:rounded-[20px] sm:px-4 sm:py-3 ${
+                            item.disabled
+                              ? "border-[rgb(var(--shiro-border-rgb)/0.12)] bg-foreground/[0.035] opacity-45 grayscale"
+                              : "border-[rgb(var(--shiro-border-rgb)/0.18)] bg-white/40 hover:bg-white/50 dark:bg-black/10 dark:hover:bg-black/16"
+                          }`}
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0">
@@ -442,21 +489,34 @@ const SubscribeModal = ({ open, onClose, enabled }: SubscribeModalProps) => {
                               </div>
                             </div>
                             <div className="flex shrink-0 items-center gap-1.5">
-                              <a
-                                href={item.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                title={t("subscribe.openRss")}
-                                aria-label={t("subscribe.openRss")}
-                                className="inline-flex h-[2.125rem] w-[2.125rem] items-center justify-center rounded-full border border-[rgb(var(--shiro-border-rgb)/0.2)] text-foreground/64 transition hover:bg-white/60 hover:text-foreground/86 dark:hover:bg-black/16 sm:h-9 sm:w-9"
-                              >
-                                <ExternalLink className="h-3.5 w-3.5" />
-                              </a>
+                              {item.disabled ? (
+                                <button
+                                  type="button"
+                                  disabled={item.disabled}
+                                  title={t("subscribe.openRss")}
+                                  aria-label={t("subscribe.openRss")}
+                                  className="inline-flex h-[2.125rem] w-[2.125rem] cursor-not-allowed items-center justify-center rounded-full border border-[rgb(var(--shiro-border-rgb)/0.16)] text-foreground/36 opacity-70 sm:h-9 sm:w-9"
+                                >
+                                  <ExternalLink className="h-3.5 w-3.5" />
+                                </button>
+                              ) : (
+                                <a
+                                  href={item.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  title={t("subscribe.openRss")}
+                                  aria-label={t("subscribe.openRss")}
+                                  className="inline-flex h-[2.125rem] w-[2.125rem] items-center justify-center rounded-full border border-[rgb(var(--shiro-border-rgb)/0.2)] text-foreground/64 transition hover:bg-white/60 hover:text-foreground/86 dark:hover:bg-black/16 sm:h-9 sm:w-9"
+                                >
+                                  <ExternalLink className="h-3.5 w-3.5" />
+                                </a>
+                              )}
                               <button
                                 type="button"
                                 onClick={() =>
                                   void handleCopy(item.key, item.url)
                                 }
+                                disabled={item.disabled}
                                 title={
                                   copiedKey === item.key
                                     ? t("subscribe.copied")
@@ -467,7 +527,7 @@ const SubscribeModal = ({ open, onClose, enabled }: SubscribeModalProps) => {
                                     ? t("subscribe.copiedRss")
                                     : t("subscribe.copyRss")
                                 }
-                                className="inline-flex h-[2.125rem] w-[2.125rem] items-center justify-center rounded-full border border-[rgb(var(--shiro-border-rgb)/0.2)] text-foreground/64 transition hover:bg-white/60 hover:text-foreground/86 dark:hover:bg-black/16 sm:h-9 sm:w-9"
+                                className="inline-flex h-[2.125rem] w-[2.125rem] items-center justify-center rounded-full border border-[rgb(var(--shiro-border-rgb)/0.2)] text-foreground/64 transition hover:bg-white/60 hover:text-foreground/86 disabled:cursor-not-allowed disabled:text-foreground/36 disabled:opacity-70 dark:hover:bg-black/16 sm:h-9 sm:w-9"
                               >
                                 {copiedKey === item.key ? (
                                   <Check className="h-3.5 w-3.5" />

@@ -4,8 +4,9 @@ import { motion } from "motion/react";
 import { ChevronLeft, ChevronRight, FileText, BookOpen, Feather } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import PageShell from "@/components/PageShell";
+import { useDiaryAccessPrompt } from "@/components/DiaryAccessPrompt";
 import { staggerItem, transition } from "@/config";
-import { usePageConfig } from "@/contexts/runtime-config";
+import { useFeatureFlags, usePageConfig } from "@/contexts/runtime-config";
 import { useFrontendI18n, type FrontendLang } from "@/i18n";
 import { useReadCalendarApiV1SiteCalendarGet } from "@serino/api-client/site";
 import type { CalendarEventRead } from "@serino/api-client/models";
@@ -19,6 +20,29 @@ interface CalendarEvent {
   type: "post" | "diary" | "excerpt";
   title: string;
   href?: string;
+}
+
+type CalendarEventNavigation =
+  | { kind: "none" }
+  | { kind: "navigate"; href: string }
+  | { kind: "blocked-diary"; href: string };
+
+export function resolveCalendarEventNavigation({
+  type,
+  href,
+  diaryPrivateEnabled,
+}: {
+  type: CalendarEvent["type"];
+  href?: string;
+  diaryPrivateEnabled: boolean;
+}): CalendarEventNavigation {
+  if (!href) {
+    return { kind: "none" };
+  }
+  if (diaryPrivateEnabled && type === "diary" && href.startsWith("/diary/")) {
+    return { kind: "blocked-diary", href };
+  }
+  return { kind: "navigate", href };
 }
 
 interface CalendarPageConfig extends BaseViewPageConfig {
@@ -124,6 +148,7 @@ const CalendarPage = () => {
   const { t, lang } = useFrontendI18n();
   const queryClient = useQueryClient();
   const pages = usePageConfig();
+  const featureFlags = useFeatureFlags();
   const config = pages.calendar as unknown as CalendarPageConfig;
   const weekdayLabels = getWeekdayLabels(config.weekdayLabels, t);
   const monthLabels = getMonthLabels(config.monthLabels, lang);
@@ -147,6 +172,8 @@ const CalendarPage = () => {
   } as const;
   const today = getBeijingNowParts();
   const navigate = useNavigate();
+  const diaryPrivateEnabled = featureFlags.diary_private_enabled !== false;
+  const { promptNode, ensureDiaryAccess } = useDiaryAccessPrompt({ diaryPrivateEnabled });
   const prefersReducedMotion = useReducedMotionPreference();
   const [year, setYear] = useState(today.year);
   const [month, setMonth] = useState(Math.max(today.month - 1, 0));
@@ -215,6 +242,28 @@ const CalendarPage = () => {
 
   const hasMonthData = calendarEvents.length > 0;
 
+  const warmEventHref = (navigation: CalendarEventNavigation) => {
+    if (navigation.kind !== "navigate") {
+      return;
+    }
+    void warmInternalHref({ href: navigation.href, queryClient, pages });
+  };
+
+  const handleEventClick = async (navigation: CalendarEventNavigation) => {
+    if (navigation.kind === "none") {
+      return;
+    }
+    if (navigation.kind === "blocked-diary") {
+      const allowed = await ensureDiaryAccess();
+      if (!allowed) {
+        return;
+      }
+      navigate(navigation.href);
+      return;
+    }
+    navigate(navigation.href);
+  };
+
   useEffect(() => {
     const monthFloor = 2024 * 12;
     const monthCeiling = today.year * 12 + Math.max(today.month - 1, 0);
@@ -244,6 +293,7 @@ const CalendarPage = () => {
       metaDescription={config.metaDescription}
       width={config.width}
     >
+      {promptNode}
       <div className="mt-10 grid gap-8 lg:grid-cols-[1fr_280px]">
         <motion.div
           className="rounded-2xl p-6 liquid-glass transition-[background-color,border-color,box-shadow]"
@@ -417,32 +467,22 @@ const CalendarPage = () => {
               {activeEvents.map((event, index) => {
                 const item = typeConfig[event.type];
                 const Icon = item.icon;
+                const navigation = resolveCalendarEventNavigation({
+                  type: event.type,
+                  href: event.href,
+                  diaryPrivateEnabled,
+                });
+                const canNavigate = navigation.kind !== "none";
 
                 return (
                   <motion.button
                     type="button"
                     key={`${event.href}-${index}`}
-                    className={`group rounded-xl p-3 text-left transition-[background-color,border-color,box-shadow] ${event.href ? "hover:bg-[rgb(var(--shiro-panel-rgb)/0.16)] hover:shadow-[inset_0_1px_0_rgb(var(--shiro-accent-rgb)/0.04)]" : ""}`}
-                    onMouseEnter={() => {
-                      if (event.href) {
-                        void warmInternalHref({ href: event.href, queryClient, pages });
-                      }
-                    }}
-                    onFocus={() => {
-                      if (event.href) {
-                        void warmInternalHref({ href: event.href, queryClient, pages });
-                      }
-                    }}
-                    onTouchStart={() => {
-                      if (event.href) {
-                        void warmInternalHref({ href: event.href, queryClient, pages });
-                      }
-                    }}
-                    onClick={() => {
-                      if (event.href) {
-                        navigate(event.href);
-                      }
-                    }}
+                    className={`group rounded-xl p-3 text-left transition-[background-color,border-color,box-shadow] ${canNavigate ? "hover:bg-[rgb(var(--shiro-panel-rgb)/0.16)] hover:shadow-[inset_0_1px_0_rgb(var(--shiro-accent-rgb)/0.04)]" : ""}`}
+                    onMouseEnter={() => warmEventHref(navigation)}
+                    onFocus={() => warmEventHref(navigation)}
+                    onTouchStart={() => warmEventHref(navigation)}
+                    onClick={() => void handleEventClick(navigation)}
                     {...staggerItem(index, {
                       baseDelay: 0,
                       step: 0.05,

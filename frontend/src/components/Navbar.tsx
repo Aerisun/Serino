@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
+import { useQuery } from "@tanstack/react-query";
 import ThemeToggle from "@/components/ThemeToggle";
 import {
   BellRing,
@@ -13,6 +14,10 @@ import {
   Sparkles,
   X,
 } from "@/components/icons/AppIcon";
+import {
+  getReadMyDiaryAccessApiV1SiteDiaryAccessMeGetQueryKey,
+  readMyDiaryAccessApiV1SiteDiaryAccessMeGet,
+} from "@serino/api-client/site";
 import { transition } from "@/config";
 import { useFrontendI18n } from "@/i18n";
 import { useSiteAuth } from "@/contexts/use-site-auth";
@@ -49,6 +54,25 @@ const buildAdminConsoleEntryHref = () => {
     : window.location.origin + adminBasePath;
   const target = new URL("login?site_admin=1", base);
   return target.toString();
+};
+
+const formatDiaryAccessRemaining = (
+  seconds: number,
+  t: (key: string, values?: Record<string, string | number>) => string,
+) => {
+  if (seconds <= 0) {
+    return t("navbar.diaryAccessRemainingLessThanMinute");
+  }
+  const days = Math.floor(seconds / 86_400);
+  const hours = Math.floor((seconds % 86_400) / 3_600);
+  if (days > 0) {
+    return t("navbar.diaryAccessRemainingDays", { days, hours });
+  }
+  const minutes = Math.max(1, Math.floor((seconds % 3_600) / 60));
+  if (hours > 0) {
+    return t("navbar.diaryAccessRemainingHours", { hours, minutes });
+  }
+  return t("navbar.diaryAccessRemainingMinutes", { minutes });
 };
 
 const NavDropdown = ({
@@ -289,6 +313,17 @@ const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
   const authMenuRef = useRef<HTMLDivElement | null>(null);
   const prefersReducedMotion = useReducedMotionPreference();
   const { user, openLogin, openProfileEditor, logout } = useSiteAuth();
+  const { data: diaryAccessResponse } = useQuery({
+    queryKey: getReadMyDiaryAccessApiV1SiteDiaryAccessMeGetQueryKey(),
+    queryFn: readMyDiaryAccessApiV1SiteDiaryAccessMeGet,
+    enabled: Boolean(user && authMenuOpen),
+    staleTime: 30_000,
+  });
+  const diaryAccessState = diaryAccessResponse?.data;
+  const diaryAccessRemaining =
+    diaryAccessState?.has_access && typeof diaryAccessState.remaining_seconds === "number"
+      ? formatDiaryAccessRemaining(diaryAccessState.remaining_seconds, t)
+      : null;
   const adminConsoleEntryHref =
     typeof window !== "undefined"
       ? buildAdminConsoleEntryHref()
@@ -580,6 +615,12 @@ const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
                         <div className="px-3 py-2">
                           <div className="text-sm font-semibold text-foreground">{user.effective_display_name}</div>
                         </div>
+                        {diaryAccessRemaining ? (
+                          <div className="mx-1 mb-1 rounded-[1rem] border border-[rgb(var(--shiro-accent-rgb)/0.32)] bg-[linear-gradient(135deg,rgb(var(--shiro-accent-rgb)/0.18),rgb(255_255_255/0.08))] px-3 py-2 text-[0.72rem] leading-5 text-foreground/78 shadow-[inset_0_1px_0_rgb(255_255_255/0.18),0_12px_30px_rgb(var(--shiro-accent-rgb)/0.12)]">
+                            <div className="font-semibold text-foreground/90">{t("navbar.diaryAccessPermission")}</div>
+                            <div className="truncate">{t("navbar.diaryAccessRemaining", { time: diaryAccessRemaining })}</div>
+                          </div>
+                        ) : null}
                         <button
                           type="button"
                           onClick={() => {

@@ -234,6 +234,7 @@ const normalizeSiteConfig = (
     reading_progress: true,
     social_sharing: true,
     content_subscription: false,
+    diary_private_enabled: true,
   } as Record<string, boolean>
 
   const rawFeatureFlags = payload.site.feature_flags ?? {};

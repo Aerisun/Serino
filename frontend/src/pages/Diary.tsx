@@ -1,4 +1,4 @@
-import { useCallback, useDeferredValue, useMemo, useState } from "react";
+import { useCallback, useDeferredValue, useMemo, useState, type KeyboardEvent } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
@@ -8,9 +8,10 @@ import {
   Search,
 } from "lucide-react";
 import ArchiveBadge from "@/components/ArchiveBadge";
+import { useDiaryAccessPrompt } from "@/components/DiaryAccessPrompt";
 import PageShell from "@/components/PageShell";
 import { staggerItem } from "@/config";
-import { usePageConfig } from "@/contexts/runtime-config";
+import { useFeatureFlags, usePageConfig } from "@/contexts/runtime-config";
 import { useFrontendI18n, type FrontendLang } from "@/i18n";
 import { useInfiniteList } from "@/hooks/use-infinite-list";
 import { formatPublishedDate } from "@/lib/api/utils";
@@ -110,6 +111,7 @@ const Diary = () => {
   const { t, lang } = useFrontendI18n();
   const queryClient = useQueryClient();
   const pages = usePageConfig();
+  const featureFlags = useFeatureFlags();
   const config = pages.diary as unknown as DiaryPageConfig;
   const errorTitle = config.errorTitle ?? t("diary.errorTitle");
   const retryLabel = config.retryLabel ?? t("common.retry");
@@ -121,11 +123,39 @@ const Diary = () => {
   const pageSize = clampPageSize(config.pageSize, 15);
   const [search, setSearch] = useState("");
   const deferredSearch = useDeferredValue(search);
+  const diaryPrivateEnabled = featureFlags.diary_private_enabled !== false;
+  const { promptNode, ensureDiaryAccess } = useDiaryAccessPrompt({ diaryPrivateEnabled });
   const warmDetail = useCallback(
     (slug: string) => {
+      if (diaryPrivateEnabled) {
+        return;
+      }
       void warmInternalHref({ href: `/diary/${slug}`, queryClient, pages });
     },
-    [pages, queryClient],
+    [diaryPrivateEnabled, pages, queryClient],
+  );
+
+  const handleOpenDetail = useCallback(
+    async (slug: string) => {
+      const allowed = await ensureDiaryAccess();
+      if (!allowed) {
+        return;
+      }
+      warmDetail(slug);
+      navigate(`/diary/${slug}`);
+    },
+    [ensureDiaryAccess, navigate, warmDetail],
+  );
+
+  const handleEntryKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLDivElement>, isExpanded: boolean, entryId: number) => {
+      if (event.key !== "Enter" && event.key !== " ") {
+        return;
+      }
+      event.preventDefault();
+      setExpandedId(isExpanded ? null : entryId);
+    },
+    [],
   );
 
   const { items, status, errorMessage, hasMore, isLoadingMore, sentinelRef, reload } = useInfiniteList({
@@ -184,6 +214,7 @@ const Diary = () => {
       width={config.width === "narrow" ? "content" : (config.width ?? "content")}
       contentClassName="mt-0 sm:mt-10"
     >
+      {promptNode}
       <div className="mt-3 flex flex-col gap-4 sm:mt-8 sm:flex-row sm:items-center sm:justify-between">
         <div className="group relative max-w-xs flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/25 transition-colors group-focus-within:text-[rgb(var(--shiro-accent-rgb)/0.72)]" />
@@ -257,11 +288,14 @@ const Diary = () => {
                   duration: config.motion.duration,
                 })}
               >
-                <button
-                  type="button"
+                <div
+                  role="button"
+                  tabIndex={0}
+                  aria-expanded={isExpanded}
                   onMouseEnter={() => warmDetail(entry.slug)}
                   onFocus={() => warmDetail(entry.slug)}
                   onTouchStart={() => warmDetail(entry.slug)}
+                  onKeyDown={(event) => handleEntryKeyDown(event, isExpanded, entry.id)}
                   onClick={() => setExpandedId(isExpanded ? null : entry.id)}
                   className="w-full text-left"
                 >
@@ -326,8 +360,7 @@ const Diary = () => {
                               type="button"
                               onClick={(event) => {
                                 event.stopPropagation();
-                                warmDetail(entry.slug);
-                                navigate(`/diary/${entry.slug}`);
+                                void handleOpenDetail(entry.slug);
                               }}
                               className="inline-flex shrink-0 items-center gap-1 self-end text-[11px] font-body text-foreground/30 transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.76)] sm:ml-auto sm:self-auto"
                             >
@@ -339,7 +372,7 @@ const Diary = () => {
                       )}
                     </AnimatePresence>
                   </div>
-                </button>
+                </div>
               </motion.div>
             );
           })}

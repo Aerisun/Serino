@@ -490,6 +490,52 @@ export const enTranslations: TranslationDict = {
     "moderation.commentFeedbackEnabled": "Reply email reminders enabled",
     "moderation.commentFeedbackDisabled": "Reply email reminders disabled",
     "moderation.commentFeedbackSaved": "Comment feedback setting saved",
+    "moderation.diaryAccessRequests": "Diary Access Requests",
+    "moderation.diaryAccessRequestsDescription":
+      "Review time-limited visitor access requests for all diary details.",
+    "moderation.diaryAccessVisitor": "Visitor",
+    "moderation.diaryAccessRequestedAt": "Requested At",
+    "moderation.diaryAccessPermissionStatus": "Access",
+    "moderation.diaryAccessUnauthorized": "No access",
+    "moderation.diaryAccessAuthorized": "Authorized",
+    "moderation.diaryAccessReason": "Request Reason",
+    "moderation.diaryAccessGrant": "Grant Access",
+    "moderation.diaryAccessGrantDescription":
+      "Enable this to grant or extend access until the expiry time below.",
+    "moderation.diaryAccessExpiresAt": "Access Expires At",
+    "moderation.diaryAccessGrantNow": "Grant Access",
+    "moderation.diaryAccessExtend": "Extend Access",
+    "moderation.diaryAccessRevokeNow": "Stop Access Now",
+    "moderation.diaryAccessStatus": "Request Status",
+    "moderation.diaryAccessGrantedAt": "Granted At",
+    "moderation.diaryAccessRevokedAt": "Stopped At",
+    "moderation.diaryAccessRemainingDays": "{days}d {hours}h left",
+    "moderation.diaryAccessRemainingHours": "{hours}h {minutes}m left",
+    "moderation.diaryAccessRemainingMinutes": "{minutes}m left",
+    "moderation.diaryAccessFeedbackTemplateAction": "Edit feedback format",
+    "moderation.diaryAccessFeedbackTemplateTitle": "Feedback Email Format",
+    "moderation.diaryAccessFeedbackTemplateDescription":
+      "Email body sent to visitors after review.",
+    "moderation.diaryAccessFeedbackTemplateField": "Email body",
+    "moderation.diaryAccessFeedbackTemplateDefault": "Default format",
+    "moderation.diaryAccessFeedbackTemplatePlaceholders":
+      "Available placeholders: {placeholders}",
+    "moderation.diaryAccessFeedbackTemplateRestoreDefault": "Restore default",
+    "moderation.diaryAccessFeedbackTemplateVariablesHelpLabel": "Placeholder help",
+    "moderation.diaryAccessFeedbackTemplateVariables": "Diary access feedback template placeholders",
+    "moderation.diaryAccessFeedbackTemplateVariablesDescription":
+      "Use the following placeholders in the diary access feedback email body. They are replaced with real values when sending emails.",
+    "moderation.diaryAccessFeedbackTemplateVariablesUsage": "Placeholder list",
+    "moderation.diaryAccessFeedbackTemplatePlaceholderSiteName": "{site_name}: Site name",
+    "moderation.diaryAccessFeedbackTemplatePlaceholderSiteUrl": "{site_url}: Site URL",
+    "moderation.diaryAccessFeedbackTemplatePlaceholderVisitorName": "{visitor_name}: Requesting visitor name",
+    "moderation.diaryAccessFeedbackTemplatePlaceholderVisitorEmail": "{visitor_email}: Requesting visitor email",
+    "moderation.diaryAccessFeedbackTemplatePlaceholderDecision": "{decision}: Review decision",
+    "moderation.diaryAccessFeedbackTemplatePlaceholderExpiresAt": "{expires_at}: Access expiry time; shows \"Access not granted\" when ungranted or stopped",
+    "moderation.diaryAccessFeedbackTemplatePlaceholderReason": "{reason}: Request reason",
+    "moderation.diaryAccessFeedbackTemplatePlaceholderRequestedAt": "{requested_at}: Request time",
+    "moderation.diaryAccessFeedbackTemplatePlaceholderReviewedAt": "{reviewed_at}: Review time",
+    "moderation.diaryAccessFeedbackTemplateConfirm": "Confirm changes",
 
     // assets
     "assets.title": "Assets",
@@ -1303,6 +1349,9 @@ export const enTranslations: TranslationDict = {
     "siteConfig.featureReadingProgress": "Reading Progress",
     "siteConfig.featureReadingProgressDesc":
       "Show reading progress bar at the top of articles",
+    "siteConfig.featureDiaryPrivate": "Private Diary Details",
+    "siteConfig.featureDiaryPrivateDesc":
+      "When enabled, visitors can see the diary list, but opening details requires login and approval.",
     "siteConfig.featureSocialSharing": "Social Sharing",
     "siteConfig.featureSocialSharingDesc":
       "Show share buttons at the bottom of articles",
@@ -1349,6 +1398,7 @@ export const enTranslations: TranslationDict = {
       "{content_url}: Content detail URL",
     "siteConfig.contentSubscriptionPlaceholderHelpFeedUrl":
       "{feed_url}: Site RSS feed URL",
+    "siteConfig.mailTemplateRestoreDefault": "Restore defaults",
     "siteConfig.contentSubscriptionAdvancedSave": "Save subscription settings",
     "siteConfig.contentSubscriptionAvailable": "Email Subscription Available",
     "siteConfig.contentSubscriptionUnavailable":

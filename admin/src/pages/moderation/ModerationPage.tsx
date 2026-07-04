@@ -16,6 +16,7 @@ import {
   listThoughts,
   listExcerpts,
   useGetContentSubscriptionConfigApiV1AdminSubscriptionsConfigGet,
+  useGetProfileApiV1AdminSiteConfigProfileGet,
 } from "@serino/api-client/admin";
 import type {
   CommentAdminRead,
@@ -27,6 +28,7 @@ import type {
   ModerateAction,
   PaginatedResponseCommentAdminRead,
   PaginatedResponseGuestbookAdminRead,
+  SiteProfileAdminRead,
 } from "@serino/api-client/models";
 import { cn, formatDate } from "@/lib/utils";
 import {
@@ -69,11 +71,12 @@ import { useI18n } from "@/i18n";
 import { extractApiErrorMessage } from "@/lib/api-error";
 import { toast } from "sonner";
 import { MODERATION_PENDING_COUNT_QUERY_KEY } from "./moderationQueries";
+import { DiaryAccessRequestsPanel } from "./DiaryAccessRequestsPanel";
 
 import { PAGE_KEY_LABELS, optionLabel } from "@/pages/site-config/constants";
 
 type ModerationRecord = CommentAdminRead | GuestbookAdminRead;
-type ModerationKind = "comments" | "guestbook";
+type ModerationKind = "comments" | "guestbook" | "diary-access";
 type ModerationListParams = ListCommentsApiV1AdminModerationCommentsGetParams & ListGuestbookApiV1AdminModerationGuestbookGetParams;
 type ModerationAuthProvider = "email" | "google" | "github";
 
@@ -1503,13 +1506,40 @@ function ModerationQueue({
 export default function ModerationPage() {
   const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<ModerationKind>("comments");
+  const { data: profileRaw } = useGetProfileApiV1AdminSiteConfigProfileGet();
+  const profile = profileRaw?.data as SiteProfileAdminRead | undefined;
+  const featureFlags = profile?.feature_flags;
+  const diaryPrivateEnabled =
+    typeof featureFlags === "object" &&
+    featureFlags !== null &&
+    "diary_private_enabled" in featureFlags
+      ? Boolean((featureFlags as Record<string, unknown>).diary_private_enabled)
+      : true;
+
+  useEffect(() => {
+    if (!diaryPrivateEnabled && activeTab === "diary-access") {
+      setActiveTab("comments");
+    }
+  }, [activeTab, diaryPrivateEnabled]);
+
+  const normalizeTab = (value: string): ModerationKind => {
+    if (value === "guestbook") return "guestbook";
+    if (value === "diary-access" && diaryPrivateEnabled) return "diary-access";
+    return "comments";
+  };
+
+  const tabItems = [
+    { value: "comments", label: t("moderation.comments") },
+    { value: "guestbook", label: t("moderation.guestbook") },
+    ...(diaryPrivateEnabled
+      ? [{ value: "diary-access", label: t("moderation.diaryAccessRequests") }]
+      : []),
+  ];
 
   return (
     <Tabs
       value={activeTab}
-      onValueChange={(value) =>
-        setActiveTab(value === "guestbook" ? "guestbook" : "comments")
-      }
+      onValueChange={(value) => setActiveTab(normalizeTab(value))}
       className="space-y-0"
     >
       <div className="mb-6 rounded-3xl border border-border/35 bg-gradient-to-br from-muted/25 via-background to-background px-5 py-5 shadow-[0_22px_60px_-46px_rgba(15,23,42,0.55)]">
@@ -1526,16 +1556,11 @@ export default function ModerationPage() {
         </div>
       </div>
 
-      <div className="mb-6">
+      <div className="relative z-10 mb-10 sm:mb-12">
         <AdminSegmentedFilter
           value={activeTab}
-          onValueChange={(value) =>
-            setActiveTab(value === "guestbook" ? "guestbook" : "comments")
-          }
-          items={[
-            { value: "comments", label: t("moderation.comments") },
-            { value: "guestbook", label: t("moderation.guestbook") },
-          ]}
+          onValueChange={(value) => setActiveTab(normalizeTab(value))}
+          items={tabItems}
           placement="below-header"
         />
       </div>
@@ -1571,6 +1596,13 @@ export default function ModerationPage() {
           queryKeyFn={(params?) => getListGuestbookApiV1AdminModerationGuestbookGetQueryKey(params)}
         />
       </TabsContent>
+      {diaryPrivateEnabled ? (
+        <TabsContent value="diary-access">
+          <div className="pt-6">
+            <DiaryAccessRequestsPanel />
+          </div>
+        </TabsContent>
+      ) : null}
     </Tabs>
   );
 }

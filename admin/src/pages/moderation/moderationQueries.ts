@@ -1,7 +1,9 @@
 import { queryOptions, type QueryClient } from "@tanstack/react-query";
 import type {
   PaginatedResponseCommentAdminRead,
+  PaginatedResponseDiaryAccessRequestAdminRead,
   PaginatedResponseGuestbookAdminRead,
+  SiteProfileAdminRead,
 } from "@serino/api-client/models";
 import { adminApiRequest } from "@/lib/adminApi";
 
@@ -23,7 +25,35 @@ function normalizeCount(value: unknown) {
 }
 
 export async function getPendingModerationCount(signal?: AbortSignal) {
-  const [commentsResponse, guestbookResponse] = await Promise.all([
+  const profileResponse = await adminApiRequest<SiteProfileAdminRead>("/api/v1/admin/site-config/profile", {
+    method: "GET",
+    signal,
+  });
+  const featureFlags = profileResponse.feature_flags;
+  const diaryPrivateEnabled =
+    typeof featureFlags === "object" &&
+    featureFlags !== null &&
+    "diary_private_enabled" in featureFlags
+      ? Boolean((featureFlags as Record<string, unknown>).diary_private_enabled)
+      : true;
+
+  const diaryAccessPromise: Promise<PaginatedResponseDiaryAccessRequestAdminRead> = diaryPrivateEnabled
+    ? adminApiRequest<PaginatedResponseDiaryAccessRequestAdminRead>("/api/v1/admin/moderation/diary-access-requests", {
+        method: "GET",
+        signal,
+        query: {
+          page: 1,
+          page_size: 100,
+        },
+      })
+    : Promise.resolve({
+        items: [],
+        total: 0,
+        page: 1,
+        page_size: 100,
+      });
+
+  const [commentsResponse, guestbookResponse, diaryAccessResponse] = await Promise.all([
     adminApiRequest<PaginatedResponseCommentAdminRead>("/api/v1/admin/moderation/comments", {
       method: "GET",
       signal,
@@ -42,15 +72,18 @@ export async function getPendingModerationCount(signal?: AbortSignal) {
         status: "pending",
       },
     }),
+    diaryAccessPromise,
   ]);
 
   const comments = normalizeCount(commentsResponse.total);
   const guestbook = normalizeCount(guestbookResponse.total);
+  const diaryAccess = (diaryAccessResponse.items ?? []).filter((item) => item.status === "pending").length;
 
   return {
     comments,
     guestbook,
-    total: comments + guestbook,
+    diaryAccess,
+    total: comments + guestbook + diaryAccess,
   };
 }
 
