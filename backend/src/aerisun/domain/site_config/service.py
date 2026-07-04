@@ -133,6 +133,7 @@ class _LinkPreviewHTMLParser(HTMLParser):
 
 def _public_feature_flags(raw_flags: dict[str, Any] | None) -> dict[str, Any]:
     source = dict(raw_flags or {})
+    source.setdefault("diary_private_enabled", True)
     public_flags: dict[str, Any] = {}
     for key, value in source.items():
         normalized = str(key or "").strip()

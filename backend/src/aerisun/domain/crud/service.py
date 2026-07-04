@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable
 from typing import Any
 
@@ -16,6 +17,7 @@ from aerisun.domain.crud import repository as repo
 from aerisun.domain.exceptions import ResourceNotFound, ValidationError
 
 CONTENT_PUBLICATION_MODELS = (PostEntry, DiaryEntry, ThoughtEntry, ExcerptEntry)
+logger = logging.getLogger("aerisun.crud")
 CONTENT_TYPE_BY_MODEL = {
     PostEntry: "posts",
     DiaryEntry: "diary",
@@ -51,9 +53,15 @@ def _dispatch_content_subscriptions_if_needed(
     if not should_dispatch:
         return
 
-    from aerisun.domain.subscription.service import dispatch_content_subscription_notifications
+    from aerisun.domain.subscription.service import enqueue_content_subscription_notifications
 
-    dispatch_content_subscription_notifications()
+    try:
+        enqueue_content_subscription_notifications()
+    except Exception:
+        logger.exception(
+            "Failed to enqueue content subscription notifications for %s",
+            getattr(model, "__tablename__", model.__name__),
+        )
 
 
 def _content_type_for_model(model: type[Base]) -> str:

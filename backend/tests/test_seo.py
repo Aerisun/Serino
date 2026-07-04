@@ -5,6 +5,7 @@ import re
 
 from aerisun.core.db import get_session_factory
 from aerisun.domain.content.seo_service import build_robots_txt
+from aerisun.domain.diary_access.service import DIARY_PRIVATE_FEATURE_FLAG
 from aerisun.domain.site_config.models import SiteProfile
 
 
@@ -16,6 +17,18 @@ def configure_search_identity(**search_optimization: str) -> None:
         profile.feature_flags = {
             **dict(profile.feature_flags or {}),
             "search_optimization": search_optimization,
+        }
+        session.commit()
+
+
+def configure_diary_private(enabled: bool) -> None:
+    factory = get_session_factory()
+    with factory() as session:
+        profile = session.query(SiteProfile).order_by(SiteProfile.created_at.asc()).first()
+        assert profile is not None
+        profile.feature_flags = {
+            **dict(profile.feature_flags or {}),
+            DIARY_PRIVATE_FEATURE_FLAG: enabled,
         }
         session.commit()
 
@@ -90,6 +103,7 @@ def test_robots_txt_uses_configured_admin_base_path():
 
 
 def test_llms_txt_guides_ai_agents_to_person_and_public_content(client):
+    configure_diary_private(False)
     r = client.get("/llms.txt")
     assert r.status_code == 200
     assert "markdown" in r.headers["content-type"] or "text/plain" in r.headers["content-type"]
@@ -157,6 +171,7 @@ def test_resume_markdown_is_available_under_site_api_prefix(client):
 
 
 def test_home_seo_html_exposes_public_profile_in_app_shell(client):
+    configure_diary_private(False)
     r = client.get("/")
     assert r.status_code == 200
     assert "text/html" in r.headers["content-type"]
@@ -265,6 +280,7 @@ def test_resume_seo_html_uses_configured_real_name_in_browser_title(client):
 
 
 def test_content_collection_seo_html_exposes_public_entries_in_app_shell(client):
+    configure_diary_private(False)
     cases = [
         ("/posts", "posts", "from-zero-design-system", "从零搭建个人设计系统的完整思路"),
         ("/diary", "diary", "spring-equinox-and-warm-light", "春分，天气转暖"),
@@ -286,6 +302,7 @@ def test_content_collection_seo_html_exposes_public_entries_in_app_shell(client)
 
 
 def test_content_detail_seo_html_exposes_public_post_and_diary_in_app_shell(client):
+    configure_diary_private(False)
     cases = [
         ("/posts/from-zero-design-system", "post-detail", "从零搭建个人设计系统的完整思路", "BlogPosting"),
         ("/diary/spring-equinox-and-warm-light", "diary-detail", "春分，天气转暖", "BlogPosting"),

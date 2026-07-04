@@ -11,6 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
+from aerisun.domain.diary_access.service import diary_private_enabled
 from aerisun.domain.engagement.service import list_public_guestbook_entries
 from aerisun.domain.exceptions import ResourceNotFound
 from aerisun.domain.site_config.models import PageCopy, ResumeBasics, SiteProfile, SocialLink
@@ -23,7 +24,9 @@ _CACHE_TTL = 3600  # 1 hour
 def build_sitemap_xml(session: Session, site_url: str) -> str:
     """Build sitemap XML string. Uses module-level caching with 1-hour TTL."""
     now = time.monotonic()
-    cached = _sitemap_cache.get("sitemap")
+    include_diary = not diary_private_enabled(session)
+    cache_key = f"sitemap:{site_url.rstrip('/')}:{int(include_diary)}"
+    cached = _sitemap_cache.get(cache_key)
     if cached and (now - cached[0]) < _CACHE_TTL:
         return cached[1]
 
@@ -34,13 +37,14 @@ def build_sitemap_xml(session: Session, site_url: str) -> str:
     static_pages = [
         ("/", "daily", "1.0"),
         ("/posts", "daily", "0.9"),
-        ("/diary", "daily", "0.8"),
         ("/thoughts", "weekly", "0.7"),
         ("/excerpts", "weekly", "0.7"),
         ("/friends", "weekly", "0.6"),
         ("/guestbook", "weekly", "0.5"),
         ("/resume", "monthly", "0.6"),
     ]
+    if include_diary:
+        static_pages.insert(2, ("/diary", "daily", "0.8"))
 
     for path, changefreq, priority in static_pages:
         url_el = SubElement(urlset, "url")
@@ -50,8 +54,9 @@ def build_sitemap_xml(session: Session, site_url: str) -> str:
 
     content_types = [
         (PostEntry, "posts", "weekly", "0.8"),
-        (DiaryEntry, "diary", "monthly", "0.6"),
     ]
+    if include_diary:
+        content_types.append((DiaryEntry, "diary", "monthly", "0.6"))
 
     for model, prefix, changefreq, priority in content_types:
         rows = session.execute(
@@ -70,7 +75,7 @@ def build_sitemap_xml(session: Session, site_url: str) -> str:
 
     xml_bytes = tostring(urlset, encoding="unicode", xml_declaration=False)
     xml = '<?xml version="1.0" encoding="UTF-8"?>\n' + xml_bytes
-    _sitemap_cache["sitemap"] = (now, xml)
+    _sitemap_cache[cache_key] = (now, xml)
     return xml
 
 
@@ -81,7 +86,13 @@ def _normalize_robots_path(value: str, fallback: str) -> str:
     return normalized if normalized.endswith("/") else f"{normalized}/"
 
 
-def build_robots_txt(site_url: str, *, admin_base_path: str = "/admin/", api_base_path: str = "/api") -> str:
+def build_robots_txt(
+    site_url: str,
+    *,
+    admin_base_path: str = "/admin/",
+    api_base_path: str = "/api",
+    diary_private: bool = False,
+) -> str:
     base_url = site_url.rstrip("/")
     admin_path = _normalize_robots_path(admin_base_path, "/admin/")
     api_path = _normalize_robots_path(api_base_path, "/api")
@@ -94,6 +105,15 @@ def build_robots_txt(site_url: str, *, admin_base_path: str = "/admin/", api_bas
         f"Disallow: {api_path}v1/admin/",
         "Disallow: /api/mcp",
     ]
+    if diary_private:
+        protected_paths.extend(
+            [
+                "Disallow: /diary",
+                "Disallow: /diary/",
+                f"Disallow: {api_path}v1/site/diary",
+                f"Disallow: {api_path}v1/site/diary/",
+            ]
+        )
     allowed_search_agents = [
         "Googlebot",
         "bingbot",
@@ -362,7 +382,7 @@ def _read_public_identity(session: Session, site_url: str) -> dict[str, object]:
     }
 
 
-def _render_public_resource_links(base_url: str, *, api_base_path: str = "/api") -> str:
+def _render_public_resource_links(base_url: str, *, api_base_path: str = "/api", include_diary: bool = True) -> str:
     api_path = _normalize_robots_path(api_base_path, "/api").rstrip("/")
     links = [
         ("Homepage", _internal_url(base_url, "/")),
@@ -370,24 +390,26 @@ def _render_public_resource_links(base_url: str, *, api_base_path: str = "/api")
         ("Resume Markdown", _internal_url(base_url, "/resume.md")),
         ("AI site guide", _internal_url(base_url, "/llms.txt")),
         ("Posts", _internal_url(base_url, "/posts")),
-        ("Diary", _internal_url(base_url, "/diary")),
         ("Posts RSS", _internal_url(base_url, "/feeds/posts.xml")),
         ("Thoughts RSS", _internal_url(base_url, "/feeds/thoughts.xml")),
-        ("Diary RSS", _internal_url(base_url, "/feeds/diary.xml")),
         ("Resume JSON", _internal_url(base_url, f"{api_path}/v1/site/resume")),
         ("Sitemap", _internal_url(base_url, "/sitemap.xml")),
     ]
+    if include_diary:
+        links.insert(5, ("Diary", _internal_url(base_url, "/diary")))
+        links.insert(8, ("Diary RSS", _internal_url(base_url, "/feeds/diary.xml")))
     items = "\n".join(f'<li><a href="{_html_attr(href)}">{_html_text(label)}</a></li>' for label, href in links)
     return f'<nav aria-label="Public machine-readable resources"><ul>{items}</ul></nav>'
 
 
-def _render_ai_navigation_instructions(base_url: str) -> str:
+def _render_ai_navigation_instructions(base_url: str, *, include_diary: bool = True) -> str:
     llms_url = _internal_url(base_url, "/llms.txt")
     fallback_links = [
         ("Resume Markdown", _internal_url(base_url, "/resume.md")),
         ("Posts index", _internal_url(base_url, "/posts")),
-        ("Diary index", _internal_url(base_url, "/diary")),
     ]
+    if include_diary:
+        fallback_links.append(("Diary index", _internal_url(base_url, "/diary")))
     fallback_items = "\n".join(
         f'<li><a href="{_html_attr(href)}">{_html_text(label)}</a></li>' for label, href in fallback_links
     )
@@ -698,6 +720,7 @@ def build_content_collection_seo_html(
 ) -> str:
     """Build crawler-readable HTML for public content collection pages."""
     config = _content_config(content_type)
+    diary_private = content_type == "diary" and diary_private_enabled(session)
     identity = _read_public_identity(session, site_url)
     base_url = str(identity["base_url"])
     site_title = str(identity["site_title"])
@@ -705,19 +728,38 @@ def build_content_collection_seo_html(
     page_title, page_description = _content_page_copy(session, config)
     canonical_path = str(config["path"])
     canonical_url = _internal_url(base_url, canonical_path)
-    entries = _content_entries(session, config)
+    entries = [] if diary_private else _content_entries(session, config)
     include_body = bool(config["include_body_in_collection"])
-    entries_html = "\n".join(
-        _render_content_entry_html(
-            item,
-            base_url=base_url,
-            config=config,
-            heading_level=2,
-            include_body=include_body,
+    entries_html = (
+        "<p>Diary details are private and are not available to crawlers.</p>"
+        if diary_private
+        else "\n".join(
+            _render_content_entry_html(
+                item,
+                base_url=base_url,
+                config=config,
+                heading_level=2,
+                include_body=include_body,
+            )
+            for item in entries
         )
-        for item in entries
     )
     feed_path = str(config["feed_path"])
+    alternate_links = (
+        []
+        if diary_private
+        else [
+            ("application/rss+xml", _internal_url(base_url, feed_path), f"{page_title} RSS"),
+        ]
+    )
+    feed_html = (
+        ""
+        if diary_private
+        else (
+            f'<p>AI-readable feed: <a href="{_html_attr(_internal_url(base_url, feed_path))}">'
+            f"{_html_text(_internal_url(base_url, feed_path))}</a></p>"
+        )
+    )
 
     json_ld = _compact_json_ld(
         {
@@ -749,10 +791,7 @@ def build_content_collection_seo_html(
             "<main>",
             f"<h1>{_html_text(page_title)}</h1>",
             f"<p>{_html_text(page_description)}</p>",
-            (
-                f'<p>AI-readable feed: <a href="{_html_attr(_internal_url(base_url, feed_path))}">'
-                f"{_html_text(_internal_url(base_url, feed_path))}</a></p>"
-            ),
+            feed_html,
             entries_html or "<p>No public content is available.</p>",
             "</main>",
         ]
@@ -770,9 +809,7 @@ def build_content_collection_seo_html(
         keywords=list(identity["keywords"]) if isinstance(identity["keywords"], list) else [],
         app_shell_html=app_shell_html,
         shell_key=content_type,
-        alternate_links=[
-            ("application/rss+xml", _internal_url(base_url, feed_path), f"{page_title} RSS"),
-        ],
+        alternate_links=alternate_links,
     )
 
 
@@ -792,6 +829,31 @@ def build_content_detail_seo_html(
     base_url = str(identity["base_url"])
     site_title = str(identity["site_title"])
     real_name = str(identity["real_name"])
+    if content_type == "diary" and diary_private_enabled(session):
+        canonical_url = _internal_url(base_url, "/diary")
+        title = "Diary"
+        description = "Diary details are private."
+        body_html = "\n".join(
+            [
+                "<main>",
+                "<h1>Diary</h1>",
+                "<p>Diary details are private and are not available to crawlers.</p>",
+                "</main>",
+            ]
+        )
+        return _build_html_document(
+            title=f"{title} · {site_title}" if site_title else title,
+            description=description,
+            canonical_url=canonical_url,
+            site_name=site_title,
+            body_html=body_html,
+            json_ld=None,
+            image=str(identity["image"]),
+            author=real_name,
+            app_shell_html=app_shell_html,
+            shell_key=str(config["detail_shell_key"]),
+        )
+
     item = _content_entry(session, config, slug)
     title = _content_entry_title(item)
     description = _content_entry_summary(item)
@@ -1267,6 +1329,15 @@ def build_home_seo_html(
     role = _clean_llms_text(profile.role if isinstance(profile, SiteProfile) else "", max_length=160)
     person_id = f"{base_url}/#person"
     website_id = f"{base_url}/#website"
+    include_diary = not diary_private_enabled(session)
+    alternate_links = [
+        ("text/markdown", _internal_url(base_url, "/llms.txt"), "AI-readable site guide"),
+        ("application/rss+xml", _internal_url(base_url, "/feeds/posts.xml"), "Latest public posts"),
+    ]
+    if include_diary:
+        alternate_links.append(
+            ("application/rss+xml", _internal_url(base_url, "/feeds/diary.xml"), "Latest public diary entries")
+        )
 
     json_ld = _compact_json_ld(
         {
@@ -1312,8 +1383,8 @@ def build_home_seo_html(
             f"<p>{_html_text(identity_bridge_sentence)}</p>" if identity_bridge_sentence else "",
             f"<p>{_html_text(identity_summary)}</p>",
             f'<p>Public identity: <a href="{_html_attr(_internal_url(base_url, "/resume"))}">{_html_text(real_name)}</a></p>',
-            _render_ai_navigation_instructions(base_url),
-            _render_public_resource_links(base_url, api_base_path=api_base_path),
+            _render_ai_navigation_instructions(base_url, include_diary=include_diary),
+            _render_public_resource_links(base_url, api_base_path=api_base_path, include_diary=include_diary),
             expertise_html,
             _render_posts_list(session, base_url),
             "</main>",
@@ -1333,11 +1404,7 @@ def build_home_seo_html(
         keywords=keywords,
         app_shell_html=app_shell_html,
         shell_key="home",
-        alternate_links=[
-            ("text/markdown", _internal_url(base_url, "/llms.txt"), "AI-readable site guide"),
-            ("application/rss+xml", _internal_url(base_url, "/feeds/posts.xml"), "Latest public posts"),
-            ("application/rss+xml", _internal_url(base_url, "/feeds/diary.xml"), "Latest public diary entries"),
-        ],
+        alternate_links=alternate_links,
     )
 
 
@@ -1370,6 +1437,7 @@ def build_resume_seo_html(
     api_path = _normalize_robots_path(api_base_path, "/api").rstrip("/")
     profile_page_id = f"{base_url}/resume#profile"
     person_id = f"{base_url}/#person"
+    include_diary = not diary_private_enabled(session)
 
     json_ld = _compact_json_ld(
         {
@@ -1419,7 +1487,7 @@ def build_resume_seo_html(
             "<h2>Resume</h2>",
             _render_markdownish_html(resume.summary),
             "</section>",
-            _render_public_resource_links(base_url, api_base_path=api_base_path),
+            _render_public_resource_links(base_url, api_base_path=api_base_path, include_diary=include_diary),
             "</main>",
         ]
     )
@@ -1478,6 +1546,7 @@ def build_llms_txt(session: Session, site_url: str, *, api_base_path: str = "/ap
     """Build an AI-readable site map for agents that cannot execute the SPA."""
     base_url = site_url.rstrip("/")
     api_path = _normalize_robots_path(api_base_path, "/api").rstrip("/")
+    include_diary = not diary_private_enabled(session)
     profile = session.scalars(select(SiteProfile).order_by(SiteProfile.created_at.asc())).first()
     resume = session.scalars(select(ResumeBasics).order_by(ResumeBasics.created_at.asc())).first()
     social_links = session.scalars(
@@ -1504,6 +1573,17 @@ def build_llms_txt(session: Session, site_url: str, *, api_base_path: str = "/ap
     )
     expertise = _read_text_list(search_config.get("expertise"))
 
+    writing_guidance = (
+        "For public writing, read /posts and /diary first; they are crawler-readable index pages with summaries and canonical links."
+        if include_diary
+        else "For public writing, read /posts first; diary details are private and not part of the public AI-readable surface."
+    )
+    detail_guidance = (
+        "Strongly recommended: open every public /posts/{slug} and /diary/{slug} detail page in the order shown on /posts and /diary before summarizing the person's writing."
+        if include_diary
+        else "Strongly recommended: open every public /posts/{slug} detail page in the order shown on /posts before summarizing the person's writing."
+    )
+
     lines = [
         f"# {site_title}",
         "",
@@ -1512,17 +1592,49 @@ def build_llms_txt(session: Session, site_url: str, *, api_base_path: str = "/ap
         f"This is the public AI-readable map for {real_name}.",
         "The site is a personal blog, resume, and writing platform.",
         "To understand the person behind the site, read /resume.md first. If structured data is needed, use /api/v1/site/resume.",
-        "For public writing, read /posts and /diary first; they are crawler-readable index pages with summaries and canonical links.",
-        "Strongly recommended: open every public /posts/{slug} and /diary/{slug} detail page in the order shown on /posts and /diary before summarizing the person's writing.",
+        writing_guidance,
+        detail_guidance,
         "Use RSS feeds as update signals, not as the primary source of full content.",
         "If your browser cannot execute JavaScript, prefer the crawler-readable public pages and machine-readable endpoints listed below because the visual frontend is a client-rendered SPA.",
         "The admin interface and admin APIs are intentionally out of scope.",
     ]
+    if not include_diary:
+        lines.append(
+            "Do not access /diary or /diary/*; diary details are private unless the site owner grants explicit permission through the logged-in web UI."
+        )
 
     if profile and profile.role:
         lines.append(f"Public role line: {_clean_llms_text(profile.role, max_length=180)}.")
     if expertise:
         lines.append(f"Expertise topics: {', '.join(expertise[:12])}.")
+
+    machine_links = [
+        f"- [Public bootstrap JSON]({_internal_url(base_url, f'{api_path}/v1/site/bootstrap')}): Site profile, navigation, page metadata, and resume in one read-only JSON payload.",
+        f"- [Resume JSON]({_internal_url(base_url, f'{api_path}/v1/site/resume')}): Structured public resume data.",
+        f"- [Posts JSON]({_internal_url(base_url, f'{api_path}/v1/site/posts')}): Public article list with titles and summaries.",
+        f"- [Posts RSS]({_internal_url(base_url, '/feeds/posts.xml')}): Update feed for public long-form posts; use /posts and /posts/{{slug}} for crawler-readable content.",
+        f"- [Thoughts RSS]({_internal_url(base_url, '/feeds/thoughts.xml')}): Update feed for public short notes; use /thoughts for crawler-readable content.",
+        f"- [Excerpts RSS]({_internal_url(base_url, '/feeds/excerpts.xml')}): Update feed for public excerpts; use /excerpts for crawler-readable content.",
+    ]
+    public_pages = [
+        f"- [Resume page]({_internal_url(base_url, '/resume')}): Browser-rendered resume page; use /resume.md or resume JSON when JavaScript is unavailable.",
+        f"- [Posts]({_internal_url(base_url, '/posts')}): Crawler-readable long-form article index with summaries and canonical detail links.",
+        f"- [Thoughts]({_internal_url(base_url, '/thoughts')}): Crawler-readable short notes; entries are available directly on this page.",
+        f"- [Excerpts]({_internal_url(base_url, '/excerpts')}): Crawler-readable excerpts and reading notes; entries are available directly on this page.",
+    ]
+    if include_diary:
+        machine_links.insert(
+            3,
+            f"- [Diary JSON]({_internal_url(base_url, f'{api_path}/v1/site/diary')}): Public diary list, if available.",
+        )
+        machine_links.insert(
+            6,
+            f"- [Diary RSS]({_internal_url(base_url, '/feeds/diary.xml')}): Update feed for public diary entries; use /diary and /diary/{{slug}} for crawler-readable content.",
+        )
+        public_pages.insert(
+            3,
+            f"- [Diary]({_internal_url(base_url, '/diary')}): Crawler-readable diary index with summaries and canonical detail links.",
+        )
 
     lines.extend(
         [
@@ -1536,22 +1648,11 @@ def build_llms_txt(session: Session, site_url: str, *, api_base_path: str = "/ap
             "",
             "## Machine-readable public data",
             "",
-            f"- [Public bootstrap JSON]({_internal_url(base_url, f'{api_path}/v1/site/bootstrap')}): Site profile, navigation, page metadata, and resume in one read-only JSON payload.",
-            f"- [Resume JSON]({_internal_url(base_url, f'{api_path}/v1/site/resume')}): Structured public resume data.",
-            f"- [Posts JSON]({_internal_url(base_url, f'{api_path}/v1/site/posts')}): Public article list with titles and summaries.",
-            f"- [Diary JSON]({_internal_url(base_url, f'{api_path}/v1/site/diary')}): Public diary list, if available.",
-            f"- [Posts RSS]({_internal_url(base_url, '/feeds/posts.xml')}): Update feed for public long-form posts; use /posts and /posts/{{slug}} for crawler-readable content.",
-            f"- [Thoughts RSS]({_internal_url(base_url, '/feeds/thoughts.xml')}): Update feed for public short notes; use /thoughts for crawler-readable content.",
-            f"- [Diary RSS]({_internal_url(base_url, '/feeds/diary.xml')}): Update feed for public diary entries; use /diary and /diary/{{slug}} for crawler-readable content.",
-            f"- [Excerpts RSS]({_internal_url(base_url, '/feeds/excerpts.xml')}): Update feed for public excerpts; use /excerpts for crawler-readable content.",
+            *machine_links,
             "",
             "## Public pages",
             "",
-            f"- [Resume page]({_internal_url(base_url, '/resume')}): Browser-rendered resume page; use /resume.md or resume JSON when JavaScript is unavailable.",
-            f"- [Posts]({_internal_url(base_url, '/posts')}): Crawler-readable long-form article index with summaries and canonical detail links.",
-            f"- [Thoughts]({_internal_url(base_url, '/thoughts')}): Crawler-readable short notes; entries are available directly on this page.",
-            f"- [Diary]({_internal_url(base_url, '/diary')}): Crawler-readable diary index with summaries and canonical detail links.",
-            f"- [Excerpts]({_internal_url(base_url, '/excerpts')}): Crawler-readable excerpts and reading notes; entries are available directly on this page.",
+            *public_pages,
         ]
     )
 

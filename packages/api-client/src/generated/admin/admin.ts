@@ -103,6 +103,8 @@ import type {
   DashboardStatsApiV1AdminSystemDashboardStatsGetParams,
   DeriveAiSchemaRequest,
   DeriveAiSchemaResponse,
+  DiaryAccessRequestAdminRead,
+  DiaryAccessRequestAdminUpdate,
   EnhancedDashboardStats,
   ExportContentApiV1AdminContentExportGetParams,
   FeedCrawlAllResultRead,
@@ -129,6 +131,7 @@ import type {
   ListContentCategoriesParams,
   ListContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGetParams,
   ListContentSubscribersApiV1AdminSubscriptionsSubscribersGetParams,
+  ListDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGetParams,
   ListDiaryParams,
   ListExcerptsParams,
   ListFriendsParams,
@@ -162,6 +165,7 @@ import type {
   PaginatedResponseContentAdminRead,
   PaginatedResponseContentNotificationDeliveryAdminRead,
   PaginatedResponseContentSubscriberAdminRead,
+  PaginatedResponseDiaryAccessRequestAdminRead,
   PaginatedResponseFriendAdminRead,
   PaginatedResponseGuestbookAdminRead,
   PaginatedResponseNavItemAdminRead,
@@ -10261,6 +10265,220 @@ export const useDeleteFriendFeedApiV1AdminSocialFeedsFeedIdDelete = <TError = Er
         TContext
       > => {
       return useMutation(getDeleteFriendFeedApiV1AdminSocialFeedsFeedIdDeleteMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 获取日记查看申请列表
+ */
+export type listDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGetResponse200 = {
+  data: PaginatedResponseDiaryAccessRequestAdminRead
+  status: 200
+}
+
+export type listDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGetResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type listDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGetResponseSuccess = (listDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGetResponse200) & {
+  headers: Headers;
+};
+export type listDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGetResponseError = (listDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGetResponse422) & {
+  headers: Headers;
+};
+
+export type listDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGetResponse = (listDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGetResponseSuccess | listDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGetResponseError)
+
+export const getListDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGetUrl = (params?: ListDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGetParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/admin/moderation/diary-access-requests?${stringifiedParams}` : `/api/v1/admin/moderation/diary-access-requests`
+}
+
+export const listDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGet = async (params?: ListDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGetParams, options?: RequestInit): Promise<listDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGetResponse> => {
+
+  return customInstance<listDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGetResponse>(getListDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGetUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGetQueryKey = (params?: ListDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGetParams,) => {
+    return [
+    `/api/v1/admin/moderation/diary-access-requests`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGetQueryOptions = <TData = Awaited<ReturnType<typeof listDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGet>>, TError = ErrorType<HTTPValidationError>>(params?: ListDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGetQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGet>>> = ({ signal }) => listDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGet(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGetQueryResult = NonNullable<Awaited<ReturnType<typeof listDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGet>>>
+export type ListDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGetQueryError = ErrorType<HTTPValidationError>
+
+
+export function useListDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGet<TData = Awaited<ReturnType<typeof listDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGet>>, TError = ErrorType<HTTPValidationError>>(
+ params: undefined |  ListDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGet>>,
+          TError,
+          Awaited<ReturnType<typeof listDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGet<TData = Awaited<ReturnType<typeof listDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: ListDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGet>>,
+          TError,
+          Awaited<ReturnType<typeof listDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGet<TData = Awaited<ReturnType<typeof listDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: ListDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取日记查看申请列表
+ */
+
+export function useListDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGet<TData = Awaited<ReturnType<typeof listDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: ListDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGetQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 审核日记查看申请
+ */
+export type updateDiaryAccessRequestApiV1AdminModerationDiaryAccessRequestsRequestIdPatchResponse200 = {
+  data: DiaryAccessRequestAdminRead
+  status: 200
+}
+
+export type updateDiaryAccessRequestApiV1AdminModerationDiaryAccessRequestsRequestIdPatchResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type updateDiaryAccessRequestApiV1AdminModerationDiaryAccessRequestsRequestIdPatchResponseSuccess = (updateDiaryAccessRequestApiV1AdminModerationDiaryAccessRequestsRequestIdPatchResponse200) & {
+  headers: Headers;
+};
+export type updateDiaryAccessRequestApiV1AdminModerationDiaryAccessRequestsRequestIdPatchResponseError = (updateDiaryAccessRequestApiV1AdminModerationDiaryAccessRequestsRequestIdPatchResponse422) & {
+  headers: Headers;
+};
+
+export type updateDiaryAccessRequestApiV1AdminModerationDiaryAccessRequestsRequestIdPatchResponse = (updateDiaryAccessRequestApiV1AdminModerationDiaryAccessRequestsRequestIdPatchResponseSuccess | updateDiaryAccessRequestApiV1AdminModerationDiaryAccessRequestsRequestIdPatchResponseError)
+
+export const getUpdateDiaryAccessRequestApiV1AdminModerationDiaryAccessRequestsRequestIdPatchUrl = (requestId: string,) => {
+
+
+
+
+  return `/api/v1/admin/moderation/diary-access-requests/${requestId}`
+}
+
+export const updateDiaryAccessRequestApiV1AdminModerationDiaryAccessRequestsRequestIdPatch = async (requestId: string,
+    diaryAccessRequestAdminUpdate: DiaryAccessRequestAdminUpdate, options?: RequestInit): Promise<updateDiaryAccessRequestApiV1AdminModerationDiaryAccessRequestsRequestIdPatchResponse> => {
+
+  return customInstance<updateDiaryAccessRequestApiV1AdminModerationDiaryAccessRequestsRequestIdPatchResponse>(getUpdateDiaryAccessRequestApiV1AdminModerationDiaryAccessRequestsRequestIdPatchUrl(requestId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      diaryAccessRequestAdminUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateDiaryAccessRequestApiV1AdminModerationDiaryAccessRequestsRequestIdPatchMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDiaryAccessRequestApiV1AdminModerationDiaryAccessRequestsRequestIdPatch>>, TError,{requestId: string;data: BodyType<DiaryAccessRequestAdminUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateDiaryAccessRequestApiV1AdminModerationDiaryAccessRequestsRequestIdPatch>>, TError,{requestId: string;data: BodyType<DiaryAccessRequestAdminUpdate>}, TContext> => {
+
+const mutationKey = ['updateDiaryAccessRequestApiV1AdminModerationDiaryAccessRequestsRequestIdPatch'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateDiaryAccessRequestApiV1AdminModerationDiaryAccessRequestsRequestIdPatch>>, {requestId: string;data: BodyType<DiaryAccessRequestAdminUpdate>}> = (props) => {
+          const {requestId,data} = props ?? {};
+
+          return  updateDiaryAccessRequestApiV1AdminModerationDiaryAccessRequestsRequestIdPatch(requestId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateDiaryAccessRequestApiV1AdminModerationDiaryAccessRequestsRequestIdPatchMutationResult = NonNullable<Awaited<ReturnType<typeof updateDiaryAccessRequestApiV1AdminModerationDiaryAccessRequestsRequestIdPatch>>>
+    export type UpdateDiaryAccessRequestApiV1AdminModerationDiaryAccessRequestsRequestIdPatchMutationBody = BodyType<DiaryAccessRequestAdminUpdate>
+    export type UpdateDiaryAccessRequestApiV1AdminModerationDiaryAccessRequestsRequestIdPatchMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 审核日记查看申请
+ */
+export const useUpdateDiaryAccessRequestApiV1AdminModerationDiaryAccessRequestsRequestIdPatch = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDiaryAccessRequestApiV1AdminModerationDiaryAccessRequestsRequestIdPatch>>, TError,{requestId: string;data: BodyType<DiaryAccessRequestAdminUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateDiaryAccessRequestApiV1AdminModerationDiaryAccessRequestsRequestIdPatch>>,
+        TError,
+        {requestId: string;data: BodyType<DiaryAccessRequestAdminUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateDiaryAccessRequestApiV1AdminModerationDiaryAccessRequestsRequestIdPatchMutationOptions(options), queryClient);
     }
     /**
  * @summary 获取评论审核列表

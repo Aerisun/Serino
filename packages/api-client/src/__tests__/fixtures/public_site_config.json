@@ -105,6 +105,7 @@
     "bio": "我做网页设计，也写前端，把视觉、节奏、内容和交互整理成一个自然流动的个人空间。",
     "feature_flags": {
       "content_subscription": false,
+      "diary_private_enabled": true,
       "reading_progress": true,
       "social_sharing": true,
       "toc": true

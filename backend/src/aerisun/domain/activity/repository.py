@@ -23,14 +23,15 @@ def _normalize_timestamp(value: datetime) -> datetime:
     return normalize_shanghai_datetime(value)
 
 
-def find_content_events(session: Session) -> list[tuple[datetime, str, str, str, str]]:
+def find_content_events(session: Session, *, include_diary: bool = True) -> list[tuple[datetime, str, str, str, str]]:
     """Query content models for (published_at, kind, title, slug, href) tuples."""
     items: list[tuple[datetime, str, str, str, str]] = []
     mappings = [
         (PostEntry, "post", "/posts/{slug}"),
-        (DiaryEntry, "diary", "/diary/{slug}"),
         (ExcerptEntry, "excerpt", "/excerpts"),
     ]
+    if include_diary:
+        mappings.insert(1, (DiaryEntry, "diary", "/diary/{slug}"))
     for model, kind, href_template in mappings:
         rows = session.scalars(
             select(model)
@@ -48,16 +49,17 @@ def find_content_events(session: Session) -> list[tuple[datetime, str, str, str,
 
 
 def find_recent_published_content(
-    session: Session, *, limit: int
+    session: Session, *, limit: int, include_diary: bool = True
 ) -> list[tuple[datetime, str, str | None, str | None, str, str]]:
     """Query recent public published content across all content models."""
     items: list[tuple[datetime, str, str | None, str | None, str, str]] = []
     mappings = [
         (PostEntry, "post", "/posts/{slug}"),
-        (DiaryEntry, "diary", "/diary/{slug}"),
         (ThoughtEntry, "thought", "/thoughts#{slug}"),
         (ExcerptEntry, "excerpt", "/excerpts#{slug}"),
     ]
+    if include_diary:
+        mappings.insert(1, (DiaryEntry, "diary", "/diary/{slug}"))
     for model, kind, href_template in mappings:
         rows = session.scalars(
             select(model)
@@ -99,10 +101,13 @@ def batch_resolve_titles(session: Session, pairs: list[tuple[str, str]]) -> dict
     return result
 
 
-def count_daily_content(session: Session, *, tz: ZoneInfo) -> dict[date, int]:
+def count_daily_content(session: Session, *, tz: ZoneInfo, include_diary: bool = True) -> dict[date, int]:
     """Aggregate public content publish counts by day in the requested timezone."""
     daily: dict[date, int] = defaultdict(int)
-    for model in [PostEntry, DiaryEntry, ThoughtEntry, ExcerptEntry]:
+    models = [PostEntry, ThoughtEntry, ExcerptEntry]
+    if include_diary:
+        models.insert(1, DiaryEntry)
+    for model in models:
         published_at_values = session.scalars(
             select(model.published_at).where(
                 model.visibility == "public",

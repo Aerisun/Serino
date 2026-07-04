@@ -37,6 +37,7 @@ from aerisun.domain.content.service import (
     list_public_posts,
     list_public_thoughts,
 )
+from aerisun.domain.diary_access.service import require_diary_detail_access
 from aerisun.domain.site_auth.models import SiteUser, SiteUserSession
 from aerisun.domain.site_auth.service import is_site_user_admin
 from aerisun.domain.site_config.schemas import (
@@ -404,6 +405,7 @@ def read_diary_entry(
     current_user: SiteUser | None = Depends(get_current_site_user_optional),
     current_site_session: SiteUserSession | None = Depends(get_current_site_session_optional),
 ) -> ContentEntryRead | Response:
+    require_diary_detail_access(session, current_user, current_site_session)
     payload = get_public_diary_entry(
         session,
         slug,

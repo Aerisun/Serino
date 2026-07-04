@@ -29,9 +29,7 @@ def upgrade() -> None:
     for table_name in CONTENT_TABLES:
         existing_columns = _columns(table_name)
         if "status" in existing_columns and "visibility" in existing_columns:
-            bind.execute(
-                text(f"UPDATE {table_name} SET visibility = 'private' WHERE status IN ('draft', 'archived')")
-            )
+            bind.execute(text(f"UPDATE {table_name} SET visibility = 'private' WHERE status IN ('draft', 'archived')"))
             bind.execute(
                 text(
                     f"UPDATE {table_name} "

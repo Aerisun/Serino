@@ -20,6 +20,7 @@ from aerisun.domain.activity.schemas import (
     RecentActivityItemRead,
     RecentActivityRead,
 )
+from aerisun.domain.diary_access.service import diary_private_enabled
 from aerisun.domain.site_config.models import SiteProfile
 from aerisun.domain.waline.service import list_all_waline_records, parse_comment_path
 
@@ -76,7 +77,7 @@ def _get_site_owner_name(session: Session) -> str:
 
 def list_calendar_events(session: Session, from_date: date, to_date: date) -> CalendarRead:
     events = []
-    for published_at, kind, title, slug, href in repo.find_content_events(session):
+    for published_at, kind, title, slug, href in repo.find_content_events(session, include_diary=True):
         current = beijing_date(published_at)
         if from_date <= current <= to_date:
             events.append(
@@ -99,27 +100,34 @@ def list_calendar_events(session: Session, from_date: date, to_date: date) -> Ca
 def list_recent_activity(session: Session, limit: int = 8) -> RecentActivityRead:
     items: list[RecentActivityItemRead] = []
     site_owner_name = _get_site_owner_name(session)
+    include_diary = not diary_private_enabled(session)
 
     # Collect all (content_type, slug) pairs for batch title resolution
     title_pairs: list[tuple[str, str]] = []
 
     comments = list_all_waline_records(status="approved", guestbook_only=False)[:limit]
+    visible_comments = []
     comment_pairs = []
     for item in comments:
         pair = parse_comment_path(item.url)
+        if pair[0] == "diary" and not include_diary:
+            continue
+        visible_comments.append(item)
         comment_pairs.append(pair)
         title_pairs.append(pair)
 
     reactions = repo.find_recent_reactions(session, limit=limit)
+    if not include_diary:
+        reactions = [item for item in reactions if item.content_type != "diary"]
     for item in reactions:
         title_pairs.append((item.content_type, item.content_slug))
 
-    published_content = repo.find_recent_published_content(session, limit=limit)
+    published_content = repo.find_recent_published_content(session, limit=limit, include_diary=include_diary)
 
     # Batch resolve all titles in one pass
     titles = repo.batch_resolve_titles(session, title_pairs)
 
-    for item, (content_type, content_slug) in zip(comments, comment_pairs, strict=True):
+    for item, (content_type, content_slug) in zip(visible_comments, comment_pairs, strict=True):
         items.append(
             RecentActivityItemRead(
                 kind="reply" if item.pid else "comment",
@@ -204,7 +212,7 @@ def build_activity_heatmap(session: Session, weeks: int = 52, tz_name: str | Non
     start = today - timedelta(days=today.weekday() + (weeks - 1) * 7)
 
     daily_counts: defaultdict[date, int] = defaultdict(int)
-    daily_counts.update(repo.count_daily_content(session, tz=tz))
+    daily_counts.update(repo.count_daily_content(session, tz=tz, include_diary=True))
     for current_date, total in repo.count_daily_likes(session, tz=tz).items():
         daily_counts[current_date] += total
 

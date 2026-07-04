@@ -2,6 +2,19 @@ from __future__ import annotations
 
 import xml.etree.ElementTree as ET
 
+from aerisun.core.db import get_session_factory
+from aerisun.domain.diary_access.service import DIARY_PRIVATE_FEATURE_FLAG
+from aerisun.domain.site_config.models import SiteProfile
+
+
+def _set_diary_private_enabled(enabled: bool) -> None:
+    with get_session_factory()() as session:
+        profile = session.query(SiteProfile).one()
+        flags = dict(profile.feature_flags or {})
+        flags[DIARY_PRIVATE_FEATURE_FLAG] = enabled
+        profile.feature_flags = flags
+        session.commit()
+
 
 def test_sitemap_returns_xml(client):
     resp = client.get("/api/v1/site/sitemap.xml")
@@ -13,6 +26,7 @@ def test_sitemap_returns_xml(client):
 
 
 def test_sitemap_contains_static_pages(client):
+    _set_diary_private_enabled(False)
     resp = client.get("/api/v1/site/sitemap.xml")
     root = ET.fromstring(resp.text)
     ns = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}

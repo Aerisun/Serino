@@ -15,6 +15,7 @@ from aerisun.domain.content.service import (
     list_public_posts,
     list_public_thoughts,
 )
+from aerisun.domain.diary_access.service import diary_private_enabled
 from aerisun.domain.exceptions import ValidationError
 
 
@@ -91,6 +92,8 @@ def _strip_html(value: str) -> str:
 
 
 def list_feed_definitions() -> list[FeedDefinition]:
+    # Keep the static definition list for admin/OpenAPI callers. Public guidance
+    # filters diary feeds in SEO/LLM builders when diary privacy is enabled.
     return [
         _FEED_DEFINITIONS["posts"],
         _FEED_DEFINITIONS["diary"],
@@ -111,7 +114,15 @@ def build_feed_rss_xml(session: Session, site_url: str, feed_key: str, *, limit:
     settings_url = site_url.rstrip("/")
     feed_url = f"{settings_url}{definition.feed_path}"
     channel_url = f"{settings_url}{definition.channel_path}"
-    collection = definition.list_items(session, limit=limit or definition.limit, offset=0)
+    collection = (
+        None
+        if definition.key == "diary" and diary_private_enabled(session)
+        else definition.list_items(
+            session,
+            limit=limit or definition.limit,
+            offset=0,
+        )
+    )
 
     rss = Element("rss", version="2.0")
     channel = SubElement(rss, "channel")
@@ -133,7 +144,8 @@ def build_feed_rss_xml(session: Session, site_url: str, feed_key: str, *, limit:
     )
 
     latest_updated = None
-    for item in collection.items:
+    collection_items = collection.items if collection is not None else []
+    for item in collection_items:
         item_url = f"{settings_url}{definition.item_path_template.format(slug=item.slug)}"
         entry = SubElement(channel, "item")
         SubElement(entry, "title").text = item.title

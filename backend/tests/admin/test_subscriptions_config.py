@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
 from typing import ClassVar
 
 import httpx
@@ -7,7 +8,9 @@ import respx
 
 from aerisun.core.base import utcnow
 from aerisun.core.db import get_session_factory
+from aerisun.core.time import shanghai_now
 from aerisun.domain.site_auth.models import SiteUser
+from aerisun.domain.site_config.models import SiteProfile
 from aerisun.domain.subscription.models import (
     ContentNotification,
     ContentNotificationDelivery,
@@ -17,6 +20,7 @@ from aerisun.domain.subscription.service import (
     MICROSOFT_SMTP_SCOPE,
     dispatch_content_subscription_notifications,
     get_subscription_config_orm,
+    send_diary_access_feedback_notification,
 )
 
 ADMIN_BASE = "/api/v1/admin/subscriptions"
@@ -132,6 +136,79 @@ def test_comment_feedback_template_rejects_unknown_placeholder(client, admin_hea
     assert "不支持的占位符" in response.json()["detail"]
 
 
+def _configure_diary_access_feedback_smtp(session) -> None:
+    config = get_subscription_config_orm(session)
+    config.smtp_auth_mode = "password"
+    config.smtp_host = "smtp.example.com"
+    config.smtp_port = 587
+    config.smtp_username = ""
+    config.smtp_password = ""
+    config.smtp_from_email = "no-reply@example.com"
+    config.smtp_from_name = "Aerisun Bot"
+    config.smtp_test_passed = True
+
+
+def test_diary_access_feedback_default_template_includes_expiry_without_reason(seeded_session, monkeypatch) -> None:
+    _configure_diary_access_feedback_smtp(seeded_session)
+    sent_messages = []
+    monkeypatch.setattr(
+        "aerisun.domain.subscription.service._send_email",
+        lambda **kwargs: sent_messages.append(kwargs["message"]),
+    )
+    user = SiteUser(email="reader@example.com", display_name="Reader", avatar_url="")
+    request = SimpleNamespace(
+        id="request-1",
+        status="approved",
+        revoked_at=None,
+        expires_at=shanghai_now(),
+        reason="这里是申请理由，不应出现在默认邮件里。",
+        created_at=shanghai_now(),
+        reviewed_at=shanghai_now(),
+    )
+
+    assert send_diary_access_feedback_notification(seeded_session, request=request, user=user) is True
+
+    assert len(sent_messages) == 1
+    body = sent_messages[0].get_content()
+    assert "审核结果：已授予权限" in body
+    assert "权限到期时间：" in body
+    assert "申请理由" not in body
+    assert "这里是申请理由" not in body
+
+
+def test_diary_access_feedback_expiry_placeholder_explains_ungranted_access(seeded_session, monkeypatch) -> None:
+    _configure_diary_access_feedback_smtp(seeded_session)
+    profile = seeded_session.query(SiteProfile).order_by(SiteProfile.created_at.asc()).first()
+    assert profile is not None
+    profile.feature_flags = {
+        **dict(profile.feature_flags or {}),
+        "diary_access_feedback_template": "审核结果：{decision}\n权限到期时间：{expires_at}",
+    }
+    seeded_session.commit()
+    sent_messages = []
+    monkeypatch.setattr(
+        "aerisun.domain.subscription.service._send_email",
+        lambda **kwargs: sent_messages.append(kwargs["message"]),
+    )
+    user = SiteUser(email="reader@example.com", display_name="Reader", avatar_url="")
+    request = SimpleNamespace(
+        id="request-2",
+        status="revoked",
+        revoked_at=shanghai_now(),
+        expires_at=shanghai_now(),
+        reason="",
+        created_at=shanghai_now(),
+        reviewed_at=shanghai_now(),
+    )
+
+    assert send_diary_access_feedback_notification(seeded_session, request=request, user=user) is True
+
+    assert len(sent_messages) == 1
+    body = sent_messages[0].get_content()
+    assert "审核结果：已停止权限" in body
+    assert "权限到期时间：未授予权限" in body
+
+
 def test_dispatch_content_subscription_notifications_sends_matching_emails(seeded_session, monkeypatch) -> None:
     config = get_subscription_config_orm(seeded_session)
     config.enabled = True
@@ -206,6 +283,84 @@ def test_dispatch_content_subscription_notifications_sends_matching_emails(seede
 
     seeded_session.refresh(notification)
     assert notification.delivered_at is not None
+
+
+def test_dispatch_content_subscription_notifications_stops_after_five_failures(seeded_session, monkeypatch) -> None:
+    config = get_subscription_config_orm(seeded_session)
+    config.enabled = True
+    config.smtp_test_passed = True
+    config.smtp_host = "smtp.example.com"
+    config.smtp_port = 587
+    config.smtp_from_email = "no-reply@example.com"
+    config.smtp_use_tls = False
+    config.smtp_use_ssl = False
+
+    seeded_session.add(
+        ContentSubscriber(
+            email="reader@example.com",
+            content_types=["posts"],
+            is_active=True,
+        )
+    )
+    notification = ContentNotification(
+        content_type="posts",
+        content_slug="subscription-failure-post",
+        content_title="Subscription Failure Post",
+        content_summary="A post that cannot be emailed.",
+        content_url="https://example.com/posts/subscription-failure-post",
+        published_at=utcnow(),
+    )
+    seeded_session.add(notification)
+    seeded_session.commit()
+
+    class FailingSMTP:
+        attempts: ClassVar[int] = 0
+
+        def __init__(self, host: str, port: int, timeout: int) -> None:
+            self.host = host
+            self.port = port
+            self.timeout = timeout
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb) -> None:
+            return None
+
+        def ehlo(self) -> None:
+            return None
+
+        def send_message(self, message) -> None:
+            FailingSMTP.attempts += 1
+            raise OSError("smtp connection closed")
+
+    monkeypatch.setattr("aerisun.domain.subscription.service.smtplib.SMTP", FailingSMTP)
+    monkeypatch.setattr("aerisun.domain.subscription.service._ensure_notification_records", lambda session, site_url: 0)
+
+    for expected_attempts in range(1, 5):
+        assert dispatch_content_subscription_notifications() == {"created": 0, "sent": 0, "skipped": 0}
+        assert FailingSMTP.attempts == expected_attempts
+        seeded_session.refresh(notification)
+        assert notification.delivered_at is None
+
+    assert dispatch_content_subscription_notifications() == {"created": 0, "sent": 0, "skipped": 0}
+    assert FailingSMTP.attempts == 5
+    seeded_session.refresh(notification)
+    assert notification.delivered_at is not None
+    assert notification.failed_attempts == 5
+
+    assert dispatch_content_subscription_notifications() == {"created": 0, "sent": 0, "skipped": 0}
+    assert FailingSMTP.attempts == 5
+    failures = (
+        seeded_session.query(ContentNotificationDelivery)
+        .filter(
+            ContentNotificationDelivery.notification_id == notification.id,
+            ContentNotificationDelivery.status == "failed",
+        )
+        .all()
+    )
+    assert len(failures) == 5
+    assert {item.error_message for item in failures} == {"smtp connection closed"}
 
 
 def test_admin_subscription_config_test_email_uses_payload_settings(client, admin_headers, monkeypatch) -> None:

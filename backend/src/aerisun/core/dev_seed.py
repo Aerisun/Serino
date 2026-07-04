@@ -15,6 +15,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 import aerisun.domain.automation.models
+import aerisun.domain.diary_access.models
 import aerisun.domain.subscription.models  # noqa: F401
 from aerisun.core.data_migrations.state import clear_migration_journal
 from aerisun.core.db import get_session_factory, init_db
@@ -46,6 +47,7 @@ from aerisun.core.time import BEIJING_TZ, beijing_today
 from aerisun.domain.automation.models import WebhookSubscription
 from aerisun.domain.automation.settings import AGENT_MODEL_CONFIG_FLAG_KEY, DEFAULT_AGENT_MODEL_CONFIG
 from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
+from aerisun.domain.diary_access.service import DIARY_PRIVATE_FEATURE_FLAG
 from aerisun.domain.engagement.models import Comment, GuestbookEntry, Reaction
 from aerisun.domain.iam.models import AdminUser
 from aerisun.domain.media.models import Asset
@@ -90,7 +92,12 @@ DEFAULT_SITE_PROFILE = {
         ],
         ensure_ascii=False,
     ),
-    "feature_flags": {"toc": True, "reading_progress": True, "social_sharing": True},
+    "feature_flags": {
+        "toc": True,
+        "reading_progress": True,
+        "social_sharing": True,
+        DIARY_PRIVATE_FEATURE_FLAG: True,
+    },
 }
 
 DEFAULT_SOCIAL_LINKS = [

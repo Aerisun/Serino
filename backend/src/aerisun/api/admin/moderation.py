@@ -6,6 +6,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session
+from aerisun.domain.diary_access.schemas import DiaryAccessRequestAdminRead, DiaryAccessRequestAdminUpdate
+from aerisun.domain.diary_access.service import (
+    list_diary_access_requests_admin,
+    update_diary_access_request_admin,
+)
 from aerisun.domain.engagement.schemas import CommentFeedbackUpdate
 from aerisun.domain.engagement.service import (
     list_admin_comments,
@@ -22,6 +27,34 @@ from .deps import get_current_admin
 from .schemas import PaginatedResponse
 
 router = APIRouter(prefix="/moderation", tags=["admin-moderation"])
+
+
+@router.get(
+    "/diary-access-requests",
+    response_model=PaginatedResponse[DiaryAccessRequestAdminRead],
+    summary="获取日记查看申请列表",
+)
+def list_diary_access_requests(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> dict[str, object]:
+    return list_diary_access_requests_admin(session, page=page, page_size=page_size)
+
+
+@router.patch(
+    "/diary-access-requests/{request_id}",
+    response_model=DiaryAccessRequestAdminRead,
+    summary="审核日记查看申请",
+)
+def update_diary_access_request(
+    request_id: str,
+    payload: DiaryAccessRequestAdminUpdate,
+    admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> DiaryAccessRequestAdminRead:
+    return update_diary_access_request_admin(session, request_id, payload, admin)
 
 
 @router.get("/comments", response_model=PaginatedResponse[CommentAdminRead], summary="获取评论审核列表")

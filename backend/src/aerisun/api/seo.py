@@ -27,6 +27,7 @@ from aerisun.domain.content.seo_service import (
     build_robots_txt,
     build_sitemap_xml,
 )
+from aerisun.domain.diary_access.service import diary_private_enabled
 
 router = APIRouter(tags=["seo"])
 html_router = APIRouter(tags=["seo-html"])
@@ -249,13 +250,14 @@ def sitemap(session: Session = Depends(get_session)) -> Response:
 
 
 @router.get("/robots.txt")
-def robots_txt() -> Response:
+def robots_txt(session: Session = Depends(get_session)) -> Response:
     settings = get_settings()
     site_url = settings.site_url or "https://example.com"
     content = build_robots_txt(
         site_url,
         admin_base_path=settings.admin_base_path,
         api_base_path=settings.api_base_path,
+        diary_private=diary_private_enabled(session),
     )
     return Response(content=content, media_type="text/plain")
 

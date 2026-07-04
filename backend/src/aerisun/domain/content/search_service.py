@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
 from aerisun.domain.content.schemas import SearchResponse, SearchResultItem
+from aerisun.domain.diary_access.service import diary_private_enabled
 
 SNIPPET_RADIUS = 120
 
@@ -88,7 +89,10 @@ def search_public_content(session: Session, query: str, limit: int = 10) -> Sear
 
     results: list[SearchResultItem] = []
 
+    include_diary = not diary_private_enabled(session)
     for model, type_name in _CONTENT_TYPES:
+        if type_name == "diary" and not include_diary:
+            continue
         rows = session.scalars(
             select(model)
             .where(

@@ -1,8 +1,14 @@
 from __future__ import annotations
 
+from datetime import timedelta
+
 from aerisun.core.db import get_session_factory
-from aerisun.domain.site_auth.models import SiteUser
-from aerisun.domain.subscription.models import ContentSubscriber
+from aerisun.core.time import shanghai_now
+from aerisun.domain.diary_access.models import DiaryAccessRequest
+from aerisun.domain.iam.models import AdminUser
+from aerisun.domain.site_auth.models import SiteAdminIdentity, SiteUser
+from aerisun.domain.site_config.models import SiteProfile
+from aerisun.domain.subscription.models import ContentNotification, ContentSubscriber
 from aerisun.domain.subscription.service import get_subscription_config_orm
 
 PUBLIC_BASE = "/api/v1/site"
@@ -35,6 +41,24 @@ def _login_site_user(client, *, email: str) -> None:
     payload = response.json()
     assert payload["authenticated"] is True
     assert payload["requires_profile"] is False
+
+
+def _grant_diary_access(email: str) -> None:
+    with get_session_factory()() as session:
+        user = session.query(SiteUser).filter(SiteUser.email == email).first()
+        assert user is not None
+        now = shanghai_now()
+        session.add(
+            DiaryAccessRequest(
+                site_user_id=user.id,
+                reason="测试授权",
+                status="approved",
+                granted_at=now,
+                reviewed_at=now,
+                expires_at=now + timedelta(days=7),
+            )
+        )
+        session.commit()
 
 
 def test_site_config_exposes_public_subscription_flag(client) -> None:
@@ -79,13 +103,13 @@ def test_public_subscription_creates_and_updates_subscriber(client, monkeypatch)
 
     update_response = client.post(
         f"{PUBLIC_BASE}/subscriptions/",
-        json={"email": "Reader@Example.com", "content_types": ["diary", "excerpts"]},
+        json={"email": "Reader@Example.com", "content_types": ["posts", "excerpts"]},
     )
 
     assert update_response.status_code == 201
     assert update_response.json() == {
         "email": "reader@example.com",
-        "content_types": ["diary", "excerpts"],
+        "content_types": ["excerpts", "posts"],
         "subscribed": True,
     }
 
@@ -94,7 +118,173 @@ def test_public_subscription_creates_and_updates_subscriber(client, monkeypatch)
 
     assert len(subscribers) == 1
     assert subscribers[0].email == "reader@example.com"
-    assert subscribers[0].content_types == ["diary", "excerpts"]
+    assert subscribers[0].content_types == ["excerpts", "posts"]
+
+
+def test_private_diary_subscription_requires_active_access(client, monkeypatch) -> None:
+    _enable_subscriptions()
+    monkeypatch.setattr("aerisun.domain.subscription.service._send_email", lambda **_: None)
+
+    anonymous_response = client.post(
+        f"{PUBLIC_BASE}/subscriptions/",
+        json={"email": "reader@example.com", "content_types": ["diary"]},
+    )
+    assert anonymous_response.status_code == 422
+    assert anonymous_response.json()["detail"] == "日记订阅需要先登录并获得查看权限。"
+
+    _login_site_user(client, email="reader@example.com")
+    forbidden_response = client.post(
+        f"{PUBLIC_BASE}/subscriptions/",
+        json={"email": "reader@example.com", "content_types": ["diary"]},
+    )
+    assert forbidden_response.status_code == 422
+    assert forbidden_response.json()["detail"] == "日记订阅需要先登录并获得查看权限。"
+
+    _grant_diary_access("reader@example.com")
+    allowed_response = client.post(
+        f"{PUBLIC_BASE}/subscriptions/",
+        json={"email": "reader@example.com", "content_types": ["diary", "posts"]},
+    )
+    assert allowed_response.status_code == 201
+    assert allowed_response.json()["content_types"] == ["diary", "posts"]
+
+    with get_session_factory()() as session:
+        user = session.query(SiteUser).filter(SiteUser.email == "reader@example.com").first()
+        assert user is not None
+        access = (
+            session.query(DiaryAccessRequest)
+            .filter(DiaryAccessRequest.site_user_id == user.id)
+            .order_by(DiaryAccessRequest.created_at.desc())
+            .first()
+        )
+        assert access is not None
+        access.expires_at = shanghai_now() - timedelta(seconds=1)
+        session.commit()
+
+    status_response = client.get(f"{PUBLIC_BASE}/subscriptions/me")
+    assert status_response.status_code == 200
+    assert status_response.json() == {
+        "email": "reader@example.com",
+        "content_types": ["posts"],
+        "subscribed": True,
+    }
+    with get_session_factory()() as session:
+        subscriber = session.query(ContentSubscriber).filter(ContentSubscriber.email == "reader@example.com").first()
+        assert subscriber is not None
+        assert subscriber.is_active is True
+        assert subscriber.content_types == ["posts"]
+
+
+def test_private_diary_notification_rechecks_subscriber_access(seeded_session) -> None:
+    profile = seeded_session.query(SiteProfile).order_by(SiteProfile.created_at.asc()).first()
+    assert profile is not None
+    profile.feature_flags = {
+        **dict(profile.feature_flags or {}),
+        "diary_private_enabled": True,
+    }
+    config = get_subscription_config_orm(seeded_session)
+    config.enabled = True
+    config.smtp_test_passed = True
+    config.allowed_content_types = ["diary"]
+
+    authorized = SiteUser(email="authorized@example.com", display_name="Authorized", avatar_url="")
+    unauthorized = SiteUser(email="unauthorized@example.com", display_name="Unauthorized", avatar_url="")
+    admin_site_user = SiteUser(email="admin-delivery@example.com", display_name="Admin", avatar_url="")
+    admin_user = AdminUser(username="diary-delivery-admin", password_hash="test")
+    seeded_session.add_all([authorized, unauthorized, admin_site_user, admin_user])
+    seeded_session.flush()
+    now = shanghai_now()
+    seeded_session.add(
+        DiaryAccessRequest(
+            site_user_id=authorized.id,
+            reason="测试授权",
+            status="approved",
+            granted_at=now,
+            reviewed_at=now,
+            expires_at=now + timedelta(days=7),
+        )
+    )
+    seeded_session.add(
+        SiteAdminIdentity(
+            site_user_id=admin_site_user.id,
+            admin_user_id=admin_user.id,
+            provider="email",
+            identifier="admin-delivery@example.com",
+            email="admin-delivery@example.com",
+        )
+    )
+    seeded_session.add_all(
+        [
+            ContentSubscriber(
+                email="admin-delivery@example.com",
+                initiator_site_user_id=admin_site_user.id,
+                content_types=["diary"],
+                is_active=True,
+            ),
+            ContentSubscriber(
+                email="authorized-delivery@example.com",
+                initiator_site_user_id=authorized.id,
+                content_types=["diary"],
+                is_active=True,
+            ),
+            ContentSubscriber(
+                email="unauthorized-delivery@example.com",
+                initiator_site_user_id=unauthorized.id,
+                content_types=["diary"],
+                is_active=True,
+            ),
+            ContentSubscriber(
+                email="anonymous-delivery@example.com",
+                content_types=["diary"],
+                is_active=True,
+            ),
+        ]
+    )
+    seeded_session.add(
+        ContentNotification(
+            content_type="diary",
+            content_slug="private-day",
+            content_title="Private Day",
+            content_summary="Private summary",
+            content_url="https://example.com/diary/private-day",
+            published_at=now,
+        )
+    )
+    seeded_session.commit()
+
+    from aerisun.domain.subscription.service import _recipient_emails_for_notification
+
+    assert _recipient_emails_for_notification(seeded_session, config=config, content_type="diary") == [
+        "admin-delivery@example.com",
+        "authorized-delivery@example.com",
+    ]
+    admin_subscriber = (
+        seeded_session.query(ContentSubscriber).filter(ContentSubscriber.email == "admin-delivery@example.com").first()
+    )
+    authorized_subscriber = (
+        seeded_session.query(ContentSubscriber)
+        .filter(ContentSubscriber.email == "authorized-delivery@example.com")
+        .first()
+    )
+    unauthorized_subscriber = (
+        seeded_session.query(ContentSubscriber)
+        .filter(ContentSubscriber.email == "unauthorized-delivery@example.com")
+        .first()
+    )
+    anonymous_subscriber = (
+        seeded_session.query(ContentSubscriber)
+        .filter(ContentSubscriber.email == "anonymous-delivery@example.com")
+        .first()
+    )
+    assert admin_subscriber is not None
+    assert authorized_subscriber is not None
+    assert unauthorized_subscriber is not None
+    assert anonymous_subscriber is not None
+    assert admin_subscriber.content_types == ["diary"]
+    assert authorized_subscriber.content_types == ["diary"]
+    assert unauthorized_subscriber.content_types == []
+    assert unauthorized_subscriber.is_active is False
+    assert anonymous_subscriber.content_types == ["diary"]
 
 
 def test_public_subscription_respects_admin_allowed_content_types(client) -> None:

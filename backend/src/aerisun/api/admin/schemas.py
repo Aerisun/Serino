@@ -17,6 +17,13 @@ from aerisun.domain.content.schemas import (  # noqa: F401
     SearchResultItem,
     TagInfo,
 )
+from aerisun.domain.diary_access.schemas import (  # noqa: F401
+    DiaryAccessRequestAdminRead,
+    DiaryAccessRequestAdminUpdate,
+    DiaryAccessRequestCreate,
+    DiaryAccessRequestRead,
+    DiaryAccessStateRead,
+)
 from aerisun.domain.iam.schemas import (  # noqa: F401
     AdminProfileUpdate,
     AdminSessionRead,

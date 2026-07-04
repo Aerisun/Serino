@@ -405,6 +405,33 @@ export const HealthzApiV1SiteHealthzGetResponse = zod.object({
 
 
 /**
+ * @summary 获取当前访客日记查看权限
+ */
+export const ReadMyDiaryAccessApiV1SiteDiaryAccessMeGetResponse = zod.object({
+  "authenticated": zod.unknown(),
+  "diary_private_enabled": zod.unknown(),
+  "has_access": zod.unknown(),
+  "owner_name": zod.unknown(),
+  "mail_feedback_available": zod.unknown().optional(),
+  "access_expires_at": zod.unknown().optional(),
+  "remaining_seconds": zod.unknown().optional(),
+  "pending_request_id": zod.unknown().optional()
+})
+
+
+/**
+ * @summary 提交日记查看申请
+ */
+export const createDiaryAccessRequestApiV1SiteDiaryAccessRequestsPostBodyReasonMax = 1000;
+
+
+
+export const CreateDiaryAccessRequestApiV1SiteDiaryAccessRequestsPostBody = zod.object({
+  "reason": zod.string().min(1).max(createDiaryAccessRequestApiV1SiteDiaryAccessRequestsPostBodyReasonMax)
+})
+
+
+/**
  * @summary 获取当前站点用户状态
  */
 export const readSiteAuthStateApiV1SiteAuthMeGetResponseEmailLoginEnabledDefault = true;
@@ -3308,6 +3335,64 @@ export const UpdateFriendFeedApiV1AdminSocialFeedsFeedIdPutResponse = zod.object
  */
 export const DeleteFriendFeedApiV1AdminSocialFeedsFeedIdDeleteParams = zod.object({
   "feed_id": zod.string()
+})
+
+
+/**
+ * @summary 获取日记查看申请列表
+ */
+export const listDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGetQueryPageDefault = 1;
+
+export const listDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGetQueryPageSizeDefault = 20;
+export const listDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGetQueryPageSizeMax = 100;
+
+
+
+export const ListDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGetQueryParams = zod.object({
+  "page": zod.number().min(1).default(listDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGetQueryPageDefault),
+  "page_size": zod.number().min(1).max(listDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGetQueryPageSizeMax).default(listDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGetQueryPageSizeDefault)
+})
+
+export const ListDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGetResponse = zod.object({
+  "items": zod.unknown().describe('Page of result items'),
+  "total": zod.unknown().describe('Total number of items matching the query'),
+  "page": zod.unknown().describe('Current page number (1-based)'),
+  "page_size": zod.unknown().describe('Number of items per page')
+})
+
+
+/**
+ * @summary 审核日记查看申请
+ */
+export const UpdateDiaryAccessRequestApiV1AdminModerationDiaryAccessRequestsRequestIdPatchParams = zod.object({
+  "request_id": zod.string()
+})
+
+export const updateDiaryAccessRequestApiV1AdminModerationDiaryAccessRequestsRequestIdPatchBodyRevokeAccessDefault = false;
+
+export const UpdateDiaryAccessRequestApiV1AdminModerationDiaryAccessRequestsRequestIdPatchBody = zod.object({
+  "grant_access": zod.union([zod.boolean(),zod.null()]).optional(),
+  "expires_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "revoke_access": zod.boolean().default(updateDiaryAccessRequestApiV1AdminModerationDiaryAccessRequestsRequestIdPatchBodyRevokeAccessDefault)
+})
+
+export const UpdateDiaryAccessRequestApiV1AdminModerationDiaryAccessRequestsRequestIdPatchResponse = zod.object({
+  "id": zod.unknown(),
+  "site_user_id": zod.unknown(),
+  "visitor_email": zod.unknown(),
+  "visitor_display_name": zod.unknown(),
+  "visitor_avatar_url": zod.unknown(),
+  "visitor_auth_provider": zod.unknown(),
+  "visitor_oauth_providers": zod.unknown(),
+  "reason": zod.unknown(),
+  "status": zod.unknown(),
+  "has_access": zod.unknown(),
+  "access_granted_at": zod.unknown().optional(),
+  "access_expires_at": zod.unknown().optional(),
+  "access_revoked_at": zod.unknown().optional(),
+  "remaining_seconds": zod.unknown().optional(),
+  "created_at": zod.unknown(),
+  "updated_at": zod.unknown()
 })
 
 

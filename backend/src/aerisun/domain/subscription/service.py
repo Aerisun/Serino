@@ -18,8 +18,9 @@ from aerisun.core.db import get_session_factory
 from aerisun.core.settings import Settings, get_settings
 from aerisun.domain.content.feed_service import get_feed_definition, list_feed_definitions
 from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
+from aerisun.domain.diary_access.service import current_site_user_can_view_diary, diary_private_enabled
 from aerisun.domain.exceptions import ValidationError
-from aerisun.domain.site_auth.models import SiteUser, SiteUserOAuthAccount
+from aerisun.domain.site_auth.models import SiteAdminIdentity, SiteUser, SiteUserOAuthAccount, SiteUserSession
 from aerisun.domain.site_config import repository as site_config_repo
 
 from .models import (
@@ -42,6 +43,7 @@ from .schemas import (
 
 logger = logging.getLogger("aerisun.subscription")
 SUBSCRIPTION_TEST_RECIPIENT = "do-not-reply@course.pku.edu.cn"
+MAX_CONTENT_SUBSCRIPTION_FAILURE_ATTEMPTS = 5
 SMTP_AUTH_MODE_PASSWORD = "password"
 SMTP_AUTH_MODE_MICROSOFT_OAUTH2 = "microsoft_oauth2"
 MICROSOFT_SMTP_SCOPE = "offline_access https://outlook.office.com/SMTP.Send"
@@ -67,6 +69,15 @@ DEFAULT_COMMENT_FEEDBACK_BODY_TEMPLATE = (
     "回复内容：\n{reply_content}\n\n"
     "查看回复：{comment_url}"
 )
+DIARY_ACCESS_FEEDBACK_TEMPLATE_FLAG = "diary_access_feedback_template"
+DEFAULT_DIARY_ACCESS_FEEDBACK_TEMPLATE = (
+    "你好，{visitor_name}：\n\n"
+    "站长已处理你的日记查看申请。\n"
+    "审核结果：{decision}\n"
+    "权限到期时间：{expires_at}\n"
+    "\n"
+    "站点地址：{site_url}"
+)
 
 TEMPLATE_ALLOWED_KEYS = {
     "site_name",
@@ -87,6 +98,17 @@ COMMENT_FEEDBACK_TEMPLATE_ALLOWED_KEYS = {
     "reply_author_name",
     "reply_content",
     "comment_url",
+}
+DIARY_ACCESS_FEEDBACK_TEMPLATE_ALLOWED_KEYS = {
+    "site_name",
+    "site_url",
+    "visitor_name",
+    "visitor_email",
+    "decision",
+    "expires_at",
+    "reason",
+    "requested_at",
+    "reviewed_at",
 }
 
 DEFAULT_ALLOWED_CONTENT_TYPES = ["posts", "diary", "thoughts", "excerpts"]
@@ -154,6 +176,73 @@ def _config_allowed_content_types(config: ContentSubscriptionConfig) -> list[str
     if not configured:
         return list(DEFAULT_ALLOWED_CONTENT_TYPES)
     return _normalize_allowed_content_types(configured)
+
+
+def _visible_subscription_content_types(
+    session: Session,
+    content_types: list[str],
+    *,
+    current_user: SiteUser | None = None,
+    current_site_session: SiteUserSession | None = None,
+) -> list[str]:
+    if diary_private_enabled(session) and not current_site_user_can_view_diary(
+        session,
+        current_user,
+        current_site_session,
+    ):
+        return [item for item in content_types if item != "diary"]
+    return content_types
+
+
+def _require_diary_subscription_access(
+    session: Session,
+    content_types: list[str],
+    *,
+    current_user: SiteUser | None,
+    current_site_session: SiteUserSession | None,
+) -> None:
+    if "diary" not in content_types or not diary_private_enabled(session):
+        return
+    if current_site_user_can_view_diary(session, current_user, current_site_session):
+        return
+    if current_user is not None and remove_diary_subscription_for_site_user(session, current_user.id):
+        session.commit()
+    raise ValidationError("日记订阅需要先登录并获得查看权限。")
+
+
+def remove_diary_subscription_for_site_user(session: Session, site_user_id: str) -> int:
+    subscribers = session.scalars(
+        select(ContentSubscriber).where(ContentSubscriber.initiator_site_user_id == site_user_id)
+    ).all()
+    changed = 0
+    for subscriber in subscribers:
+        content_types = [str(item).strip() for item in list(subscriber.content_types or []) if str(item).strip()]
+        if "diary" not in content_types:
+            continue
+        remaining = [item for item in content_types if item != "diary"]
+        subscriber.content_types = remaining
+        if not remaining:
+            subscriber.is_active = False
+        changed += 1
+    return changed
+
+
+def _site_user_can_receive_diary_subscription(session: Session, user: SiteUser | None) -> bool:
+    if user is None:
+        return False
+    if current_site_user_can_view_diary(session, user, None):
+        return True
+    return (
+        session.scalar(
+            select(SiteAdminIdentity.id)
+            .where(
+                SiteAdminIdentity.site_user_id == user.id,
+                SiteAdminIdentity.admin_user_id.is_not(None),
+            )
+            .limit(1)
+        )
+        is not None
+    )
 
 
 def _validate_template(
@@ -283,6 +372,7 @@ def create_or_update_public_subscription(
     payload: ContentSubscriptionPublicCreate,
     *,
     current_user: SiteUser | None = None,
+    current_site_session: SiteUserSession | None = None,
 ) -> ContentSubscriptionPublicRead:
     from aerisun.domain.automation.events import emit_subscription_created
 
@@ -296,6 +386,12 @@ def create_or_update_public_subscription(
     disallowed = [item for item in content_types if item not in allowed_content_types]
     if disallowed:
         raise ValidationError(f"以下订阅类型暂未开放：{', '.join(disallowed)}")
+    _require_diary_subscription_access(
+        session,
+        content_types,
+        current_user=current_user,
+        current_site_session=current_site_session,
+    )
     if not _smtp_ready(config):
         raise _smtp_incomplete_validation_error(config)
 
@@ -345,7 +441,12 @@ def create_or_update_public_subscription(
     )
     return ContentSubscriptionPublicRead(
         email=subscriber.email,
-        content_types=list(subscriber.content_types or []),
+        content_types=_visible_subscription_content_types(
+            session,
+            list(subscriber.content_types or []),
+            current_user=current_user,
+            current_site_session=current_site_session,
+        ),
         subscribed=bool(subscriber.is_active),
     )
 
@@ -354,8 +455,17 @@ def get_public_subscription_for_email(
     session: Session,
     *,
     email: str,
+    current_user: SiteUser | None = None,
+    current_site_session: SiteUserSession | None = None,
 ) -> ContentSubscriptionPublicStatusRead:
     normalized_email = _normalize_email(email)
+    if (
+        current_user is not None
+        and diary_private_enabled(session)
+        and not current_site_user_can_view_diary(session, current_user, current_site_session)
+        and remove_diary_subscription_for_site_user(session, current_user.id)
+    ):
+        session.commit()
     subscriber = session.scalars(select(ContentSubscriber).where(ContentSubscriber.email == normalized_email)).first()
     if subscriber is None:
         return ContentSubscriptionPublicStatusRead(
@@ -366,7 +476,12 @@ def get_public_subscription_for_email(
 
     return ContentSubscriptionPublicStatusRead(
         email=subscriber.email,
-        content_types=list(subscriber.content_types or []),
+        content_types=_visible_subscription_content_types(
+            session,
+            list(subscriber.content_types or []),
+            current_user=current_user,
+            current_site_session=current_site_session,
+        ),
         subscribed=bool(subscriber.is_active),
     )
 
@@ -410,7 +525,12 @@ def _smtp_ready(config: ContentSubscriptionConfig) -> bool:
                 config.smtp_oauth_refresh_token.strip(),
             ]
         )
-    return True
+    return not (config.smtp_username.strip() and not config.smtp_password.strip())
+
+
+def diary_access_mail_feedback_available(session: Session) -> bool:
+    config = get_subscription_config_orm(session)
+    return bool(config.smtp_test_passed and _smtp_ready(config))
 
 
 def _smtp_auth_mode(config: ContentSubscriptionConfig) -> str:
@@ -599,6 +719,15 @@ def _ensure_notification_records(session: Session, site_url: str) -> int:
     return created
 
 
+def enqueue_content_subscription_notifications(settings: Settings | None = None) -> dict[str, int]:
+    active_settings = settings or get_settings()
+    site_url = (active_settings.site_url or "https://example.com").rstrip("/")
+    session_factory = get_session_factory()
+    with session_factory() as session:
+        created = _ensure_notification_records(session, site_url)
+    return {"created": created}
+
+
 def _record_notification_deliveries(
     session: Session,
     *,
@@ -637,6 +766,14 @@ def _recipient_emails_for_notification(
     emails: list[str] = []
     for subscriber in subscribers:
         content_types = _normalize_content_types(list(subscriber.content_types or []))
+        if content_type == "diary" and diary_private_enabled(session):
+            user = (
+                session.get(SiteUser, subscriber.initiator_site_user_id) if subscriber.initiator_site_user_id else None
+            )
+            if not _site_user_can_receive_diary_subscription(session, user):
+                if user is not None:
+                    remove_diary_subscription_for_site_user(session, user.id)
+                continue
         if content_type in content_types:
             emails.append(subscriber.email)
     return sorted(set(emails))
@@ -1011,6 +1148,102 @@ def _build_comment_feedback_message(
     return msg
 
 
+def _format_diary_access_feedback_time(value: datetime | None) -> str:
+    if value is None:
+        return "无"
+    return value.strftime("%Y-%m-%d %H:%M")
+
+
+def _diary_access_feedback_template(session: Session) -> str:
+    site = site_config_repo.find_site_profile(session)
+    flags = site.feature_flags if site is not None and isinstance(site.feature_flags, dict) else {}
+    template = flags.get(DIARY_ACCESS_FEEDBACK_TEMPLATE_FLAG)
+    if isinstance(template, str) and template.strip():
+        return template.strip()
+    return DEFAULT_DIARY_ACCESS_FEEDBACK_TEMPLATE
+
+
+def _build_diary_access_feedback_message(
+    *,
+    config: ContentSubscriptionConfig,
+    recipient: str,
+    site_name: str,
+    context: dict[str, str],
+    template: str,
+) -> EmailMessage:
+    msg = EmailMessage()
+    from_name = config.smtp_from_name.strip() or site_name
+    try:
+        body_template = _validate_template(
+            template,
+            field_name="日记查看申请反馈模板",
+            allowed_keys=DIARY_ACCESS_FEEDBACK_TEMPLATE_ALLOWED_KEYS,
+        )
+    except ValidationError:
+        logger.warning("Invalid diary access feedback template; falling back to default", exc_info=True)
+        body_template = DEFAULT_DIARY_ACCESS_FEEDBACK_TEMPLATE
+
+    msg["Subject"] = f"[{site_name}] 日记查看申请反馈"
+    msg["From"] = f"{from_name} <{config.smtp_from_email}>"
+    msg["To"] = recipient
+    if config.smtp_reply_to.strip():
+        msg["Reply-To"] = config.smtp_reply_to.strip()
+
+    msg.set_content(_render_template(body_template, context))
+    return msg
+
+
+def send_diary_access_feedback_notification(session: Session, *, request, user: SiteUser) -> bool:
+    config = get_subscription_config_orm(session)
+    if not config.smtp_test_passed or not _smtp_ready(config):
+        return False
+
+    try:
+        recipient = _normalize_email(user.email)
+    except ValidationError:
+        return False
+
+    settings = get_settings()
+    site = site_config_repo.find_site_profile(session)
+    site_name = (
+        (site.title if site is not None else "").strip() or (site.name if site is not None else "").strip() or "Aerisun"
+    )
+    site_url = (settings.site_url or "https://example.com").rstrip("/")
+    visitor_name = (user.display_name or user.email or "访客").strip()
+    access_granted = request.status == "approved" and request.revoked_at is None
+    if access_granted:
+        decision = "已授予权限"
+    elif request.status == "revoked" or request.revoked_at is not None:
+        decision = "已停止权限"
+    else:
+        decision = "暂未授予权限"
+    context = {
+        "site_name": site_name,
+        "site_url": site_url,
+        "visitor_name": visitor_name,
+        "visitor_email": recipient,
+        "decision": decision,
+        "expires_at": _format_diary_access_feedback_time(request.expires_at) if access_granted else "未授予权限",
+        "reason": request.reason or "",
+        "requested_at": _format_diary_access_feedback_time(request.created_at),
+        "reviewed_at": _format_diary_access_feedback_time(request.reviewed_at),
+    }
+    message = _build_diary_access_feedback_message(
+        config=config,
+        recipient=recipient,
+        site_name=site_name,
+        context=context,
+        template=_diary_access_feedback_template(session),
+    )
+
+    try:
+        _send_email(config=config, message=message)
+    except Exception:
+        logger.warning("Diary access feedback email failed for request %s", request.id, exc_info=True)
+        return False
+    return True
+
+
 def _comment_feedback_recipient(session: Session, parent_record) -> str | None:
     from aerisun.domain.waline.service import normalize_comment_mail
 
@@ -1261,6 +1494,8 @@ def dispatch_content_subscription_notifications(settings: Settings | None = None
                     item.content_type,
                     item.content_slug,
                 )
+                failed_at = utcnow()
+                item.failed_attempts = int(item.failed_attempts or 0) + 1
                 _record_notification_deliveries(
                     session,
                     notification=item,
@@ -1268,6 +1503,8 @@ def dispatch_content_subscription_notifications(settings: Settings | None = None
                     status="failed",
                     error_message=str(exc)[:1000],
                 )
+                if item.failed_attempts >= MAX_CONTENT_SUBSCRIPTION_FAILURE_ATTEMPTS:
+                    item.delivered_at = failed_at
                 session.commit()
                 emit_subscription_notification_failed(
                     session,

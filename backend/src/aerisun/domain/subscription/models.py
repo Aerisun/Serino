@@ -91,6 +91,7 @@ class ContentNotification(Base, TimestampMixin):
     content_url: Mapped[str] = mapped_column(String(500), nullable=False)
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     delivered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    failed_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
 
 class ContentNotificationDelivery(Base, TimestampMixin):

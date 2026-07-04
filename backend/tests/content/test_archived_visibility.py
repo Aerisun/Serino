@@ -3,6 +3,10 @@ from __future__ import annotations
 import bcrypt
 import pytest
 
+from aerisun.core.db import get_session_factory
+from aerisun.domain.diary_access.service import DIARY_PRIVATE_FEATURE_FLAG
+from aerisun.domain.site_config.models import SiteProfile
+
 LIST_CASES = [
     ("posts", "/api/v1/site/posts"),
     ("diary", "/api/v1/site/diary"),
@@ -17,6 +21,15 @@ DETAIL_CASES = [
 
 ADMIN_EMAIL = "private-owner@example.com"
 ADMIN_PASSWORD = "route-password"
+
+
+def _set_diary_private_enabled(enabled: bool) -> None:
+    with get_session_factory()() as session:
+        profile = session.query(SiteProfile).one()
+        flags = dict(profile.feature_flags or {})
+        flags[DIARY_PRIVATE_FEATURE_FLAG] = enabled
+        profile.feature_flags = flags
+        session.commit()
 
 
 def _seed_bound_admin_email(*, email: str = ADMIN_EMAIL, admin_password: str = ADMIN_PASSWORD) -> None:
@@ -125,6 +138,8 @@ def test_admin_elevated_site_user_can_see_private_items_in_lists(
 
 @pytest.mark.parametrize(("content_type", "detail_path"), DETAIL_CASES)
 def test_public_content_details_hide_private_items(client, admin_headers, content_type: str, detail_path: str) -> None:
+    if content_type == "diary":
+        _set_diary_private_enabled(False)
     slug = f"private-{content_type}-detail-hidden"
     _create_private_item(client, admin_headers, content_type=content_type, slug=slug)
 

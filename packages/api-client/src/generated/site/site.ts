@@ -35,6 +35,9 @@ import type {
   ContentSubscriptionPublicStatusRead,
   ContentSubscriptionPublicUnsubscribeResult,
   ContentSummaryCollectionRead,
+  DiaryAccessRequestCreate,
+  DiaryAccessRequestRead,
+  DiaryAccessStateRead,
   FriendCollectionRead,
   FriendFeedCollectionRead,
   HTTPValidationError,
@@ -2897,6 +2900,212 @@ export function useHealthzApiV1SiteHealthzGet<TData = Awaited<ReturnType<typeof 
 
 
 /**
+ * @summary 获取当前访客日记查看权限
+ */
+export type readMyDiaryAccessApiV1SiteDiaryAccessMeGetResponse200 = {
+  data: DiaryAccessStateRead
+  status: 200
+}
+
+export type readMyDiaryAccessApiV1SiteDiaryAccessMeGetResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type readMyDiaryAccessApiV1SiteDiaryAccessMeGetResponseSuccess = (readMyDiaryAccessApiV1SiteDiaryAccessMeGetResponse200) & {
+  headers: Headers;
+};
+export type readMyDiaryAccessApiV1SiteDiaryAccessMeGetResponseError = (readMyDiaryAccessApiV1SiteDiaryAccessMeGetResponse422) & {
+  headers: Headers;
+};
+
+export type readMyDiaryAccessApiV1SiteDiaryAccessMeGetResponse = (readMyDiaryAccessApiV1SiteDiaryAccessMeGetResponseSuccess | readMyDiaryAccessApiV1SiteDiaryAccessMeGetResponseError)
+
+export const getReadMyDiaryAccessApiV1SiteDiaryAccessMeGetUrl = () => {
+
+
+
+
+  return `/api/v1/site/diary-access/me`
+}
+
+export const readMyDiaryAccessApiV1SiteDiaryAccessMeGet = async ( options?: RequestInit): Promise<readMyDiaryAccessApiV1SiteDiaryAccessMeGetResponse> => {
+
+  return customInstance<readMyDiaryAccessApiV1SiteDiaryAccessMeGetResponse>(getReadMyDiaryAccessApiV1SiteDiaryAccessMeGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getReadMyDiaryAccessApiV1SiteDiaryAccessMeGetQueryKey = () => {
+    return [
+    `/api/v1/site/diary-access/me`
+    ] as const;
+    }
+
+
+export const getReadMyDiaryAccessApiV1SiteDiaryAccessMeGetQueryOptions = <TData = Awaited<ReturnType<typeof readMyDiaryAccessApiV1SiteDiaryAccessMeGet>>, TError = ErrorType<HTTPValidationError>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readMyDiaryAccessApiV1SiteDiaryAccessMeGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getReadMyDiaryAccessApiV1SiteDiaryAccessMeGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof readMyDiaryAccessApiV1SiteDiaryAccessMeGet>>> = ({ signal }) => readMyDiaryAccessApiV1SiteDiaryAccessMeGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof readMyDiaryAccessApiV1SiteDiaryAccessMeGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ReadMyDiaryAccessApiV1SiteDiaryAccessMeGetQueryResult = NonNullable<Awaited<ReturnType<typeof readMyDiaryAccessApiV1SiteDiaryAccessMeGet>>>
+export type ReadMyDiaryAccessApiV1SiteDiaryAccessMeGetQueryError = ErrorType<HTTPValidationError>
+
+
+export function useReadMyDiaryAccessApiV1SiteDiaryAccessMeGet<TData = Awaited<ReturnType<typeof readMyDiaryAccessApiV1SiteDiaryAccessMeGet>>, TError = ErrorType<HTTPValidationError>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof readMyDiaryAccessApiV1SiteDiaryAccessMeGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof readMyDiaryAccessApiV1SiteDiaryAccessMeGet>>,
+          TError,
+          Awaited<ReturnType<typeof readMyDiaryAccessApiV1SiteDiaryAccessMeGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useReadMyDiaryAccessApiV1SiteDiaryAccessMeGet<TData = Awaited<ReturnType<typeof readMyDiaryAccessApiV1SiteDiaryAccessMeGet>>, TError = ErrorType<HTTPValidationError>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readMyDiaryAccessApiV1SiteDiaryAccessMeGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof readMyDiaryAccessApiV1SiteDiaryAccessMeGet>>,
+          TError,
+          Awaited<ReturnType<typeof readMyDiaryAccessApiV1SiteDiaryAccessMeGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useReadMyDiaryAccessApiV1SiteDiaryAccessMeGet<TData = Awaited<ReturnType<typeof readMyDiaryAccessApiV1SiteDiaryAccessMeGet>>, TError = ErrorType<HTTPValidationError>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readMyDiaryAccessApiV1SiteDiaryAccessMeGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取当前访客日记查看权限
+ */
+
+export function useReadMyDiaryAccessApiV1SiteDiaryAccessMeGet<TData = Awaited<ReturnType<typeof readMyDiaryAccessApiV1SiteDiaryAccessMeGet>>, TError = ErrorType<HTTPValidationError>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readMyDiaryAccessApiV1SiteDiaryAccessMeGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getReadMyDiaryAccessApiV1SiteDiaryAccessMeGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 提交日记查看申请
+ */
+export type createDiaryAccessRequestApiV1SiteDiaryAccessRequestsPostResponse201 = {
+  data: DiaryAccessRequestRead
+  status: 201
+}
+
+export type createDiaryAccessRequestApiV1SiteDiaryAccessRequestsPostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type createDiaryAccessRequestApiV1SiteDiaryAccessRequestsPostResponseSuccess = (createDiaryAccessRequestApiV1SiteDiaryAccessRequestsPostResponse201) & {
+  headers: Headers;
+};
+export type createDiaryAccessRequestApiV1SiteDiaryAccessRequestsPostResponseError = (createDiaryAccessRequestApiV1SiteDiaryAccessRequestsPostResponse422) & {
+  headers: Headers;
+};
+
+export type createDiaryAccessRequestApiV1SiteDiaryAccessRequestsPostResponse = (createDiaryAccessRequestApiV1SiteDiaryAccessRequestsPostResponseSuccess | createDiaryAccessRequestApiV1SiteDiaryAccessRequestsPostResponseError)
+
+export const getCreateDiaryAccessRequestApiV1SiteDiaryAccessRequestsPostUrl = () => {
+
+
+
+
+  return `/api/v1/site/diary-access/requests`
+}
+
+export const createDiaryAccessRequestApiV1SiteDiaryAccessRequestsPost = async (diaryAccessRequestCreate: DiaryAccessRequestCreate, options?: RequestInit): Promise<createDiaryAccessRequestApiV1SiteDiaryAccessRequestsPostResponse> => {
+
+  return customInstance<createDiaryAccessRequestApiV1SiteDiaryAccessRequestsPostResponse>(getCreateDiaryAccessRequestApiV1SiteDiaryAccessRequestsPostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      diaryAccessRequestCreate,)
+  }
+);}
+
+
+
+
+export const getCreateDiaryAccessRequestApiV1SiteDiaryAccessRequestsPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDiaryAccessRequestApiV1SiteDiaryAccessRequestsPost>>, TError,{data: BodyType<DiaryAccessRequestCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof createDiaryAccessRequestApiV1SiteDiaryAccessRequestsPost>>, TError,{data: BodyType<DiaryAccessRequestCreate>}, TContext> => {
+
+const mutationKey = ['createDiaryAccessRequestApiV1SiteDiaryAccessRequestsPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createDiaryAccessRequestApiV1SiteDiaryAccessRequestsPost>>, {data: BodyType<DiaryAccessRequestCreate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createDiaryAccessRequestApiV1SiteDiaryAccessRequestsPost(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateDiaryAccessRequestApiV1SiteDiaryAccessRequestsPostMutationResult = NonNullable<Awaited<ReturnType<typeof createDiaryAccessRequestApiV1SiteDiaryAccessRequestsPost>>>
+    export type CreateDiaryAccessRequestApiV1SiteDiaryAccessRequestsPostMutationBody = BodyType<DiaryAccessRequestCreate>
+    export type CreateDiaryAccessRequestApiV1SiteDiaryAccessRequestsPostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 提交日记查看申请
+ */
+export const useCreateDiaryAccessRequestApiV1SiteDiaryAccessRequestsPost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDiaryAccessRequestApiV1SiteDiaryAccessRequestsPost>>, TError,{data: BodyType<DiaryAccessRequestCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createDiaryAccessRequestApiV1SiteDiaryAccessRequestsPost>>,
+        TError,
+        {data: BodyType<DiaryAccessRequestCreate>},
+        TContext
+      > => {
+      return useMutation(getCreateDiaryAccessRequestApiV1SiteDiaryAccessRequestsPostMutationOptions(options), queryClient);
+    }
+    /**
  * @summary Search Content
  */
 export type searchContentApiV1SiteSearchGetResponse200 = {

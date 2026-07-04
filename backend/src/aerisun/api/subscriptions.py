@@ -3,9 +3,14 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
-from aerisun.api.deps.site_auth import get_current_site_user, get_current_site_user_optional
+from aerisun.api.deps.site_auth import (
+    get_current_site_session,
+    get_current_site_session_optional,
+    get_current_site_user,
+    get_current_site_user_optional,
+)
 from aerisun.core.db import get_session
-from aerisun.domain.site_auth.models import SiteUser
+from aerisun.domain.site_auth.models import SiteUser, SiteUserSession
 from aerisun.domain.subscription.schemas import (
     ContentSubscriptionPublicCreate,
     ContentSubscriptionPublicEmailRequest,
@@ -26,9 +31,15 @@ router = APIRouter(prefix="/api/v1/site/subscriptions", tags=["site"])
 def subscribe_to_content(
     payload: ContentSubscriptionPublicCreate,
     current_user: SiteUser | None = Depends(get_current_site_user_optional),
+    current_site_session: SiteUserSession | None = Depends(get_current_site_session_optional),
     session: Session = Depends(get_session),
 ) -> ContentSubscriptionPublicRead:
-    return create_or_update_public_subscription(session, payload, current_user=current_user)
+    return create_or_update_public_subscription(
+        session,
+        payload,
+        current_user=current_user,
+        current_site_session=current_site_session,
+    )
 
 
 @router.post("/status", response_model=ContentSubscriptionPublicStatusRead, summary="按邮箱读取订阅状态")
@@ -56,11 +67,14 @@ def unsubscribe_subscription_by_email(
 @router.get("/me", response_model=ContentSubscriptionPublicStatusRead, summary="读取当前登录用户订阅状态")
 def get_my_subscription_status(
     current_user: SiteUser = Depends(get_current_site_user),
+    current_site_session: SiteUserSession = Depends(get_current_site_session),
     session: Session = Depends(get_session),
 ) -> ContentSubscriptionPublicStatusRead:
     return get_public_subscription_for_email(
         session,
         email=current_user.email,
+        current_user=current_user,
+        current_site_session=current_site_session,
     )
 
 

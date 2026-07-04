@@ -1038,6 +1038,114 @@
         }
       }
     },
+    "/api/v1/site/diary-access/me": {
+      "get": {
+        "tags": [
+          "site"
+        ],
+        "summary": "获取当前访客日记查看权限",
+        "operationId": "read_my_diary_access_api_v1_site_diary_access_me_get",
+        "parameters": [
+          {
+            "name": "aerisun_site_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Aerisun Site Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiaryAccessStateRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/site/diary-access/requests": {
+      "post": {
+        "tags": [
+          "site"
+        ],
+        "summary": "提交日记查看申请",
+        "operationId": "create_diary_access_request_api_v1_site_diary_access_requests_post",
+        "parameters": [
+          {
+            "name": "aerisun_site_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Aerisun Site Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiaryAccessRequestCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiaryAccessRequestRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/site-auth/me": {
       "get": {
         "tags": [
@@ -8594,6 +8702,126 @@
         "responses": {
           "204": {
             "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/moderation/diary-access-requests": {
+      "get": {
+        "tags": [
+          "admin",
+          "admin-moderation"
+        ],
+        "summary": "获取日记查看申请列表",
+        "operationId": "list_diary_access_requests_api_v1_admin_moderation_diary_access_requests_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Page Size"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse_DiaryAccessRequestAdminRead_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/moderation/diary-access-requests/{request_id}": {
+      "patch": {
+        "tags": [
+          "admin",
+          "admin-moderation"
+        ],
+        "summary": "审核日记查看申请",
+        "operationId": "update_diary_access_request_api_v1_admin_moderation_diary_access_requests__request_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Request Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiaryAccessRequestAdminUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiaryAccessRequestAdminRead"
+                }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -21786,6 +22014,197 @@
         ],
         "title": "DeriveAiSchemaResponse"
       },
+      "DiaryAccessRequestAdminRead": {
+        "properties": {
+          "id": {
+            "title": "Id"
+          },
+          "site_user_id": {
+            "title": "Site User Id"
+          },
+          "visitor_email": {
+            "title": "Visitor Email"
+          },
+          "visitor_display_name": {
+            "title": "Visitor Display Name"
+          },
+          "visitor_avatar_url": {
+            "title": "Visitor Avatar Url"
+          },
+          "visitor_auth_provider": {
+            "title": "Visitor Auth Provider"
+          },
+          "visitor_oauth_providers": {
+            "title": "Visitor Oauth Providers"
+          },
+          "reason": {
+            "title": "Reason"
+          },
+          "status": {
+            "title": "Status"
+          },
+          "has_access": {
+            "title": "Has Access"
+          },
+          "access_granted_at": {
+            "title": "Access Granted At"
+          },
+          "access_expires_at": {
+            "title": "Access Expires At"
+          },
+          "access_revoked_at": {
+            "title": "Access Revoked At"
+          },
+          "remaining_seconds": {
+            "title": "Remaining Seconds"
+          },
+          "created_at": {
+            "title": "Created At"
+          },
+          "updated_at": {
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "site_user_id",
+          "visitor_email",
+          "visitor_display_name",
+          "visitor_avatar_url",
+          "visitor_auth_provider",
+          "visitor_oauth_providers",
+          "reason",
+          "status",
+          "has_access",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "DiaryAccessRequestAdminRead"
+      },
+      "DiaryAccessRequestAdminUpdate": {
+        "properties": {
+          "grant_access": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grant Access"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "revoke_access": {
+            "type": "boolean",
+            "title": "Revoke Access",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "DiaryAccessRequestAdminUpdate"
+      },
+      "DiaryAccessRequestCreate": {
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "reason"
+        ],
+        "title": "DiaryAccessRequestCreate"
+      },
+      "DiaryAccessRequestRead": {
+        "properties": {
+          "id": {
+            "title": "Id"
+          },
+          "reason": {
+            "title": "Reason"
+          },
+          "status": {
+            "title": "Status"
+          },
+          "has_access": {
+            "title": "Has Access"
+          },
+          "access_expires_at": {
+            "title": "Access Expires At"
+          },
+          "remaining_seconds": {
+            "title": "Remaining Seconds"
+          },
+          "created_at": {
+            "title": "Created At"
+          },
+          "updated_at": {
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "reason",
+          "status",
+          "has_access",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "DiaryAccessRequestRead"
+      },
+      "DiaryAccessStateRead": {
+        "properties": {
+          "authenticated": {
+            "title": "Authenticated"
+          },
+          "diary_private_enabled": {
+            "title": "Diary Private Enabled"
+          },
+          "has_access": {
+            "title": "Has Access"
+          },
+          "owner_name": {
+            "title": "Owner Name"
+          },
+          "mail_feedback_available": {
+            "title": "Mail Feedback Available"
+          },
+          "access_expires_at": {
+            "title": "Access Expires At"
+          },
+          "remaining_seconds": {
+            "title": "Remaining Seconds"
+          },
+          "pending_request_id": {
+            "title": "Pending Request Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "authenticated",
+          "diary_private_enabled",
+          "has_access",
+          "owner_name"
+        ],
+        "title": "DiaryAccessStateRead"
+      },
       "EmailLoginRequest": {
         "properties": {
           "email": {
@@ -24328,6 +24747,34 @@
           "page_size"
         ],
         "title": "PaginatedResponse[ContentSubscriberAdminRead]"
+      },
+      "PaginatedResponse_DiaryAccessRequestAdminRead_": {
+        "properties": {
+          "items": {
+            "title": "Items",
+            "description": "Page of result items"
+          },
+          "total": {
+            "title": "Total",
+            "description": "Total number of items matching the query"
+          },
+          "page": {
+            "title": "Page",
+            "description": "Current page number (1-based)"
+          },
+          "page_size": {
+            "title": "Page Size",
+            "description": "Number of items per page"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "page_size"
+        ],
+        "title": "PaginatedResponse[DiaryAccessRequestAdminRead]"
       },
       "PaginatedResponse_FriendAdminRead_": {
         "properties": {

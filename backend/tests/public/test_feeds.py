@@ -2,9 +2,21 @@ from __future__ import annotations
 
 import pytest
 
+from aerisun.core.db import get_session_factory
 from aerisun.core.settings import get_settings
+from aerisun.domain.diary_access.service import DIARY_PRIVATE_FEATURE_FLAG
+from aerisun.domain.site_config.models import SiteProfile
 
 ADMIN_BASE = "/api/v1/admin"
+
+
+def _set_diary_private_enabled(enabled: bool) -> None:
+    with get_session_factory()() as session:
+        profile = session.query(SiteProfile).one()
+        flags = dict(profile.feature_flags or {})
+        flags[DIARY_PRIVATE_FEATURE_FLAG] = enabled
+        profile.feature_flags = flags
+        session.commit()
 
 
 def _make_payload(content_type: str, suffix: str) -> dict:
@@ -27,6 +39,8 @@ def _make_payload(content_type: str, suffix: str) -> dict:
     ],
 )
 def test_public_content_feeds_return_rss_xml(client, path: str, channel_title: str, slug: str, item_path: str) -> None:
+    if path == "/feeds/diary.xml":
+        _set_diary_private_enabled(False)
     site_url = (get_settings().site_url or "https://example.com").rstrip("/")
 
     response = client.get(path)
@@ -59,6 +73,8 @@ def test_posts_feed_aliases_return_same_xml_as_posts_feed(client, alias_path: st
     ],
 )
 def test_feed_only_includes_public_content(client, admin_headers, content_type: str, feed_path: str) -> None:
+    if content_type == "diary":
+        _set_diary_private_enabled(False)
     public_payload = _make_payload(content_type, "-public")
 
     private_payload = _make_payload(content_type, "-private")

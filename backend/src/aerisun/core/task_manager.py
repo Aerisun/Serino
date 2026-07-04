@@ -82,6 +82,16 @@ class TaskManager:
             coalesce=True,
         )
         self._scheduler.add_job(
+            self._dispatch_content_subscription_notifications,
+            trigger="interval",
+            seconds=30,
+            id="content_subscription_notification_dispatcher",
+            name="Content subscription notification dispatcher",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+        )
+        self._scheduler.add_job(
             self._dispatch_backup_sync,
             trigger="interval",
             seconds=60,
@@ -152,6 +162,11 @@ class TaskManager:
 
         with get_session_factory()() as session:
             dispatch_due_webhooks(session)
+
+    def _dispatch_content_subscription_notifications(self) -> None:
+        from aerisun.domain.subscription.service import dispatch_content_subscription_notifications
+
+        dispatch_content_subscription_notifications()
 
     def _dispatch_backup_sync(self) -> None:
         dispatch_backup_sync()

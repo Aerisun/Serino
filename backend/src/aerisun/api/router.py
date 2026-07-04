@@ -6,6 +6,7 @@ from .admin import admin_router
 from .agent import router as agent_router
 from .automation import router as automation_router
 from .backup_setup import router as backup_setup_router
+from .diary_access import router as diary_access_router
 from .mcp import router as mcp_router
 from .site import public_router as public_site_router
 from .site import router as site_router
@@ -17,6 +18,7 @@ from .subscriptions import router as subscriptions_router
 api_router = APIRouter()
 api_router.include_router(public_site_router)
 api_router.include_router(site_router)
+api_router.include_router(diary_access_router)
 api_router.include_router(site_auth_router)
 api_router.include_router(site_interactions_router)
 api_router.include_router(site_search_router)
