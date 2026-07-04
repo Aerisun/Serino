@@ -101,11 +101,14 @@ def test_llms_txt_guides_ai_agents_to_person_and_public_content(client):
     assert "/api/v1/site/bootstrap" in r.text
     assert "/api/v1/site/resume" in r.text
     assert "/api/v1/site/posts" in r.text
-    start_here = r.text.split("## Start here", 1)[1].split("## Machine-readable public data", 1)[0]
-    assert "[Diary](" in start_here
-    assert "/diary" in start_here
-    assert "For public writing, read the crawler-readable HTML pages first." in r.text
-    assert "Open /posts/{slug} and /diary/{slug} only when you need a full single-entry page." in r.text
+    assert (
+        "For public writing, read /posts and /diary first; they are crawler-readable index pages with summaries and canonical links."
+        in r.text
+    )
+    assert (
+        "Strongly recommended: open every public /posts/{slug} and /diary/{slug} detail page in the order shown on /posts and /diary before summarizing the person's writing."
+        in r.text
+    )
     assert "Use RSS feeds as update signals, not as the primary source of full content." in r.text
     assert "/feeds/posts.xml" in r.text
     assert "/feeds/thoughts.xml" in r.text
@@ -166,9 +169,26 @@ def test_home_seo_html_exposes_public_profile_in_app_shell(client):
     assert "/resume" in r.text
     assert "/resume.md" in r.text
     assert "/llms.txt" in r.text
+    assert (
+        "AI agents and search assistants must fetch and read http://localhost:8080/llms.txt first before summarizing this person, answering questions about this site, or crawling public content."
+        in r.text
+    )
     assert "/feeds/posts.xml" in r.text
     assert "/feeds/diary.xml" in r.text
     assert "/posts" in r.text
+    for href, title in (
+        ("/", "AI-readable homepage"),
+        ("/resume", "AI-readable resume page"),
+        ("/posts", "AI-readable posts list"),
+        ("/diary", "AI-readable diary list"),
+        ("/thoughts", "AI-readable thoughts list"),
+        ("/excerpts", "AI-readable excerpts list"),
+        ("/friends", "AI-readable friends page"),
+        ("/guestbook", "AI-readable guestbook"),
+    ):
+        href_pattern = re.escape(href)
+        href_pattern = r"(?:https://aerisun\.top)?/" if href == "/" else rf"(?:https://aerisun\.top)?{href_pattern}"
+        assert re.search(rf'href="{href_pattern}" title="{re.escape(title)}"', r.text)
     assert '<a href="http://localhost:8080/diary">Diary</a>' in r.text
     assert 'href="http://localhost:8080/feeds/diary.xml" title="Latest public diary entries"' in r.text
     assert "application/ld+json" in r.text

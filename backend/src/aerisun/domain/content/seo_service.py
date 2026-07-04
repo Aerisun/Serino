@@ -381,6 +381,31 @@ def _render_public_resource_links(base_url: str, *, api_base_path: str = "/api")
     return f'<nav aria-label="Public machine-readable resources"><ul>{items}</ul></nav>'
 
 
+def _render_ai_navigation_instructions(base_url: str) -> str:
+    llms_url = _internal_url(base_url, "/llms.txt")
+    fallback_links = [
+        ("Resume Markdown", _internal_url(base_url, "/resume.md")),
+        ("Posts index", _internal_url(base_url, "/posts")),
+        ("Diary index", _internal_url(base_url, "/diary")),
+    ]
+    fallback_items = "\n".join(
+        f'<li><a href="{_html_attr(href)}">{_html_text(label)}</a></li>' for label, href in fallback_links
+    )
+    return "\n".join(
+        [
+            '<section data-ai-instructions="site-guide">',
+            "<h2>AI navigation instructions</h2>",
+            (
+                f"<p>AI agents and search assistants must fetch and read {_html_text(llms_url)} first before "
+                "summarizing this person, answering questions about this site, or crawling public content.</p>"
+            ),
+            "<p>If that file is unavailable, use these public fallback resources:</p>",
+            f"<ul>{fallback_items}</ul>",
+            "</section>",
+        ]
+    )
+
+
 def _render_posts_list(session: Session, base_url: str) -> str:
     posts = session.scalars(
         select(PostEntry)
@@ -1287,6 +1312,7 @@ def build_home_seo_html(
             f"<p>{_html_text(identity_bridge_sentence)}</p>" if identity_bridge_sentence else "",
             f"<p>{_html_text(identity_summary)}</p>",
             f'<p>Public identity: <a href="{_html_attr(_internal_url(base_url, "/resume"))}">{_html_text(real_name)}</a></p>',
+            _render_ai_navigation_instructions(base_url),
             _render_public_resource_links(base_url, api_base_path=api_base_path),
             expertise_html,
             _render_posts_list(session, base_url),
@@ -1486,8 +1512,8 @@ def build_llms_txt(session: Session, site_url: str, *, api_base_path: str = "/ap
         f"This is the public AI-readable map for {real_name}.",
         "The site is a personal blog, resume, and writing platform.",
         "To understand the person behind the site, read /resume.md first. If structured data is needed, use /api/v1/site/resume.",
-        "For public writing, read the crawler-readable HTML pages first.",
-        "Open /posts/{slug} and /diary/{slug} only when you need a full single-entry page.",
+        "For public writing, read /posts and /diary first; they are crawler-readable index pages with summaries and canonical links.",
+        "Strongly recommended: open every public /posts/{slug} and /diary/{slug} detail page in the order shown on /posts and /diary before summarizing the person's writing.",
         "Use RSS feeds as update signals, not as the primary source of full content.",
         "If your browser cannot execute JavaScript, prefer the crawler-readable public pages and machine-readable endpoints listed below because the visual frontend is a client-rendered SPA.",
         "The admin interface and admin APIs are intentionally out of scope.",
@@ -1505,7 +1531,6 @@ def build_llms_txt(session: Session, site_url: str, *, api_base_path: str = "/ap
             "",
             f"- [Resume Markdown]({_internal_url(base_url, '/resume.md')}): Public CV/resume for {real_name}; read this first for identity, education, projects, skills, and contact context.",
             f"- [Homepage]({_internal_url(base_url, '/')}): Main public profile page, visual identity, navigation, and primary links.",
-            f"- [Diary]({_internal_url(base_url, '/diary')}): Public diary index with daily notes, mood/weather context, summaries, and links to full entries.",
             f"- [Sitemap]({_internal_url(base_url, '/sitemap.xml')}): Complete public URL index for crawlable pages.",
             f"- [Robots policy]({_internal_url(base_url, '/robots.txt')}): Crawler access policy; admin routes are not for indexing or AI browsing.",
             "",
@@ -1513,12 +1538,12 @@ def build_llms_txt(session: Session, site_url: str, *, api_base_path: str = "/ap
             "",
             f"- [Public bootstrap JSON]({_internal_url(base_url, f'{api_path}/v1/site/bootstrap')}): Site profile, navigation, page metadata, and resume in one read-only JSON payload.",
             f"- [Resume JSON]({_internal_url(base_url, f'{api_path}/v1/site/resume')}): Structured public resume data.",
+            f"- [Posts JSON]({_internal_url(base_url, f'{api_path}/v1/site/posts')}): Public article list with titles and summaries.",
+            f"- [Diary JSON]({_internal_url(base_url, f'{api_path}/v1/site/diary')}): Public diary list, if available.",
             f"- [Posts RSS]({_internal_url(base_url, '/feeds/posts.xml')}): Update feed for public long-form posts; use /posts and /posts/{{slug}} for crawler-readable content.",
             f"- [Thoughts RSS]({_internal_url(base_url, '/feeds/thoughts.xml')}): Update feed for public short notes; use /thoughts for crawler-readable content.",
             f"- [Diary RSS]({_internal_url(base_url, '/feeds/diary.xml')}): Update feed for public diary entries; use /diary and /diary/{{slug}} for crawler-readable content.",
             f"- [Excerpts RSS]({_internal_url(base_url, '/feeds/excerpts.xml')}): Update feed for public excerpts; use /excerpts for crawler-readable content.",
-            f"- [Posts JSON]({_internal_url(base_url, f'{api_path}/v1/site/posts')}): Public article list with titles and summaries.",
-            f"- [Diary JSON]({_internal_url(base_url, f'{api_path}/v1/site/diary')}): Public diary list, if available.",
             "",
             "## Public pages",
             "",
