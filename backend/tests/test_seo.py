@@ -100,6 +100,9 @@ def test_llms_txt_guides_ai_agents_to_person_and_public_content(client):
     assert "/api/v1/site/bootstrap" in r.text
     assert "/api/v1/site/resume" in r.text
     assert "/api/v1/site/posts" in r.text
+    start_here = r.text.split("## Start here", 1)[1].split("## Machine-readable public data", 1)[0]
+    assert "[Diary](" in start_here
+    assert "/diary" in start_here
     assert "For public writing, read the crawler-readable HTML pages first." in r.text
     assert "Open /posts/{slug} and /diary/{slug} only when you need a full single-entry page." in r.text
     assert "Use RSS feeds as update signals, not as the primary source of full content." in r.text
@@ -163,7 +166,10 @@ def test_home_seo_html_exposes_public_profile_in_app_shell(client):
     assert "/resume.md" in r.text
     assert "/llms.txt" in r.text
     assert "/feeds/posts.xml" in r.text
+    assert "/feeds/diary.xml" in r.text
     assert "/posts" in r.text
+    assert '<a href="http://localhost:8080/diary">Diary</a>' in r.text
+    assert 'href="http://localhost:8080/feeds/diary.xml" title="Latest public diary entries"' in r.text
     assert "application/ld+json" in r.text
     assert "WebSite" in r.text
     assert "Person" in r.text

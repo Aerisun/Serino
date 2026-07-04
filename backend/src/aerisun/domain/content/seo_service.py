@@ -386,6 +386,7 @@ def _render_public_resource_links(base_url: str, *, api_base_path: str = "/api")
         ("Resume Markdown", _internal_url(base_url, "/resume.md")),
         ("AI site guide", _internal_url(base_url, "/llms.txt")),
         ("Posts", _internal_url(base_url, "/posts")),
+        ("Diary", _internal_url(base_url, "/diary")),
         ("Posts RSS", _internal_url(base_url, "/feeds/posts.xml")),
         ("Thoughts RSS", _internal_url(base_url, "/feeds/thoughts.xml")),
         ("Diary RSS", _internal_url(base_url, "/feeds/diary.xml")),
@@ -1325,6 +1326,7 @@ def build_home_seo_html(
         alternate_links=[
             ("text/markdown", _internal_url(base_url, "/llms.txt"), "AI-readable site guide"),
             ("application/rss+xml", _internal_url(base_url, "/feeds/posts.xml"), "Latest public posts"),
+            ("application/rss+xml", _internal_url(base_url, "/feeds/diary.xml"), "Latest public diary entries"),
         ],
     )
 
@@ -1519,6 +1521,7 @@ def build_llms_txt(session: Session, site_url: str, *, api_base_path: str = "/ap
             "",
             f"- [Resume Markdown]({_internal_url(base_url, '/resume.md')}): Public CV/resume for {real_name}; read this first for identity, education, projects, skills, and contact context.",
             f"- [Homepage]({_internal_url(base_url, '/')}): Main public profile page, visual identity, navigation, and primary links.",
+            f"- [Diary]({_internal_url(base_url, '/diary')}): Public diary index with daily notes, mood/weather context, summaries, and links to full entries.",
             f"- [Sitemap]({_internal_url(base_url, '/sitemap.xml')}): Complete public URL index for crawlable pages.",
             f"- [Robots policy]({_internal_url(base_url, '/robots.txt')}): Crawler access policy; admin routes are not for indexing or AI browsing.",
             "",
