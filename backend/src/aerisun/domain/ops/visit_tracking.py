@@ -22,11 +22,50 @@ from __future__ import annotations
 import hashlib
 import secrets
 from dataclasses import dataclass
+from typing import Literal
 from urllib.parse import parse_qs, urlsplit
 
 from aerisun.core.time import shanghai_now
 
 _UTM_KEYS = ("utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content")
+VisitPathKind = Literal["page", "system_resource", "ai_entry"]
+
+_AI_ENTRY_EXACT_PATHS = {
+    "/llms.txt",
+    "/resume.md",
+    "/feed.xml",
+    "/rss.xml",
+    "/feeds.xml",
+}
+_AI_ENTRY_PREFIXES = ("/feeds/",)
+_SYSTEM_RESOURCE_EXACT_PATHS = {
+    "/manifest.webmanifest",
+    "/favicon.ico",
+    "/bootstrap.js",
+    "/robots.txt",
+    "/sitemap.xml",
+}
+_SYSTEM_RESOURCE_PREFIXES = ("/assets/", "/favicon")
+_SYSTEM_RESOURCE_EXTENSIONS = (
+    ".js",
+    ".css",
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".svg",
+    ".ico",
+    ".webp",
+    ".avif",
+    ".map",
+    ".json",
+    ".txt",
+    ".xml",
+    ".webmanifest",
+    ".woff",
+    ".woff2",
+    ".ttf",
+)
 
 
 @dataclass(slots=True, frozen=True)
@@ -49,6 +88,36 @@ def split_path_query(raw: str | None) -> tuple[str, str | None]:
         path = "/" + path
     query = parts.query or None
     return path, query
+
+
+def _normalized_visit_path(raw: str | None) -> str:
+    path, _ = split_path_query(raw)
+    return path
+
+
+def classify_visit_path(raw: str | None) -> VisitPathKind:
+    """Classify a request path for public page-view analytics.
+
+    ``page`` is a user-facing page view. Other categories are useful signals,
+    but they are not "which page did a human visitor read" analytics.
+    """
+
+    path = _normalized_visit_path(raw)
+    lowered = path.lower()
+    exact_path = lowered.rstrip("/") if lowered != "/" else lowered
+    if exact_path in _AI_ENTRY_EXACT_PATHS or any(lowered.startswith(prefix) for prefix in _AI_ENTRY_PREFIXES):
+        return "ai_entry"
+    if (
+        exact_path in _SYSTEM_RESOURCE_EXACT_PATHS
+        or any(lowered.startswith(prefix) for prefix in _SYSTEM_RESOURCE_PREFIXES)
+        or lowered.endswith(_SYSTEM_RESOURCE_EXTENSIONS)
+    ):
+        return "system_resource"
+    return "page"
+
+
+def is_trackable_page_visit_path(raw: str | None) -> bool:
+    return classify_visit_path(raw) == "page"
 
 
 def parse_referer(referer: str | None, *, current_host: str | None = None) -> str | None:

@@ -10,7 +10,9 @@ from aerisun.domain.ops.user_agent import (
     parse_user_agent,
 )
 from aerisun.domain.ops.visit_tracking import (
+    classify_visit_path,
     compute_visitor_id,
+    is_trackable_page_visit_path,
     parse_referer,
     parse_utm,
     split_path_query,
@@ -104,6 +106,41 @@ class TestVisitTracking:
         # The raw IP must not be recoverable from the hash.
         assert "1.2.3.4" not in first
         assert len(first) == 32
+
+    def test_classifies_static_system_resources_outside_page_views(self):
+        for path in (
+            "/manifest.webmanifest",
+            "/manifest.webmanifest/",
+            "/favicon",
+            "/favicon.ico",
+            "/bootstrap.js",
+            "/robots.txt",
+            "/sitemap.xml",
+            "/assets/",
+            "/assets/app.js",
+            "/assets/icons/site.webmanifest",
+        ):
+            assert classify_visit_path(path) == "system_resource"
+            assert is_trackable_page_visit_path(path) is False
+
+    def test_classifies_ai_and_crawler_entry_paths_outside_page_views(self):
+        for path in (
+            "/llms.txt",
+            "/resume.md",
+            "/feed.xml",
+            "/rss.xml",
+            "/feeds.xml",
+            "/feeds/",
+            "/feeds/posts.xml",
+            "/feeds/thoughts.xml",
+        ):
+            assert classify_visit_path(path) == "ai_entry"
+            assert is_trackable_page_visit_path(path) is False
+
+    def test_keeps_real_public_pages_trackable(self):
+        for path in ("/", "/posts/hello-world", "/resume", "/thoughts?utm_source=feed"):
+            assert classify_visit_path(path) == "page"
+            assert is_trackable_page_visit_path(path) is True
 
 
 class TestClampLoadMs:

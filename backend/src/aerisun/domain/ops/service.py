@@ -49,7 +49,13 @@ from aerisun.domain.ops.schemas import (
     VisitorRecordRead,
 )
 from aerisun.domain.ops.user_agent import parse_user_agent
-from aerisun.domain.ops.visit_tracking import compute_visitor_id, parse_referer, parse_utm, split_path_query
+from aerisun.domain.ops.visit_tracking import (
+    classify_visit_path,
+    compute_visitor_id,
+    parse_referer,
+    parse_utm,
+    split_path_query,
+)
 from aerisun.domain.social.models import Friend
 from aerisun.domain.waline.service import (
     count_waline_records,
@@ -343,6 +349,15 @@ def record_page_visit(
     path, query = split_path_query(url)
     path = path[:_BEACON_MAX_PATH_LENGTH] or "/"
     query = _clean(query, _BEACON_MAX_QUERY_LENGTH)
+    visit_path_kind = classify_visit_path(path)
+    if visit_path_kind != "page":
+        _visit_logger.info(
+            "visit_record_skipped",
+            path=path,
+            visit_path_kind=visit_path_kind,
+            source="beacon",
+        )
+        return False
 
     normalized_referer = _clean(referer, _BEACON_MAX_REFERER_LENGTH)
     ip = (ip_address or "unknown").strip() or "unknown"

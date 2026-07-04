@@ -92,6 +92,28 @@ def test_content_visit_updates_public_counter_before_async_queue(monkeypatch, cl
     assert get_counter_stats_by_urls(urls=[path])[path].pageview_count == 1
 
 
+def test_visit_beacon_ignores_static_and_ai_entry_paths(monkeypatch):
+    enqueued_payloads: list[VisitRecordPayload] = []
+
+    def fake_enqueue(payload: VisitRecordPayload) -> bool:
+        enqueued_payloads.append(payload)
+        return True
+
+    monkeypatch.setattr(ops_service, "enqueue_visit_record", fake_enqueue)
+
+    for path in ("/manifest.webmanifest", "/llms.txt", "/resume.md", "/feeds/posts.xml", "/assets/app.js"):
+        accepted = ops_service.record_page_visit(
+            url=path,
+            referer=None,
+            ip_address="203.0.113.44",
+            user_agent="Mozilla/5.0",
+            load_ms=120,
+        )
+        assert accepted is False
+
+    assert enqueued_payloads == []
+
+
 def test_visit_beacon_requires_url(client):
     resp = client.post(ENDPOINT, json={"referer": "https://example.com/"})
     assert resp.status_code == 422

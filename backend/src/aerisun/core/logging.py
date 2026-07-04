@@ -15,7 +15,7 @@ from starlette.responses import Response
 from aerisun.core.time import shanghai_now
 from aerisun.domain.ops.service import VisitRecordPayload, enqueue_visit_record
 from aerisun.domain.ops.user_agent import parse_user_agent
-from aerisun.domain.ops.visit_tracking import compute_visitor_id, parse_referer, parse_utm
+from aerisun.domain.ops.visit_tracking import classify_visit_path, compute_visitor_id, parse_referer, parse_utm
 
 # ---------------------------------------------------------------------------
 # Context variable that holds the current request ID
@@ -97,26 +97,6 @@ _VISITOR_SKIP_PREFIXES = (
     "/redoc",
     "/media",
     "/health",
-    "/favicon",
-)
-_VISITOR_SKIP_EXTENSIONS = (
-    ".js",
-    ".css",
-    ".png",
-    ".jpg",
-    ".jpeg",
-    ".gif",
-    ".svg",
-    ".ico",
-    ".webp",
-    ".avif",
-    ".map",
-    ".json",
-    ".txt",
-    ".xml",
-    ".woff",
-    ".woff2",
-    ".ttf",
 )
 
 
@@ -126,8 +106,7 @@ def _is_public_visit_candidate(request: Request) -> bool:
     path = request.url.path or "/"
     if any(path.startswith(prefix) for prefix in _VISITOR_SKIP_PREFIXES):
         return False
-    lowered = path.lower()
-    return not lowered.endswith(_VISITOR_SKIP_EXTENSIONS)
+    return classify_visit_path(path) == "page"
 
 
 def get_client_ip(request: Request) -> str:
@@ -159,6 +138,8 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
         request_id_var.set(rid)
         structlog.contextvars.bind_contextvars(request_id=rid)
         start = time.perf_counter()
+        path = request.url.path or "/"
+        visit_path_kind = classify_visit_path(path)
         should_track_visit = _is_public_visit_candidate(request)
         visited_at = shanghai_now()
         client_ip = get_client_ip(request) if should_track_visit else ""
@@ -175,10 +156,19 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
             log.info(
                 "request_completed",
                 method=request.method,
-                path=request.url.path,
+                path=path,
                 status=response.status_code,
                 duration_ms=duration_ms,
             )
+            if request.method == "GET" and visit_path_kind != "page":
+                log.info(
+                    "non_page_visit_recorded",
+                    method=request.method,
+                    path=path,
+                    visit_path_kind=visit_path_kind,
+                    status=response.status_code,
+                    duration_ms=duration_ms,
+                )
             if should_track_visit and ua_info is not None:
                 try:
                     utm = parse_utm(query_string)
