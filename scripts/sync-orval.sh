@@ -3,7 +3,7 @@
 # 1. 先用后端当前环境导出最新 OpenAPI 规范。
 # 2. 比较 @serino/api-client 的生成输入有没有变化。
 #    输入包括 openapi.json、orval 配置、package.json 和 mutator。
-# 3. 只有检测到变化时才运行 Orval 重新生成接口代码。
+# 3. 只有检测到变化时才运行 api-client 的完整生成脚本。
 # 4. 如果没有变化就直接跳过，避免每次 make dev 都全量重生成。
 # 5. 最后由 dev-start.sh 继续启动 backend、frontend、admin。
 set -euo pipefail
@@ -75,11 +75,11 @@ run_orval_if_needed() {
   local previous="${!state_key:-}"
 
   if [[ ! -f "${PROJECT_DIR}/${output_file}" ]]; then
-    log "==> ${label} 生成产物缺失，正在运行 Orval..."
-    ( cd "${PROJECT_DIR}/${package_dir}" && npx orval )
+    log "==> ${label} 生成产物缺失，正在运行 API client 生成脚本..."
+    ( cd "${PROJECT_DIR}/${package_dir}" && pnpm run generate:api )
   elif [[ "${fingerprint}" != "${previous}" ]]; then
-    log "==> 检测到 ${label} API 变更，正在运行 Orval..."
-    ( cd "${PROJECT_DIR}/${package_dir}" && npx orval )
+    log "==> 检测到 ${label} API 变更，正在运行 API client 生成脚本..."
+    ( cd "${PROJECT_DIR}/${package_dir}" && pnpm run generate:api )
   else
     log "==> ${label} API 未变化，跳过 Orval"
   fi

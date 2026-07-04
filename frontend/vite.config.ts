@@ -1,4 +1,4 @@
-import { defineConfig, loadEnv } from "vite";
+import { defineConfig, loadEnv, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import path from "path";
@@ -11,7 +11,7 @@ const buildBasePathPrefixPattern = (value: string) => {
   const normalized = value.trim().replace(/\/+$/, "");
   return new RegExp(`^${escapeRegExp(normalized)}(?:/|$)`);
 };
-const seoDocumentPattern = /^\/(?:sitemap|rss|feed|feeds)\.xml$/;
+const seoDocumentPattern = /^\/(?:(?:sitemap|rss|feed|feeds)\.xml|(?:robots|llms)\.txt|resume\.md)$/;
 const buildObfuscationTargets = [
   "Powered by ",
   "Aerisun /Serino",
@@ -94,6 +94,99 @@ const preserveBackdropFilterPlugin = () => ({
       }
       output.source = appendUnprefixedBackdropFilter(output.source);
     }
+  },
+});
+
+const copyRequestHeaders = (headers: Record<string, string | string[] | undefined>) => {
+  const next = new Headers();
+  for (const [key, value] of Object.entries(headers)) {
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        next.append(key, item);
+      }
+      continue;
+    }
+    if (value !== undefined) {
+      next.set(key, value);
+    }
+  }
+  return next;
+};
+
+const seoHtmlDevProxyBlockedResponseHeaders = new Set([
+  "content-security-policy",
+  "content-length",
+]);
+
+const crawlerUserAgentPattern =
+  /(bot|crawler|spider|crawling|slurp|bingpreview|facebookexternalhit|twitterbot|linkedinbot|discordbot|telegrambot|whatsapp|googlebot|googleother|google-inspectiontool|google-agent|google-notebooklm|google-read-aloud|bingbot|baiduspider|bytespider|doubaobot|oai-searchbot|chatgpt-user|perplexitybot|claude-searchbot|claude-user|curl|wget|python-requests|httpx)/i;
+const crawlerOnlySeoHtmlPathPattern = /^\/(?:posts(?:\/[^/?#]+)?|diary(?:\/[^/?#]+)?|thoughts|excerpts|friends|guestbook)$/;
+
+const isAlwaysSeoHtmlPath = (pathname: string) => pathname === "/" || pathname === "/resume";
+
+const isCrawlerOnlySeoHtmlPath = (pathname: string) => crawlerOnlySeoHtmlPathPattern.test(pathname);
+
+const isCrawlerRequest = (headers: Record<string, string | string[] | undefined>) => {
+  const userAgent = headers["user-agent"];
+  const normalizedUserAgent = Array.isArray(userAgent) ? userAgent.join(" ") : (userAgent ?? "");
+  return crawlerUserAgentPattern.test(normalizedUserAgent);
+};
+
+const seoHtmlDevProxyPlugin = (target: string): Plugin => ({
+  name: "aerisun-seo-html-dev-proxy",
+  configureServer(server) {
+    server.middlewares.use(async (req, res, next) => {
+      if (req.method !== "GET" && req.method !== "HEAD") {
+        next();
+        return;
+      }
+      if (!req.url) {
+        next();
+        return;
+      }
+
+      const url = new URL(req.url, target);
+      const shouldProxySeoHtml =
+        isAlwaysSeoHtmlPath(url.pathname) ||
+        (isCrawlerOnlySeoHtmlPath(url.pathname) && isCrawlerRequest(req.headers));
+      if (!shouldProxySeoHtml) {
+        next();
+        return;
+      }
+
+      try {
+        const upstreamUrl = new URL(`${url.pathname}${url.search}`, target);
+        const headers = copyRequestHeaders(req.headers);
+        headers.set("host", upstreamUrl.host);
+        const upstream = await fetch(upstreamUrl, {
+          method: req.method,
+          headers,
+          redirect: "manual",
+        });
+
+        res.statusCode = upstream.status;
+        if (req.method === "HEAD") {
+          upstream.headers.forEach((value, key) => {
+            if (!seoHtmlDevProxyBlockedResponseHeaders.has(key.toLowerCase())) {
+              res.setHeader(key, value);
+            }
+          });
+          res.end();
+          return;
+        }
+
+        upstream.headers.forEach((value, key) => {
+          if (!seoHtmlDevProxyBlockedResponseHeaders.has(key.toLowerCase())) {
+            res.setHeader(key, value);
+          }
+        });
+        const html = await upstream.text();
+        const transformedHtml = await server.transformIndexHtml(url.pathname, html);
+        res.end(transformedHtml);
+      } catch (error) {
+        next(error as Error);
+      }
+    });
   },
 });
 
@@ -191,6 +284,7 @@ export default defineConfig(({ mode }) => {
   const walineBasePathPattern = buildBasePathPrefixPattern(walineBasePath);
   const feedsBasePathPattern = /^\/feeds(?:\/|$)/;
   const walinePort = env.WALINE_PORT || "8360";
+  const apiProxyTarget = `http://127.0.0.1:${env.AERISUN_PORT || "8000"}`;
 
   return {
     define: {
@@ -210,35 +304,47 @@ export default defineConfig(({ mode }) => {
       },
       proxy: {
         [apiBasePath]: {
-          target: `http://127.0.0.1:${env.AERISUN_PORT || "8000"}`,
+          target: apiProxyTarget,
           changeOrigin: true,
         },
         "/media": {
-          target: `http://127.0.0.1:${env.AERISUN_PORT || "8000"}`,
+          target: apiProxyTarget,
           changeOrigin: true,
         },
         "/manifest.webmanifest": {
-          target: `http://127.0.0.1:${env.AERISUN_PORT || "8000"}`,
+          target: apiProxyTarget,
           changeOrigin: true,
         },
         "/sitemap.xml": {
-          target: `http://127.0.0.1:${env.AERISUN_PORT || "8000"}`,
+          target: apiProxyTarget,
+          changeOrigin: true,
+        },
+        "/robots.txt": {
+          target: apiProxyTarget,
+          changeOrigin: true,
+        },
+        "/llms.txt": {
+          target: apiProxyTarget,
+          changeOrigin: true,
+        },
+        "/resume.md": {
+          target: apiProxyTarget,
           changeOrigin: true,
         },
         "/feed.xml": {
-          target: `http://127.0.0.1:${env.AERISUN_PORT || "8000"}`,
+          target: apiProxyTarget,
           changeOrigin: true,
         },
         "/rss.xml": {
-          target: `http://127.0.0.1:${env.AERISUN_PORT || "8000"}`,
+          target: apiProxyTarget,
           changeOrigin: true,
         },
         "/feeds.xml": {
-          target: `http://127.0.0.1:${env.AERISUN_PORT || "8000"}`,
+          target: apiProxyTarget,
           changeOrigin: true,
         },
         "/feeds": {
-          target: `http://127.0.0.1:${env.AERISUN_PORT || "8000"}`,
+          target: apiProxyTarget,
           changeOrigin: true,
         },
         [walineBasePath]: {
@@ -248,6 +354,7 @@ export default defineConfig(({ mode }) => {
       },
     },
     plugins: [
+      seoHtmlDevProxyPlugin(apiProxyTarget),
       react(),
       footerBuildObfuscationPlugin(),
       preserveBackdropFilterPlugin(),

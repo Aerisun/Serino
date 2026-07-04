@@ -1,3 +1,8 @@
+http://:8081 {
+    root * {$AERISUN_FRONTEND_DIST_DIR:/srv/aerisun/frontend}
+    file_server
+}
+
 {$AERISUN_DOMAIN:localhost} {
     encode zstd gzip
 
@@ -27,6 +32,21 @@
         reverse_proxy api:{$AERISUN_PORT:8000}
     }
 
+    @seoHtml {
+        path / /resume
+    }
+    handle @seoHtml {
+        reverse_proxy api:{$AERISUN_PORT:8000}
+    }
+
+    @seoContentCrawler {
+        path /posts /posts/* /diary /diary/* /thoughts /excerpts /friends /guestbook
+        header_regexp User-Agent (?i)(bot|crawler|spider|crawling|slurp|bingpreview|facebookexternalhit|twitterbot|linkedinbot|discordbot|telegrambot|whatsapp|googlebot|googleother|google-inspectiontool|google-agent|google-notebooklm|google-read-aloud|bingbot|baiduspider|bytespider|doubaobot|oai-searchbot|chatgpt-user|perplexitybot|claude-searchbot|claude-user|curl|wget|python-requests|httpx)
+    }
+    handle @seoContentCrawler {
+        reverse_proxy api:{$AERISUN_PORT:8000}
+    }
+
     # Waline 评论服务
     handle {$AERISUN_WALINE_BASE_PATH:/waline}* {
         uri strip_prefix {$AERISUN_WALINE_BASE_PATH:/waline}
@@ -34,6 +54,18 @@
     }
 
     # SEO / Feed XML
+    handle /robots.txt {
+        reverse_proxy api:{$AERISUN_PORT:8000}
+    }
+
+    handle /llms.txt {
+        reverse_proxy api:{$AERISUN_PORT:8000}
+    }
+
+    handle /resume.md {
+        reverse_proxy api:{$AERISUN_PORT:8000}
+    }
+
     handle /sitemap.xml {
         reverse_proxy api:{$AERISUN_PORT:8000}
     }

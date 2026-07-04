@@ -1283,6 +1283,7 @@ def test_deploy_contract_reuses_shared_env_keys():
     smoke_text = read_project_file("scripts/docker-smoke.sh")
     dev_smoke_text = read_project_file("scripts/dev-smoke.sh")
     dev_start_text = read_project_file("scripts/dev-start.sh")
+    frontend_index_text = read_project_file("frontend/index.html")
     frontend_vite_text = read_project_file("frontend/vite.config.ts")
     admin_vite_text = read_project_file("admin/vite.config.ts")
 
@@ -1309,6 +1310,11 @@ def test_deploy_contract_reuses_shared_env_keys():
     assert "AERISUN_WALINE_BASE_PATH: ${AERISUN_WALINE_BASE_PATH:-/waline}" in compose_text
     assert "AERISUN_FRONTEND_DIST_DIR: ${AERISUN_FRONTEND_DIST_DIR:-/srv/aerisun/frontend}" in compose_text
     assert "AERISUN_ADMIN_DIST_DIR: ${AERISUN_ADMIN_DIST_DIR:-/srv/aerisun/admin}" in compose_text
+    assert "AERISUN_FRONTEND_INDEX_URL: ${AERISUN_FRONTEND_INDEX_URL:-http://caddy:8081/index.html}" in compose_text
+    assert (
+        "AERISUN_FRONTEND_INDEX_URL: ${AERISUN_FRONTEND_INDEX_URL:-http://caddy:8081/index.html}"
+        in release_compose_text
+    )
     assert '- "127.0.0.1:${AERISUN_PORT:-8000}:${AERISUN_PORT:-8000}"' in compose_text
     assert "{$AERISUN_PORT:8000}" in caddy_text
     assert "{$AERISUN_API_BASE_PATH:/api}" in caddy_text
@@ -1316,7 +1322,35 @@ def test_deploy_contract_reuses_shared_env_keys():
     assert "{$AERISUN_WALINE_BASE_PATH:/waline}" in caddy_text
     assert "{$AERISUN_FRONTEND_DIST_DIR:/srv/aerisun/frontend}" in caddy_text
     assert "{$AERISUN_ADMIN_DIST_DIR:/srv/aerisun/admin}" in caddy_text
+    assert "http://:8081" in caddy_text
     assert "handle /bootstrap.js" in caddy_text
+    assert "@seoHtml" in caddy_text
+    assert "path / /resume" in caddy_text
+    assert "@seoContentCrawler" in caddy_text
+    assert "header_regexp User-Agent" in caddy_text
+    assert "path /posts /posts/* /diary /diary/* /thoughts /excerpts /friends /guestbook" in caddy_text
+    for crawler_token in (
+        "oai-searchbot",
+        "chatgpt-user",
+        "claude-searchbot",
+        "claude-user",
+        "googlebot",
+        "googleother",
+        "google-inspectiontool",
+        "google-agent",
+        "google-notebooklm",
+        "google-read-aloud",
+        "bingbot",
+        "baiduspider",
+        "bytespider",
+        "doubaobot",
+    ):
+        assert crawler_token in caddy_text.casefold()
+        assert crawler_token in frontend_vite_text.casefold()
+    assert "query seo=1" not in caddy_text
+    assert "handle /robots.txt" in caddy_text
+    assert "handle /llms.txt" in caddy_text
+    assert "handle /resume.md" in caddy_text
 
     assert 'HEALTHCHECK_PATH="${AERISUN_HEALTHCHECK_PATH:-/api/v1/site/readyz}"' in smoke_text
     assert 'ADMIN_BASE_PATH="$(ensure_trailing_slash "${AERISUN_ADMIN_BASE_PATH:-/admin/}")"' in smoke_text
@@ -1334,6 +1368,19 @@ def test_deploy_contract_reuses_shared_env_keys():
     )
     assert backend_health_url in dev_start_text
     assert 'const apiBasePath = stripTrailingSlash(env.AERISUN_API_BASE_PATH ?? "/api");' in frontend_vite_text
+    assert "seoHtmlDevProxyPlugin(apiProxyTarget)" in frontend_vite_text
+    assert "isAlwaysSeoHtmlPath(url.pathname)" in frontend_vite_text
+    assert "isCrawlerOnlySeoHtmlPath(url.pathname)" in frontend_vite_text
+    assert "isCrawlerRequest(req.headers)" in frontend_vite_text
+    assert "server.transformIndexHtml(url.pathname, html)" in frontend_vite_text
+    assert "seoHtmlDevProxyBlockedResponseHeaders" in frontend_vite_text
+    assert '"content-security-policy"' in frontend_vite_text
+    assert '"content-length"' in frontend_vite_text
+    assert '"/robots.txt": {' in frontend_vite_text
+    assert '"/llms.txt": {' in frontend_vite_text
+    assert '"/resume.md": {' in frontend_vite_text
+    assert 'href="/llms.txt"' in frontend_index_text
+    assert 'href="/resume.md"' in frontend_index_text
     assert 'const walineBasePath = stripTrailingSlash(env.AERISUN_WALINE_BASE_PATH ?? "/waline");' in frontend_vite_text
     assert 'const adminBasePath = normalizeBasePath(env.AERISUN_ADMIN_BASE_PATH || "", "/admin/");' in admin_vite_text
     assert 'const apiBasePath = (env.AERISUN_API_BASE_PATH || "/api").replace(/\\/+$/, "");' in admin_vite_text

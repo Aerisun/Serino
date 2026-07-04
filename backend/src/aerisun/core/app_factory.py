@@ -12,6 +12,7 @@ from aerisun.api import api_router
 from aerisun.api.exception_handlers import register_exception_handlers
 from aerisun.api.mcp import create_mcp_mount
 from aerisun.api.media import router as media_router
+from aerisun.api.seo import html_router as seo_html_router
 from aerisun.api.seo import router as seo_router
 from aerisun.core.bootstrap import lifespan
 from aerisun.core.middleware import register_middleware
@@ -59,6 +60,7 @@ def create_app() -> FastAPI:
 
     # Routers
     app.include_router(api_router)
+    app.include_router(seo_html_router)
     app.include_router(seo_router)
     app.include_router(seo_router, prefix="/api/v1/site")
 

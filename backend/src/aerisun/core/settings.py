@@ -68,6 +68,7 @@ class Settings(BaseSettings):
     waline_base_path: str = "/waline"
     healthcheck_path: str = "/api/v1/site/readyz"
     frontend_dist_dir: Path = Path("/srv/aerisun/frontend")
+    frontend_index_url: str = ""
     admin_dist_dir: Path = Path("/srv/aerisun/admin")
     site_url: str = "http://localhost:5173"
     waline_server_url: str = "/waline"

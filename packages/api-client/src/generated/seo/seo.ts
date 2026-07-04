@@ -252,6 +252,226 @@ export function useRobotsTxtRobotsTxtGet<TData = Awaited<ReturnType<typeof robot
 
 
 /**
+ * @summary Llms Txt
+ */
+export type llmsTxtLlmsTxtGetResponse200 = {
+  data: string
+  status: 200
+}
+
+export type llmsTxtLlmsTxtGetResponseSuccess = (llmsTxtLlmsTxtGetResponse200) & {
+  headers: Headers;
+};
+;
+
+export type llmsTxtLlmsTxtGetResponse = (llmsTxtLlmsTxtGetResponseSuccess)
+
+export const getLlmsTxtLlmsTxtGetUrl = () => {
+
+
+
+
+  return `/llms.txt`
+}
+
+export const llmsTxtLlmsTxtGet = async ( options?: RequestInit): Promise<llmsTxtLlmsTxtGetResponse> => {
+
+  return customInstance<llmsTxtLlmsTxtGetResponse>(getLlmsTxtLlmsTxtGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getLlmsTxtLlmsTxtGetQueryKey = () => {
+    return [
+    `/llms.txt`
+    ] as const;
+    }
+
+
+export const getLlmsTxtLlmsTxtGetQueryOptions = <TData = Awaited<ReturnType<typeof llmsTxtLlmsTxtGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof llmsTxtLlmsTxtGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getLlmsTxtLlmsTxtGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof llmsTxtLlmsTxtGet>>> = ({ signal }) => llmsTxtLlmsTxtGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof llmsTxtLlmsTxtGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type LlmsTxtLlmsTxtGetQueryResult = NonNullable<Awaited<ReturnType<typeof llmsTxtLlmsTxtGet>>>
+export type LlmsTxtLlmsTxtGetQueryError = ErrorType<unknown>
+
+
+export function useLlmsTxtLlmsTxtGet<TData = Awaited<ReturnType<typeof llmsTxtLlmsTxtGet>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof llmsTxtLlmsTxtGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof llmsTxtLlmsTxtGet>>,
+          TError,
+          Awaited<ReturnType<typeof llmsTxtLlmsTxtGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useLlmsTxtLlmsTxtGet<TData = Awaited<ReturnType<typeof llmsTxtLlmsTxtGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof llmsTxtLlmsTxtGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof llmsTxtLlmsTxtGet>>,
+          TError,
+          Awaited<ReturnType<typeof llmsTxtLlmsTxtGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useLlmsTxtLlmsTxtGet<TData = Awaited<ReturnType<typeof llmsTxtLlmsTxtGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof llmsTxtLlmsTxtGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Llms Txt
+ */
+
+export function useLlmsTxtLlmsTxtGet<TData = Awaited<ReturnType<typeof llmsTxtLlmsTxtGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof llmsTxtLlmsTxtGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getLlmsTxtLlmsTxtGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary Resume Markdown
+ */
+export type resumeMarkdownResumeMdGetResponse200 = {
+  data: string
+  status: 200
+}
+
+export type resumeMarkdownResumeMdGetResponseSuccess = (resumeMarkdownResumeMdGetResponse200) & {
+  headers: Headers;
+};
+;
+
+export type resumeMarkdownResumeMdGetResponse = (resumeMarkdownResumeMdGetResponseSuccess)
+
+export const getResumeMarkdownResumeMdGetUrl = () => {
+
+
+
+
+  return `/resume.md`
+}
+
+export const resumeMarkdownResumeMdGet = async ( options?: RequestInit): Promise<resumeMarkdownResumeMdGetResponse> => {
+
+  return customInstance<resumeMarkdownResumeMdGetResponse>(getResumeMarkdownResumeMdGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getResumeMarkdownResumeMdGetQueryKey = () => {
+    return [
+    `/resume.md`
+    ] as const;
+    }
+
+
+export const getResumeMarkdownResumeMdGetQueryOptions = <TData = Awaited<ReturnType<typeof resumeMarkdownResumeMdGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof resumeMarkdownResumeMdGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getResumeMarkdownResumeMdGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof resumeMarkdownResumeMdGet>>> = ({ signal }) => resumeMarkdownResumeMdGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof resumeMarkdownResumeMdGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ResumeMarkdownResumeMdGetQueryResult = NonNullable<Awaited<ReturnType<typeof resumeMarkdownResumeMdGet>>>
+export type ResumeMarkdownResumeMdGetQueryError = ErrorType<unknown>
+
+
+export function useResumeMarkdownResumeMdGet<TData = Awaited<ReturnType<typeof resumeMarkdownResumeMdGet>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof resumeMarkdownResumeMdGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof resumeMarkdownResumeMdGet>>,
+          TError,
+          Awaited<ReturnType<typeof resumeMarkdownResumeMdGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useResumeMarkdownResumeMdGet<TData = Awaited<ReturnType<typeof resumeMarkdownResumeMdGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof resumeMarkdownResumeMdGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof resumeMarkdownResumeMdGet>>,
+          TError,
+          Awaited<ReturnType<typeof resumeMarkdownResumeMdGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useResumeMarkdownResumeMdGet<TData = Awaited<ReturnType<typeof resumeMarkdownResumeMdGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof resumeMarkdownResumeMdGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Resume Markdown
+ */
+
+export function useResumeMarkdownResumeMdGet<TData = Awaited<ReturnType<typeof resumeMarkdownResumeMdGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof resumeMarkdownResumeMdGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getResumeMarkdownResumeMdGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
  * @summary Posts Feed
  */
 export type postsFeedFeedsPostsXmlGetResponse200 = {
@@ -1232,6 +1452,226 @@ export function useRobotsTxtApiV1SiteRobotsTxtGet<TData = Awaited<ReturnType<typ
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getRobotsTxtApiV1SiteRobotsTxtGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary Llms Txt
+ */
+export type llmsTxtApiV1SiteLlmsTxtGetResponse200 = {
+  data: string
+  status: 200
+}
+
+export type llmsTxtApiV1SiteLlmsTxtGetResponseSuccess = (llmsTxtApiV1SiteLlmsTxtGetResponse200) & {
+  headers: Headers;
+};
+;
+
+export type llmsTxtApiV1SiteLlmsTxtGetResponse = (llmsTxtApiV1SiteLlmsTxtGetResponseSuccess)
+
+export const getLlmsTxtApiV1SiteLlmsTxtGetUrl = () => {
+
+
+
+
+  return `/api/v1/site/llms.txt`
+}
+
+export const llmsTxtApiV1SiteLlmsTxtGet = async ( options?: RequestInit): Promise<llmsTxtApiV1SiteLlmsTxtGetResponse> => {
+
+  return customInstance<llmsTxtApiV1SiteLlmsTxtGetResponse>(getLlmsTxtApiV1SiteLlmsTxtGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getLlmsTxtApiV1SiteLlmsTxtGetQueryKey = () => {
+    return [
+    `/api/v1/site/llms.txt`
+    ] as const;
+    }
+
+
+export const getLlmsTxtApiV1SiteLlmsTxtGetQueryOptions = <TData = Awaited<ReturnType<typeof llmsTxtApiV1SiteLlmsTxtGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof llmsTxtApiV1SiteLlmsTxtGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getLlmsTxtApiV1SiteLlmsTxtGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof llmsTxtApiV1SiteLlmsTxtGet>>> = ({ signal }) => llmsTxtApiV1SiteLlmsTxtGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof llmsTxtApiV1SiteLlmsTxtGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type LlmsTxtApiV1SiteLlmsTxtGetQueryResult = NonNullable<Awaited<ReturnType<typeof llmsTxtApiV1SiteLlmsTxtGet>>>
+export type LlmsTxtApiV1SiteLlmsTxtGetQueryError = ErrorType<unknown>
+
+
+export function useLlmsTxtApiV1SiteLlmsTxtGet<TData = Awaited<ReturnType<typeof llmsTxtApiV1SiteLlmsTxtGet>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof llmsTxtApiV1SiteLlmsTxtGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof llmsTxtApiV1SiteLlmsTxtGet>>,
+          TError,
+          Awaited<ReturnType<typeof llmsTxtApiV1SiteLlmsTxtGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useLlmsTxtApiV1SiteLlmsTxtGet<TData = Awaited<ReturnType<typeof llmsTxtApiV1SiteLlmsTxtGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof llmsTxtApiV1SiteLlmsTxtGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof llmsTxtApiV1SiteLlmsTxtGet>>,
+          TError,
+          Awaited<ReturnType<typeof llmsTxtApiV1SiteLlmsTxtGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useLlmsTxtApiV1SiteLlmsTxtGet<TData = Awaited<ReturnType<typeof llmsTxtApiV1SiteLlmsTxtGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof llmsTxtApiV1SiteLlmsTxtGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Llms Txt
+ */
+
+export function useLlmsTxtApiV1SiteLlmsTxtGet<TData = Awaited<ReturnType<typeof llmsTxtApiV1SiteLlmsTxtGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof llmsTxtApiV1SiteLlmsTxtGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getLlmsTxtApiV1SiteLlmsTxtGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary Resume Markdown
+ */
+export type resumeMarkdownApiV1SiteResumeMdGetResponse200 = {
+  data: string
+  status: 200
+}
+
+export type resumeMarkdownApiV1SiteResumeMdGetResponseSuccess = (resumeMarkdownApiV1SiteResumeMdGetResponse200) & {
+  headers: Headers;
+};
+;
+
+export type resumeMarkdownApiV1SiteResumeMdGetResponse = (resumeMarkdownApiV1SiteResumeMdGetResponseSuccess)
+
+export const getResumeMarkdownApiV1SiteResumeMdGetUrl = () => {
+
+
+
+
+  return `/api/v1/site/resume.md`
+}
+
+export const resumeMarkdownApiV1SiteResumeMdGet = async ( options?: RequestInit): Promise<resumeMarkdownApiV1SiteResumeMdGetResponse> => {
+
+  return customInstance<resumeMarkdownApiV1SiteResumeMdGetResponse>(getResumeMarkdownApiV1SiteResumeMdGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getResumeMarkdownApiV1SiteResumeMdGetQueryKey = () => {
+    return [
+    `/api/v1/site/resume.md`
+    ] as const;
+    }
+
+
+export const getResumeMarkdownApiV1SiteResumeMdGetQueryOptions = <TData = Awaited<ReturnType<typeof resumeMarkdownApiV1SiteResumeMdGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof resumeMarkdownApiV1SiteResumeMdGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getResumeMarkdownApiV1SiteResumeMdGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof resumeMarkdownApiV1SiteResumeMdGet>>> = ({ signal }) => resumeMarkdownApiV1SiteResumeMdGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof resumeMarkdownApiV1SiteResumeMdGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ResumeMarkdownApiV1SiteResumeMdGetQueryResult = NonNullable<Awaited<ReturnType<typeof resumeMarkdownApiV1SiteResumeMdGet>>>
+export type ResumeMarkdownApiV1SiteResumeMdGetQueryError = ErrorType<unknown>
+
+
+export function useResumeMarkdownApiV1SiteResumeMdGet<TData = Awaited<ReturnType<typeof resumeMarkdownApiV1SiteResumeMdGet>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof resumeMarkdownApiV1SiteResumeMdGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof resumeMarkdownApiV1SiteResumeMdGet>>,
+          TError,
+          Awaited<ReturnType<typeof resumeMarkdownApiV1SiteResumeMdGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useResumeMarkdownApiV1SiteResumeMdGet<TData = Awaited<ReturnType<typeof resumeMarkdownApiV1SiteResumeMdGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof resumeMarkdownApiV1SiteResumeMdGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof resumeMarkdownApiV1SiteResumeMdGet>>,
+          TError,
+          Awaited<ReturnType<typeof resumeMarkdownApiV1SiteResumeMdGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useResumeMarkdownApiV1SiteResumeMdGet<TData = Awaited<ReturnType<typeof resumeMarkdownApiV1SiteResumeMdGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof resumeMarkdownApiV1SiteResumeMdGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Resume Markdown
+ */
+
+export function useResumeMarkdownApiV1SiteResumeMdGet<TData = Awaited<ReturnType<typeof resumeMarkdownApiV1SiteResumeMdGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof resumeMarkdownApiV1SiteResumeMdGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getResumeMarkdownApiV1SiteResumeMdGetQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

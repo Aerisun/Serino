@@ -14181,6 +14181,48 @@
         }
       }
     },
+    "/llms.txt": {
+      "get": {
+        "tags": [
+          "seo"
+        ],
+        "summary": "Llms Txt",
+        "operationId": "llms_txt_llms_txt_get",
+        "responses": {
+          "200": {
+            "description": "AI-readable site guide",
+            "content": {
+              "text/markdown": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/resume.md": {
+      "get": {
+        "tags": [
+          "seo"
+        ],
+        "summary": "Resume Markdown",
+        "operationId": "resume_markdown_resume_md_get",
+        "responses": {
+          "200": {
+            "description": "AI-readable Markdown resume",
+            "content": {
+              "text/markdown": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/feeds/posts.xml": {
       "get": {
         "tags": [
@@ -14346,6 +14388,48 @@
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/site/llms.txt": {
+      "get": {
+        "tags": [
+          "seo"
+        ],
+        "summary": "Llms Txt",
+        "operationId": "llms_txt_api_v1_site_llms_txt_get",
+        "responses": {
+          "200": {
+            "description": "AI-readable site guide",
+            "content": {
+              "text/markdown": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/site/resume.md": {
+      "get": {
+        "tags": [
+          "seo"
+        ],
+        "summary": "Resume Markdown",
+        "operationId": "resume_markdown_api_v1_site_resume_md_get",
+        "responses": {
+          "200": {
+            "description": "AI-readable Markdown resume",
+            "content": {
+              "text/markdown": {
+                "schema": {
+                  "type": "string"
+                }
               }
             }
           }
