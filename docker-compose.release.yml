@@ -45,8 +45,6 @@ services:
       retries: 10
       start_period: 90s
     restart: unless-stopped
-    security_opt:
-      - no-new-privileges:true
     logging:
       driver: json-file
       options:
@@ -83,8 +81,6 @@ services:
       retries: 3
       start_period: 10s
     restart: unless-stopped
-    security_opt:
-      - no-new-privileges:true
     logging:
       driver: json-file
       options:
@@ -113,8 +109,6 @@ services:
       waline:
         condition: service_healthy
     restart: unless-stopped
-    security_opt:
-      - no-new-privileges:true
 
 volumes:
   caddy_data:

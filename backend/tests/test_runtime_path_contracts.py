@@ -1310,6 +1310,8 @@ def test_deploy_contract_reuses_shared_env_keys():
     assert "AERISUN_WALINE_BASE_PATH: ${AERISUN_WALINE_BASE_PATH:-/waline}" in compose_text
     assert "AERISUN_FRONTEND_DIST_DIR: ${AERISUN_FRONTEND_DIST_DIR:-/srv/aerisun/frontend}" in compose_text
     assert "AERISUN_ADMIN_DIST_DIR: ${AERISUN_ADMIN_DIST_DIR:-/srv/aerisun/admin}" in compose_text
+    assert "no-new-privileges" not in compose_text
+    assert "no-new-privileges" not in release_compose_text
     assert "AERISUN_FRONTEND_INDEX_URL: ${AERISUN_FRONTEND_INDEX_URL:-http://caddy:8081/index.html}" in compose_text
     assert (
         "AERISUN_FRONTEND_INDEX_URL: ${AERISUN_FRONTEND_INDEX_URL:-http://caddy:8081/index.html}"
@@ -1360,6 +1362,11 @@ def test_deploy_contract_reuses_shared_env_keys():
     assert "AERISUN_IMAGE_REGISTRY=${LOCAL_IMAGE_REGISTRY}" in smoke_text
     assert "WALINE_JWT_TOKEN=smoke-0123456789abcdef0123456789abcdef" in smoke_text
     assert "AERISUN_DATA_BACKFILL_ENABLED" not in smoke_text
+    assert 'TMP_STORE_DIR="$(mktemp -d "${PROJECT_DIR}/.docker-smoke-store.XXXXXX")"' in smoke_text
+    assert (
+        'mkdir -p "${TMP_STORE_DIR}/media" "${TMP_STORE_DIR}/secrets" "${TMP_STORE_DIR}/.backup-sync-tmp"' in smoke_text
+    )
+    assert 'chmod -R 0777 "${TMP_STORE_DIR}"' in smoke_text
 
     assert 'healthcheck_path="${AERISUN_HEALTHCHECK_PATH:-/api/v1/site/readyz}"' in dev_smoke_text
     assert 'admin_base_path="${AERISUN_ADMIN_BASE_PATH:-/admin/}"' in dev_smoke_text
@@ -1374,6 +1381,10 @@ def test_deploy_contract_reuses_shared_env_keys():
     assert "isCrawlerRequest(req.headers)" in frontend_vite_text
     assert "server.transformIndexHtml(url.pathname, html)" in frontend_vite_text
     assert "seoHtmlDevProxyBlockedResponseHeaders" in frontend_vite_text
+    assert 'SMOKE_BROWSER_UA="Mozilla/5.0 (SerinoDockerSmoke)"' in smoke_text
+    assert 'SMOKE_CRAWLER_UA="OAI-SearchBot/1.0 (SerinoDockerSmoke)"' in smoke_text
+    assert 'curl --noproxy \'*\' -A "${SMOKE_BROWSER_UA}" -fsS "${url}" -o "${body_file}"' in smoke_text
+    assert 'curl --noproxy \'*\' -A "${SMOKE_CRAWLER_UA}" -fsS "${url}" -o "${body_file}"' in smoke_text
     assert '"content-security-policy"' in frontend_vite_text
     assert '"content-length"' in frontend_vite_text
     assert '"/robots.txt": {' in frontend_vite_text

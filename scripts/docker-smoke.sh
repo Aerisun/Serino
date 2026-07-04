@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 TMP_ENV_FILE="$(mktemp)"
-TMP_STORE_DIR="$(mktemp -d)"
+TMP_STORE_DIR="$(mktemp -d "${PROJECT_DIR}/.docker-smoke-store.XXXXXX")"
 COMPOSE_PROJECT="serino-smoke-$(date +%s)"
 SMOKE_TAG="${AERISUN_SMOKE_IMAGE_TAG:-smoke}"
 LOCAL_IMAGE_REGISTRY="${AERISUN_SMOKE_IMAGE_REGISTRY:-serino-smoke-local}"
@@ -88,9 +88,27 @@ assert_spa_response() {
   local body_file
   body_file="$(mktemp)"
 
-  curl --noproxy '*' -fsS "${url}" -o "${body_file}"
+  curl --noproxy '*' -A "${SMOKE_BROWSER_UA}" -fsS "${url}" -o "${body_file}"
   if ! grep -qi '<!doctype html' "${body_file}"; then
     echo "ERROR: ${label} did not return an SPA document: ${url}" >&2
+    cat "${body_file}" >&2
+    rm -f "${body_file}"
+    return 1
+  fi
+  rm -f "${body_file}"
+}
+
+assert_crawler_seo_response() {
+  local url="$1"
+  local label="$2"
+  local pattern="$3"
+  local body_file
+
+  body_file="$(mktemp)"
+
+  curl --noproxy '*' -A "${SMOKE_CRAWLER_UA}" -fsS "${url}" -o "${body_file}"
+  if ! grep -Eiq "${pattern}" "${body_file}"; then
+    echo "ERROR: ${label} did not return crawler SEO HTML (${pattern}): ${url}" >&2
     cat "${body_file}" >&2
     rm -f "${body_file}"
     return 1
@@ -123,7 +141,7 @@ assert_cache_control() {
   local headers_file
 
   headers_file="$(mktemp)"
-  curl --noproxy '*' -fsS -D "${headers_file}" -o /dev/null "${url}"
+  curl --noproxy '*' -A "${SMOKE_BROWSER_UA}" -fsS -D "${headers_file}" -o /dev/null "${url}"
   if ! grep -Eiq "^cache-control:[[:space:]]*${expected}" "${headers_file}"; then
     echo "ERROR: ${label} did not return expected Cache-Control (${expected}): ${url}" >&2
     cat "${headers_file}" >&2
@@ -140,7 +158,7 @@ assert_body_not_contains() {
   local body_file
 
   body_file="$(mktemp)"
-  curl --noproxy '*' -fsS "${url}" -o "${body_file}"
+  curl --noproxy '*' -A "${SMOKE_BROWSER_UA}" -fsS "${url}" -o "${body_file}"
   if grep -Eiq "${pattern}" "${body_file}"; then
     echo "ERROR: ${label} matched forbidden pattern (${pattern}): ${url}" >&2
     rm -f "${body_file}"
@@ -156,7 +174,7 @@ assert_body_contains() {
   local body_file
 
   body_file="$(mktemp)"
-  curl --noproxy '*' -fsS "${url}" -o "${body_file}"
+  curl --noproxy '*' -A "${SMOKE_BROWSER_UA}" -fsS "${url}" -o "${body_file}"
   if ! grep -Eiq "${pattern}" "${body_file}"; then
     echo "ERROR: ${label} did not match required pattern (${pattern}): ${url}" >&2
     rm -f "${body_file}"
@@ -178,7 +196,7 @@ assert_runtime_css_contains() {
   entry_file="$(mktemp)"
   css_file="$(mktemp)"
 
-  curl --noproxy '*' -fsS "${SITE_URL}/" -o "${index_file}"
+  curl --noproxy '*' -A "${SMOKE_BROWSER_UA}" -fsS "${SITE_URL}/" -o "${index_file}"
   entry_path="$(grep -Eo 'src="/assets/index-[^"]+\.js"' "${index_file}" | head -n 1 | sed -E 's/^src="([^"]+)"/\1/' || true)"
   if [[ -z "${entry_path}" ]]; then
     echo "ERROR: frontend index entry script was not found" >&2
@@ -186,7 +204,7 @@ assert_runtime_css_contains() {
     return 1
   fi
 
-  curl --noproxy '*' -fsS "${SITE_URL}${entry_path}" -o "${entry_file}"
+  curl --noproxy '*' -A "${SMOKE_BROWSER_UA}" -fsS "${SITE_URL}${entry_path}" -o "${entry_file}"
   css_path="$(grep -Eo 'assets/AppRuntime-[A-Za-z0-9_-]+\.css' "${entry_file}" | head -n 1 || true)"
   if [[ -z "${css_path}" ]]; then
     echo "ERROR: frontend runtime CSS asset was not found" >&2
@@ -194,7 +212,7 @@ assert_runtime_css_contains() {
     return 1
   fi
 
-  curl --noproxy '*' -fsS "${SITE_URL}/${css_path}" -o "${css_file}"
+  curl --noproxy '*' -A "${SMOKE_BROWSER_UA}" -fsS "${SITE_URL}/${css_path}" -o "${css_file}"
   if ! grep -Eiq "${pattern}" "${css_file}"; then
     echo "ERROR: ${label} did not match required pattern (${pattern}): ${SITE_URL}/${css_path}" >&2
     rm -f "${index_file}" "${entry_file}" "${css_file}"
@@ -229,7 +247,7 @@ assert_admin_css_contains() {
   index_file="$(mktemp)"
   css_file="$(mktemp)"
 
-  curl --noproxy '*' -fsS "${SITE_URL}${ADMIN_BASE_PATH}" -o "${index_file}"
+  curl --noproxy '*' -A "${SMOKE_BROWSER_UA}" -fsS "${SITE_URL}${ADMIN_BASE_PATH}" -o "${index_file}"
   css_path="$(grep -Eo 'href="[^"]*assets/index-[^"]+\.css"' "${index_file}" | head -n 1 | sed -E 's/^href="([^"]+)"/\1/' || true)"
   if [[ -z "${css_path}" ]]; then
     echo "ERROR: admin CSS asset was not found" >&2
@@ -238,7 +256,7 @@ assert_admin_css_contains() {
   fi
 
   css_url="$(resolve_site_asset_url "${css_path}")"
-  curl --noproxy '*' -fsS "${css_url}" -o "${css_file}"
+  curl --noproxy '*' -A "${SMOKE_BROWSER_UA}" -fsS "${css_url}" -o "${css_file}"
   if ! grep -Eiq "${pattern}" "${css_file}"; then
     echo "ERROR: ${label} did not match required pattern (${pattern}): ${css_url}" >&2
     rm -f "${index_file}" "${css_file}"
@@ -254,6 +272,11 @@ build_local_images() {
   docker build -t "${LOCAL_IMAGE_REGISTRY}/serino-waline:${SMOKE_TAG}" -f Dockerfile.waline .
 }
 
+prepare_smoke_store_dir() {
+  mkdir -p "${TMP_STORE_DIR}/media" "${TMP_STORE_DIR}/secrets" "${TMP_STORE_DIR}/.backup-sync-tmp"
+  chmod -R 0777 "${TMP_STORE_DIR}"
+}
+
 cleanup() {
   local exit_code="$1"
   if [[ "${exit_code}" -ne 0 ]]; then
@@ -262,14 +285,17 @@ cleanup() {
     compose -f docker-compose.release.yml logs --tail 80 api waline caddy || true
   fi
   compose -f docker-compose.release.yml down -v --remove-orphans >/dev/null 2>&1 || true
+  if [[ -d "${TMP_STORE_DIR}" ]]; then
+    docker run --rm --user 0:0 -v "${TMP_STORE_DIR}:/target" \
+      "${LOCAL_IMAGE_REGISTRY}/serino-api:${SMOKE_TAG}" \
+      /bin/bash -lc 'chmod -R 0777 /target >/dev/null 2>&1 || true' >/dev/null 2>&1 || true
+    chmod -R u+rwX "${TMP_STORE_DIR}" >/dev/null 2>&1 || true
+  fi
   docker image rm \
     "${LOCAL_IMAGE_REGISTRY}/serino-api:${SMOKE_TAG}" \
     "${LOCAL_IMAGE_REGISTRY}/serino-web:${SMOKE_TAG}" \
     "${LOCAL_IMAGE_REGISTRY}/serino-waline:${SMOKE_TAG}" >/dev/null 2>&1 || true
   rm -f "${TMP_ENV_FILE}"
-  if [[ -d "${TMP_STORE_DIR}" ]]; then
-    docker run --rm -v "${TMP_STORE_DIR}:/target" alpine sh -c 'chmod -R 0777 /target >/dev/null 2>&1 || true' >/dev/null 2>&1 || true
-  fi
   rm -rf "${TMP_STORE_DIR}" || true
 }
 
@@ -282,11 +308,13 @@ WALINE_PORT="${WALINE_PORT:-18360}"
 SITE_HOST="${AERISUN_SMOKE_HOST:-127.0.0.1}"
 SITE_URL="http://${SITE_HOST}:${HTTP_PORT}"
 PUBLIC_ORIGIN="${AERISUN_SMOKE_PUBLIC_ORIGIN:-https://smoke.aerisun.test}"
+SMOKE_BROWSER_UA="Mozilla/5.0 (SerinoDockerSmoke)"
+SMOKE_CRAWLER_UA="OAI-SearchBot/1.0 (SerinoDockerSmoke)"
 HEALTHCHECK_PATH="${AERISUN_HEALTHCHECK_PATH:-/api/v1/site/readyz}"
 ADMIN_BASE_PATH="$(ensure_trailing_slash "${AERISUN_ADMIN_BASE_PATH:-/admin/}")"
 WALINE_BASE_PATH="$(strip_trailing_slash "${AERISUN_WALINE_BASE_PATH:-/waline}")"
 
-chmod 0777 "${TMP_STORE_DIR}"
+prepare_smoke_store_dir
 
 cat >"${TMP_ENV_FILE}" <<EOF
 AERISUN_DOMAIN=http://${SITE_HOST}
@@ -323,6 +351,7 @@ wait_for_url "${SITE_URL}${WALINE_BASE_PATH}/" "waline via caddy"
 assert_not_404 "${SITE_URL}${WALINE_BASE_PATH}/api/comment?type=recent&pageSize=1" "waline API"
 
 assert_spa_response "${SITE_URL}/posts" "frontend deep link"
+assert_crawler_seo_response "${SITE_URL}/posts" "crawler content shell" 'data-seo-shell="posts"'
 assert_spa_response "${SITE_URL}${ADMIN_BASE_PATH}posts" "admin deep link"
 assert_cache_control "${SITE_URL}/posts" "frontend SPA fallback" "no-cache"
 assert_cache_control "${SITE_URL}/sw.js" "frontend service worker" "no-cache"

@@ -45,8 +45,6 @@ services:
         limits:
           memory: 512M
           cpus: "1.0"
-    security_opt:
-      - no-new-privileges:true
     logging:
       driver: json-file
       options:
@@ -89,8 +87,6 @@ services:
         limits:
           memory: 256M
           cpus: "0.5"
-    security_opt:
-      - no-new-privileges:true
     logging:
       driver: json-file
       options:
@@ -133,9 +129,6 @@ services:
         limits:
           memory: 128M
           cpus: "0.5"
-    security_opt:
-      - no-new-privileges:true
-
 volumes:
   caddy_data:
   caddy_config:

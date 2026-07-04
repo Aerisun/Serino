@@ -77,6 +77,7 @@ curl -fsSL https://install.aerisun.top/serino/install.sh | bash
 - [x] 优化后端管理台的概览页面信息密度与实用性
 - [x] MCP 服务测试通过，真实可用
 - [x] 备份服务做了简化和完善，测试通过
+- [x] SEO/GEO 优化
 
 **有待努力**
 

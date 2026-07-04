@@ -42,6 +42,7 @@ venv/
 # Unified data store
 /.store
 /.aerisun-store
+/.docker-smoke-store.*
 /.dev
 
 # vibe coding
@@ -51,6 +52,7 @@ venv/
 /.claude
 /.codex
 /.playwright-cli
+/.playwright-mcp
 
 # Local env overrides (worktree-specific ports and local machine overrides)
 .env*local
