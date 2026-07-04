@@ -26,6 +26,7 @@ const Resume = () => {
       description=""
       metaTitle={config.metaTitle}
       metaDescription={config.metaDescription}
+      metaAuthor={config.title}
       width="wide"
       contentClassName="mt-0"
       mainClassName="max-sm:!px-4 max-sm:!pb-8"

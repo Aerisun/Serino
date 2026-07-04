@@ -1,18 +1,45 @@
-import { useEffect } from "react";
-import { buildPageTitle } from "@/config";
+import { useEffect, useMemo } from "react";
 import { useSiteConfig } from "@/contexts/runtime-config";
+import { buildSearchMetadata } from "@/lib/search-optimization";
 
 interface PageMetaProps {
   title?: string;
   description?: string;
   image?: string;
+  author?: string;
 }
 
-const setMeta = (selector: string, value: string, attr = "content") => {
-  const element = document.head.querySelector<HTMLMetaElement>(selector);
-  if (element) {
-    element.setAttribute(attr, value);
+const SITE_JSON_LD_SCRIPT_ID = "json-ld-site-profile";
+
+const ensureMeta = (
+  selector: string,
+  attributes: Record<string, string>,
+) => {
+  let element = document.head.querySelector<HTMLMetaElement>(selector);
+  if (!element) {
+    element = document.createElement("meta");
+    for (const [key, value] of Object.entries(attributes)) {
+      element.setAttribute(key, value);
+    }
+    document.head.appendChild(element);
   }
+  return element;
+};
+
+const syncMeta = (
+  selector: string,
+  attributes: Record<string, string>,
+  value: string,
+) => {
+  const normalizedValue = value.trim();
+  const existing = document.head.querySelector<HTMLMetaElement>(selector);
+
+  if (!normalizedValue) {
+    existing?.remove();
+    return;
+  }
+
+  ensureMeta(selector, attributes).setAttribute("content", normalizedValue);
 };
 
 const ensureHeadLink = (rel: string) => {
@@ -37,34 +64,60 @@ const syncHeadLink = (rel: string, href: string) => {
   ensureHeadLink(rel).href = normalizedHref;
 };
 
+const syncSiteJsonLd = (payload: Record<string, unknown>) => {
+  let script = document.getElementById(SITE_JSON_LD_SCRIPT_ID) as HTMLScriptElement | null;
+  if (!script) {
+    script = document.createElement("script");
+    script.id = SITE_JSON_LD_SCRIPT_ID;
+    script.type = "application/ld+json";
+    document.head.appendChild(script);
+  }
+  script.textContent = JSON.stringify(payload);
+};
+
 const PageMeta = ({
   title,
   description,
   image,
+  author,
 }: PageMetaProps) => {
   const site = useSiteConfig();
-  const resolvedDescription = description ?? site.bio;
-  const resolvedImage = image ?? site.ogImage;
-  const resolvedSiteTitle = site.title || site.name;
-  const resolvedAuthor = site.name || site.title;
-  const resolvedPageTitle = buildPageTitle(resolvedSiteTitle, title);
+  const pathname = typeof window !== "undefined" ? window.location.pathname : "/";
+  const metadata = useMemo(
+    () =>
+      buildSearchMetadata({
+        site,
+        searchOptimization: site.searchOptimization,
+        pageTitle: title,
+        pageDescription: description,
+        pageImage: image,
+        pageAuthor: author,
+        pathname,
+      }),
+    [author, description, image, pathname, site, title],
+  );
 
   useEffect(() => {
-    document.title = resolvedPageTitle;
+    document.title = metadata.title;
 
-    setMeta('meta[name="description"]', resolvedDescription);
-    setMeta('meta[name="author"]', resolvedAuthor);
-    setMeta('meta[property="og:title"]', resolvedPageTitle);
-    setMeta('meta[property="og:description"]', resolvedDescription);
-    setMeta('meta[property="og:image"]', resolvedImage);
-    setMeta('meta[property="og:site_name"]', resolvedSiteTitle);
-    setMeta('meta[name="twitter:title"]', resolvedPageTitle);
-    setMeta('meta[name="twitter:description"]', resolvedDescription);
-    setMeta('meta[name="twitter:image"]', resolvedImage);
+    syncMeta('meta[name="description"]', { name: "description" }, metadata.description);
+    syncMeta('meta[name="author"]', { name: "author" }, metadata.author);
+    syncMeta('meta[name="keywords"]', { name: "keywords" }, metadata.keywords);
+    syncMeta('meta[name="robots"]', { name: "robots" }, metadata.robots);
+    syncMeta('meta[name="title"]', { name: "title" }, metadata.shareTitle);
+    syncMeta('meta[property="og:title"]', { property: "og:title" }, metadata.shareTitle);
+    syncMeta('meta[property="og:description"]', { property: "og:description" }, metadata.description);
+    syncMeta('meta[property="og:image"]', { property: "og:image" }, metadata.image);
+    syncMeta('meta[property="og:site_name"]', { property: "og:site_name" }, metadata.siteTitle);
+    syncMeta('meta[name="twitter:title"]', { name: "twitter:title" }, metadata.shareTitle);
+    syncMeta('meta[name="twitter:description"]', { name: "twitter:description" }, metadata.description);
+    syncMeta('meta[name="twitter:image"]', { name: "twitter:image" }, metadata.image);
+    syncHeadLink("canonical", metadata.canonicalUrl);
+    syncSiteJsonLd(metadata.siteJsonLd);
     const resolvedIcon = site.siteIconUrl || "data:,";
     syncHeadLink("icon", resolvedIcon);
     syncHeadLink("shortcut icon", resolvedIcon);
-  }, [resolvedAuthor, resolvedDescription, resolvedImage, resolvedPageTitle, resolvedSiteTitle, site.siteIconUrl]);
+  }, [metadata, site.siteIconUrl]);
 
   return null;
 };

@@ -12,12 +12,13 @@ import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { ResourceUploadField } from "@/components/ResourceUploadField";
 import { DirtySaveButton, PendingSaveBadge } from "@/components/ui/DirtySaveButton";
 import { LabelWithHelp } from "@/components/ui/LabelWithHelp";
+import { CollapsibleSection } from "@/components/ui/CollapsibleSection";
 import { useI18n } from "@/i18n";
 import { extractApiErrorMessage } from "@/lib/api-error";
 import { toast } from "sonner";
-import type { SiteProfileAdminRead } from "@serino/api-client/models";
+import type { SiteProfileAdminRead, SiteProfileUpdate } from "@serino/api-client/models";
 
-type ProfileFieldKey =
+type BaseProfileFieldKey =
   | "name"
   | "title"
   | "role"
@@ -28,6 +29,18 @@ type ProfileFieldKey =
   | "hero_video_url"
   | "og_image"
   | "site_icon_url";
+
+type SearchOptimizationFieldKey =
+  | "search_real_name"
+  | "search_meta_title"
+  | "search_meta_description"
+  | "search_keywords"
+  | "search_llm_summary"
+  | "search_expertise"
+  | "search_same_as"
+  | "search_canonical_url";
+
+type ProfileFieldKey = BaseProfileFieldKey | SearchOptimizationFieldKey;
 
 type FieldHelpCopy = {
   label: string;
@@ -41,7 +54,9 @@ type FieldHelpCopy = {
 
 type ProfileFormState = Record<ProfileFieldKey, string>;
 
-const PROFILE_FORM_FIELDS = [
+const SEARCH_OPTIMIZATION_FLAG_KEY = "search_optimization";
+
+const BASE_PROFILE_FIELDS = [
   "name",
   "title",
   "role",
@@ -52,7 +67,69 @@ const PROFILE_FORM_FIELDS = [
   "hero_video_url",
   "og_image",
   "site_icon_url",
+] as const satisfies readonly BaseProfileFieldKey[];
+
+const SEARCH_OPTIMIZATION_FIELDS = [
+  "search_real_name",
+  "search_meta_title",
+  "search_meta_description",
+  "search_keywords",
+  "search_llm_summary",
+  "search_expertise",
+  "search_same_as",
+  "search_canonical_url",
+] as const satisfies readonly SearchOptimizationFieldKey[];
+
+const PROFILE_FORM_FIELDS = [
+  ...BASE_PROFILE_FIELDS,
+  ...SEARCH_OPTIMIZATION_FIELDS,
 ] as const satisfies readonly ProfileFieldKey[];
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  Boolean(value) && typeof value === "object" && !Array.isArray(value);
+
+const readText = (value: unknown): string => (typeof value === "string" ? value : "");
+
+const readTextList = (value: unknown): string => {
+  if (Array.isArray(value)) {
+    return value.filter((item): item is string => typeof item === "string").join("\n");
+  }
+  return typeof value === "string" ? value : "";
+};
+
+const splitDelimitedList = (value: string): string[] =>
+  value
+    .split(/[\n,，]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+const splitLineList = (value: string): string[] =>
+  value
+    .split(/\n/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+const readFeatureFlags = (profile?: SiteProfileAdminRead | null): Record<string, unknown> => {
+  const featureFlags = profile?.feature_flags;
+  return isRecord(featureFlags) ? { ...featureFlags } : {};
+};
+
+const readSearchOptimization = (
+  profile?: SiteProfileAdminRead | null,
+): Record<SearchOptimizationFieldKey, string> => {
+  const raw = readFeatureFlags(profile)[SEARCH_OPTIMIZATION_FLAG_KEY];
+  const config = isRecord(raw) ? raw : {};
+  return {
+    search_real_name: readText(config.real_name),
+    search_meta_title: readText(config.meta_title),
+    search_meta_description: readText(config.meta_description),
+    search_keywords: readTextList(config.keywords),
+    search_llm_summary: readText(config.llm_summary),
+    search_expertise: readTextList(config.expertise),
+    search_same_as: readTextList(config.same_as),
+    search_canonical_url: readText(config.canonical_url),
+  };
+};
 
 function createProfileForm(profile?: SiteProfileAdminRead | null): ProfileFormState {
   return {
@@ -66,8 +143,55 @@ function createProfileForm(profile?: SiteProfileAdminRead | null): ProfileFormSt
     hero_image_url: profile?.hero_image_url ?? "",
     hero_poster_url: profile?.hero_poster_url ?? "",
     hero_video_url: profile?.hero_video_url ?? "",
+    ...readSearchOptimization(profile),
   };
 }
+
+const serializeSearchOptimization = (form: ProfileFormState) => ({
+  real_name: form.search_real_name.trim(),
+  meta_title: form.search_meta_title.trim(),
+  meta_description: form.search_meta_description.trim(),
+  keywords: splitDelimitedList(form.search_keywords),
+  llm_summary: form.search_llm_summary.trim(),
+  expertise: splitDelimitedList(form.search_expertise),
+  same_as: splitLineList(form.search_same_as),
+  canonical_url: form.search_canonical_url.trim(),
+});
+
+const hasSearchOptimizationValue = (value: ReturnType<typeof serializeSearchOptimization>) =>
+  Boolean(
+    value.real_name ||
+      value.meta_title ||
+      value.meta_description ||
+      value.keywords.length ||
+      value.llm_summary ||
+      value.expertise.length ||
+      value.same_as.length ||
+      value.canonical_url,
+  );
+
+const isSearchOptimizationValid = (value: ReturnType<typeof serializeSearchOptimization>) =>
+  !hasSearchOptimizationValue(value) || Boolean(value.real_name);
+
+const buildProfilePayload = (
+  form: ProfileFormState,
+  profile?: SiteProfileAdminRead,
+): SiteProfileUpdate => {
+  const payload = Object.fromEntries(
+    BASE_PROFILE_FIELDS.map((key) => [key, form[key]]),
+  ) as SiteProfileUpdate;
+  const featureFlags = readFeatureFlags(profile);
+  const searchOptimization = serializeSearchOptimization(form);
+
+  if (hasSearchOptimizationValue(searchOptimization)) {
+    featureFlags[SEARCH_OPTIMIZATION_FLAG_KEY] = searchOptimization;
+  } else {
+    delete featureFlags[SEARCH_OPTIMIZATION_FLAG_KEY];
+  }
+
+  payload.feature_flags = featureFlags;
+  return payload;
+};
 
 const PROFILE_FIELD_COPY: Record<"zh" | "en", Record<ProfileFieldKey, FieldHelpCopy>> = {
   zh: {
@@ -183,6 +307,90 @@ const PROFILE_FIELD_COPY: Record<"zh" | "en", Record<ProfileFieldKey, FieldHelpC
       usageTitle: "会影响这些位置",
       usageItems: [
         "首页 Hero 主文案",
+      ],
+    },
+    search_real_name: {
+      label: "真实姓名 *",
+      title: "搜索实体使用的真实姓名",
+      description: "这是搜索引擎和 AI 搜索识别“你是谁”的核心字段。它只用于搜索实体、作者信息和简历结构化数据，不会替换首页显示名。",
+      usageTitle: "会影响这些位置",
+      usageItems: [
+        "Person 结构化数据 name",
+        "页面 author 元信息",
+        "/resume 简历 ProfilePage 的主实体",
+      ],
+    },
+    search_meta_title: {
+      label: "搜索标题",
+      title: "给搜索结果和 AI 搜索引用的站点标题",
+      description: "建议写成“姓名 / 品牌 + 核心身份或领域”。它用于分享标题和搜索辅助元信息，不会覆盖浏览器标签页标题。",
+      usageTitle: "会影响这些位置",
+      usageItems: [
+        "Open Graph / Twitter 分享标题",
+        "meta title 辅助信息",
+        "站点级结构化数据",
+        "大模型搜索对你的名称与领域的理解",
+      ],
+    },
+    search_meta_description: {
+      label: "搜索摘要",
+      title: "给搜索结果摘要的短描述",
+      description: "用一两句话说明你是谁、提供什么内容、为什么值得被访问。Google 可能按查询重写摘要，但高质量描述仍能帮助理解页面。",
+      usageTitle: "会影响这些位置",
+      usageItems: [
+        "首页 meta description",
+        "Open Graph / Twitter 摘要",
+        "WebSite 结构化数据描述",
+      ],
+    },
+    search_keywords: {
+      label: "关键词",
+      title: "补充主题词，给非 Google 爬虫和站内语义使用",
+      description: "用逗号或换行分隔。关键词应真实覆盖你的内容，不要堆砌无关热词。",
+      usageTitle: "会影响这些位置",
+      usageItems: [
+        "meta keywords",
+        "结构化身份主题的辅助语义",
+      ],
+    },
+    search_llm_summary: {
+      label: "大模型摘要",
+      title: "GEO 使用的稳定身份说明",
+      description: "写给 AI 搜索和问答系统的事实型摘要。建议包含你的身份、长期方向、代表内容或项目，避免广告口吻。",
+      usageTitle: "会影响这些位置",
+      usageItems: [
+        "Person 结构化数据 description",
+        "AI 搜索生成答案时的身份参考",
+      ],
+    },
+    search_expertise: {
+      label: "擅长领域",
+      title: "帮助搜索系统识别你的专业主题",
+      description: "用逗号或换行分隔，填写你希望被关联的长期主题，比如 Frontend Architecture、AI Agents、个人知识管理。",
+      usageTitle: "会影响这些位置",
+      usageItems: [
+        "Person 结构化数据 knowsAbout",
+        "大模型检索对专业领域的聚类",
+      ],
+    },
+    search_same_as: {
+      label: "权威身份链接",
+      title: "用来证明这些外部主页与你是同一个实体",
+      description: "每行一个 URL，适合填写 GitHub、LinkedIn、Wikipedia、作品集、公司主页等稳定链接。",
+      usageTitle: "会影响这些位置",
+      usageItems: [
+        "Person 结构化数据 sameAs",
+        "搜索引擎实体识别",
+      ],
+    },
+    search_canonical_url: {
+      label: "规范站点地址",
+      title: "你的公开站点首选域名",
+      description: "填写正式域名，例如 https://example.com。前台会按当前路径生成 canonical，避免 www、http/https 或镜像域名造成重复。",
+      usageTitle: "会影响这些位置",
+      usageItems: [
+        "页面 canonical 链接",
+        "结构化数据 url",
       ],
     },
   },
@@ -301,6 +509,90 @@ const PROFILE_FIELD_COPY: Record<"zh" | "en", Record<ProfileFieldKey, FieldHelpC
         "The main copy block in the homepage hero",
       ],
     },
+    search_real_name: {
+      label: "Real Name *",
+      title: "The real name used for search identity",
+      description: "This is the core identity name for search engines and AI search. It is used for structured identity and author metadata, but it does not replace the homepage display name.",
+      usageTitle: "Used in",
+      usageItems: [
+        "Person structured data name",
+        "Page author metadata",
+        "The main entity of the /resume ProfilePage",
+      ],
+    },
+    search_meta_title: {
+      label: "Search Title",
+      title: "The site title for search results and AI search references",
+      description: "Use a concise name or brand plus your primary identity or field. It is used for sharing and search-assist metadata, and it does not override the browser tab title.",
+      usageTitle: "Used in",
+      usageItems: [
+        "Open Graph and Twitter sharing titles",
+        "meta title assistive metadata",
+        "Site-level structured data",
+        "How AI search understands your name and domain",
+      ],
+    },
+    search_meta_description: {
+      label: "Search Summary",
+      title: "A short description for search snippets",
+      description: "Explain who you are, what visitors can find here, and why the page is useful. Search engines may rewrite snippets, but accurate descriptions still help page understanding.",
+      usageTitle: "Used in",
+      usageItems: [
+        "Homepage meta description",
+        "Open Graph and Twitter summaries",
+        "WebSite structured data description",
+      ],
+    },
+    search_keywords: {
+      label: "Keywords",
+      title: "Supplemental topic terms for non-Google crawlers and semantics",
+      description: "Separate terms with commas or new lines. Keep them truthful to your actual content instead of stuffing unrelated trending words.",
+      usageTitle: "Used in",
+      usageItems: [
+        "meta keywords",
+        "Supporting structured identity semantics",
+      ],
+    },
+    search_llm_summary: {
+      label: "AI Search Summary",
+      title: "A stable factual identity summary for GEO",
+      description: "Write for AI search and answer engines. Include your identity, long-term focus, representative content, or projects without turning it into ad copy.",
+      usageTitle: "Used in",
+      usageItems: [
+        "Person structured data description",
+        "Identity context for AI-generated search answers",
+      ],
+    },
+    search_expertise: {
+      label: "Expertise Topics",
+      title: "The durable topics you want associated with your identity",
+      description: "Separate topics with commas or new lines, such as Frontend Architecture, AI Agents, or personal knowledge management.",
+      usageTitle: "Used in",
+      usageItems: [
+        "Person structured data knowsAbout",
+        "Topic clustering for AI retrieval systems",
+      ],
+    },
+    search_same_as: {
+      label: "Identity Links",
+      title: "Authoritative external pages that identify the same person or brand",
+      description: "Enter one URL per line. Good candidates include GitHub, LinkedIn, Wikipedia, portfolio, company, or other stable public profiles.",
+      usageTitle: "Used in",
+      usageItems: [
+        "Person structured data sameAs",
+        "Search entity disambiguation",
+      ],
+    },
+    search_canonical_url: {
+      label: "Canonical Site URL",
+      title: "The preferred public domain for this site",
+      description: "Use the official origin, such as https://example.com. The frontend combines it with the current path to avoid duplicate www, http/https, or mirror-domain URLs.",
+      usageTitle: "Used in",
+      usageItems: [
+        "Canonical page links",
+        "Structured data URLs",
+      ],
+    },
   },
 };
 
@@ -346,8 +638,24 @@ export function ProfileTab() {
   const copy = PROFILE_FIELD_COPY[lang];
   const effectiveSavedForm = savedForm ?? createProfileForm(profile);
   const hasChanges = PROFILE_FORM_FIELDS.some((key) => form[key] !== effectiveSavedForm[key]);
+  const currentSearchOptimization = serializeSearchOptimization(form);
+  const showSearchRealNameError =
+    hasSearchOptimizationValue(currentSearchOptimization) &&
+    !isSearchOptimizationValid(currentSearchOptimization);
   const updateField = (key: ProfileFieldKey, value: string) => {
     setForm((current) => ({ ...current, [key]: value }));
+  };
+  const handleSave = () => {
+    const searchOptimization = serializeSearchOptimization(form);
+    if (!isSearchOptimizationValid(searchOptimization)) {
+      toast.error(
+        lang === "zh"
+          ? "请先填写真实姓名，再保存搜索优化配置。"
+          : "Enter a real name before saving search optimization settings.",
+      );
+      return;
+    }
+    save.mutate({ data: buildProfilePayload(form, profile) });
   };
   const renderHelpLabel = (key: ProfileFieldKey) => (
     <LabelWithHelp
@@ -397,7 +705,7 @@ export function ProfileTab() {
             <DirtySaveButton
               dirty={hasChanges}
               saving={save.isPending}
-              onClick={() => save.mutate({ data: form })}
+              onClick={handleSave}
             />
           </div>
         </div>
@@ -483,6 +791,98 @@ export function ProfileTab() {
           onChange={(value) => updateField("site_icon_url", value)}
           onUploadPersist={(value) => autoSaveUploadedField("site_icon_url", value)}
         />
+        <CollapsibleSection
+          title={lang === "zh" ? "搜索优化" : "Search Optimization"}
+          badge="SEO / GEO"
+          className="overflow-visible border border-border/60 bg-background/35"
+        >
+          <div className="space-y-4 pt-1">
+            <div className="space-y-2">
+              {renderHelpLabel("search_real_name")}
+              <Input
+                value={form.search_real_name}
+                onChange={(e) => updateField("search_real_name", e.target.value)}
+                placeholder={lang === "zh" ? "例如：张三 / Rowan Zhu" : "Example: Rowan Zhu"}
+                required
+                aria-invalid={showSearchRealNameError}
+              />
+              {showSearchRealNameError ? (
+                <p className="text-xs leading-5 text-destructive">
+                  {lang === "zh"
+                    ? "请先填写真实姓名，再保存搜索优化配置。"
+                    : "Enter a real name before saving search optimization settings."}
+                </p>
+              ) : null}
+            </div>
+            <div className="space-y-2">
+              {renderHelpLabel("search_meta_title")}
+              <Input
+                value={form.search_meta_title}
+                onChange={(e) => updateField("search_meta_title", e.target.value)}
+                placeholder={lang === "zh" ? "例如：Rowan - 前端与 AI 自动化" : "Example: Rowan - Frontend and AI Automation"}
+              />
+            </div>
+            <div className="space-y-2">
+              {renderHelpLabel("search_meta_description")}
+              <Textarea
+                value={form.search_meta_description}
+                onChange={(e) => updateField("search_meta_description", e.target.value)}
+                rows={3}
+                placeholder={
+                  lang === "zh"
+                    ? "用一两句话说明你是谁、这里有什么内容、适合谁访问。"
+                    : "Explain who you are, what this site contains, and who it helps."
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              {renderHelpLabel("search_keywords")}
+              <Input
+                value={form.search_keywords}
+                onChange={(e) => updateField("search_keywords", e.target.value)}
+                placeholder={lang === "zh" ? "前端, AI Agents, 个人知识管理" : "Frontend, AI Agents, Personal Knowledge Management"}
+              />
+            </div>
+            <div className="space-y-2">
+              {renderHelpLabel("search_llm_summary")}
+              <Textarea
+                value={form.search_llm_summary}
+                onChange={(e) => updateField("search_llm_summary", e.target.value)}
+                rows={4}
+                placeholder={
+                  lang === "zh"
+                    ? "事实型描述你的身份、长期方向、代表项目或内容。"
+                    : "Describe your identity, durable focus, representative projects, or content."
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              {renderHelpLabel("search_expertise")}
+              <Input
+                value={form.search_expertise}
+                onChange={(e) => updateField("search_expertise", e.target.value)}
+                placeholder={lang === "zh" ? "Frontend Architecture, Search Optimization" : "Frontend Architecture, Search Optimization"}
+              />
+            </div>
+            <div className="space-y-2">
+              {renderHelpLabel("search_same_as")}
+              <Textarea
+                value={form.search_same_as}
+                onChange={(e) => updateField("search_same_as", e.target.value)}
+                rows={3}
+                placeholder={"https://github.com/your-name\nhttps://www.linkedin.com/in/your-name"}
+              />
+            </div>
+            <div className="space-y-2">
+              {renderHelpLabel("search_canonical_url")}
+              <Input
+                value={form.search_canonical_url}
+                onChange={(e) => updateField("search_canonical_url", e.target.value)}
+                placeholder="https://example.com"
+              />
+            </div>
+          </div>
+        </CollapsibleSection>
       </CardContent>
     </Card>
   );

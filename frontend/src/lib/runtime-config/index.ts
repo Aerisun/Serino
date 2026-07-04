@@ -5,6 +5,11 @@ import {
 } from "@serino/api-client/site";
 import { API_BASE_PATH } from "@/lib/api";
 import { clampPageSize } from "@/lib/page-size";
+import {
+  SEARCH_OPTIMIZATION_FLAG_KEY,
+  normalizeSearchOptimization,
+  type SearchOptimizationConfig,
+} from "@/lib/search-optimization";
 import { getCurrentBeijingIsoString } from "@/lib/time";
 
 // ---------------------------------------------------------------------------
@@ -134,6 +139,7 @@ export interface RuntimeConfigSnapshot {
     navigation: NavItem[];
     footer: { filingInfo: string };
     featureFlags: Record<string, boolean>;
+    searchOptimization: SearchOptimizationConfig;
   };
   pages: Record<string, PageConfig>;
 }
@@ -230,7 +236,15 @@ const normalizeSiteConfig = (
     content_subscription: false,
   } as Record<string, boolean>
 
-  for (const [key, value] of Object.entries(payload.site.feature_flags ?? {})) {
+  const rawFeatureFlags = payload.site.feature_flags ?? {};
+  const searchOptimization = normalizeSearchOptimization(
+    rawFeatureFlags[SEARCH_OPTIMIZATION_FLAG_KEY],
+  );
+
+  for (const [key, value] of Object.entries(rawFeatureFlags)) {
+    if (key === SEARCH_OPTIMIZATION_FLAG_KEY) {
+      continue;
+    }
     featureFlags[key] = Boolean(value)
   }
 
@@ -280,6 +294,7 @@ const normalizeSiteConfig = (
       filingInfo: payload.site.filing_info ?? "",
     },
     featureFlags,
+    searchOptimization,
   };
 };
 
