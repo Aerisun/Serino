@@ -70,6 +70,11 @@ def _pick_publish_excerpt(summary: str | None, body: str | None, *, limit: int =
     return _trim_excerpt(body_text, limit=limit)
 
 
+def _pick_private_diary_publish_excerpt(summary: str | None, *, limit: int = 56) -> str | None:
+    summary_text = _strip_markdown(summary)
+    return _trim_excerpt(summary_text, limit=limit)
+
+
 def _get_site_owner_name(session: Session) -> str:
     value = session.scalar(select(SiteProfile.name).limit(1))
     return str(value or "").strip() or "站长"
@@ -100,7 +105,7 @@ def list_calendar_events(session: Session, from_date: date, to_date: date) -> Ca
 def list_recent_activity(session: Session, limit: int = 8) -> RecentActivityRead:
     items: list[RecentActivityItemRead] = []
     site_owner_name = _get_site_owner_name(session)
-    include_diary = not diary_private_enabled(session)
+    private_diary_enabled = diary_private_enabled(session)
 
     # Collect all (content_type, slug) pairs for batch title resolution
     title_pairs: list[tuple[str, str]] = []
@@ -110,19 +115,19 @@ def list_recent_activity(session: Session, limit: int = 8) -> RecentActivityRead
     comment_pairs = []
     for item in comments:
         pair = parse_comment_path(item.url)
-        if pair[0] == "diary" and not include_diary:
+        if pair[0] == "diary" and private_diary_enabled:
             continue
         visible_comments.append(item)
         comment_pairs.append(pair)
         title_pairs.append(pair)
 
     reactions = repo.find_recent_reactions(session, limit=limit)
-    if not include_diary:
+    if private_diary_enabled:
         reactions = [item for item in reactions if item.content_type != "diary"]
     for item in reactions:
         title_pairs.append((item.content_type, item.content_slug))
 
-    published_content = repo.find_recent_published_content(session, limit=limit, include_diary=include_diary)
+    published_content = repo.find_recent_published_content(session, limit=limit, include_diary=True)
 
     # Batch resolve all titles in one pass
     titles = repo.batch_resolve_titles(session, title_pairs)
@@ -171,13 +176,18 @@ def list_recent_activity(session: Session, limit: int = 8) -> RecentActivityRead
     for published_at, kind, title, summary, body, href in published_content:
         normalized_title = (title or "").strip()
         target_title = normalized_title if kind in {"post", "diary"} else ""
+        excerpt = (
+            _pick_private_diary_publish_excerpt(summary)
+            if kind == "diary" and private_diary_enabled
+            else _pick_publish_excerpt(summary, body)
+        )
         items.append(
             RecentActivityItemRead(
                 kind=f"publish_{kind}",
                 actor_name=site_owner_name,
                 actor_avatar=_avatar_for_name(site_owner_name),
                 target_title=target_title,
-                excerpt=_pick_publish_excerpt(summary, body),
+                excerpt=excerpt,
                 created_at=_normalize_timestamp(published_at),
                 href=href,
             )

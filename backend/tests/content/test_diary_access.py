@@ -186,7 +186,6 @@ def test_private_diary_machine_readable_surfaces_do_not_expose_details(client) -
     feed = client.get("/feeds/diary.xml")
     search = client.get("/api/v1/site/search?q=春分")
     calendar = client.get("/api/v1/site/calendar?from=2026-03-01&to=2026-03-31")
-    activity = client.get("/api/v1/site/recent-activity?limit=30")
     collection_html = client.get("/diary")
     detail_html = client.get(f"/diary/{DIARY_SLUG}")
 
@@ -203,9 +202,6 @@ def test_private_diary_machine_readable_surfaces_do_not_expose_details(client) -
 
     assert calendar.status_code == 200
     assert any(item["type"] == "diary" for item in calendar.json()["events"])
-
-    assert activity.status_code == 200
-    assert all(item["kind"] != "publish_diary" for item in activity.json()["items"])
 
     assert collection_html.status_code == 200
     assert DIARY_SLUG not in collection_html.text

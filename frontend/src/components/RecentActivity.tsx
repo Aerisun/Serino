@@ -140,13 +140,13 @@ const normalizeType = (value: string): ActivityType => {
   return "comment";
 };
 
-const normalizeActivity = (value: RecentActivityItemRead, t: TranslateFn, lang: "zh" | "en"): ActivityItem => {
+export const normalizeActivity = (value: RecentActivityItemRead, t: TranslateFn, lang: "zh" | "en"): ActivityItem => {
   const type = normalizeType(value.kind);
 
   return {
     type,
     user: normalizeActorName(value.actor_name ?? "", t),
-    target: type === "publish_diary" ? "" : humanizeTarget(value.target_title ?? ""),
+    target: humanizeTarget(value.target_title ?? ""),
     detail: isPublishType(type) ? value.excerpt?.trim() || undefined : undefined,
     date: formatRelativeDate(value.created_at, t, lang),
     href: value.href ?? (type === "guestbook" ? GUESTBOOK_ROUTE : undefined),
@@ -324,7 +324,7 @@ const RecentActivity = ({ enabled = true }: RecentActivityProps) => {
 
   const { data: response, isLoading, isError, error, refetch } =
     useReadRecentActivityApiV1SiteRecentActivityGet(
-      { limit: 8 },
+      { limit: 15 },
       {
         query: {
           enabled: queryEnabled,

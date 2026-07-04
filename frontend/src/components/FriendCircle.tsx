@@ -68,7 +68,7 @@ const FriendCircle = ({ enabled = true }: FriendCircleProps) => {
     error,
     refetch,
   } = useReadFriendFeedApiV1SiteFriendFeedGet(
-    { limit: 12 },
+    { limit: 15 },
     {
       query: {
         enabled: queryEnabled,

@@ -23,8 +23,8 @@ type RuntimePages = RuntimeConfigSnapshot["pages"];
 
 const PREFETCH_STALE_TIME_MS = 60_000;
 const PREFETCH_GC_TIME_MS = 10 * 60_000;
-const RECENT_ACTIVITY_LIMIT = 8;
-const FRIEND_FEED_HOME_LIMIT = 12;
+const RECENT_ACTIVITY_LIMIT = 15;
+const FRIEND_FEED_HOME_LIMIT = 15;
 const FRIEND_FEED_PAGE_LIMIT = 200;
 const ACTIVITY_HEATMAP_PARAMS = { weeks: 52, tz: "Asia/Shanghai" } as const;
 
