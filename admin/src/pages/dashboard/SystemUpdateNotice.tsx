@@ -62,6 +62,17 @@ function formatReleaseTime(value: string | null | undefined) {
   }) || value;
 }
 
+function formatChannelLabel(channel: string | null | undefined, t: (key: string) => string) {
+  switch ((channel || "stable").toLowerCase()) {
+    case "dev":
+      return t("dashboard.updateChannelDev");
+    case "stable":
+      return t("dashboard.updateChannelStable");
+    default:
+      return channel || t("dashboard.updateChannelStable");
+  }
+}
+
 export function SystemUpdateNotice() {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
@@ -71,8 +82,12 @@ export function SystemUpdateNotice() {
 
   const { data: statusResponse, isError, refetch } = useUpdateStatusApiV1AdminSystemUpdatesStatusGet({
     query: {
-      refetchInterval: 10 * 60 * 1000,
+      refetchInterval: 30 * 1000,
+      refetchOnMount: "always",
+      refetchOnReconnect: true,
+      refetchOnWindowFocus: true,
       retry: false,
+      staleTime: 0,
     },
   });
 
@@ -225,7 +240,6 @@ export function SystemUpdateNotice() {
     if (state === "succeeded") return t("dashboard.updateSucceededHint");
     if (state === "failed") return status?.last_error || t("dashboard.updateFailedHint");
     if (state === "rolled_back") return status?.last_error || t("dashboard.updateRolledBackHint");
-    if (state === "available" && status?.auto_update_supported) return t("dashboard.updateAvailableHint");
     return "";
   }, [reconnecting, state, status, t]);
 
@@ -301,7 +315,7 @@ export function SystemUpdateNotice() {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">{t("dashboard.updateChannel")}</p>
-                  <p className="mt-1 font-medium">{status.channel || "stable"}</p>
+                  <p className="mt-1 font-medium">{formatChannelLabel(status.channel, t)}</p>
                 </div>
               </div>
 

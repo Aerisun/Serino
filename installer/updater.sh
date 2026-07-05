@@ -13,6 +13,18 @@ updater_current_version() {
   resolve_release_version_value 2>/dev/null || printf '%s' "${AERISUN_RELEASE_VERSION:-${AERISUN_IMAGE_TAG:-unknown}}"
 }
 
+updater_current_channel() {
+  load_release_env_if_present
+  case "${AERISUN_INSTALL_CHANNEL:-stable}" in
+    dev)
+      printf '%s' "dev"
+      ;;
+    *)
+      printf '%s' "stable"
+      ;;
+  esac
+}
+
 updater_latest_default_base_url() {
   if [[ -n "${AERISUN_INSTALL_BASE_URL:-}" ]]; then
     printf '%s' "${AERISUN_INSTALL_BASE_URL%/}"
@@ -76,7 +88,7 @@ updater_status_json() {
 
   python3 - \
     "$(updater_current_version)" \
-    "${AERISUN_INSTALL_CHANNEL:-stable}" \
+    "$(updater_current_channel)" \
     "$([[ -f "${SERINO_UPDATE_SUPPORT_MARKER}" ]] && printf true || printf false)" <<'PY'
 from __future__ import annotations
 
@@ -137,7 +149,7 @@ updater_state_payload() {
     "${state}" \
     "$(updater_current_version)" \
     "${latest_version}" \
-    "${AERISUN_INSTALL_CHANNEL:-stable}" \
+    "$(updater_current_channel)" \
     "${update_available}" \
     "${signature_verified}" \
     "${blocked_reason}" \

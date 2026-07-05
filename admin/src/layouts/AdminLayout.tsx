@@ -35,6 +35,7 @@ import { warmAdminRoute } from "@/lib/adminRouteWarmup";
 import {
   pendingModerationCountQueryOptions,
 } from "@/pages/moderation/moderationQueries";
+import { SystemUpdateNotice } from "@/pages/dashboard/SystemUpdateNotice";
 
 const navGroups = [
   {
@@ -373,7 +374,7 @@ export default function AdminLayout() {
               : "-translate-y-[calc(100%+8px)] pointer-events-none",
           )}
         >
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
             <Button
               variant="ghost"
               size="icon"
@@ -382,11 +383,14 @@ export default function AdminLayout() {
             >
               <Menu className="h-5 w-5" />
             </Button>
-            <span className="text-sm text-muted-foreground">
+            <span className="shrink-0 text-sm text-muted-foreground">
               {t("nav.adminPanel")}
             </span>
+            <div className="min-w-0">
+              <SystemUpdateNotice />
+            </div>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex shrink-0 items-center gap-1">
             <Button
               variant="ghost"
               size="sm"

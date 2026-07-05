@@ -27,7 +27,6 @@ import { useI18n } from "@/i18n";
 import { cn } from "@/lib/utils";
 import { formatDateTimeInBeijing } from "@/lib/time";
 import { dashboardStatsQueryOptions } from "@/pages/dashboard/dashboardQueries";
-import { SystemUpdateNotice } from "@/pages/dashboard/SystemUpdateNotice";
 
 const CONTENT_TYPE_ROUTES: Record<string, string> = {
   post: "/posts",
@@ -212,7 +211,7 @@ export default function DashboardPage() {
         <DashboardLoading />
       ) : (
         <div className="space-y-7">
-          <section className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+          <section className="space-y-1.5">
             <div className="min-w-0 space-y-1.5">
               <h2 className="text-2xl font-semibold tracking-tight text-foreground/95 md:text-3xl">
                 {t(greetingKey())}
@@ -222,7 +221,6 @@ export default function DashboardPage() {
                 <span>{t("dashboard.heroLastSnapshot")} {lastSnapshotAt}</span>
               </p>
             </div>
-            <SystemUpdateNotice />
           </section>
 
           <section className="space-y-3">

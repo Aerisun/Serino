@@ -24,6 +24,10 @@ vi.mock("../src/pages/moderation/moderationQueries", () => ({
   }),
 }));
 
+vi.mock("../src/pages/dashboard/SystemUpdateNotice", () => ({
+  SystemUpdateNotice: () => <button type="button">新版本 v0.1.62</button>,
+}));
+
 function renderLayout() {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -97,5 +101,16 @@ describe("AdminLayout navigation", () => {
       .map((link) => link.textContent?.trim());
 
     expect(managementLinks).toEqual(["审核", "访客", "资源", "备份"]);
+  });
+
+  it("shows update notice in the topbar next to the admin panel title", () => {
+    renderLayout();
+
+    const title = screen.getByText("Serino 管理面板");
+    const topbar = title.closest(".admin-glass-topbar");
+    const updateButton = screen.getByRole("button", { name: "新版本 v0.1.62" });
+
+    expect(topbar).not.toBeNull();
+    expect(topbar?.contains(updateButton)).toBe(true);
   });
 });

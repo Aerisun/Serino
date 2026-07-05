@@ -192,12 +192,21 @@ def test_install_script_rejects_stdin_bootstrap_bundle_with_mismatched_sha256(tm
 
 def test_package_installer_writes_bundle_sha256_to_manifest_and_latest(tmp_path: Path) -> None:
     dist_dir = tmp_path / "installer-dist"
+    release_notes_file = tmp_path / "release-notes.md"
+    release_notes_content = """Release v9.9.9
+
+Overview
+
+本次发布用于验证 installer 发布说明透传。
+"""
+    release_notes_file.write_text(release_notes_content, encoding="utf-8")
     env = os.environ.copy()
     env.update(
         {
             "AERISUN_INSTALL_DIST_DIR": str(dist_dir),
             "AERISUN_RELEASE_TAG": "v9.9.9",
             "AERISUN_RELEASE_VERSION": "9.9.9",
+            "AERISUN_RELEASE_NOTES_FILE": str(release_notes_file),
             "AERISUN_INSTALL_CHANNEL": "stable",
             "AERISUN_IMAGE_REGISTRY": "registry.example.com/serino",
             "AERISUN_INSTALL_BASE_URL": "https://install.example.com/serino",
@@ -238,7 +247,11 @@ def test_package_installer_writes_bundle_sha256_to_manifest_and_latest(tmp_path:
     assert release_payload["version"] == "v9.9.9"
     assert release_payload["bundle_sha256"] == bundle_sha256
     assert release_payload["signature"] is None
-    assert "v9.9.9" in release_notes.read_text(encoding="utf-8")
+    assert release_payload["signed"]["release_notes_sha256"] == hashlib.sha256(
+        release_notes_content.encode("utf-8")
+    ).hexdigest()
+    assert release_notes.read_text(encoding="utf-8") == release_notes_content
+    assert version_release_notes.read_text(encoding="utf-8") == release_notes_content
 
 
 def test_package_installer_requires_release_signing_when_enabled(tmp_path: Path) -> None:

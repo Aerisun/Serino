@@ -163,6 +163,8 @@ export const enTranslations: TranslationDict = {
     "dashboard.updateTargetVersion": "Target version",
     "dashboard.updateReleasedAt": "Released at",
     "dashboard.updateChannel": "Channel",
+    "dashboard.updateChannelStable": "Stable",
+    "dashboard.updateChannelDev": "Development",
     "dashboard.updateSignatureTrusted": "Update metadata signature verified",
     "dashboard.updateSignatureBlocked": "Signature is not verified, so background update is blocked",
     "dashboard.updateNotes": "Release notes",

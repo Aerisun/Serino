@@ -1044,6 +1044,99 @@ cmd_updater status --json
     assert "legacy latest.env" in payload["auto_update_blocked_reason"]
 
 
+def test_updater_check_uses_dev_channel_base_url_from_env_file(tmp_path: Path):
+    env_file = tmp_path / "serino.env"
+    url_log = tmp_path / "urls.log"
+    env_file.write_text(
+        "\n".join(
+            [
+                "AERISUN_INSTALL_CHANNEL=dev",
+                "AERISUN_INSTALL_BASE_URL=https://updates.example.test/serino/dev",
+                "AERISUN_RELEASE_VERSION=0.1.60",
+                "AERISUN_IMAGE_TAG=0.1.60",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    output = run_installer_bash(
+        f"""
+source installer/bin/sercli
+
+AERISUN_ENV_FILE='{env_file}'
+AERISUN_DATA_DIR='{tmp_path}/data'
+SERINO_LOG_ROOT='{tmp_path}/log'
+SERINO_SERVICE_USER="$(command id -un)"
+SERINO_SERVICE_GROUP="$(command id -gn)"
+
+run_as_root() {{
+  if [[ "$1" == chown ]]; then
+    return 0
+  fi
+  "$@"
+}}
+
+id() {{
+  if [[ "$1" == "-u" ]]; then
+    printf '1000\\n'
+    return 0
+  fi
+  command id "$@"
+}}
+
+release_metadata_curl() {{
+  printf '%s\\n' "$1" >> '{url_log}'
+  case "$1" in
+    https://updates.example.test/serino/dev/latest.json)
+      return 22
+      ;;
+    https://updates.example.test/serino/dev/latest.env)
+      printf 'AERISUN_INSTALL_VERSION=v0.1.61\\n'
+      return 0
+      ;;
+    https://updates.example.test/serino/dev/v0.1.61/aerisun-installer-manifest.env)
+      cat <<'EOF'
+AERISUN_INSTALL_CHANNEL=dev
+AERISUN_INSTALL_VERSION=v0.1.61
+AERISUN_IMAGE_TAG=0.1.61
+AERISUN_IMAGE_REGISTRY=registry.example.com/serino-dev
+AERISUN_API_IMAGE_NAME=serino-dev-api
+AERISUN_WEB_IMAGE_NAME=serino-dev-web
+AERISUN_WALINE_IMAGE_NAME=serino-dev-waline
+AERISUN_INSTALL_BUNDLE_SHA256={"d" * 64}
+EOF
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}}
+
+cmd_updater check >/dev/null
+cmd_updater status --json
+printf '%s\\n' '--- urls ---'
+cat '{url_log}'
+"""
+    )
+
+    status_text, urls_text = output.split("--- urls ---\n", maxsplit=1)
+    payload = json.loads(status_text)
+    urls = urls_text.strip().splitlines()
+    assert payload["state"] == "available"
+    assert payload["channel"] == "dev"
+    assert payload["latest_version"] == "v0.1.61"
+    assert payload["release"]["manifest_url"] == (
+        "https://updates.example.test/serino/dev/v0.1.61/aerisun-installer-manifest.env"
+    )
+    assert urls == [
+        "https://updates.example.test/serino/dev/latest.json",
+        "https://updates.example.test/serino/dev/latest.env",
+        "https://updates.example.test/serino/dev/v0.1.61/aerisun-installer-manifest.env",
+    ]
+
+
 def test_systemd_updater_units_are_rendered_with_path_and_timer(tmp_path: Path):
     systemd_dir = tmp_path / "systemd"
     systemd_dir.mkdir()
@@ -1926,6 +2019,9 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     assert '"release.json"' in package_text
     assert '"release-notes.md"' in package_text
     assert "update-trusted-public-key.b64" in upload_text
+    assert "Resolve GitHub release notes" in workflow_text
+    assert "gh api \"repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}\"" in workflow_text
+    assert "AERISUN_RELEASE_NOTES_FILE" in workflow_text
     assert 'AERISUN_UPDATE_SIGNING_REQUIRED: "true"' in workflow_text
     assert "secrets.AERISUN_UPDATE_SIGNING_PRIVATE_KEY_B64" in workflow_text
     assert "vars.AERISUN_UPDATE_TRUSTED_PUBLIC_KEY_B64" in workflow_text
