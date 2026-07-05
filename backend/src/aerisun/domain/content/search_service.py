@@ -9,7 +9,8 @@ from sqlalchemy.orm import Session
 
 from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
 from aerisun.domain.content.schemas import SearchResponse, SearchResultItem
-from aerisun.domain.diary_access.service import diary_private_enabled
+from aerisun.domain.diary_access.service import current_site_user_can_view_diary
+from aerisun.domain.site_auth.models import SiteUser, SiteUserSession
 
 SNIPPET_RADIUS = 120
 
@@ -82,14 +83,21 @@ def _snippet_source(row, first_keyword: str) -> str:
     return body or summary
 
 
-def search_public_content(session: Session, query: str, limit: int = 10) -> SearchResponse:
+def search_public_content(
+    session: Session,
+    query: str,
+    limit: int = 10,
+    *,
+    current_user: SiteUser | None = None,
+    current_site_session: SiteUserSession | None = None,
+) -> SearchResponse:
     keywords = _split_keywords(query)
     if not keywords:
         return SearchResponse(items=[], total=0)
 
     results: list[SearchResultItem] = []
 
-    include_diary = not diary_private_enabled(session)
+    include_diary = current_site_user_can_view_diary(session, current_user, current_site_session)
     for model, type_name in _CONTENT_TYPES:
         if type_name == "diary" and not include_diary:
             continue

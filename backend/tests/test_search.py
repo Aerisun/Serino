@@ -1,10 +1,25 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from aerisun.core.db import get_session_factory
-from aerisun.core.time import BEIJING_TZ
+from aerisun.core.time import BEIJING_TZ, shanghai_now
 from aerisun.domain.content.models import PostEntry
+from aerisun.domain.diary_access.models import DiaryAccessRequest
+from aerisun.domain.site_auth.models import SiteUser
+
+
+def _login_site_user(client, *, email: str = "search-reader@example.com", display_name: str = "Search Reader") -> None:
+    response = client.post(
+        "/api/v1/site-auth/email",
+        json={
+            "email": email,
+            "display_name": display_name,
+            "avatar_url": f"/api/v1/avatars/10.x/notionists/svg?seed={display_name}",
+        },
+    )
+    assert response.status_code == 200
+    assert response.json()["authenticated"] is True
 
 
 def test_search_returns_results(client):
@@ -55,3 +70,37 @@ def test_search_splits_keywords_and_highlights_terms_in_first_keyword_snippet(cl
     assert "<mark>晚霞</mark>" in item["snippet"]
     assert "<mark>红色</mark>" in item["snippet"]
     assert "后面才写到" in item["snippet"]
+
+
+def test_search_excludes_diary_body_matches_for_logged_in_user_without_diary_access(client):
+    _login_site_user(client, email="search-no-access@example.com", display_name="No Access")
+
+    response = client.get("/api/v1/site/search", params={"q": "花苞"})
+
+    assert response.status_code == 200
+    assert all(item["type"] != "diary" for item in response.json()["items"])
+
+
+def test_search_includes_diary_body_matches_for_user_with_diary_access(client):
+    _login_site_user(client)
+
+    session_factory = get_session_factory()
+    with session_factory() as session:
+        user = session.query(SiteUser).filter(SiteUser.email == "search-reader@example.com").one()
+        session.add(
+            DiaryAccessRequest(
+                site_user_id=user.id,
+                reason="Search should include accessible diary content.",
+                status="approved",
+                granted_at=shanghai_now(),
+                expires_at=shanghai_now() + timedelta(days=7),
+            )
+        )
+        session.commit()
+
+    response = client.get("/api/v1/site/search", params={"q": "花苞"})
+
+    assert response.status_code == 200
+    diary_item = next(item for item in response.json()["items"] if item["slug"] == "spring-equinox-and-warm-light")
+    assert diary_item["type"] == "diary"
+    assert "<mark>花苞</mark>" in diary_item["snippet"]
