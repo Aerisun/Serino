@@ -27,6 +27,7 @@ import { useI18n } from "@/i18n";
 import { cn } from "@/lib/utils";
 import { formatDateTimeInBeijing } from "@/lib/time";
 import { dashboardStatsQueryOptions } from "@/pages/dashboard/dashboardQueries";
+import { SystemUpdateNotice } from "@/pages/dashboard/SystemUpdateNotice";
 
 const CONTENT_TYPE_ROUTES: Record<string, string> = {
   post: "/posts",
@@ -211,14 +212,17 @@ export default function DashboardPage() {
         <DashboardLoading />
       ) : (
         <div className="space-y-7">
-          <section className="space-y-1.5">
-            <h2 className="text-2xl font-semibold tracking-tight text-foreground/95 md:text-3xl">
-              {t(greetingKey())}
-            </h2>
-            <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
-              <span>{t("dashboard.welcomeSubtitle")}</span>
-              <span>{t("dashboard.heroLastSnapshot")} {lastSnapshotAt}</span>
-            </p>
+          <section className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div className="min-w-0 space-y-1.5">
+              <h2 className="text-2xl font-semibold tracking-tight text-foreground/95 md:text-3xl">
+                {t(greetingKey())}
+              </h2>
+              <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+                <span>{t("dashboard.welcomeSubtitle")}</span>
+                <span>{t("dashboard.heroLastSnapshot")} {lastSnapshotAt}</span>
+              </p>
+            </div>
+            <SystemUpdateNotice />
           </section>
 
           <section className="space-y-3">

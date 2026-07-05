@@ -178,6 +178,30 @@ sercli migrate status
 生产上建议始终显式指定版本号，不建议裸跑 `sercli upgrade` 去追踪渠道最新。
 如果升级窗口比默认就绪等待更长，可以显式传入 `sercli upgrade --ready-timeout 300 vX.Y.Z`。
 
+## 后台自更新签名
+
+后台一键升级只信任 signed release metadata。发布任务会用 `AERISUN_UPDATE_SIGNING_PRIVATE_KEY_B64` 对 `release.json` 的 `signed` payload 做 `rsa-sha256` 签名，并把对应公钥写入 `install.sh`、`aerisun-installer-manifest.env` 和 `update-trusted-public-key.b64`。
+
+stable 和 dev 渠道使用同一套签名与校验规则。两者只在 `channel`、分发 base URL、镜像名上不同：dev 使用 `/dev` 发布路径和 `serino-dev-*` 镜像。
+
+GitHub Actions 中必须配置：
+
+- Repository secret：`AERISUN_UPDATE_SIGNING_PRIVATE_KEY_B64`
+- Repository variable：`AERISUN_UPDATE_SIGNATURE_KEY_ID`，例如 `serino-release-2026-07`
+
+`AERISUN_UPDATE_TRUSTED_PUBLIC_KEY_B64` 可以配置为 Repository variable，也可以留空。留空时发布脚本会从私钥派生公钥；如果配置了它，发布脚本会先校验公钥和私钥是否匹配，不匹配就拒绝发布。
+
+生成一组发布签名 key：
+
+```bash
+openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:3072 -out serino-update-signing-private.pem
+openssl pkey -in serino-update-signing-private.pem -pubout -out serino-update-signing-public.pem
+base64 -w0 serino-update-signing-private.pem
+base64 -w0 serino-update-signing-public.pem
+```
+
+私钥只放 GitHub secret，不提交到仓库。公钥不是秘密，但它是后台升级的信任根，轮换时要确保同一次发布产物里的 metadata、manifest 和安装脚本使用同一把 key。
+
 ### 手工执行 migration
 
 ```bash

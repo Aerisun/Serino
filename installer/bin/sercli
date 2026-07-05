@@ -9,9 +9,13 @@ SERCLI_MAIN_ARGS=()
 # shellcheck disable=SC1091
 source "${INSTALLER_ROOT}/lib/common.sh"
 # shellcheck disable=SC1091
+source "${INSTALLER_ROOT}/lib/download.sh"
+# shellcheck disable=SC1091
 source "${INSTALLER_ROOT}/lib/env.sh"
 # shellcheck disable=SC1091
 source "${INSTALLER_ROOT}/lib/docker.sh"
+# shellcheck disable=SC1091
+source "${INSTALLER_ROOT}/updater.sh"
 
 usage() {
   cat <<'EOF'
@@ -21,6 +25,7 @@ sercli 命令
   sercli status [--verbose|--json]                           查看服务、版本与健康检查
   sercli doctor [--json]                                    执行运行诊断
   sercli upgrade [--check] [--ready-timeout SEC] [vX.Y.Z]   升级到指定版本
+  sercli updater run|check|status [--json]                  后台更新执行器
   sercli uninstall [--force]                                彻底卸载当前安装
 
 观测
@@ -47,7 +52,7 @@ EOF
 
 sercli_command_requires_root() {
   case "${1:-help}" in
-    status|migrate|ps|logs|start|stop|restart|wait|upgrade|uninstall|doctor)
+    status|migrate|ps|logs|start|stop|restart|wait|upgrade|updater|uninstall|doctor)
       return 0
       ;;
     *)
@@ -570,6 +575,9 @@ main() {
       ;;
     upgrade)
       cmd_upgrade "$@"
+      ;;
+    updater)
+      cmd_updater "$@"
       ;;
     uninstall)
       cmd_uninstall "$@"

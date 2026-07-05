@@ -16,6 +16,9 @@ SERINO_SERVICE_GROUP="${SERINO_SERVICE_GROUP:-serino}"
 SERINO_SYSTEMD_UNIT="${SERINO_SYSTEMD_UNIT:-serino.service}"
 SERINO_SYSTEMD_UPGRADE_SERVICE="${SERINO_SYSTEMD_UPGRADE_SERVICE:-serino-upgrade.service}"
 SERINO_SYSTEMD_UPGRADE_TIMER="${SERINO_SYSTEMD_UPGRADE_TIMER:-serino-upgrade.timer}"
+SERINO_SYSTEMD_UPDATER_SERVICE="${SERINO_SYSTEMD_UPDATER_SERVICE:-serino-updater.service}"
+SERINO_SYSTEMD_UPDATER_TIMER="${SERINO_SYSTEMD_UPDATER_TIMER:-serino-updater.timer}"
+SERINO_SYSTEMD_UPDATER_PATH="${SERINO_SYSTEMD_UPDATER_PATH:-serino-updater.path}"
 SERINO_PROXY_FIREWALL_UNIT="${SERINO_PROXY_FIREWALL_UNIT:-mihomo-docker-proxy-firewall.service}"
 SERINO_PROXY_FIREWALL_DROPIN_NAME="${SERINO_PROXY_FIREWALL_DROPIN_NAME:-proxy-firewall.conf}"
 SERINO_BIN_LINK="${SERINO_BIN_LINK:-$([[ "${AERISUN_APP_ROOT}" == "/opt/serino" ]] && printf '%s' '/usr/local/bin/sercli' || printf '%s' "${AERISUN_BIN_ROOT}/sercli")}"
@@ -28,6 +31,18 @@ AERISUN_ENV_FILE="${AERISUN_ENV_FILE:-${SERINO_CONFIG_ROOT}/serino.env}"
 AERISUN_ENV_EXAMPLE_FILE="${AERISUN_ENV_EXAMPLE_FILE:-${AERISUN_APP_ROOT}/.env.production.local.example}"
 AERISUN_INSTALLER_DEST="${AERISUN_INSTALLER_DEST:-${AERISUN_APP_ROOT}/installer}"
 AERISUN_BACKUP_ROOT="${AERISUN_BACKUP_ROOT:-/var/backups/serino}"
+SERINO_UPDATE_DIR_EXPLICIT="${SERINO_UPDATE_DIR+x}"
+SERINO_UPDATE_REQUESTS_DIR_EXPLICIT="${SERINO_UPDATE_REQUESTS_DIR+x}"
+SERINO_UPDATE_STATUS_FILE_EXPLICIT="${SERINO_UPDATE_STATUS_FILE+x}"
+SERINO_UPDATE_RUNS_DIR_EXPLICIT="${SERINO_UPDATE_RUNS_DIR+x}"
+SERINO_UPDATE_SUPPORT_MARKER_EXPLICIT="${SERINO_UPDATE_SUPPORT_MARKER+x}"
+SERINO_UPDATE_LOG_FILE_EXPLICIT="${SERINO_UPDATE_LOG_FILE+x}"
+SERINO_UPDATE_DIR="${SERINO_UPDATE_DIR:-${AERISUN_DATA_DIR}/update}"
+SERINO_UPDATE_REQUESTS_DIR="${SERINO_UPDATE_REQUESTS_DIR:-${SERINO_UPDATE_DIR}/requests}"
+SERINO_UPDATE_STATUS_FILE="${SERINO_UPDATE_STATUS_FILE:-${SERINO_UPDATE_DIR}/status.json}"
+SERINO_UPDATE_RUNS_DIR="${SERINO_UPDATE_RUNS_DIR:-${SERINO_UPDATE_DIR}/runs}"
+SERINO_UPDATE_SUPPORT_MARKER="${SERINO_UPDATE_SUPPORT_MARKER:-${SERINO_UPDATE_DIR}/updater-supported.json}"
+SERINO_UPDATE_LOG_FILE="${SERINO_UPDATE_LOG_FILE:-${SERINO_LOG_ROOT}/updater.log}"
 SERINO_SERVICE_ACCOUNT_MARKER="${SERINO_SERVICE_ACCOUNT_MARKER:-${SERINO_CONFIG_ROOT}/.serino-service-account}"
 AERISUN_INSTALL_BASE_URL="${AERISUN_INSTALL_BASE_URL:-}"
 AERISUN_INSTALL_GITHUB_REPO="${AERISUN_INSTALL_GITHUB_REPO:-Aerisun/Serino}"
@@ -44,6 +59,7 @@ WALINE_PORT="${WALINE_PORT:-8360}"
 AERISUN_INSTALL_DEFAULT_BASE_URL="${AERISUN_INSTALL_DEFAULT_BASE_URL:-https://install.aerisun.top/serino}"
 AERISUN_INSTALL_DEFAULT_DEV_BASE_URL="${AERISUN_INSTALL_DEFAULT_DEV_BASE_URL:-https://install.aerisun.top/serino/dev}"
 AERISUN_INSTALL_DEBUG="${AERISUN_INSTALL_DEBUG:-false}"
+AERISUN_UPDATE_TRUSTED_PUBLIC_KEY_B64="${AERISUN_UPDATE_TRUSTED_PUBLIC_KEY_B64:-}"
 AERISUN_INSTALL_MANIFEST_NAME="${AERISUN_INSTALL_MANIFEST_NAME:-aerisun-installer-manifest.env}"
 AERISUN_INSTALL_BUNDLE_NAME="${AERISUN_INSTALL_BUNDLE_NAME:-aerisun-installer-bundle.tar.gz}"
 AERISUN_INSTALL_ACCESS_MODE="${AERISUN_INSTALL_ACCESS_MODE:-}"
@@ -69,6 +85,27 @@ log_warn() {
 
 log_error() {
   printf '[ERROR] %s\n' "$*" >&2
+}
+
+refresh_update_runtime_paths() {
+  if [[ -z "${SERINO_UPDATE_DIR_EXPLICIT}" ]]; then
+    SERINO_UPDATE_DIR="${AERISUN_DATA_DIR}/update"
+  fi
+  if [[ -z "${SERINO_UPDATE_REQUESTS_DIR_EXPLICIT}" ]]; then
+    SERINO_UPDATE_REQUESTS_DIR="${SERINO_UPDATE_DIR}/requests"
+  fi
+  if [[ -z "${SERINO_UPDATE_STATUS_FILE_EXPLICIT}" ]]; then
+    SERINO_UPDATE_STATUS_FILE="${SERINO_UPDATE_DIR}/status.json"
+  fi
+  if [[ -z "${SERINO_UPDATE_RUNS_DIR_EXPLICIT}" ]]; then
+    SERINO_UPDATE_RUNS_DIR="${SERINO_UPDATE_DIR}/runs"
+  fi
+  if [[ -z "${SERINO_UPDATE_SUPPORT_MARKER_EXPLICIT}" ]]; then
+    SERINO_UPDATE_SUPPORT_MARKER="${SERINO_UPDATE_DIR}/updater-supported.json"
+  fi
+  if [[ -z "${SERINO_UPDATE_LOG_FILE_EXPLICIT}" ]]; then
+    SERINO_UPDATE_LOG_FILE="${SERINO_LOG_ROOT}/updater.log"
+  fi
 }
 
 die() {
@@ -529,7 +566,31 @@ ensure_system_layout() {
   run_as_root install -d -o "${SERINO_SERVICE_USER}" -g "${SERINO_SERVICE_GROUP}" -m 0750 "${AERISUN_DATA_DIR}"
   run_as_root install -d -o root -g root -m 0755 "${SERINO_LOG_ROOT}"
   run_as_root install -d -o root -g root -m 0700 "${AERISUN_BACKUP_ROOT}"
+  ensure_update_runtime_layout
   write_service_account_marker
+}
+
+ensure_update_runtime_layout() {
+  refresh_update_runtime_paths
+  run_as_root install -d -o "${SERINO_SERVICE_USER}" -g "${SERINO_SERVICE_GROUP}" -m 0750 "${SERINO_UPDATE_DIR}"
+  run_as_root install -d -o "${SERINO_SERVICE_USER}" -g "${SERINO_SERVICE_GROUP}" -m 0750 "${SERINO_UPDATE_REQUESTS_DIR}"
+  run_as_root install -d -o "${SERINO_SERVICE_USER}" -g "${SERINO_SERVICE_GROUP}" -m 0750 "${SERINO_UPDATE_RUNS_DIR}"
+  run_as_root mkdir -p "${SERINO_LOG_ROOT}"
+  run_as_root touch "${SERINO_UPDATE_LOG_FILE}"
+  run_as_root chown root:"${SERINO_SERVICE_GROUP}" "${SERINO_UPDATE_LOG_FILE}"
+  run_as_root chmod 0660 "${SERINO_UPDATE_LOG_FILE}"
+  run_as_root bash -lc '
+    set -euo pipefail
+    marker="$1"
+    service_user="$2"
+    service_group="$3"
+    umask 027
+    cat > "${marker}" <<EOF
+{"schema_version":1,"supported":true}
+EOF
+    chown "${service_user}:${service_group}" "${marker}"
+    chmod 0640 "${marker}"
+  ' bash "${SERINO_UPDATE_SUPPORT_MARKER}" "${SERINO_SERVICE_USER}" "${SERINO_SERVICE_GROUP}"
 }
 
 install_proxy_firewall_systemd_dropin() {
@@ -555,16 +616,26 @@ install_proxy_firewall_systemd_dropin() {
 
 install_systemd_units() {
   local source_root="${1:-${AERISUN_TEMPLATE_ROOT}}"
+  refresh_update_runtime_paths
   local service_template="${source_root}/installer/systemd/serino.service"
   local upgrade_service_template="${source_root}/installer/systemd/serino-upgrade.service"
   local timer_template="${source_root}/installer/systemd/serino-upgrade.timer"
+  local updater_service_template="${source_root}/installer/systemd/serino-updater.service"
+  local updater_timer_template="${source_root}/installer/systemd/serino-updater.timer"
+  local updater_path_template="${source_root}/installer/systemd/serino-updater.path"
   local service_tmp=""
   local upgrade_service_tmp=""
   local timer_tmp=""
+  local updater_service_tmp=""
+  local updater_timer_tmp=""
+  local updater_path_tmp=""
 
   service_tmp="$(make_temp_file)"
   upgrade_service_tmp="$(make_temp_file)"
   timer_tmp="$(make_temp_file)"
+  updater_service_tmp="$(make_temp_file)"
+  updater_timer_tmp="$(make_temp_file)"
+  updater_path_tmp="$(make_temp_file)"
 
   python3 - "${service_template}" "${service_tmp}" "${AERISUN_APP_ROOT}" "${AERISUN_COMPOSE_PROJECT_NAME}" "${AERISUN_RENDERED_COMPOSE_FILE}" <<'PY'
 from pathlib import Path
@@ -601,11 +672,41 @@ PY
 
   cp "${timer_template}" "${timer_tmp}"
 
+  python3 - "${updater_service_template}" "${updater_service_tmp}" "${SERINO_BIN_LINK}" <<'PY'
+from pathlib import Path
+import sys
+
+template = Path(sys.argv[1]).read_text(encoding="utf-8")
+template = template.replace("__SERINO_BIN_LINK__", sys.argv[3])
+Path(sys.argv[2]).write_text(template, encoding="utf-8")
+PY
+
+  cp "${updater_timer_template}" "${updater_timer_tmp}"
+
+  python3 - "${updater_path_template}" "${updater_path_tmp}" "${SERINO_UPDATE_REQUESTS_DIR}" "${SERINO_SYSTEMD_UPDATER_SERVICE}" <<'PY'
+from pathlib import Path
+import sys
+
+template = Path(sys.argv[1]).read_text(encoding="utf-8")
+replacements = {
+    "__SERINO_UPDATE_REQUESTS_DIR__": sys.argv[3],
+    "__SERINO_SYSTEMD_UPDATER_SERVICE__": sys.argv[4],
+}
+
+for key, value in replacements.items():
+    template = template.replace(key, value)
+
+Path(sys.argv[2]).write_text(template, encoding="utf-8")
+PY
+
   run_as_root install -m 0644 "${service_tmp}" "/etc/systemd/system/${SERINO_SYSTEMD_UNIT}"
   run_as_root install -m 0644 "${upgrade_service_tmp}" "/etc/systemd/system/${SERINO_SYSTEMD_UPGRADE_SERVICE}"
   run_as_root install -m 0644 "${timer_tmp}" "/etc/systemd/system/${SERINO_SYSTEMD_UPGRADE_TIMER}"
+  run_as_root install -m 0644 "${updater_service_tmp}" "/etc/systemd/system/${SERINO_SYSTEMD_UPDATER_SERVICE}"
+  run_as_root install -m 0644 "${updater_timer_tmp}" "/etc/systemd/system/${SERINO_SYSTEMD_UPDATER_TIMER}"
+  run_as_root install -m 0644 "${updater_path_tmp}" "/etc/systemd/system/${SERINO_SYSTEMD_UPDATER_PATH}"
   install_proxy_firewall_systemd_dropin
-  rm -f "${service_tmp}" "${upgrade_service_tmp}" "${timer_tmp}"
+  rm -f "${service_tmp}" "${upgrade_service_tmp}" "${timer_tmp}" "${updater_service_tmp}" "${updater_timer_tmp}" "${updater_path_tmp}"
   run_as_root systemctl daemon-reload
 }
 

@@ -240,13 +240,24 @@ check_path_contract() {
 }
 
 check_directories() {
+  refresh_update_runtime_paths
   check_path_contract "${AERISUN_APP_ROOT}" "root" "root" "755" "path.app_root" "sudo install -d -o root -g root -m 0755 ${AERISUN_APP_ROOT}"
   check_path_contract "${AERISUN_INSTALLER_DEST}" "root" "root" "755" "path.installer_root" "sudo install -d -o root -g root -m 0755 ${AERISUN_INSTALLER_DEST}"
   check_path_contract "${SERINO_CONFIG_ROOT}" "root" "${SERINO_SERVICE_GROUP}" "750" "path.config_root" "sudo install -d -o root -g ${SERINO_SERVICE_GROUP} -m 0750 ${SERINO_CONFIG_ROOT}"
   check_path_contract "${AERISUN_ENV_FILE}" "root" "${SERINO_SERVICE_GROUP}" "640" "path.env_file" "sudo cp ${AERISUN_ENV_EXAMPLE_FILE} ${AERISUN_ENV_FILE} && sudo chown root:${SERINO_SERVICE_GROUP} ${AERISUN_ENV_FILE} && sudo chmod 0640 ${AERISUN_ENV_FILE}"
   check_path_contract "${AERISUN_DATA_DIR}" "${SERINO_SERVICE_USER}" "${SERINO_SERVICE_GROUP}" "750" "path.data_root" "sudo install -d -o ${SERINO_SERVICE_USER} -g ${SERINO_SERVICE_GROUP} -m 0750 ${AERISUN_DATA_DIR}"
+  check_path_contract "${SERINO_UPDATE_DIR}" "${SERINO_SERVICE_USER}" "${SERINO_SERVICE_GROUP}" "750" "path.update_root" "sudo install -d -o ${SERINO_SERVICE_USER} -g ${SERINO_SERVICE_GROUP} -m 0750 ${SERINO_UPDATE_DIR}"
+  check_path_contract "${SERINO_UPDATE_REQUESTS_DIR}" "${SERINO_SERVICE_USER}" "${SERINO_SERVICE_GROUP}" "750" "path.update_requests" "sudo install -d -o ${SERINO_SERVICE_USER} -g ${SERINO_SERVICE_GROUP} -m 0750 ${SERINO_UPDATE_REQUESTS_DIR}"
+  check_path_contract "${SERINO_UPDATE_RUNS_DIR}" "${SERINO_SERVICE_USER}" "${SERINO_SERVICE_GROUP}" "750" "path.update_runs" "sudo install -d -o ${SERINO_SERVICE_USER} -g ${SERINO_SERVICE_GROUP} -m 0750 ${SERINO_UPDATE_RUNS_DIR}"
   check_path_contract "${SERINO_LOG_ROOT}" "root" "root" "755" "path.log_root" "sudo install -d -o root -g root -m 0755 ${SERINO_LOG_ROOT}"
+  check_path_contract "${SERINO_UPDATE_LOG_FILE}" "root" "${SERINO_SERVICE_GROUP}" "660" "path.update_log" "sudo touch ${SERINO_UPDATE_LOG_FILE} && sudo chown root:${SERINO_SERVICE_GROUP} ${SERINO_UPDATE_LOG_FILE} && sudo chmod 0660 ${SERINO_UPDATE_LOG_FILE}"
   check_path_contract "${AERISUN_BACKUP_ROOT}" "root" "root" "700" "path.backup_root" "sudo install -d -o root -g root -m 0700 ${AERISUN_BACKUP_ROOT}"
+
+  if [[ -f "${SERINO_UPDATE_SUPPORT_MARKER}" ]]; then
+    record_check "ok" "path.update_support_marker" "后台 updater 支持标记已存在。" ""
+  else
+    record_check "fail" "path.update_support_marker" "缺少后台 updater 支持标记，管理台不会启用一键升级。" "sercli doctor 会在重装当前安装器后自动创建；也可执行 sudo install -d -o ${SERINO_SERVICE_USER} -g ${SERINO_SERVICE_GROUP} -m 0750 ${SERINO_UPDATE_DIR}"
+  fi
 }
 
 check_primary_service_unit_content() {
@@ -287,6 +298,41 @@ check_upgrade_timer_unit_content() {
   fi
 }
 
+check_updater_service_unit_content() {
+  local unit_file="$1"
+  local fix="重新安装当前版本的 ${SERINO_SYSTEMD_UPDATER_SERVICE} 后执行 sudo systemctl daemon-reload"
+
+  if grep -Fq "${SERINO_BIN_LINK}" "${unit_file}" \
+    && grep -Eq '^ExecStart=.*[[:space:]]updater[[:space:]]+run([[:space:]]|$)' "${unit_file}"; then
+    record_check "ok" "systemd.${SERINO_SYSTEMD_UPDATER_SERVICE}.content" "${SERINO_SYSTEMD_UPDATER_SERVICE} 会由宿主执行器处理后台更新请求。" ""
+  else
+    record_check "warn" "systemd.${SERINO_SYSTEMD_UPDATER_SERVICE}.content" "${SERINO_SYSTEMD_UPDATER_SERVICE} ExecStart 不是预期的 updater run。" "${fix}"
+  fi
+}
+
+check_updater_timer_unit_content() {
+  local unit_file="$1"
+  local fix="重新安装当前版本的 ${SERINO_SYSTEMD_UPDATER_TIMER} 后执行 sudo systemctl daemon-reload"
+
+  if grep -Fq "OnCalendar=hourly" "${unit_file}" && grep -Fq "Persistent=true" "${unit_file}"; then
+    record_check "ok" "systemd.${SERINO_SYSTEMD_UPDATER_TIMER}.content" "${SERINO_SYSTEMD_UPDATER_TIMER} timer 调度内容符合预期。" ""
+  else
+    record_check "warn" "systemd.${SERINO_SYSTEMD_UPDATER_TIMER}.content" "${SERINO_SYSTEMD_UPDATER_TIMER} 调度内容与当前模板不完全一致。" "${fix}"
+  fi
+}
+
+check_updater_path_unit_content() {
+  local unit_file="$1"
+  local fix="重新安装当前版本的 ${SERINO_SYSTEMD_UPDATER_PATH} 后执行 sudo systemctl daemon-reload"
+
+  if grep -Fq "DirectoryNotEmpty=${SERINO_UPDATE_REQUESTS_DIR}" "${unit_file}" \
+    && grep -Fq "Unit=${SERINO_SYSTEMD_UPDATER_SERVICE}" "${unit_file}"; then
+    record_check "ok" "systemd.${SERINO_SYSTEMD_UPDATER_PATH}.content" "${SERINO_SYSTEMD_UPDATER_PATH} 会监听更新请求目录。" ""
+  else
+    record_check "warn" "systemd.${SERINO_SYSTEMD_UPDATER_PATH}.content" "${SERINO_SYSTEMD_UPDATER_PATH} 监听路径或触发服务与当前模板不一致。" "${fix}"
+  fi
+}
+
 check_symlink_and_units() {
   if [[ "$(readlink -f "${SERINO_BIN_LINK}" 2>/dev/null || true)" == "${AERISUN_INSTALLER_DEST}/bin/sercli" ]]; then
     record_check "ok" "sercli.link" "sercli 命令入口已指向当前安装目录。" ""
@@ -300,7 +346,10 @@ check_symlink_and_units() {
   for unit in \
     "${SERINO_SYSTEMD_UNIT}" \
     "${SERINO_SYSTEMD_UPGRADE_SERVICE}" \
-    "${SERINO_SYSTEMD_UPGRADE_TIMER}"; do
+    "${SERINO_SYSTEMD_UPGRADE_TIMER}" \
+    "${SERINO_SYSTEMD_UPDATER_SERVICE}" \
+    "${SERINO_SYSTEMD_UPDATER_TIMER}" \
+    "${SERINO_SYSTEMD_UPDATER_PATH}"; do
     source_name="${unit}"
     unit_file="/etc/systemd/system/${unit}"
     if [[ -f "${unit_file}" ]]; then
@@ -314,6 +363,15 @@ check_symlink_and_units() {
           ;;
         "${SERINO_SYSTEMD_UPGRADE_TIMER}")
           check_upgrade_timer_unit_content "${unit_file}"
+          ;;
+        "${SERINO_SYSTEMD_UPDATER_SERVICE}")
+          check_updater_service_unit_content "${unit_file}"
+          ;;
+        "${SERINO_SYSTEMD_UPDATER_TIMER}")
+          check_updater_timer_unit_content "${unit_file}"
+          ;;
+        "${SERINO_SYSTEMD_UPDATER_PATH}")
+          check_updater_path_unit_content "${unit_file}"
           ;;
       esac
     else

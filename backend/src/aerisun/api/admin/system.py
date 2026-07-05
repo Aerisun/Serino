@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request, status
 from sqlalchemy.orm import Session
 
 from aerisun.api.request_base import public_base_url_from_request
@@ -123,6 +123,10 @@ from aerisun.domain.ops.schemas import (
     ConfigRevisionRestoreWrite,
     EnhancedDashboardStats,
     SystemInfo,
+    SystemUpdateCheckWrite,
+    SystemUpdateRequestRead,
+    SystemUpdateStatusRead,
+    SystemUpdateUpgradeWrite,
     VisitorRecordGroupRead,
     VisitorRecordRead,
 )
@@ -136,6 +140,21 @@ from aerisun.domain.ops.service import list_visitor_record_groups as _list_visit
 from aerisun.domain.ops.service import list_visitor_records as _list_visitor_records
 from aerisun.domain.ops.service import restore_config_revision as _restore_config_revision
 from aerisun.domain.ops.service import warm_visit_record_geo_cache as _warm_visit_record_geo_cache
+from aerisun.domain.ops.update_service import (
+    UpdateRequestError,
+)
+from aerisun.domain.ops.update_service import (
+    cancel_update_request as _cancel_update_request,
+)
+from aerisun.domain.ops.update_service import (
+    get_update_status as _get_update_status,
+)
+from aerisun.domain.ops.update_service import (
+    queue_update_check as _queue_update_check,
+)
+from aerisun.domain.ops.update_service import (
+    queue_update_upgrade as _queue_update_upgrade,
+)
 
 from .deps import get_current_admin
 from .integrations_schemas import AdminAgentUsageRead, FeedLinkCollectionRead, FeedLinkRead
@@ -602,6 +621,60 @@ def dashboard_stats(
     session: Session = Depends(get_session),
 ) -> Any:
     return _get_dashboard_stats(session, summary_only=summary_only)
+
+
+@router.get("/updates/status", response_model=SystemUpdateStatusRead, summary="获取系统更新状态")
+def update_status(
+    _admin: AdminUser = Depends(get_current_admin),
+) -> SystemUpdateStatusRead:
+    return _get_update_status()
+
+
+@router.post(
+    "/updates/check",
+    response_model=SystemUpdateRequestRead,
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="请求检查系统更新",
+)
+def check_updates(
+    payload: SystemUpdateCheckWrite,
+    _admin: AdminUser = Depends(get_current_admin),
+) -> SystemUpdateRequestRead:
+    try:
+        return _queue_update_check(payload)
+    except UpdateRequestError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
+
+
+@router.post(
+    "/updates/upgrade",
+    response_model=SystemUpdateRequestRead,
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="请求升级到指定版本",
+)
+def upgrade_system(
+    payload: SystemUpdateUpgradeWrite,
+    _admin: AdminUser = Depends(get_current_admin),
+) -> SystemUpdateRequestRead:
+    try:
+        return _queue_update_upgrade(payload)
+    except UpdateRequestError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
+
+
+@router.delete(
+    "/updates/requests/{request_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="取消尚未执行的更新请求",
+)
+def cancel_queued_update_request(
+    request_id: str,
+    _admin: AdminUser = Depends(get_current_admin),
+) -> None:
+    try:
+        _cancel_update_request(request_id)
+    except UpdateRequestError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
 
 
 @router.get("/visitor-records", response_model=PaginatedResponse[VisitorRecordRead], summary="获取访客访问记录")

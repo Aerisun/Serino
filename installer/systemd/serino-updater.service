@@ -1,0 +1,8 @@
+[Unit]
+Description=Serino Background Updater
+After=network-online.target docker.service serino.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=__SERINO_BIN_LINK__ updater run

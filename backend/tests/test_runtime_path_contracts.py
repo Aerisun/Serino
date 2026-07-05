@@ -865,6 +865,233 @@ cmd_uninstall --force
     ]
 
 
+def test_sercli_updater_status_reads_persistent_status(tmp_path: Path):
+    status_dir = tmp_path / "data" / "update"
+    status_dir.mkdir(parents=True)
+    (status_dir / "status.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "state": "available",
+                "current_version": "v1.0.0",
+                "latest_version": "v1.2.3",
+                "channel": "stable",
+                "update_available": True,
+                "auto_update_supported": True,
+                "signature_verified": True,
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    output = run_installer_bash(
+        f"""
+source installer/bin/sercli
+
+AERISUN_DATA_DIR='{tmp_path}/data'
+cmd_updater status --json
+"""
+    )
+
+    payload = json.loads(output)
+    assert payload["state"] == "available"
+    assert payload["latest_version"] == "v1.2.3"
+
+
+def test_release_manifest_rejects_bundle_sha_mismatch_with_signed_metadata(tmp_path: Path):
+    manifest = tmp_path / "manifest.env"
+    manifest.write_text(
+        "\n".join(
+            [
+                "AERISUN_INSTALL_CHANNEL=stable",
+                "AERISUN_INSTALL_VERSION=v9.9.9",
+                "AERISUN_IMAGE_TAG=9.9.9",
+                "AERISUN_IMAGE_REGISTRY=registry.example.com/serino",
+                "AERISUN_API_IMAGE_NAME=serino-api",
+                "AERISUN_WEB_IMAGE_NAME=serino-web",
+                "AERISUN_WALINE_IMAGE_NAME=serino-waline",
+                f"AERISUN_INSTALL_BUNDLE_SHA256={'b' * 64}",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    result = run_installer_bash_result(
+        f"""
+source installer/lib/common.sh
+source installer/lib/download.sh
+
+download_release_asset() {{
+  cp '{manifest}' "$3"
+}}
+
+AERISUN_EXPECTED_INSTALL_BUNDLE_SHA256='{"a" * 64}'
+load_release_manifest v9.9.9 '{tmp_path}/resolved.env'
+"""
+    )
+
+    assert result.returncode != 0
+    assert "signed release metadata" in result.stderr
+
+
+def test_release_manifest_rejects_trusted_public_key_mismatch_with_signed_metadata(tmp_path: Path):
+    manifest = tmp_path / "manifest.env"
+    manifest.write_text(
+        "\n".join(
+            [
+                "AERISUN_INSTALL_CHANNEL=stable",
+                "AERISUN_INSTALL_VERSION=v9.9.9",
+                "AERISUN_IMAGE_TAG=9.9.9",
+                "AERISUN_IMAGE_REGISTRY=registry.example.com/serino",
+                "AERISUN_API_IMAGE_NAME=serino-api",
+                "AERISUN_WEB_IMAGE_NAME=serino-web",
+                "AERISUN_WALINE_IMAGE_NAME=serino-waline",
+                f"AERISUN_INSTALL_BUNDLE_SHA256={'a' * 64}",
+                "AERISUN_UPDATE_TRUSTED_PUBLIC_KEY_B64=QUJDRA==",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    result = run_installer_bash_result(
+        f"""
+source installer/lib/common.sh
+source installer/lib/download.sh
+
+download_release_asset() {{
+  cp '{manifest}' "$3"
+}}
+
+AERISUN_EXPECTED_INSTALL_BUNDLE_SHA256='{"a" * 64}'
+AERISUN_EXPECTED_UPDATE_TRUSTED_PUBLIC_KEY_B64='RUZHSA=='
+load_release_manifest v9.9.9 '{tmp_path}/resolved.env'
+"""
+    )
+
+    assert result.returncode != 0
+    assert "trusted public key" in result.stderr
+
+
+def test_updater_check_falls_back_to_legacy_latest_env_for_unsigned_notification(tmp_path: Path):
+    output = run_installer_bash(
+        f"""
+source installer/bin/sercli
+
+AERISUN_DATA_DIR='{tmp_path}/data'
+SERINO_LOG_ROOT='{tmp_path}/log'
+SERINO_SERVICE_USER="$(command id -un)"
+SERINO_SERVICE_GROUP="$(command id -gn)"
+AERISUN_RELEASE_VERSION='0.1.60'
+AERISUN_IMAGE_TAG='0.1.60'
+
+run_as_root() {{
+  if [[ "$1" == chown ]]; then
+    return 0
+  fi
+  "$@"
+}}
+
+id() {{
+  if [[ "$1" == "-u" ]]; then
+    printf '1000\\n'
+    return 0
+  fi
+  command id "$@"
+}}
+
+release_metadata_curl() {{
+  case "$1" in
+    */latest.json)
+      return 22
+      ;;
+    */latest.env)
+      printf 'AERISUN_INSTALL_VERSION=v0.1.61\\n'
+      return 0
+      ;;
+    */v0.1.61/aerisun-installer-manifest.env)
+      cat <<'EOF'
+AERISUN_INSTALL_CHANNEL=stable
+AERISUN_INSTALL_VERSION=v0.1.61
+AERISUN_IMAGE_TAG=0.1.61
+AERISUN_IMAGE_REGISTRY=registry.example.com/serino
+AERISUN_API_IMAGE_NAME=serino-api
+AERISUN_WEB_IMAGE_NAME=serino-web
+AERISUN_WALINE_IMAGE_NAME=serino-waline
+AERISUN_INSTALL_BUNDLE_SHA256={"c" * 64}
+EOF
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}}
+
+cmd_updater check >/dev/null
+cmd_updater status --json
+"""
+    )
+
+    payload = json.loads(output)
+    assert payload["state"] == "available"
+    assert payload["latest_version"] == "v0.1.61"
+    assert payload["update_available"] is True
+    assert payload["signature_verified"] is False
+    assert payload["auto_update_supported"] is False
+    assert "legacy latest.env" in payload["auto_update_blocked_reason"]
+
+
+def test_systemd_updater_units_are_rendered_with_path_and_timer(tmp_path: Path):
+    systemd_dir = tmp_path / "systemd"
+    systemd_dir.mkdir()
+
+    completed = run_installer_bash(
+        f"""
+source installer/lib/common.sh
+
+AERISUN_APP_ROOT='{tmp_path}/app'
+AERISUN_DATA_DIR='{tmp_path}/data'
+AERISUN_RENDERED_COMPOSE_FILE='{tmp_path}/app/docker-compose.runtime.yml'
+SERINO_BIN_LINK='{tmp_path}/bin/sercli'
+SERINO_SYSTEMD_UNIT='serino.service'
+SERINO_SYSTEMD_UPDATER_SERVICE='serino-updater.service'
+SERINO_SYSTEMD_UPDATER_TIMER='serino-updater.timer'
+SERINO_SYSTEMD_UPDATER_PATH='serino-updater.path'
+
+run_as_root() {{
+  if [[ "$1" == install ]]; then
+    if [[ "$2" == "-m" ]]; then
+      cp "$4" '{systemd_dir}'/"$(basename "$5")"
+      return 0
+    fi
+    "$@"
+    return $?
+  fi
+  if [[ "$1" == systemctl && "$2" == daemon-reload ]]; then
+    return 0
+  fi
+  "$@"
+}}
+
+install_proxy_firewall_systemd_dropin() {{ :; }}
+install_systemd_units '{PROJECT_ROOT}'
+printf '%s\\n' "==service=="
+cat '{systemd_dir}/serino-updater.service'
+printf '%s\\n' "==timer=="
+cat '{systemd_dir}/serino-updater.timer'
+printf '%s\\n' "==path=="
+cat '{systemd_dir}/serino-updater.path'
+"""
+    )
+
+    assert "ExecStart=" + str(tmp_path / "bin" / "sercli") + " updater run" in completed
+    assert "OnCalendar=hourly" in completed
+    assert f"DirectoryNotEmpty={tmp_path}/data/update/requests" in completed
+
+
 def test_sercli_help_surfaces_common_ops_before_help_footer():
     output = run_installer_bash(
         """
@@ -1433,7 +1660,13 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     env_text = read_project_file("installer/lib/env.sh")
     service_text = read_project_file("installer/systemd/serino.service")
     upgrade_service_text = read_project_file("installer/systemd/serino-upgrade.service")
+    updater_text = read_project_file("installer/updater.sh")
+    updater_service_text = read_project_file("installer/systemd/serino-updater.service")
+    updater_timer_text = read_project_file("installer/systemd/serino-updater.timer")
+    updater_path_text = read_project_file("installer/systemd/serino-updater.path")
     package_text = read_project_file("scripts/package-installer.sh")
+    upload_text = read_project_file("scripts/upload-bitiful-installer-assets.py")
+    workflow_text = read_project_file(".github/workflows/ci.yml")
     runtime_lib_text = read_project_file("backend/scripts/runtime-lib.sh")
     backend_bootstrap_text = read_project_file("backend/scripts/bootstrap.sh")
     backend_serve_text = read_project_file("backend/scripts/serve.sh")
@@ -1461,6 +1694,16 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     )
     assert 'AERISUN_BIN_ROOT="${AERISUN_BIN_ROOT:-${AERISUN_APP_ROOT}/bin}"' in common_text
     assert 'AERISUN_BACKUP_ROOT="${AERISUN_BACKUP_ROOT:-/var/backups/serino}"' in common_text
+    assert 'SERINO_SYSTEMD_UPDATER_SERVICE="${SERINO_SYSTEMD_UPDATER_SERVICE:-serino-updater.service}"' in common_text
+    assert 'SERINO_SYSTEMD_UPDATER_TIMER="${SERINO_SYSTEMD_UPDATER_TIMER:-serino-updater.timer}"' in common_text
+    assert 'SERINO_SYSTEMD_UPDATER_PATH="${SERINO_SYSTEMD_UPDATER_PATH:-serino-updater.path}"' in common_text
+    assert 'SERINO_UPDATE_DIR="${SERINO_UPDATE_DIR:-${AERISUN_DATA_DIR}/update}"' in common_text
+    assert 'SERINO_UPDATE_REQUESTS_DIR="${SERINO_UPDATE_REQUESTS_DIR:-${SERINO_UPDATE_DIR}/requests}"' in common_text
+    assert 'SERINO_UPDATE_STATUS_FILE="${SERINO_UPDATE_STATUS_FILE:-${SERINO_UPDATE_DIR}/status.json}"' in common_text
+    assert (
+        'SERINO_UPDATE_SUPPORT_MARKER="${SERINO_UPDATE_SUPPORT_MARKER:-${SERINO_UPDATE_DIR}/updater-supported.json}"'
+        in common_text
+    )
     assert 'AERISUN_HTTP_PORT="${AERISUN_HTTP_PORT:-80}"' in common_text
     assert 'AERISUN_HTTPS_PORT="${AERISUN_HTTPS_PORT:-443}"' in common_text
     assert "make_temp_file() {" in common_text
@@ -1496,6 +1739,7 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     assert 'AERISUN_WEB_IMAGE_NAME="${AERISUN_WEB_IMAGE_NAME:-serino-web}"' in common_text
     assert 'AERISUN_WALINE_IMAGE_NAME="${AERISUN_WALINE_IMAGE_NAME:-serino-waline}"' in common_text
     assert "run_as_root chown -R root:root" in common_text
+    assert "ensure_update_runtime_layout() {" in common_text
     assert "resolve_backend_healthcheck_url() {" in env_text
     assert "resolve_release_version_value() {" in env_text
 
@@ -1515,6 +1759,9 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     assert 'user: "${SERINO_RUNTIME_UID:-1001}:${SERINO_RUNTIME_GID:-1001}"' in api_block
     assert "HOME: /srv/aerisun/store" in compose_text
     assert "AERISUN_WORKFLOW_DB_PATH: ${AERISUN_WORKFLOW_DB_PATH:-/srv/aerisun/store/langgraph.db}" in compose_text
+    assert "AERISUN_INSTALL_CHANNEL: ${AERISUN_INSTALL_CHANNEL:-stable}" in compose_text
+    assert "AERISUN_INSTALL_BASE_URL: ${AERISUN_INSTALL_BASE_URL:-}" in compose_text
+    assert "AERISUN_UPDATE_TRUSTED_PUBLIC_KEY_B64: ${AERISUN_UPDATE_TRUSTED_PUBLIC_KEY_B64:-}" in compose_text
     assert (
         "AERISUN_BACKUP_SYNC_TMP_DIR: ${AERISUN_BACKUP_SYNC_TMP_DIR:-/srv/aerisun/store/.backup-sync-tmp}"
         in compose_text
@@ -1530,6 +1777,8 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     assert "sercli ps [compose-ps-args...]" in sercli_text
     assert "sercli start [--no-wait]" in sercli_text
     assert "sercli stop" in sercli_text
+    assert "sercli updater run|check|status [--json]" in sercli_text
+    assert 'source "${INSTALLER_ROOT}/updater.sh"' in sercli_text
     assert 'exec bash "${INSTALLER_ROOT}/doctor.sh" "$@"' in sercli_text
     assert 'run_with_maintenance_lock "upgrade" "${INSTALLER_ROOT}/upgrade.sh" "$@"' in sercli_text
     assert 'run_with_maintenance_lock "uninstall" "${INSTALLER_ROOT}/uninstall.sh" "$@"' in sercli_text
@@ -1538,7 +1787,11 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     assert "cmd_ps() {" in sercli_text
     assert "cmd_start() {" in sercli_text
     assert "cmd_stop() {" in sercli_text
+    assert "cmd_updater() {" in updater_text
     assert 'record_check "fail" "env.bootstrap_cleanup"' in doctor_text
+    assert "check_updater_service_unit_content() {" in doctor_text
+    assert "check_updater_timer_unit_content() {" in doctor_text
+    assert "check_updater_path_unit_content() {" in doctor_text
     assert 'record_check "fail" "data.migrations"' in doctor_text
     assert "run_doctor_api_script() {" in doctor_text
     assert 'compose run --rm --no-deps -T api /bin/bash "/app/backend/scripts/${script_name}" "$@"' in doctor_text
@@ -1596,6 +1849,7 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     assert 'path_is_file "${file}"' in env_text
     assert '[[ -f "${file}" ]]' not in env_text
     assert "AERISUN_APT_MIRROR_URL=${AERISUN_APT_MIRROR_URL}" in env_text
+    assert "AERISUN_UPDATE_TRUSTED_PUBLIC_KEY_B64=${AERISUN_UPDATE_TRUSTED_PUBLIC_KEY_B64}" in env_text
     assert "AERISUN_UBUNTU_APT_MIRROR_URL=${AERISUN_UBUNTU_APT_MIRROR_URL}" in env_text
     assert "AERISUN_DEBIAN_APT_MIRROR_URL=${AERISUN_DEBIAN_APT_MIRROR_URL}" in env_text
     assert 'AERISUN_DOCKER_REGISTRY_MIRRORS=$(quote_env_literal "${AERISUN_DOCKER_REGISTRY_MIRRORS}")' in env_text
@@ -1627,6 +1881,9 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     assert "--max-time 60 https://mirrors.aliyun.com/docker-ce/linux/${distro}/gpg" in docker_text
     assert "release_metadata_curl() {" in download_text
     assert "release_asset_curl() {" in download_text
+    assert "AERISUN_EXPECTED_INSTALL_BUNDLE_SHA256" in download_text
+    assert "AERISUN_EXPECTED_UPDATE_TRUSTED_PUBLIC_KEY_B64" in download_text
+    assert "AERISUN_UPDATE_TRUSTED_PUBLIC_KEY_B64" in download_text
     assert "--connect-timeout 10 --max-time 45" in download_text
     assert "--connect-timeout 10 --max-time 180" in download_text
     assert 'log_warn "下载 ${asset_name} 失败：${url}"' in download_text
@@ -1653,6 +1910,28 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     assert "__SERINO_BIN_LINK__" in upgrade_service_text
     assert "ExecStart=__SERINO_BIN_LINK__ upgrade --check" in upgrade_service_text
     assert "ExecStart=__SERINO_BIN_LINK__ upgrade\n" not in upgrade_service_text
+    assert "ExecStart=__SERINO_BIN_LINK__ updater run" in updater_service_text
+    assert "OnCalendar=hourly" in updater_timer_text
+    assert "Persistent=true" in updater_timer_text
+    assert "DirectoryNotEmpty=__SERINO_UPDATE_REQUESTS_DIR__" in updater_path_text
+    assert "Unit=__SERINO_SYSTEMD_UPDATER_SERVICE__" in updater_path_text
+    assert '"alg": "rsa-sha256"' in package_text
+    assert "AERISUN_UPDATE_SIGNING_REQUIRED" in package_text
+    assert "AERISUN_UPDATE_SIGNING_PRIVATE_KEY_B64" in package_text
+    assert "AERISUN_UPDATE_TRUSTED_PUBLIC_KEY_B64" in package_text
+    assert '"trusted_public_key_b64": trusted_public_key_b64 or None' in package_text
+    assert "update-trusted-public-key.b64" in package_text
+    assert '"-verify"' in package_text
+    assert '"latest.json"' in package_text
+    assert '"release.json"' in package_text
+    assert '"release-notes.md"' in package_text
+    assert "update-trusted-public-key.b64" in upload_text
+    assert 'AERISUN_UPDATE_SIGNING_REQUIRED: "true"' in workflow_text
+    assert "secrets.AERISUN_UPDATE_SIGNING_PRIVATE_KEY_B64" in workflow_text
+    assert "vars.AERISUN_UPDATE_TRUSTED_PUBLIC_KEY_B64" in workflow_text
+    assert "vars.AERISUN_UPDATE_SIGNATURE_KEY_ID" in workflow_text
+    assert "${DEV_INSTALL_BASE_URL}/update-trusted-public-key.b64" in workflow_text
+    assert "${BINFEN_INSTALL_BASE_URL}/update-trusted-public-key.b64" in workflow_text
     assert 'cat > "${DIST_DIR}/latest.env" <<EOF' in package_text
     assert "AERISUN_INSTALL_CHANNEL=${INSTALL_CHANNEL}" in package_text
     assert 'render_bootstrap_script "${DIST_DIR}/install.latest.sh"' in package_text
@@ -1713,6 +1992,16 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     assert 'run_as_root systemctl start "${SERINO_SYSTEMD_UNIT}" >/dev/null 2>&1' in docker_text
     assert 'run_as_root systemctl is-active --quiet "${SERINO_SYSTEMD_UNIT}"' in docker_text
     assert "run_as_root systemctl enable --now docker >/dev/null 2>&1" in docker_text
+    assert 'run_as_root systemctl enable --now "${SERINO_SYSTEMD_UPDATER_TIMER}"' in docker_text
+    assert 'run_as_root systemctl enable --now "${SERINO_SYSTEMD_UPDATER_PATH}"' in docker_text
+    assert '"${SERINO_SYSTEMD_UPDATER_SERVICE}"' in docker_text
+    assert '"${SERINO_SYSTEMD_UPDATER_TIMER}"' in docker_text
+    assert '"${SERINO_SYSTEMD_UPDATER_PATH}"' in docker_text
+    assert 'upgrade --ready-timeout "${UPDATER_READY_TIMEOUT}" "${target_version}"' in updater_text
+    assert 'upgrade --check "${target_version}"' in updater_text
+    assert 'AERISUN_EXPECTED_INSTALL_BUNDLE_SHA256="${verified_bundle_sha256}"' in updater_text
+    assert 'AERISUN_EXPECTED_UPDATE_TRUSTED_PUBLIC_KEY_B64="${verified_trusted_public_key_b64}"' in updater_text
+    assert "updater_verified_trusted_public_key_for_target() {" in updater_text
     assert "if ! wait_for_release_ready; then" in install_text
 
 
@@ -1877,6 +2166,9 @@ def test_installer_systemd_units_switch_to_serino_names():
     assert (PROJECT_ROOT / "installer/systemd/serino.service").exists()
     assert (PROJECT_ROOT / "installer/systemd/serino-upgrade.service").exists()
     assert (PROJECT_ROOT / "installer/systemd/serino-upgrade.timer").exists()
+    assert (PROJECT_ROOT / "installer/systemd/serino-updater.service").exists()
+    assert (PROJECT_ROOT / "installer/systemd/serino-updater.timer").exists()
+    assert (PROJECT_ROOT / "installer/systemd/serino-updater.path").exists()
     assert not (PROJECT_ROOT / "installer/systemd/aerisun-upgrade.service").exists()
     assert not (PROJECT_ROOT / "installer/systemd/aerisun-upgrade.timer").exists()
 

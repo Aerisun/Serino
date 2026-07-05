@@ -4692,6 +4692,78 @@ export const DashboardStatsApiV1AdminSystemDashboardStatsGetResponse = zod.objec
 
 
 /**
+ * @summary 获取系统更新状态
+ */
+export const updateStatusApiV1AdminSystemUpdatesStatusGetResponseSchemaVersionDefault = 1;
+export const updateStatusApiV1AdminSystemUpdatesStatusGetResponseStateDefault = `idle`;
+export const updateStatusApiV1AdminSystemUpdatesStatusGetResponseChannelDefault = `stable`;
+export const updateStatusApiV1AdminSystemUpdatesStatusGetResponseUpdateAvailableDefault = false;
+export const updateStatusApiV1AdminSystemUpdatesStatusGetResponseAutoUpdateSupportedDefault = false;
+export const updateStatusApiV1AdminSystemUpdatesStatusGetResponseSignatureVerifiedDefault = false;
+export const updateStatusApiV1AdminSystemUpdatesStatusGetResponseReleaseOneNotesDefault = ``;
+export const updateStatusApiV1AdminSystemUpdatesStatusGetResponseReleaseOneNotesFormatDefault = `markdown`;
+
+export const UpdateStatusApiV1AdminSystemUpdatesStatusGetResponse = zod.object({
+  "schema_version": zod.number().default(updateStatusApiV1AdminSystemUpdatesStatusGetResponseSchemaVersionDefault),
+  "state": zod.enum(['idle', 'checking', 'available', 'queued', 'preflight', 'running', 'restarting', 'succeeded', 'failed', 'rolled_back', 'unsupported']).default(updateStatusApiV1AdminSystemUpdatesStatusGetResponseStateDefault),
+  "current_version": zod.string(),
+  "latest_version": zod.union([zod.string(),zod.null()]).optional(),
+  "channel": zod.string().default(updateStatusApiV1AdminSystemUpdatesStatusGetResponseChannelDefault),
+  "update_available": zod.boolean().default(updateStatusApiV1AdminSystemUpdatesStatusGetResponseUpdateAvailableDefault),
+  "auto_update_supported": zod.boolean().default(updateStatusApiV1AdminSystemUpdatesStatusGetResponseAutoUpdateSupportedDefault),
+  "auto_update_blocked_reason": zod.union([zod.string(),zod.null()]).optional(),
+  "signature_verified": zod.boolean().default(updateStatusApiV1AdminSystemUpdatesStatusGetResponseSignatureVerifiedDefault),
+  "release": zod.union([zod.object({
+  "version": zod.string(),
+  "released_at": zod.union([zod.string(),zod.null()]).optional(),
+  "notes": zod.string().default(updateStatusApiV1AdminSystemUpdatesStatusGetResponseReleaseOneNotesDefault),
+  "notes_format": zod.literal("markdown").default(updateStatusApiV1AdminSystemUpdatesStatusGetResponseReleaseOneNotesFormatDefault),
+  "release_json_url": zod.union([zod.string(),zod.null()]).optional(),
+  "manifest_url": zod.union([zod.string(),zod.null()]).optional(),
+  "bundle_sha256": zod.union([zod.string(),zod.null()]).optional(),
+  "trusted_public_key_b64": zod.union([zod.string(),zod.null()]).optional(),
+  "signature_key_id": zod.union([zod.string(),zod.null()]).optional()
+}),zod.null()]).optional(),
+  "checked_at": zod.union([zod.string(),zod.null()]).optional(),
+  "request_id": zod.union([zod.string(),zod.null()]).optional(),
+  "run_id": zod.union([zod.string(),zod.null()]).optional(),
+  "last_error": zod.union([zod.string(),zod.null()]).optional(),
+  "recent_log": zod.array(zod.string()).optional()
+})
+
+
+/**
+ * @summary 请求检查系统更新
+ */
+export const checkUpdatesApiV1AdminSystemUpdatesCheckPostBodyForceDefault = false;
+
+export const CheckUpdatesApiV1AdminSystemUpdatesCheckPostBody = zod.object({
+  "force": zod.boolean().default(checkUpdatesApiV1AdminSystemUpdatesCheckPostBodyForceDefault)
+})
+
+
+/**
+ * @summary 请求升级到指定版本
+ */
+export const upgradeSystemApiV1AdminSystemUpdatesUpgradePostBodyTargetVersionRegExp = new RegExp('^v[0-9]+\\.[0-9]+\\.[0-9]+$');
+export const upgradeSystemApiV1AdminSystemUpdatesUpgradePostBodyConfirmVersionRegExp = new RegExp('^v[0-9]+\\.[0-9]+\\.[0-9]+$');
+
+
+export const UpgradeSystemApiV1AdminSystemUpdatesUpgradePostBody = zod.object({
+  "target_version": zod.string().regex(upgradeSystemApiV1AdminSystemUpdatesUpgradePostBodyTargetVersionRegExp),
+  "confirm_version": zod.string().regex(upgradeSystemApiV1AdminSystemUpdatesUpgradePostBodyConfirmVersionRegExp)
+})
+
+
+/**
+ * @summary 取消尚未执行的更新请求
+ */
+export const CancelQueuedUpdateRequestApiV1AdminSystemUpdatesRequestsRequestIdDeleteParams = zod.object({
+  "request_id": zod.string()
+})
+
+
+/**
  * @summary 获取访客访问记录
  */
 export const visitorRecordsApiV1AdminSystemVisitorRecordsGetQueryPageDefault = 1;
