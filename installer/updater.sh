@@ -2,6 +2,7 @@
 set -euo pipefail
 
 UPDATER_READY_TIMEOUT="${SERINO_UPDATER_READY_TIMEOUT:-300}"
+UPDATER_RESTART_NOTICE_DELAY="${SERINO_UPDATER_RESTART_NOTICE_DELAY:-8}"
 
 updater_now_iso() {
   date -u +"%Y-%m-%dT%H:%M:%SZ"
@@ -592,6 +593,11 @@ PY
       if ! AERISUN_EXPECTED_INSTALL_BUNDLE_SHA256="${verified_bundle_sha256}" AERISUN_EXPECTED_UPDATE_TRUSTED_PUBLIC_KEY_B64="${verified_trusted_public_key_b64}" "${SERINO_BIN_LINK}" upgrade --check "${target_version}" >>"${SERINO_UPDATE_LOG_FILE}" 2>&1; then
         updater_write_status "$(updater_state_payload failed "${target_version}" true true "" "升级预检失败。" null)"
         return 1
+      fi
+      updater_write_status "$(updater_state_payload restarting "${target_version}" true true "" "" null)"
+      if [[ "${UPDATER_RESTART_NOTICE_DELAY}" =~ ^[0-9]+$ ]] && (( UPDATER_RESTART_NOTICE_DELAY > 0 )); then
+        updater_log "waiting ${UPDATER_RESTART_NOTICE_DELAY}s before service interruption"
+        sleep "${UPDATER_RESTART_NOTICE_DELAY}"
       fi
       updater_write_status "$(updater_state_payload running "${target_version}" true true "" "" null)"
       if AERISUN_EXPECTED_INSTALL_BUNDLE_SHA256="${verified_bundle_sha256}" AERISUN_EXPECTED_UPDATE_TRUSTED_PUBLIC_KEY_B64="${verified_trusted_public_key_b64}" "${SERINO_BIN_LINK}" upgrade --ready-timeout "${UPDATER_READY_TIMEOUT}" "${target_version}" >>"${SERINO_UPDATE_LOG_FILE}" 2>&1; then

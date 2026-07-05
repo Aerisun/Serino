@@ -38,6 +38,8 @@ import {
 } from "@/pages/dashboard/systemUpdateNoticeLogic";
 
 type UpdateState = NonNullable<SystemUpdateStatusRead["state"]>;
+const UPDATE_STATUS_CACHE_KEY = "serino:system-update-status:v1";
+const UPDATE_STATUS_CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 const ACTIVE_STATES = new Set<UpdateState>([
   "checking",
@@ -52,7 +54,51 @@ function isActiveState(state: SystemUpdateStatusRead["state"] | undefined) {
 }
 
 function isTerminalAttentionState(state: SystemUpdateStatusRead["state"] | undefined) {
-  return state === "succeeded" || state === "failed" || state === "rolled_back";
+  return state === "failed" || state === "rolled_back";
+}
+
+function shouldSurfaceUpdateStatus(status: SystemUpdateStatusRead | null | undefined) {
+  const state = status?.state ?? "idle";
+  return Boolean(
+    status
+      && (
+        status.update_available
+        || isActiveState(state)
+        || (isTerminalAttentionState(state) && Boolean(status.latest_version))
+      ),
+  );
+}
+
+function readCachedUpdateStatus(): SystemUpdateStatusRead | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(UPDATE_STATUS_CACHE_KEY);
+    if (!raw) return null;
+    const cached = JSON.parse(raw) as { cached_at?: unknown; status?: unknown };
+    const cachedAt = typeof cached.cached_at === "number" ? cached.cached_at : 0;
+    if (!cachedAt || Date.now() - cachedAt > UPDATE_STATUS_CACHE_MAX_AGE_MS) {
+      window.localStorage.removeItem(UPDATE_STATUS_CACHE_KEY);
+      return null;
+    }
+    return cached.status && typeof cached.status === "object"
+      ? cached.status as SystemUpdateStatusRead
+      : null;
+  } catch {
+    window.localStorage.removeItem(UPDATE_STATUS_CACHE_KEY);
+    return null;
+  }
+}
+
+function cacheUpdateStatus(status: SystemUpdateStatusRead) {
+  if (typeof window === "undefined") return;
+  if (!shouldSurfaceUpdateStatus(status)) {
+    window.localStorage.removeItem(UPDATE_STATUS_CACHE_KEY);
+    return;
+  }
+  window.localStorage.setItem(
+    UPDATE_STATUS_CACHE_KEY,
+    JSON.stringify({ cached_at: Date.now(), status }),
+  );
 }
 
 function formatReleaseTime(value: string | null | undefined) {
@@ -80,7 +126,8 @@ function formatChannelLabel(channel: string | null | undefined, t: (key: string)
 export function SystemUpdateNotice() {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
-  const [lastStatus, setLastStatus] = useState<SystemUpdateStatusRead | null>(null);
+  const [lastStatus, setLastStatus] = useState<SystemUpdateStatusRead | null>(() => readCachedUpdateStatus());
+  const [upgradeHandoffNotice, setUpgradeHandoffNotice] = useState(false);
   const [reconnectDelay, setReconnectDelay] = useState(3000);
   const [reloadScheduled, setReloadScheduled] = useState(false);
   const lastAutoCheckRequestedAtRef = useRef(0);
@@ -111,20 +158,20 @@ export function SystemUpdateNotice() {
       && !isError,
   );
   const canCancelQueued = Boolean(state === "queued" && status?.request_id);
-  const shouldRender = Boolean(
-    status
-      && (
-        status.update_available
-        || isActiveState(state)
-        || (isTerminalAttentionState(state) && Boolean(status.latest_version))
-      ),
-  );
+  const shouldRender = shouldSurfaceUpdateStatus(status);
 
   useEffect(() => {
     if (statusResponse?.data) {
       setLastStatus(statusResponse.data);
+      cacheUpdateStatus(statusResponse.data);
     }
   }, [statusResponse]);
+
+  useEffect(() => {
+    if (upgradeHandoffNotice && (state === "succeeded" || isTerminalAttentionState(state))) {
+      setUpgradeHandoffNotice(false);
+    }
+  }, [state, upgradeHandoffNotice]);
 
   useEffect(() => {
     if (!status || !isActiveState(status.state) || reconnecting) {
@@ -191,6 +238,8 @@ export function SystemUpdateNotice() {
   const upgradeMutation = useUpgradeSystemApiV1AdminSystemUpdatesUpgradePost({
     mutation: {
       onSuccess: () => {
+        setUpgradeHandoffNotice(true);
+        setOpen(true);
         toast.success(t("dashboard.updateUpgradeQueued"));
         refreshStatus();
       },
@@ -243,7 +292,7 @@ export function SystemUpdateNotice() {
         return { icon: RefreshCw, label: t("dashboard.updateChecking"), tone: "neutral" };
       case "queued":
       case "preflight":
-        return { icon: Loader2, label: t("dashboard.updateQueued"), tone: "blue" };
+        return { icon: Loader2, label: t("dashboard.updateChecking"), tone: "blue" };
       case "running":
       case "restarting":
         return { icon: Loader2, label: t("dashboard.updateRunning"), tone: "blue" };
@@ -296,6 +345,7 @@ export function SystemUpdateNotice() {
   }
 
   const NoticeIcon = noticeCopy.icon;
+  const compactRestartDialog = upgradeHandoffNotice || reconnecting || state === "running" || state === "restarting";
 
   return (
     <>
@@ -303,11 +353,12 @@ export function SystemUpdateNotice() {
         type="button"
         onClick={() => setOpen(true)}
         className={cn(
-          "admin-transition-fast inline-flex h-10 max-w-full items-center gap-2 rounded-full border px-3 text-sm font-medium shadow-[var(--admin-shadow-sm)] transition-[background-color,border-color,color,box-shadow,transform] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+          "admin-transition-fast inline-flex h-10 max-w-full items-center gap-2 rounded-full border px-3.5 text-sm font-semibold shadow-[var(--admin-shadow-sm)] transition-[background-color,border-color,color,box-shadow,transform] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
           noticeCopy.tone === "red" && "border-red-200/80 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200",
           noticeCopy.tone === "amber" && "border-amber-200/80 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100",
           noticeCopy.tone === "green" && "border-emerald-200/80 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100",
-          noticeCopy.tone === "blue" && "border-sky-200/80 bg-sky-50 text-sky-700 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-100",
+          noticeCopy.tone === "blue"
+            && "border-cyan-400/75 bg-[linear-gradient(135deg,rgb(14_165_233/0.34),rgb(45_212_191/0.28)_58%,rgb(var(--admin-surface-1)/0.88))] text-sky-950 shadow-[0_16px_38px_-20px_rgb(14_165_233/1),0_0_0_1px_rgb(255_255_255/0.68)_inset] hover:border-cyan-500/85 hover:bg-[linear-gradient(135deg,rgb(14_165_233/0.42),rgb(45_212_191/0.34)_58%,rgb(var(--admin-surface-1)/0.95))] dark:border-cyan-300/55 dark:bg-[linear-gradient(135deg,rgb(14_165_233/0.34),rgb(45_212_191/0.26)_58%,rgb(255_255_255/0.08))] dark:text-cyan-50 dark:shadow-[0_18px_40px_-22px_rgb(34_211_238/0.95),0_0_0_1px_rgb(255_255_255/0.1)_inset] dark:hover:border-cyan-200/75",
           noticeCopy.tone === "neutral" && "border-border/60 bg-[rgb(var(--admin-surface-1)/0.7)] text-foreground",
         )}
       >
@@ -316,7 +367,25 @@ export function SystemUpdateNotice() {
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[min(88vh,760px)] max-w-2xl overflow-hidden rounded-[var(--admin-radius-lg)] p-0">
+        {compactRestartDialog ? (
+          <DialogContent className="max-w-sm overflow-hidden rounded-[var(--admin-radius-lg)] p-0">
+            <div className="space-y-5 px-6 py-7">
+              <DialogHeader className="items-center space-y-4 pr-0 text-center">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full border border-cyan-300/55 bg-[linear-gradient(135deg,rgb(14_165_233/0.2),rgb(45_212_191/0.16))] text-cyan-950 shadow-[0_16px_34px_-24px_rgb(14_165_233/0.95),0_0_0_1px_rgb(255_255_255/0.55)_inset] dark:border-cyan-300/40 dark:text-cyan-50">
+                  <NoticeIcon className={cn("h-5 w-5", isActiveState(state) && "animate-spin")} />
+                </div>
+                <div className="space-y-4">
+                  <DialogTitle className="text-center">{t("dashboard.updateInterruptingTitle")}</DialogTitle>
+                  <DialogDescription className="space-y-1 text-center text-sm leading-6">
+                    <span className="block">{t("dashboard.updateInterruptingLine1")}</span>
+                    <span className="block">{t("dashboard.updateInterruptingLine2")}</span>
+                  </DialogDescription>
+                </div>
+              </DialogHeader>
+            </div>
+          </DialogContent>
+        ) : (
+          <DialogContent className="max-h-[min(88vh,760px)] max-w-2xl overflow-hidden rounded-[var(--admin-radius-lg)] p-0">
           <div className="flex max-h-[min(88vh,760px)] flex-col">
             <div className="border-b border-border/60 px-5 py-5 sm:px-6">
               <DialogHeader className="space-y-2 pr-8 text-left">
@@ -393,8 +462,8 @@ export function SystemUpdateNotice() {
                     <span>{t("dashboard.updateRecentLog")}</span>
                     <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" />
                   </summary>
-                  <pre className="max-h-32 min-w-0 overflow-y-auto whitespace-pre-wrap break-all border-t border-border/60 bg-black/[0.035] p-3 text-xs leading-5 text-muted-foreground dark:bg-white/[0.04]">
-                    {status.recent_log.slice(-5).join("\n")}
+                  <pre className="max-h-64 min-w-0 overflow-y-auto whitespace-pre-wrap break-all border-t border-border/60 bg-black/[0.035] p-3 text-xs leading-5 text-muted-foreground [scrollbar-width:none] dark:bg-white/[0.04] [&::-webkit-scrollbar]:hidden">
+                    {status.recent_log.slice(-12).join("\n")}
                   </pre>
                 </details>
               ) : null}
@@ -440,7 +509,8 @@ export function SystemUpdateNotice() {
               </div>
             </div>
           </div>
-        </DialogContent>
+          </DialogContent>
+        )}
       </Dialog>
     </>
   );
