@@ -73,6 +73,9 @@ class Settings(BaseSettings):
     site_url: str = "http://localhost:5173"
     waline_server_url: str = "/waline"
     release_version: str = ""
+    install_channel: str = "stable"
+    install_base_url: str = ""
+    update_trusted_public_key_b64: str = ""
     backup_sync_tmp_dir: Path = PROJECT_ROOT / ".store" / ".backup-sync-tmp"
     backup_sync_default_site_slug: str = "aerisun"
     backup_sync_default_interval_minutes: int = 60

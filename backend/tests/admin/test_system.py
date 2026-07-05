@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import sqlite3
 import time
 from datetime import datetime, timedelta
@@ -252,6 +253,215 @@ class TestDashboardStats:
         assert resp.status_code == 200
         history_by_date = {item["date"]: item["views"] for item in resp.json()["visitors"]["history"]}
         assert history_by_date["2026-04-01"] >= 2
+
+
+# ── System Updates ────────────────────────────────────────────────────
+
+
+class TestSystemUpdates:
+    def test_update_status_is_unsupported_without_host_updater_marker(self, client, admin_headers):
+        resp = client.get(f"{BASE}/updates/status", headers=admin_headers)
+
+        assert resp.status_code == 200
+        payload = resp.json()
+        assert payload["state"] == "unsupported"
+        assert payload["current_version"]
+        assert payload["auto_update_supported"] is False
+        assert payload["auto_update_blocked_reason"]
+
+    def test_update_status_blocks_auto_upgrade_without_bundle_sha(self, client, admin_headers):
+        settings = get_settings()
+        update_dir = settings.data_dir / "update"
+        update_dir.mkdir(parents=True, exist_ok=True)
+        (update_dir / "updater-supported.json").write_text(
+            json.dumps({"schema_version": 1, "supported": True}),
+            encoding="utf-8",
+        )
+        (update_dir / "status.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "state": "available",
+                    "current_version": "v1.0.0",
+                    "latest_version": "v1.2.3",
+                    "channel": "stable",
+                    "update_available": True,
+                    "auto_update_supported": True,
+                    "signature_verified": True,
+                    "release": {
+                        "version": "v1.2.3",
+                        "released_at": "2026-07-05T00:00:00Z",
+                        "notes": "## v1.2.3",
+                    },
+                    "recent_log": [],
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        resp = client.get(f"{BASE}/updates/status", headers=admin_headers)
+
+        assert resp.status_code == 200
+        payload = resp.json()
+        assert payload["state"] == "available"
+        assert payload["auto_update_supported"] is False
+        assert "sha256" in payload["auto_update_blocked_reason"]
+
+    def test_update_upgrade_request_is_persisted_atomically(self, client, admin_headers):
+        settings = get_settings()
+        update_dir = settings.data_dir / "update"
+        requests_dir = update_dir / "requests"
+        update_dir.mkdir(parents=True, exist_ok=True)
+        requests_dir.mkdir(parents=True, exist_ok=True)
+        (update_dir / "updater-supported.json").write_text(
+            json.dumps({"schema_version": 1, "supported": True}),
+            encoding="utf-8",
+        )
+        (update_dir / "status.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "state": "available",
+                    "current_version": "v1.0.0",
+                    "latest_version": "v1.2.3",
+                    "channel": "stable",
+                    "update_available": True,
+                    "auto_update_supported": True,
+                    "signature_verified": True,
+                    "release": {
+                        "version": "v1.2.3",
+                        "released_at": "2026-07-05T00:00:00Z",
+                        "notes": "## v1.2.3\n\n- Upgrade test",
+                        "bundle_sha256": "a" * 64,
+                        "trusted_public_key_b64": "QUJDRA==",
+                    },
+                    "checked_at": "2026-07-05T00:00:00Z",
+                    "last_error": None,
+                    "recent_log": [],
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        resp = client.post(
+            f"{BASE}/updates/upgrade",
+            headers=admin_headers,
+            json={"target_version": "v1.2.3", "confirm_version": "v1.2.3"},
+        )
+
+        assert resp.status_code == 202
+        payload = resp.json()
+        assert payload["state"] == "queued"
+        request_files = sorted(requests_dir.glob("*.json"))
+        assert len(request_files) == 1
+        request_payload = json.loads(request_files[0].read_text(encoding="utf-8"))
+        assert request_payload["action"] == "upgrade"
+        assert request_payload["target_version"] == "v1.2.3"
+        assert request_payload["bundle_sha256"] == "a" * 64
+        assert request_payload["request_id"] == payload["request_id"]
+        status_payload = client.get(f"{BASE}/updates/status", headers=admin_headers).json()
+        assert status_payload["state"] == "queued"
+        assert status_payload["request_id"] == payload["request_id"]
+
+    def test_update_upgrade_rejects_confirmation_mismatch(self, client, admin_headers):
+        settings = get_settings()
+        update_dir = settings.data_dir / "update"
+        requests_dir = update_dir / "requests"
+        update_dir.mkdir(parents=True, exist_ok=True)
+        requests_dir.mkdir(parents=True, exist_ok=True)
+        (update_dir / "updater-supported.json").write_text(
+            json.dumps({"schema_version": 1, "supported": True}),
+            encoding="utf-8",
+        )
+
+        resp = client.post(
+            f"{BASE}/updates/upgrade",
+            headers=admin_headers,
+            json={"target_version": "v1.2.3", "confirm_version": "v1.2.4"},
+        )
+
+        assert resp.status_code == 400
+        assert list(requests_dir.glob("*.json")) == []
+
+    def test_update_check_rejects_when_maintenance_is_active(self, client, admin_headers):
+        settings = get_settings()
+        update_dir = settings.data_dir / "update"
+        requests_dir = update_dir / "requests"
+        update_dir.mkdir(parents=True, exist_ok=True)
+        requests_dir.mkdir(parents=True, exist_ok=True)
+        (update_dir / "updater-supported.json").write_text(
+            json.dumps({"schema_version": 1, "supported": True}),
+            encoding="utf-8",
+        )
+        (update_dir / "status.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "state": "checking",
+                    "current_version": "v1.0.0",
+                    "latest_version": None,
+                    "channel": "stable",
+                    "update_available": False,
+                    "auto_update_supported": False,
+                    "signature_verified": False,
+                    "release": None,
+                    "recent_log": [],
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        resp = client.post(f"{BASE}/updates/check", headers=admin_headers, json={"force": True})
+
+        assert resp.status_code == 409
+        assert list(requests_dir.glob("*.json")) == []
+
+    def test_update_cancel_queued_request_restores_available_status(self, client, admin_headers):
+        settings = get_settings()
+        update_dir = settings.data_dir / "update"
+        requests_dir = update_dir / "requests"
+        update_dir.mkdir(parents=True, exist_ok=True)
+        requests_dir.mkdir(parents=True, exist_ok=True)
+        (update_dir / "updater-supported.json").write_text(
+            json.dumps({"schema_version": 1, "supported": True}),
+            encoding="utf-8",
+        )
+        (update_dir / "status.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "state": "available",
+                    "current_version": "v1.0.0",
+                    "latest_version": "v1.2.3",
+                    "channel": "stable",
+                    "update_available": True,
+                    "auto_update_supported": True,
+                    "signature_verified": True,
+                    "release": {
+                        "version": "v1.2.3",
+                        "released_at": "2026-07-05T00:00:00Z",
+                        "notes": "## v1.2.3",
+                        "bundle_sha256": "a" * 64,
+                        "trusted_public_key_b64": "QUJDRA==",
+                    },
+                    "recent_log": [],
+                }
+            ),
+            encoding="utf-8",
+        )
+        queued = client.post(
+            f"{BASE}/updates/upgrade",
+            headers=admin_headers,
+            json={"target_version": "v1.2.3", "confirm_version": "v1.2.3"},
+        ).json()
+
+        resp = client.delete(f"{BASE}/updates/requests/{queued['request_id']}", headers=admin_headers)
+
+        assert resp.status_code == 204
+        assert list(requests_dir.glob("*.json")) == []
+        status_payload = client.get(f"{BASE}/updates/status", headers=admin_headers).json()
+        assert status_payload["state"] == "available"
+        assert status_payload["request_id"] is None
 
     def test_list_visitor_records(self, client, admin_headers):
         factory = get_session_factory()

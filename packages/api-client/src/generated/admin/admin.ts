@@ -200,6 +200,10 @@ import type {
   SurfaceDraftChatWrite,
   SurfaceDraftRead,
   SystemInfo,
+  SystemUpdateCheckWrite,
+  SystemUpdateRequestRead,
+  SystemUpdateStatusRead,
+  SystemUpdateUpgradeWrite,
   TagInfo,
   TelegramWebhookConnectRead,
   TelegramWebhookConnectWrite,
@@ -14681,6 +14685,382 @@ export function useDashboardStatsApiV1AdminSystemDashboardStatsGet<TData = Await
 
 
 /**
+ * @summary 获取系统更新状态
+ */
+export type updateStatusApiV1AdminSystemUpdatesStatusGetResponse200 = {
+  data: SystemUpdateStatusRead
+  status: 200
+}
+
+export type updateStatusApiV1AdminSystemUpdatesStatusGetResponseSuccess = (updateStatusApiV1AdminSystemUpdatesStatusGetResponse200) & {
+  headers: Headers;
+};
+;
+
+export type updateStatusApiV1AdminSystemUpdatesStatusGetResponse = (updateStatusApiV1AdminSystemUpdatesStatusGetResponseSuccess)
+
+export const getUpdateStatusApiV1AdminSystemUpdatesStatusGetUrl = () => {
+
+
+
+
+  return `/api/v1/admin/system/updates/status`
+}
+
+export const updateStatusApiV1AdminSystemUpdatesStatusGet = async ( options?: RequestInit): Promise<updateStatusApiV1AdminSystemUpdatesStatusGetResponse> => {
+
+  return customInstance<updateStatusApiV1AdminSystemUpdatesStatusGetResponse>(getUpdateStatusApiV1AdminSystemUpdatesStatusGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getUpdateStatusApiV1AdminSystemUpdatesStatusGetQueryKey = () => {
+    return [
+    `/api/v1/admin/system/updates/status`
+    ] as const;
+    }
+
+
+export const getUpdateStatusApiV1AdminSystemUpdatesStatusGetQueryOptions = <TData = Awaited<ReturnType<typeof updateStatusApiV1AdminSystemUpdatesStatusGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof updateStatusApiV1AdminSystemUpdatesStatusGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getUpdateStatusApiV1AdminSystemUpdatesStatusGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof updateStatusApiV1AdminSystemUpdatesStatusGet>>> = ({ signal }) => updateStatusApiV1AdminSystemUpdatesStatusGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof updateStatusApiV1AdminSystemUpdatesStatusGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type UpdateStatusApiV1AdminSystemUpdatesStatusGetQueryResult = NonNullable<Awaited<ReturnType<typeof updateStatusApiV1AdminSystemUpdatesStatusGet>>>
+export type UpdateStatusApiV1AdminSystemUpdatesStatusGetQueryError = ErrorType<unknown>
+
+
+export function useUpdateStatusApiV1AdminSystemUpdatesStatusGet<TData = Awaited<ReturnType<typeof updateStatusApiV1AdminSystemUpdatesStatusGet>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof updateStatusApiV1AdminSystemUpdatesStatusGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof updateStatusApiV1AdminSystemUpdatesStatusGet>>,
+          TError,
+          Awaited<ReturnType<typeof updateStatusApiV1AdminSystemUpdatesStatusGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUpdateStatusApiV1AdminSystemUpdatesStatusGet<TData = Awaited<ReturnType<typeof updateStatusApiV1AdminSystemUpdatesStatusGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof updateStatusApiV1AdminSystemUpdatesStatusGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof updateStatusApiV1AdminSystemUpdatesStatusGet>>,
+          TError,
+          Awaited<ReturnType<typeof updateStatusApiV1AdminSystemUpdatesStatusGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUpdateStatusApiV1AdminSystemUpdatesStatusGet<TData = Awaited<ReturnType<typeof updateStatusApiV1AdminSystemUpdatesStatusGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof updateStatusApiV1AdminSystemUpdatesStatusGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取系统更新状态
+ */
+
+export function useUpdateStatusApiV1AdminSystemUpdatesStatusGet<TData = Awaited<ReturnType<typeof updateStatusApiV1AdminSystemUpdatesStatusGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof updateStatusApiV1AdminSystemUpdatesStatusGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getUpdateStatusApiV1AdminSystemUpdatesStatusGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 请求检查系统更新
+ */
+export type checkUpdatesApiV1AdminSystemUpdatesCheckPostResponse202 = {
+  data: SystemUpdateRequestRead
+  status: 202
+}
+
+export type checkUpdatesApiV1AdminSystemUpdatesCheckPostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type checkUpdatesApiV1AdminSystemUpdatesCheckPostResponseSuccess = (checkUpdatesApiV1AdminSystemUpdatesCheckPostResponse202) & {
+  headers: Headers;
+};
+export type checkUpdatesApiV1AdminSystemUpdatesCheckPostResponseError = (checkUpdatesApiV1AdminSystemUpdatesCheckPostResponse422) & {
+  headers: Headers;
+};
+
+export type checkUpdatesApiV1AdminSystemUpdatesCheckPostResponse = (checkUpdatesApiV1AdminSystemUpdatesCheckPostResponseSuccess | checkUpdatesApiV1AdminSystemUpdatesCheckPostResponseError)
+
+export const getCheckUpdatesApiV1AdminSystemUpdatesCheckPostUrl = () => {
+
+
+
+
+  return `/api/v1/admin/system/updates/check`
+}
+
+export const checkUpdatesApiV1AdminSystemUpdatesCheckPost = async (systemUpdateCheckWrite: SystemUpdateCheckWrite, options?: RequestInit): Promise<checkUpdatesApiV1AdminSystemUpdatesCheckPostResponse> => {
+
+  return customInstance<checkUpdatesApiV1AdminSystemUpdatesCheckPostResponse>(getCheckUpdatesApiV1AdminSystemUpdatesCheckPostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      systemUpdateCheckWrite,)
+  }
+);}
+
+
+
+
+export const getCheckUpdatesApiV1AdminSystemUpdatesCheckPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkUpdatesApiV1AdminSystemUpdatesCheckPost>>, TError,{data: BodyType<SystemUpdateCheckWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof checkUpdatesApiV1AdminSystemUpdatesCheckPost>>, TError,{data: BodyType<SystemUpdateCheckWrite>}, TContext> => {
+
+const mutationKey = ['checkUpdatesApiV1AdminSystemUpdatesCheckPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof checkUpdatesApiV1AdminSystemUpdatesCheckPost>>, {data: BodyType<SystemUpdateCheckWrite>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  checkUpdatesApiV1AdminSystemUpdatesCheckPost(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CheckUpdatesApiV1AdminSystemUpdatesCheckPostMutationResult = NonNullable<Awaited<ReturnType<typeof checkUpdatesApiV1AdminSystemUpdatesCheckPost>>>
+    export type CheckUpdatesApiV1AdminSystemUpdatesCheckPostMutationBody = BodyType<SystemUpdateCheckWrite>
+    export type CheckUpdatesApiV1AdminSystemUpdatesCheckPostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 请求检查系统更新
+ */
+export const useCheckUpdatesApiV1AdminSystemUpdatesCheckPost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkUpdatesApiV1AdminSystemUpdatesCheckPost>>, TError,{data: BodyType<SystemUpdateCheckWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof checkUpdatesApiV1AdminSystemUpdatesCheckPost>>,
+        TError,
+        {data: BodyType<SystemUpdateCheckWrite>},
+        TContext
+      > => {
+      return useMutation(getCheckUpdatesApiV1AdminSystemUpdatesCheckPostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 请求升级到指定版本
+ */
+export type upgradeSystemApiV1AdminSystemUpdatesUpgradePostResponse202 = {
+  data: SystemUpdateRequestRead
+  status: 202
+}
+
+export type upgradeSystemApiV1AdminSystemUpdatesUpgradePostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type upgradeSystemApiV1AdminSystemUpdatesUpgradePostResponseSuccess = (upgradeSystemApiV1AdminSystemUpdatesUpgradePostResponse202) & {
+  headers: Headers;
+};
+export type upgradeSystemApiV1AdminSystemUpdatesUpgradePostResponseError = (upgradeSystemApiV1AdminSystemUpdatesUpgradePostResponse422) & {
+  headers: Headers;
+};
+
+export type upgradeSystemApiV1AdminSystemUpdatesUpgradePostResponse = (upgradeSystemApiV1AdminSystemUpdatesUpgradePostResponseSuccess | upgradeSystemApiV1AdminSystemUpdatesUpgradePostResponseError)
+
+export const getUpgradeSystemApiV1AdminSystemUpdatesUpgradePostUrl = () => {
+
+
+
+
+  return `/api/v1/admin/system/updates/upgrade`
+}
+
+export const upgradeSystemApiV1AdminSystemUpdatesUpgradePost = async (systemUpdateUpgradeWrite: SystemUpdateUpgradeWrite, options?: RequestInit): Promise<upgradeSystemApiV1AdminSystemUpdatesUpgradePostResponse> => {
+
+  return customInstance<upgradeSystemApiV1AdminSystemUpdatesUpgradePostResponse>(getUpgradeSystemApiV1AdminSystemUpdatesUpgradePostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      systemUpdateUpgradeWrite,)
+  }
+);}
+
+
+
+
+export const getUpgradeSystemApiV1AdminSystemUpdatesUpgradePostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upgradeSystemApiV1AdminSystemUpdatesUpgradePost>>, TError,{data: BodyType<SystemUpdateUpgradeWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof upgradeSystemApiV1AdminSystemUpdatesUpgradePost>>, TError,{data: BodyType<SystemUpdateUpgradeWrite>}, TContext> => {
+
+const mutationKey = ['upgradeSystemApiV1AdminSystemUpdatesUpgradePost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof upgradeSystemApiV1AdminSystemUpdatesUpgradePost>>, {data: BodyType<SystemUpdateUpgradeWrite>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  upgradeSystemApiV1AdminSystemUpdatesUpgradePost(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpgradeSystemApiV1AdminSystemUpdatesUpgradePostMutationResult = NonNullable<Awaited<ReturnType<typeof upgradeSystemApiV1AdminSystemUpdatesUpgradePost>>>
+    export type UpgradeSystemApiV1AdminSystemUpdatesUpgradePostMutationBody = BodyType<SystemUpdateUpgradeWrite>
+    export type UpgradeSystemApiV1AdminSystemUpdatesUpgradePostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 请求升级到指定版本
+ */
+export const useUpgradeSystemApiV1AdminSystemUpdatesUpgradePost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upgradeSystemApiV1AdminSystemUpdatesUpgradePost>>, TError,{data: BodyType<SystemUpdateUpgradeWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof upgradeSystemApiV1AdminSystemUpdatesUpgradePost>>,
+        TError,
+        {data: BodyType<SystemUpdateUpgradeWrite>},
+        TContext
+      > => {
+      return useMutation(getUpgradeSystemApiV1AdminSystemUpdatesUpgradePostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 取消尚未执行的更新请求
+ */
+export type cancelQueuedUpdateRequestApiV1AdminSystemUpdatesRequestsRequestIdDeleteResponse204 = {
+  data: void
+  status: 204
+}
+
+export type cancelQueuedUpdateRequestApiV1AdminSystemUpdatesRequestsRequestIdDeleteResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type cancelQueuedUpdateRequestApiV1AdminSystemUpdatesRequestsRequestIdDeleteResponseSuccess = (cancelQueuedUpdateRequestApiV1AdminSystemUpdatesRequestsRequestIdDeleteResponse204) & {
+  headers: Headers;
+};
+export type cancelQueuedUpdateRequestApiV1AdminSystemUpdatesRequestsRequestIdDeleteResponseError = (cancelQueuedUpdateRequestApiV1AdminSystemUpdatesRequestsRequestIdDeleteResponse422) & {
+  headers: Headers;
+};
+
+export type cancelQueuedUpdateRequestApiV1AdminSystemUpdatesRequestsRequestIdDeleteResponse = (cancelQueuedUpdateRequestApiV1AdminSystemUpdatesRequestsRequestIdDeleteResponseSuccess | cancelQueuedUpdateRequestApiV1AdminSystemUpdatesRequestsRequestIdDeleteResponseError)
+
+export const getCancelQueuedUpdateRequestApiV1AdminSystemUpdatesRequestsRequestIdDeleteUrl = (requestId: string,) => {
+
+
+
+
+  return `/api/v1/admin/system/updates/requests/${requestId}`
+}
+
+export const cancelQueuedUpdateRequestApiV1AdminSystemUpdatesRequestsRequestIdDelete = async (requestId: string, options?: RequestInit): Promise<cancelQueuedUpdateRequestApiV1AdminSystemUpdatesRequestsRequestIdDeleteResponse> => {
+
+  return customInstance<cancelQueuedUpdateRequestApiV1AdminSystemUpdatesRequestsRequestIdDeleteResponse>(getCancelQueuedUpdateRequestApiV1AdminSystemUpdatesRequestsRequestIdDeleteUrl(requestId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getCancelQueuedUpdateRequestApiV1AdminSystemUpdatesRequestsRequestIdDeleteMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelQueuedUpdateRequestApiV1AdminSystemUpdatesRequestsRequestIdDelete>>, TError,{requestId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof cancelQueuedUpdateRequestApiV1AdminSystemUpdatesRequestsRequestIdDelete>>, TError,{requestId: string}, TContext> => {
+
+const mutationKey = ['cancelQueuedUpdateRequestApiV1AdminSystemUpdatesRequestsRequestIdDelete'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof cancelQueuedUpdateRequestApiV1AdminSystemUpdatesRequestsRequestIdDelete>>, {requestId: string}> = (props) => {
+          const {requestId} = props ?? {};
+
+          return  cancelQueuedUpdateRequestApiV1AdminSystemUpdatesRequestsRequestIdDelete(requestId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CancelQueuedUpdateRequestApiV1AdminSystemUpdatesRequestsRequestIdDeleteMutationResult = NonNullable<Awaited<ReturnType<typeof cancelQueuedUpdateRequestApiV1AdminSystemUpdatesRequestsRequestIdDelete>>>
+
+    export type CancelQueuedUpdateRequestApiV1AdminSystemUpdatesRequestsRequestIdDeleteMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 取消尚未执行的更新请求
+ */
+export const useCancelQueuedUpdateRequestApiV1AdminSystemUpdatesRequestsRequestIdDelete = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelQueuedUpdateRequestApiV1AdminSystemUpdatesRequestsRequestIdDelete>>, TError,{requestId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof cancelQueuedUpdateRequestApiV1AdminSystemUpdatesRequestsRequestIdDelete>>,
+        TError,
+        {requestId: string},
+        TContext
+      > => {
+      return useMutation(getCancelQueuedUpdateRequestApiV1AdminSystemUpdatesRequestsRequestIdDeleteMutationOptions(options), queryClient);
+    }
+    /**
  * @summary 获取访客访问记录
  */
 export type visitorRecordsApiV1AdminSystemVisitorRecordsGetResponse200 = {

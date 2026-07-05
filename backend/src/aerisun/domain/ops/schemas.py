@@ -483,3 +483,65 @@ class SystemInfo(BaseModel):
     uptime_seconds: float
     environment: str
     site_url: str
+
+
+UpdateState = Literal[
+    "idle",
+    "checking",
+    "available",
+    "queued",
+    "preflight",
+    "running",
+    "restarting",
+    "succeeded",
+    "failed",
+    "rolled_back",
+    "unsupported",
+]
+
+
+class SystemUpdateReleaseRead(BaseModel):
+    version: str
+    released_at: str | None = None
+    notes: str = ""
+    notes_format: Literal["markdown"] = "markdown"
+    release_json_url: str | None = None
+    manifest_url: str | None = None
+    bundle_sha256: str | None = None
+    trusted_public_key_b64: str | None = None
+    signature_key_id: str | None = None
+
+
+class SystemUpdateStatusRead(BaseModel):
+    schema_version: int = 1
+    state: UpdateState = "idle"
+    current_version: str
+    latest_version: str | None = None
+    channel: str = "stable"
+    update_available: bool = False
+    auto_update_supported: bool = False
+    auto_update_blocked_reason: str | None = None
+    signature_verified: bool = False
+    release: SystemUpdateReleaseRead | None = None
+    checked_at: str | None = None
+    request_id: str | None = None
+    run_id: str | None = None
+    last_error: str | None = None
+    recent_log: list[str] = Field(default_factory=list)
+
+
+class SystemUpdateRequestRead(BaseModel):
+    request_id: str
+    action: Literal["check", "upgrade"]
+    state: Literal["queued"] = "queued"
+    target_version: str | None = None
+    created_at: str
+
+
+class SystemUpdateCheckWrite(BaseModel):
+    force: bool = False
+
+
+class SystemUpdateUpgradeWrite(BaseModel):
+    target_version: str = Field(pattern=r"^v[0-9]+\.[0-9]+\.[0-9]+$")
+    confirm_version: str = Field(pattern=r"^v[0-9]+\.[0-9]+\.[0-9]+$")
