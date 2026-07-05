@@ -43,6 +43,48 @@
         }
       }
     },
+    "/api/v1/avatars/10.x/notionists/svg": {
+      "get": {
+        "tags": [
+          "site"
+        ],
+        "summary": "生成 Notionists SVG 头像",
+        "operationId": "read_notionists_avatar_api_v1_avatars_10_x_notionists_svg_get",
+        "parameters": [
+          {
+            "name": "seed",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 256,
+              "default": "visitor",
+              "title": "Seed"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/site/site": {
       "get": {
         "tags": [
@@ -2385,6 +2427,118 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ContentSubscriptionPublicRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/site/subscriptions/mine": {
+      "get": {
+        "tags": [
+          "site"
+        ],
+        "summary": "读取当前登录用户发起的订阅列表",
+        "operationId": "list_my_subscription_statuses_api_v1_site_subscriptions_mine_get",
+        "parameters": [
+          {
+            "name": "aerisun_site_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Aerisun Site Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ContentSubscriptionPublicStatusRead"
+                  },
+                  "title": "Response List My Subscription Statuses Api V1 Site Subscriptions Mine Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/site/subscriptions/mine/unsubscribe": {
+      "post": {
+        "tags": [
+          "site"
+        ],
+        "summary": "取消当前登录用户发起的指定邮箱订阅",
+        "operationId": "unsubscribe_my_initiated_subscription_api_v1_site_subscriptions_mine_unsubscribe_post",
+        "parameters": [
+          {
+            "name": "aerisun_site_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Aerisun Site Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContentSubscriptionPublicEmailRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentSubscriptionPublicUnsubscribeResult"
                 }
               }
             }

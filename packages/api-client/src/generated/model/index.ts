@@ -414,6 +414,7 @@ export * from './readGuestbookApiV1PublicGuestbookGetParams';
 export * from './readGuestbookApiV1SiteInteractionsGuestbookGetParams';
 export * from './readLinkPreviewApiV1SiteLinkPreviewGetParams';
 export * from './readLinkPreviewImageApiV1SiteLinkPreviewImageGetParams';
+export * from './readNotionistsAvatarApiV1Avatars10XNotionistsSvgGetParams';
 export * from './readPoemPreviewApiV1SitePoemPreviewGetParams';
 export * from './readPostsApiV1PublicPostsGetParams';
 export * from './readPostsApiV1SitePostsGetParams';

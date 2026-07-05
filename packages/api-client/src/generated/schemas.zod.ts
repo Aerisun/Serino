@@ -19,6 +19,21 @@ export const ReadSiteBootstrapScriptBootstrapJsGetResponse = zod.unknown()
 
 
 /**
+ * @summary 生成 Notionists SVG 头像
+ */
+export const readNotionistsAvatarApiV1Avatars10XNotionistsSvgGetQuerySeedDefault = `visitor`;
+export const readNotionistsAvatarApiV1Avatars10XNotionistsSvgGetQuerySeedMax = 256;
+
+
+
+export const ReadNotionistsAvatarApiV1Avatars10XNotionistsSvgGetQueryParams = zod.object({
+  "seed": zod.string().max(readNotionistsAvatarApiV1Avatars10XNotionistsSvgGetQuerySeedMax).default(readNotionistsAvatarApiV1Avatars10XNotionistsSvgGetQuerySeedDefault)
+})
+
+export const ReadNotionistsAvatarApiV1Avatars10XNotionistsSvgGetResponse = zod.unknown()
+
+
+/**
  * @summary 获取站点配置
  */
 export const ReadSiteConfigApiV1SiteSiteGetResponse = zod.object({
@@ -867,6 +882,30 @@ export const SearchContentApiV1SiteSearchGetResponse = zod.object({
 export const SubscribeToContentApiV1SiteSubscriptionsPostBody = zod.object({
   "email": zod.string().describe('Subscriber email address'),
   "content_types": zod.array(zod.string()).describe('Content types to subscribe to')
+})
+
+
+/**
+ * @summary 读取当前登录用户发起的订阅列表
+ */
+export const ListMySubscriptionStatusesApiV1SiteSubscriptionsMineGetResponseItem = zod.object({
+  "email": zod.string().describe('Subscriber email address'),
+  "content_types": zod.array(zod.string()).describe('Subscribed content types'),
+  "subscribed": zod.boolean().describe('Whether the subscription is active')
+})
+export const ListMySubscriptionStatusesApiV1SiteSubscriptionsMineGetResponse = zod.array(ListMySubscriptionStatusesApiV1SiteSubscriptionsMineGetResponseItem)
+
+
+/**
+ * @summary 取消当前登录用户发起的指定邮箱订阅
+ */
+export const UnsubscribeMyInitiatedSubscriptionApiV1SiteSubscriptionsMineUnsubscribePostBody = zod.object({
+  "email": zod.string().describe('Subscriber email address')
+})
+
+export const UnsubscribeMyInitiatedSubscriptionApiV1SiteSubscriptionsMineUnsubscribePostResponse = zod.object({
+  "email": zod.string().describe('Subscriber email address'),
+  "unsubscribed": zod.boolean().describe('Whether unsubscribe succeeded')
 })
 
 

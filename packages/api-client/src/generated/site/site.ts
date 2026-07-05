@@ -52,6 +52,7 @@ import type {
   ReadFriendsApiV1SiteFriendsGetParams,
   ReadLinkPreviewApiV1SiteLinkPreviewGetParams,
   ReadLinkPreviewImageApiV1SiteLinkPreviewImageGetParams,
+  ReadNotionistsAvatarApiV1Avatars10XNotionistsSvgGetParams,
   ReadPoemPreviewApiV1SitePoemPreviewGetParams,
   ReadPostsApiV1SitePostsGetParams,
   ReadRecentActivityApiV1SiteRecentActivityGetParams,
@@ -288,6 +289,130 @@ export function useReadSiteBootstrapScriptBootstrapJsGet<TData = Awaited<ReturnT
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getReadSiteBootstrapScriptBootstrapJsGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 生成 Notionists SVG 头像
+ */
+export type readNotionistsAvatarApiV1Avatars10XNotionistsSvgGetResponse200 = {
+  data: unknown
+  status: 200
+}
+
+export type readNotionistsAvatarApiV1Avatars10XNotionistsSvgGetResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type readNotionistsAvatarApiV1Avatars10XNotionistsSvgGetResponseSuccess = (readNotionistsAvatarApiV1Avatars10XNotionistsSvgGetResponse200) & {
+  headers: Headers;
+};
+export type readNotionistsAvatarApiV1Avatars10XNotionistsSvgGetResponseError = (readNotionistsAvatarApiV1Avatars10XNotionistsSvgGetResponse422) & {
+  headers: Headers;
+};
+
+export type readNotionistsAvatarApiV1Avatars10XNotionistsSvgGetResponse = (readNotionistsAvatarApiV1Avatars10XNotionistsSvgGetResponseSuccess | readNotionistsAvatarApiV1Avatars10XNotionistsSvgGetResponseError)
+
+export const getReadNotionistsAvatarApiV1Avatars10XNotionistsSvgGetUrl = (params?: ReadNotionistsAvatarApiV1Avatars10XNotionistsSvgGetParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/avatars/10.x/notionists/svg?${stringifiedParams}` : `/api/v1/avatars/10.x/notionists/svg`
+}
+
+export const readNotionistsAvatarApiV1Avatars10XNotionistsSvgGet = async (params?: ReadNotionistsAvatarApiV1Avatars10XNotionistsSvgGetParams, options?: RequestInit): Promise<readNotionistsAvatarApiV1Avatars10XNotionistsSvgGetResponse> => {
+
+  return customInstance<readNotionistsAvatarApiV1Avatars10XNotionistsSvgGetResponse>(getReadNotionistsAvatarApiV1Avatars10XNotionistsSvgGetUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getReadNotionistsAvatarApiV1Avatars10XNotionistsSvgGetQueryKey = (params?: ReadNotionistsAvatarApiV1Avatars10XNotionistsSvgGetParams,) => {
+    return [
+    `/api/v1/avatars/10.x/notionists/svg`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getReadNotionistsAvatarApiV1Avatars10XNotionistsSvgGetQueryOptions = <TData = Awaited<ReturnType<typeof readNotionistsAvatarApiV1Avatars10XNotionistsSvgGet>>, TError = ErrorType<HTTPValidationError>>(params?: ReadNotionistsAvatarApiV1Avatars10XNotionistsSvgGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readNotionistsAvatarApiV1Avatars10XNotionistsSvgGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getReadNotionistsAvatarApiV1Avatars10XNotionistsSvgGetQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof readNotionistsAvatarApiV1Avatars10XNotionistsSvgGet>>> = ({ signal }) => readNotionistsAvatarApiV1Avatars10XNotionistsSvgGet(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof readNotionistsAvatarApiV1Avatars10XNotionistsSvgGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ReadNotionistsAvatarApiV1Avatars10XNotionistsSvgGetQueryResult = NonNullable<Awaited<ReturnType<typeof readNotionistsAvatarApiV1Avatars10XNotionistsSvgGet>>>
+export type ReadNotionistsAvatarApiV1Avatars10XNotionistsSvgGetQueryError = ErrorType<HTTPValidationError>
+
+
+export function useReadNotionistsAvatarApiV1Avatars10XNotionistsSvgGet<TData = Awaited<ReturnType<typeof readNotionistsAvatarApiV1Avatars10XNotionistsSvgGet>>, TError = ErrorType<HTTPValidationError>>(
+ params: undefined |  ReadNotionistsAvatarApiV1Avatars10XNotionistsSvgGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof readNotionistsAvatarApiV1Avatars10XNotionistsSvgGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof readNotionistsAvatarApiV1Avatars10XNotionistsSvgGet>>,
+          TError,
+          Awaited<ReturnType<typeof readNotionistsAvatarApiV1Avatars10XNotionistsSvgGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useReadNotionistsAvatarApiV1Avatars10XNotionistsSvgGet<TData = Awaited<ReturnType<typeof readNotionistsAvatarApiV1Avatars10XNotionistsSvgGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: ReadNotionistsAvatarApiV1Avatars10XNotionistsSvgGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readNotionistsAvatarApiV1Avatars10XNotionistsSvgGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof readNotionistsAvatarApiV1Avatars10XNotionistsSvgGet>>,
+          TError,
+          Awaited<ReturnType<typeof readNotionistsAvatarApiV1Avatars10XNotionistsSvgGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useReadNotionistsAvatarApiV1Avatars10XNotionistsSvgGet<TData = Awaited<ReturnType<typeof readNotionistsAvatarApiV1Avatars10XNotionistsSvgGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: ReadNotionistsAvatarApiV1Avatars10XNotionistsSvgGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readNotionistsAvatarApiV1Avatars10XNotionistsSvgGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 生成 Notionists SVG 头像
+ */
+
+export function useReadNotionistsAvatarApiV1Avatars10XNotionistsSvgGet<TData = Awaited<ReturnType<typeof readNotionistsAvatarApiV1Avatars10XNotionistsSvgGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: ReadNotionistsAvatarApiV1Avatars10XNotionistsSvgGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readNotionistsAvatarApiV1Avatars10XNotionistsSvgGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getReadNotionistsAvatarApiV1Avatars10XNotionistsSvgGetQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -3317,6 +3442,212 @@ export const useSubscribeToContentApiV1SiteSubscriptionsPost = <TError = ErrorTy
         TContext
       > => {
       return useMutation(getSubscribeToContentApiV1SiteSubscriptionsPostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 读取当前登录用户发起的订阅列表
+ */
+export type listMySubscriptionStatusesApiV1SiteSubscriptionsMineGetResponse200 = {
+  data: ContentSubscriptionPublicStatusRead[]
+  status: 200
+}
+
+export type listMySubscriptionStatusesApiV1SiteSubscriptionsMineGetResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type listMySubscriptionStatusesApiV1SiteSubscriptionsMineGetResponseSuccess = (listMySubscriptionStatusesApiV1SiteSubscriptionsMineGetResponse200) & {
+  headers: Headers;
+};
+export type listMySubscriptionStatusesApiV1SiteSubscriptionsMineGetResponseError = (listMySubscriptionStatusesApiV1SiteSubscriptionsMineGetResponse422) & {
+  headers: Headers;
+};
+
+export type listMySubscriptionStatusesApiV1SiteSubscriptionsMineGetResponse = (listMySubscriptionStatusesApiV1SiteSubscriptionsMineGetResponseSuccess | listMySubscriptionStatusesApiV1SiteSubscriptionsMineGetResponseError)
+
+export const getListMySubscriptionStatusesApiV1SiteSubscriptionsMineGetUrl = () => {
+
+
+
+
+  return `/api/v1/site/subscriptions/mine`
+}
+
+export const listMySubscriptionStatusesApiV1SiteSubscriptionsMineGet = async ( options?: RequestInit): Promise<listMySubscriptionStatusesApiV1SiteSubscriptionsMineGetResponse> => {
+
+  return customInstance<listMySubscriptionStatusesApiV1SiteSubscriptionsMineGetResponse>(getListMySubscriptionStatusesApiV1SiteSubscriptionsMineGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMySubscriptionStatusesApiV1SiteSubscriptionsMineGetQueryKey = () => {
+    return [
+    `/api/v1/site/subscriptions/mine`
+    ] as const;
+    }
+
+
+export const getListMySubscriptionStatusesApiV1SiteSubscriptionsMineGetQueryOptions = <TData = Awaited<ReturnType<typeof listMySubscriptionStatusesApiV1SiteSubscriptionsMineGet>>, TError = ErrorType<HTTPValidationError>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMySubscriptionStatusesApiV1SiteSubscriptionsMineGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMySubscriptionStatusesApiV1SiteSubscriptionsMineGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMySubscriptionStatusesApiV1SiteSubscriptionsMineGet>>> = ({ signal }) => listMySubscriptionStatusesApiV1SiteSubscriptionsMineGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMySubscriptionStatusesApiV1SiteSubscriptionsMineGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListMySubscriptionStatusesApiV1SiteSubscriptionsMineGetQueryResult = NonNullable<Awaited<ReturnType<typeof listMySubscriptionStatusesApiV1SiteSubscriptionsMineGet>>>
+export type ListMySubscriptionStatusesApiV1SiteSubscriptionsMineGetQueryError = ErrorType<HTTPValidationError>
+
+
+export function useListMySubscriptionStatusesApiV1SiteSubscriptionsMineGet<TData = Awaited<ReturnType<typeof listMySubscriptionStatusesApiV1SiteSubscriptionsMineGet>>, TError = ErrorType<HTTPValidationError>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMySubscriptionStatusesApiV1SiteSubscriptionsMineGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listMySubscriptionStatusesApiV1SiteSubscriptionsMineGet>>,
+          TError,
+          Awaited<ReturnType<typeof listMySubscriptionStatusesApiV1SiteSubscriptionsMineGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListMySubscriptionStatusesApiV1SiteSubscriptionsMineGet<TData = Awaited<ReturnType<typeof listMySubscriptionStatusesApiV1SiteSubscriptionsMineGet>>, TError = ErrorType<HTTPValidationError>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMySubscriptionStatusesApiV1SiteSubscriptionsMineGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listMySubscriptionStatusesApiV1SiteSubscriptionsMineGet>>,
+          TError,
+          Awaited<ReturnType<typeof listMySubscriptionStatusesApiV1SiteSubscriptionsMineGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListMySubscriptionStatusesApiV1SiteSubscriptionsMineGet<TData = Awaited<ReturnType<typeof listMySubscriptionStatusesApiV1SiteSubscriptionsMineGet>>, TError = ErrorType<HTTPValidationError>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMySubscriptionStatusesApiV1SiteSubscriptionsMineGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 读取当前登录用户发起的订阅列表
+ */
+
+export function useListMySubscriptionStatusesApiV1SiteSubscriptionsMineGet<TData = Awaited<ReturnType<typeof listMySubscriptionStatusesApiV1SiteSubscriptionsMineGet>>, TError = ErrorType<HTTPValidationError>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMySubscriptionStatusesApiV1SiteSubscriptionsMineGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListMySubscriptionStatusesApiV1SiteSubscriptionsMineGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 取消当前登录用户发起的指定邮箱订阅
+ */
+export type unsubscribeMyInitiatedSubscriptionApiV1SiteSubscriptionsMineUnsubscribePostResponse200 = {
+  data: ContentSubscriptionPublicUnsubscribeResult
+  status: 200
+}
+
+export type unsubscribeMyInitiatedSubscriptionApiV1SiteSubscriptionsMineUnsubscribePostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type unsubscribeMyInitiatedSubscriptionApiV1SiteSubscriptionsMineUnsubscribePostResponseSuccess = (unsubscribeMyInitiatedSubscriptionApiV1SiteSubscriptionsMineUnsubscribePostResponse200) & {
+  headers: Headers;
+};
+export type unsubscribeMyInitiatedSubscriptionApiV1SiteSubscriptionsMineUnsubscribePostResponseError = (unsubscribeMyInitiatedSubscriptionApiV1SiteSubscriptionsMineUnsubscribePostResponse422) & {
+  headers: Headers;
+};
+
+export type unsubscribeMyInitiatedSubscriptionApiV1SiteSubscriptionsMineUnsubscribePostResponse = (unsubscribeMyInitiatedSubscriptionApiV1SiteSubscriptionsMineUnsubscribePostResponseSuccess | unsubscribeMyInitiatedSubscriptionApiV1SiteSubscriptionsMineUnsubscribePostResponseError)
+
+export const getUnsubscribeMyInitiatedSubscriptionApiV1SiteSubscriptionsMineUnsubscribePostUrl = () => {
+
+
+
+
+  return `/api/v1/site/subscriptions/mine/unsubscribe`
+}
+
+export const unsubscribeMyInitiatedSubscriptionApiV1SiteSubscriptionsMineUnsubscribePost = async (contentSubscriptionPublicEmailRequest: ContentSubscriptionPublicEmailRequest, options?: RequestInit): Promise<unsubscribeMyInitiatedSubscriptionApiV1SiteSubscriptionsMineUnsubscribePostResponse> => {
+
+  return customInstance<unsubscribeMyInitiatedSubscriptionApiV1SiteSubscriptionsMineUnsubscribePostResponse>(getUnsubscribeMyInitiatedSubscriptionApiV1SiteSubscriptionsMineUnsubscribePostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      contentSubscriptionPublicEmailRequest,)
+  }
+);}
+
+
+
+
+export const getUnsubscribeMyInitiatedSubscriptionApiV1SiteSubscriptionsMineUnsubscribePostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unsubscribeMyInitiatedSubscriptionApiV1SiteSubscriptionsMineUnsubscribePost>>, TError,{data: BodyType<ContentSubscriptionPublicEmailRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof unsubscribeMyInitiatedSubscriptionApiV1SiteSubscriptionsMineUnsubscribePost>>, TError,{data: BodyType<ContentSubscriptionPublicEmailRequest>}, TContext> => {
+
+const mutationKey = ['unsubscribeMyInitiatedSubscriptionApiV1SiteSubscriptionsMineUnsubscribePost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof unsubscribeMyInitiatedSubscriptionApiV1SiteSubscriptionsMineUnsubscribePost>>, {data: BodyType<ContentSubscriptionPublicEmailRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  unsubscribeMyInitiatedSubscriptionApiV1SiteSubscriptionsMineUnsubscribePost(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UnsubscribeMyInitiatedSubscriptionApiV1SiteSubscriptionsMineUnsubscribePostMutationResult = NonNullable<Awaited<ReturnType<typeof unsubscribeMyInitiatedSubscriptionApiV1SiteSubscriptionsMineUnsubscribePost>>>
+    export type UnsubscribeMyInitiatedSubscriptionApiV1SiteSubscriptionsMineUnsubscribePostMutationBody = BodyType<ContentSubscriptionPublicEmailRequest>
+    export type UnsubscribeMyInitiatedSubscriptionApiV1SiteSubscriptionsMineUnsubscribePostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 取消当前登录用户发起的指定邮箱订阅
+ */
+export const useUnsubscribeMyInitiatedSubscriptionApiV1SiteSubscriptionsMineUnsubscribePost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unsubscribeMyInitiatedSubscriptionApiV1SiteSubscriptionsMineUnsubscribePost>>, TError,{data: BodyType<ContentSubscriptionPublicEmailRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof unsubscribeMyInitiatedSubscriptionApiV1SiteSubscriptionsMineUnsubscribePost>>,
+        TError,
+        {data: BodyType<ContentSubscriptionPublicEmailRequest>},
+        TContext
+      > => {
+      return useMutation(getUnsubscribeMyInitiatedSubscriptionApiV1SiteSubscriptionsMineUnsubscribePostMutationOptions(options), queryClient);
     }
     /**
  * @summary 按邮箱读取订阅状态
