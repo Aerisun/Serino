@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from sqlalchemy.orm import Session
 
 from aerisun.core.time import shanghai_now
+from aerisun.domain.avatars.service import NOTIONISTS_AVATAR_BASE_URL, notionists_avatar_url
 from aerisun.domain.exceptions import ValidationError
 from aerisun.domain.iam.service import validate_admin_password_for_user_id
 from aerisun.domain.media.models import Asset
@@ -33,7 +34,7 @@ from .shared import normalize_display_name, normalize_email
 
 AVATAR_PICKER_COUNT = 12
 AVATAR_POOL_SIZE = 1000
-DICEBEAR_NOTIONISTS_BASE_URL = "https://api.dicebear.com/9.x/notionists/svg"
+DICEBEAR_NOTIONISTS_BASE_URL = NOTIONISTS_AVATAR_BASE_URL
 ADMIN_COMMENT_AVATAR_KEY = "site-admin"
 
 
@@ -91,7 +92,7 @@ def avatar_seed(identity: str, index: int) -> str:
 
 
 def avatar_url_for_seed(seed: str) -> str:
-    return f"{DICEBEAR_NOTIONISTS_BASE_URL}?seed={seed}"
+    return notionists_avatar_url(seed)
 
 
 def build_avatar_candidates(

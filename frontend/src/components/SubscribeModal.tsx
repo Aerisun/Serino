@@ -16,7 +16,6 @@ import {
 } from "@serino/api-client/site";
 import { useFeatureFlags } from "@/contexts/runtime-config";
 import { useFrontendI18n } from "@/i18n";
-import { trackSubscriptionEmail } from "@/lib/subscription-tracker";
 
 const CONTENT_OPTIONS = [
   { key: "posts", feedPath: "/feeds/posts.xml" },
@@ -226,7 +225,6 @@ const SubscribeModal = ({ open, onClose, enabled }: SubscribeModalProps) => {
       if (!isSubscriptionSuccessPayload(subscribed)) {
         throw new Error(t("subscribe.invalidResponse"));
       }
-      trackSubscriptionEmail(subscribed.email);
       const message = t("subscribe.success", { email: subscribed.email });
       setFeedback({ kind: "success", message });
       pushToast("success", message);

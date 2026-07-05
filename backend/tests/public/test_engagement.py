@@ -110,7 +110,7 @@ def _login_site_user_with_options(
         json={
             "email": email,
             "display_name": display_name,
-            "avatar_url": f"https://api.dicebear.com/9.x/notionists/svg?seed={display_name}",
+            "avatar_url": f"/api/v1/avatars/10.x/notionists/svg?seed={display_name}",
             **({"admin_password": admin_password} if admin_password is not None else {}),
         },
     )
@@ -188,7 +188,7 @@ def _seed_public_comment(
         status="approved",
         url=build_comment_path("posts", "from-zero-design-system"),
         avatar_key=avatar_key or f"{nick}-avatar",
-        avatar_url=avatar_url or f"https://api.dicebear.com/9.x/notionists/svg?seed={nick}",
+        avatar_url=avatar_url or f"/api/v1/avatars/10.x/notionists/svg?seed={nick}",
     )
 
 
@@ -214,7 +214,7 @@ def test_read_guestbook_returns_seeded_entries(client) -> None:
     assert payload["has_more"] is False
     assert {item["name"] for item in payload["items"]} == {"Elena Torres", "纸鹤"}
     assert all(item["status"] == "approved" for item in payload["items"])
-    assert all(item["avatar_url"].startswith("https://api.dicebear.com/") for item in payload["items"])
+    assert all(item["avatar_url"].startswith("/api/v1/avatars/") for item in payload["items"])
 
 
 def test_create_guestbook_accepts_pending_entry(client) -> None:
@@ -342,7 +342,7 @@ def test_create_comment_accepts_pending_item(client) -> None:
     assert payload["accepted"] is True
     assert payload["item"]["status"] == "pending"
     assert payload["item"]["author_name"] == "Pytest Reader"
-    assert payload["item"]["avatar_url"].startswith("https://api.dicebear.com/")
+    assert payload["item"]["avatar_url"].startswith("/api/v1/avatars/")
     assert payload["item"]["feedback_enabled"] is True
     assert payload["item"]["owned_by_current_user"] is True
     assert payload["item"]["can_delete"] is True
@@ -728,7 +728,7 @@ def test_read_guestbook_marks_email_bound_admin_identity(client) -> None:
         status="approved",
         url=build_comment_path("guestbook", "guestbook"),
         avatar_key="guestbook-owner-avatar",
-        avatar_url="https://api.dicebear.com/9.x/notionists/svg?seed=guestbook-owner",
+        avatar_url="/api/v1/avatars/10.x/notionists/svg?seed=guestbook-owner",
     )
 
     response = client.get("/api/v1/site-interactions/guestbook")

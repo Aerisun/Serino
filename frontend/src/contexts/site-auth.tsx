@@ -24,27 +24,22 @@ import {
 import { transition } from "@/config";
 import { useFrontendI18n } from "@/i18n";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
+import { RetryableAvatarImage } from "@/components/RetryableAvatarImage";
 import { resetAuthSensitiveQueryCache } from "@/lib/query-cache";
 import {
   getOAuthAuthorizationUrl,
   loginWithEmail,
   logoutSiteAuth,
-  readContentSubscriptionByEmail,
   readAvatarCandidates,
+  readMyManagedContentSubscriptions,
   readSiteAuthState,
   type SiteContentSubscriptionStatus,
   type SiteAuthAvatarCandidate,
   type SiteAuthAvatarCandidateBatch,
   type SiteAuthState,
-  unsubscribeContentSubscriptionByEmail,
+  unsubscribeMyManagedContentSubscription,
   updateSiteAuthProfile,
 } from "@/lib/site-auth";
-import {
-  getTrackedSubscriptionEmails,
-  replaceTrackedSubscriptionEmails,
-  trackSubscriptionEmail,
-  untrackSubscriptionEmail,
-} from "@/lib/subscription-tracker";
 import {
   SiteAuthContext,
   type SiteAuthContextValue,
@@ -303,22 +298,8 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
     setSubscriptionLoading(true);
     setSubscriptionFeedback(null);
     try {
-      const trackedEmails = getTrackedSubscriptionEmails();
-      if (trackedEmails.length === 0) {
-        setSubscriptionStatuses([]);
-        return;
-      }
-
-      const nextStatuses = await Promise.all(
-        trackedEmails.map((trackedEmail) =>
-          readContentSubscriptionByEmail(trackedEmail),
-        ),
-      );
-      const activeStatuses = nextStatuses.filter((item) => item.subscribed);
-      replaceTrackedSubscriptionEmails(
-        activeStatuses.map((item) => item.email),
-      );
-      setSubscriptionStatuses(activeStatuses);
+      const activeStatuses = await readMyManagedContentSubscriptions();
+      setSubscriptionStatuses(activeStatuses.filter((item) => item.subscribed));
     } catch (err) {
       setSubscriptionFeedback({
         kind: "error",
@@ -341,12 +322,6 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
       const detail = (event as CustomEvent<SubscriptionChangedDetail>).detail;
       if (!detail) {
         return;
-      }
-
-      if (detail.subscribed) {
-        trackSubscriptionEmail(detail.email);
-      } else {
-        untrackSubscriptionEmail(detail.email);
       }
 
       setSubscriptionStatuses((current) => {
@@ -505,8 +480,7 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
     setSubscriptionPendingEmail(targetEmail);
     setSubscriptionFeedback(null);
     try {
-      await unsubscribeContentSubscriptionByEmail(targetEmail);
-      untrackSubscriptionEmail(targetEmail);
+      await unsubscribeMyManagedContentSubscription(targetEmail);
       setSubscriptionStatuses((current) =>
         current.filter(
           (item) => normalizeEmail(item.email) !== normalizeEmail(targetEmail),
@@ -737,7 +711,7 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
                     : "border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.72] hover:border-[rgb(var(--shiro-accent-rgb)/0.24)]"
                 }`}
               >
-                <img
+                <RetryableAvatarImage
                   src={candidate.avatar_url}
                   alt={candidate.label}
                   className="h-11 w-11 rounded-full object-cover"

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ArrowUpRight, Bell, BellOff, ChevronDown, Loader2, RefreshCw, Reply, Sparkles, Trash2 } from "lucide-react";
 import CommentMarkdownRenderer from "@/components/CommentMarkdownRenderer";
+import { RetryableAvatarImage } from "@/components/RetryableAvatarImage";
 import { useFrontendI18n } from "@/i18n";
 import {
   COMMENT_JUMP_REQUEST_EVENT,
@@ -83,7 +84,7 @@ const StreamEntry = ({
 
   return (
     <div id={id} className="aerisun-stream-entry">
-      <img
+      <RetryableAvatarImage
         src={avatarSrc}
         alt={authorName}
         className={`${communityAvatarClass} aerisun-comment-avatar h-11 w-11 rounded-full`}

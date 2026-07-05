@@ -1,5 +1,6 @@
 import { Check, LockKeyhole } from "lucide-react";
 import type { AvatarPreset } from "@/lib/community-config";
+import { RetryableAvatarImage } from "@/components/RetryableAvatarImage";
 import { useFrontendI18n } from "@/i18n";
 import {
   communityPopupClass,
@@ -42,7 +43,7 @@ const WalineAvatarSelector = ({
         aria-expanded={open}
         aria-label={t("waline.avatar.openLibrary")}
       >
-        <img
+        <RetryableAvatarImage
           src={selectedPreset?.avatar_url || fallbackAvatar(draftName)}
           alt={selectedPreset?.label || draftName || t("siteAuth.currentAvatar")}
           className="h-full w-full rounded-full object-cover"
@@ -78,7 +79,7 @@ const WalineAvatarSelector = ({
                     locked ? "cursor-not-allowed opacity-45 grayscale-[0.2] saturate-50" : "",
                   ].join(" ")}
                 >
-                  <img
+                  <RetryableAvatarImage
                     src={preset.avatar_url}
                     alt={preset.label}
                     className={`h-12 w-12 rounded-full object-cover shadow-sm md:h-14 md:w-14 ${locked ? "opacity-80" : ""}`}

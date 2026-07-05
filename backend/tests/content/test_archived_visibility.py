@@ -67,7 +67,7 @@ def _login_as_site_admin(client, *, email: str = ADMIN_EMAIL, password: str = AD
         json={
             "email": email,
             "display_name": "Archive Owner",
-            "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=archive-owner",
+            "avatar_url": "/api/v1/avatars/10.x/notionists/svg?seed=archive-owner",
             "admin_password": password,
         },
     )

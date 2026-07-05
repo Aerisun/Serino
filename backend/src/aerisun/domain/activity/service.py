@@ -20,6 +20,7 @@ from aerisun.domain.activity.schemas import (
     RecentActivityItemRead,
     RecentActivityRead,
 )
+from aerisun.domain.avatars.service import notionists_avatar_url
 from aerisun.domain.diary_access.service import diary_private_enabled
 from aerisun.domain.site_config.models import SiteProfile
 from aerisun.domain.waline.service import list_all_waline_records, parse_comment_path
@@ -28,7 +29,7 @@ DEFAULT_ACTIVITY_HEATMAP_TZ = "Asia/Shanghai"
 
 
 def _avatar_for_name(name: str) -> str:
-    return f"https://api.dicebear.com/9.x/notionists/svg?seed={name}"
+    return notionists_avatar_url(name)
 
 
 def _normalize_timestamp(value: datetime) -> datetime:

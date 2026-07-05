@@ -25,6 +25,7 @@ import { useReducedMotionPreference } from "@/lib/useReducedMotion";
 import { useSiteConfig } from "@/contexts/runtime-config";
 import { preloadInternalHref } from "@/lib/route-preload";
 import type { NavItem } from "@/lib/runtime-config";
+import { RetryableAvatarImage } from "@/components/RetryableAvatarImage";
 
 type NavbarGlassVariant = "default" | "hero";
 
@@ -587,7 +588,7 @@ const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
                       : "border-[rgb(var(--shiro-border-rgb)/0.22)] text-foreground/76 hover:text-foreground"
                   }`}
                 >
-                  <img
+                  <RetryableAvatarImage
                     src={user.effective_avatar_url}
                     alt={user.effective_display_name}
                     className="h-6 w-6 shrink-0 rounded-full object-cover ring-1 ring-black/5"

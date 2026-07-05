@@ -486,6 +486,47 @@ def get_public_subscription_for_email(
     )
 
 
+def list_public_subscriptions_for_site_user(
+    session: Session,
+    *,
+    current_user: SiteUser,
+    current_site_session: SiteUserSession | None = None,
+) -> list[ContentSubscriptionPublicStatusRead]:
+    if (
+        diary_private_enabled(session)
+        and not current_site_user_can_view_diary(session, current_user, current_site_session)
+        and remove_diary_subscription_for_site_user(session, current_user.id)
+    ):
+        session.commit()
+
+    subscribers = session.scalars(
+        select(ContentSubscriber)
+        .where(
+            ContentSubscriber.initiator_site_user_id == current_user.id,
+            ContentSubscriber.is_active.is_(True),
+        )
+        .order_by(ContentSubscriber.updated_at.desc(), ContentSubscriber.created_at.desc())
+    ).all()
+    items: list[ContentSubscriptionPublicStatusRead] = []
+    for subscriber in subscribers:
+        content_types = _visible_subscription_content_types(
+            session,
+            list(subscriber.content_types or []),
+            current_user=current_user,
+            current_site_session=current_site_session,
+        )
+        if not content_types:
+            continue
+        items.append(
+            ContentSubscriptionPublicStatusRead(
+                email=subscriber.email,
+                content_types=content_types,
+                subscribed=True,
+            )
+        )
+    return items
+
+
 def unsubscribe_public_subscription(
     session: Session,
     *,
@@ -495,6 +536,32 @@ def unsubscribe_public_subscription(
 
     normalized_email = _normalize_email(email)
     subscriber = session.scalars(select(ContentSubscriber).where(ContentSubscriber.email == normalized_email)).first()
+    if subscriber is not None and subscriber.is_active:
+        subscriber.is_active = False
+        session.commit()
+        emit_subscription_unsubscribed(session, email=normalized_email)
+
+    return ContentSubscriptionPublicUnsubscribeResult(
+        email=normalized_email,
+        unsubscribed=True,
+    )
+
+
+def unsubscribe_public_subscription_for_site_user(
+    session: Session,
+    *,
+    email: str,
+    current_user: SiteUser,
+) -> ContentSubscriptionPublicUnsubscribeResult:
+    from aerisun.domain.automation.events import emit_subscription_unsubscribed
+
+    normalized_email = _normalize_email(email)
+    subscriber = session.scalars(
+        select(ContentSubscriber).where(
+            ContentSubscriber.email == normalized_email,
+            ContentSubscriber.initiator_site_user_id == current_user.id,
+        )
+    ).first()
     if subscriber is not None and subscriber.is_active:
         subscriber.is_active = False
         session.commit()

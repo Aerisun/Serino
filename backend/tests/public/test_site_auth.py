@@ -207,7 +207,7 @@ def _login_site_user(
     payload = {
         "email": email,
         "display_name": display_name,
-        "avatar_url": f"https://api.dicebear.com/9.x/notionists/svg?seed={avatar_seed}",
+        "avatar_url": f"/api/v1/avatars/10.x/notionists/svg?seed={avatar_seed}",
     }
     if admin_password is not None:
         payload["admin_password"] = admin_password

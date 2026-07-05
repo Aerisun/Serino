@@ -21,7 +21,9 @@ from aerisun.domain.subscription.schemas import (
 from aerisun.domain.subscription.service import (
     create_or_update_public_subscription,
     get_public_subscription_for_email,
+    list_public_subscriptions_for_site_user,
     unsubscribe_public_subscription,
+    unsubscribe_public_subscription_for_site_user,
 )
 
 router = APIRouter(prefix="/api/v1/site/subscriptions", tags=["site"])
@@ -39,6 +41,36 @@ def subscribe_to_content(
         payload,
         current_user=current_user,
         current_site_session=current_site_session,
+    )
+
+
+@router.get("/mine", response_model=list[ContentSubscriptionPublicStatusRead], summary="读取当前登录用户发起的订阅列表")
+def list_my_subscription_statuses(
+    current_user: SiteUser = Depends(get_current_site_user),
+    current_site_session: SiteUserSession = Depends(get_current_site_session),
+    session: Session = Depends(get_session),
+) -> list[ContentSubscriptionPublicStatusRead]:
+    return list_public_subscriptions_for_site_user(
+        session,
+        current_user=current_user,
+        current_site_session=current_site_session,
+    )
+
+
+@router.post(
+    "/mine/unsubscribe",
+    response_model=ContentSubscriptionPublicUnsubscribeResult,
+    summary="取消当前登录用户发起的指定邮箱订阅",
+)
+def unsubscribe_my_initiated_subscription(
+    payload: ContentSubscriptionPublicEmailRequest,
+    current_user: SiteUser = Depends(get_current_site_user),
+    session: Session = Depends(get_session),
+) -> ContentSubscriptionPublicUnsubscribeResult:
+    return unsubscribe_public_subscription_for_site_user(
+        session,
+        email=payload.email,
+        current_user=current_user,
     )
 
 

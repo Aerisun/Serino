@@ -132,7 +132,7 @@ export const EMOJI_CHOICES: EmojiChoice[] = [
 
 export const AVATAR_PICKER_COUNT = 16;
 export const AVATAR_POOL_SIZE = 1000;
-export const DICEBEAR_NOTIONISTS_BASE_URL = "https://api.dicebear.com/9.x/notionists/svg";
+export const DICEBEAR_NOTIONISTS_BASE_URL = "/api/v1/avatars/10.x/notionists/svg";
 
 /* ── Shared CSS class strings ── */
 
@@ -234,7 +234,7 @@ export const buildDefaultAvatarPreset = (identity: string): AvatarPreset => {
 };
 
 export const fallbackAvatar = (name: string) =>
-  `https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(name || "visitor")}`;
+  `/api/v1/avatars/10.x/notionists/svg?seed=${encodeURIComponent(name || "visitor")}`;
 
 export const buildCommentAnchorId = (commentId: string) => `comment-${commentId}`;
 export const COMMENT_JUMP_REQUEST_EVENT = "aerisun:comment-jump-request";

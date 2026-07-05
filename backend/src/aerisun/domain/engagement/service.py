@@ -4,12 +4,13 @@ import re
 from collections import defaultdict
 from dataclasses import dataclass
 from hashlib import sha256
-from urllib.parse import quote, unquote, urljoin
+from urllib.parse import unquote, urljoin
 
 import httpx
 from sqlalchemy.orm import Session
 
 from aerisun.core.settings import get_settings
+from aerisun.domain.avatars.service import NOTIONISTS_AVATAR_BASE_URL, notionists_avatar_url
 from aerisun.domain.engagement import repository as repo
 from aerisun.domain.engagement.schemas import (
     CommentCollectionRead,
@@ -50,22 +51,22 @@ from aerisun.domain.waline.service import (
 )
 
 DEFAULT_COMMENT_AVATAR_PRESETS = [
-    {"key": "shiro", "label": "Shiro", "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Shiro"},
-    {"key": "glass", "label": "Glass", "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Glass"},
-    {"key": "aurora", "label": "Aurora", "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Aurora"},
-    {"key": "paper", "label": "Paper", "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Paper"},
-    {"key": "dawn", "label": "Dawn", "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Dawn"},
-    {"key": "pebble", "label": "Pebble", "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Pebble"},
-    {"key": "amber", "label": "Amber", "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Amber"},
-    {"key": "mint", "label": "Mint", "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Mint"},
-    {"key": "cinder", "label": "Cinder", "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Cinder"},
-    {"key": "tide", "label": "Tide", "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Tide"},
-    {"key": "plum", "label": "Plum", "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Plum"},
-    {"key": "linen", "label": "Linen", "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Linen"},
+    {"key": "shiro", "label": "Shiro", "avatar_url": notionists_avatar_url("Shiro")},
+    {"key": "glass", "label": "Glass", "avatar_url": notionists_avatar_url("Glass")},
+    {"key": "aurora", "label": "Aurora", "avatar_url": notionists_avatar_url("Aurora")},
+    {"key": "paper", "label": "Paper", "avatar_url": notionists_avatar_url("Paper")},
+    {"key": "dawn", "label": "Dawn", "avatar_url": notionists_avatar_url("Dawn")},
+    {"key": "pebble", "label": "Pebble", "avatar_url": notionists_avatar_url("Pebble")},
+    {"key": "amber", "label": "Amber", "avatar_url": notionists_avatar_url("Amber")},
+    {"key": "mint", "label": "Mint", "avatar_url": notionists_avatar_url("Mint")},
+    {"key": "cinder", "label": "Cinder", "avatar_url": notionists_avatar_url("Cinder")},
+    {"key": "tide", "label": "Tide", "avatar_url": notionists_avatar_url("Tide")},
+    {"key": "plum", "label": "Plum", "avatar_url": notionists_avatar_url("Plum")},
+    {"key": "linen", "label": "Linen", "avatar_url": notionists_avatar_url("Linen")},
 ]
 AVATAR_PICKER_COUNT = 16
 AVATAR_POOL_SIZE = 1000
-DICEBEAR_NOTIONISTS_BASE_URL = "https://api.dicebear.com/9.x/notionists/svg"
+DICEBEAR_NOTIONISTS_BASE_URL = NOTIONISTS_AVATAR_BASE_URL
 MAX_COMMENT_IMAGES_PER_ENTRY = 9
 _MARKDOWN_IMAGE_RE = re.compile(r"!\[[^\]]*]\([^)]+\)")
 _COMMENT_MEDIA_RESOURCE_RE = re.compile(r"/media/([^)\s\"']+)")
@@ -125,7 +126,7 @@ def _avatar_seed(identity: str, index: int) -> str:
 
 
 def _avatar_url_for_seed(seed: str) -> str:
-    return f"{DICEBEAR_NOTIONISTS_BASE_URL}?seed={quote(seed)}"
+    return notionists_avatar_url(seed)
 
 
 def _build_avatar_candidates(identity: str, count: int = AVATAR_PICKER_COUNT) -> list[dict[str, str]]:

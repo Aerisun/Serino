@@ -126,6 +126,17 @@ export function unsubscribeMyContentSubscription() {
   });
 }
 
+export function readMyManagedContentSubscriptions() {
+  return requestSiteAuthJson<SiteContentSubscriptionStatus[]>("/api/v1/site/subscriptions/mine");
+}
+
+export function unsubscribeMyManagedContentSubscription(email: string) {
+  return requestSiteAuthJson<SiteContentUnsubscribeResult>("/api/v1/site/subscriptions/mine/unsubscribe", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
 export function readContentSubscriptionByEmail(email: string) {
   return requestSiteAuthJson<SiteContentSubscriptionStatus>("/api/v1/site/subscriptions/status", {
     method: "POST",

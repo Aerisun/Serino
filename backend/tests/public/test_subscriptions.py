@@ -34,7 +34,7 @@ def _login_site_user(client, *, email: str) -> None:
         json={
             "email": email,
             "display_name": "Subscriber",
-            "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=subscriber",
+            "avatar_url": "/api/v1/avatars/10.x/notionists/svg?seed=subscriber",
         },
     )
     assert response.status_code == 200
@@ -431,3 +431,97 @@ def test_public_subscription_stores_initiating_visitor_independently_from_subscr
     assert subscriber is not None
     assert visitor is not None
     assert subscriber.initiator_site_user_id == visitor.id
+
+
+def test_my_subscription_list_only_returns_current_visitors_initiated_emails(client, monkeypatch) -> None:
+    _enable_subscriptions()
+    monkeypatch.setattr("aerisun.domain.subscription.service._send_email", lambda **_: None)
+
+    _login_site_user(client, email="visitor-a@example.com")
+    first_response = client.post(
+        f"{PUBLIC_BASE}/subscriptions/",
+        json={"email": "visitor-a-delivery@example.com", "content_types": ["posts", "thoughts"]},
+    )
+    assert first_response.status_code == 201
+
+    client.post("/api/v1/site-auth/logout")
+    _login_site_user(client, email="visitor-b@example.com")
+    second_response = client.post(
+        f"{PUBLIC_BASE}/subscriptions/",
+        json={"email": "visitor-b-delivery@example.com", "content_types": ["excerpts"]},
+    )
+    assert second_response.status_code == 201
+
+    visitor_b_list = client.get(f"{PUBLIC_BASE}/subscriptions/mine")
+    assert visitor_b_list.status_code == 200
+    assert visitor_b_list.json() == [
+        {
+            "email": "visitor-b-delivery@example.com",
+            "content_types": ["excerpts"],
+            "subscribed": True,
+        }
+    ]
+
+    client.post("/api/v1/site-auth/logout")
+    _login_site_user(client, email="visitor-a@example.com")
+    visitor_a_list = client.get(f"{PUBLIC_BASE}/subscriptions/mine")
+    assert visitor_a_list.status_code == 200
+    assert visitor_a_list.json() == [
+        {
+            "email": "visitor-a-delivery@example.com",
+            "content_types": ["posts", "thoughts"],
+            "subscribed": True,
+        }
+    ]
+
+
+def test_my_subscription_unsubscribe_only_affects_current_visitors_initiated_email(client, monkeypatch) -> None:
+    _enable_subscriptions()
+    monkeypatch.setattr("aerisun.domain.subscription.service._send_email", lambda **_: None)
+
+    _login_site_user(client, email="visitor-a@example.com")
+    first_response = client.post(
+        f"{PUBLIC_BASE}/subscriptions/",
+        json={"email": "visitor-a-delivery@example.com", "content_types": ["posts"]},
+    )
+    assert first_response.status_code == 201
+
+    client.post("/api/v1/site-auth/logout")
+    _login_site_user(client, email="visitor-b@example.com")
+    second_response = client.post(
+        f"{PUBLIC_BASE}/subscriptions/",
+        json={"email": "visitor-b-delivery@example.com", "content_types": ["thoughts"]},
+    )
+    assert second_response.status_code == 201
+
+    forbidden_unsubscribe = client.post(
+        f"{PUBLIC_BASE}/subscriptions/mine/unsubscribe",
+        json={"email": "visitor-a-delivery@example.com"},
+    )
+    assert forbidden_unsubscribe.status_code == 200
+    assert forbidden_unsubscribe.json() == {
+        "email": "visitor-a-delivery@example.com",
+        "unsubscribed": True,
+    }
+
+    visitor_b_list = client.get(f"{PUBLIC_BASE}/subscriptions/mine")
+    assert visitor_b_list.status_code == 200
+    assert visitor_b_list.json() == [
+        {
+            "email": "visitor-b-delivery@example.com",
+            "content_types": ["thoughts"],
+            "subscribed": True,
+        }
+    ]
+
+    client.post("/api/v1/site-auth/logout")
+    _login_site_user(client, email="visitor-a@example.com")
+    visitor_a_list = client.get(f"{PUBLIC_BASE}/subscriptions/mine")
+    assert visitor_a_list.status_code == 200
+    assert visitor_a_list.json() == [
+        {
+            "email": "visitor-a-delivery@example.com",
+            "content_types": ["posts"],
+            "subscribed": True,
+        }
+    ]

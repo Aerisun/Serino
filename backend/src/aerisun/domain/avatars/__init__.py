@@ -1,0 +1,1 @@
+"""Avatar generation domain helpers."""

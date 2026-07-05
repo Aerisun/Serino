@@ -19,7 +19,7 @@ def _login_site_user(client, *, email: str = "diary-reader@example.com", display
         json={
             "email": email,
             "display_name": display_name,
-            "avatar_url": f"https://api.dicebear.com/9.x/notionists/svg?seed={display_name}",
+            "avatar_url": f"/api/v1/avatars/10.x/notionists/svg?seed={display_name}",
         },
     )
     assert response.status_code == 200
