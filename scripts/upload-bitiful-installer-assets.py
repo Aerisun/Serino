@@ -136,6 +136,30 @@ def main() -> int:
             "text/plain; charset=utf-8",
             "no-cache, no-store, must-revalidate",
         ),
+        UploadAsset(
+            dist_dir / "latest.json",
+            f"{root_prefix}latest.json",
+            "application/json; charset=utf-8",
+            "no-cache, no-store, must-revalidate",
+        ),
+        UploadAsset(
+            dist_dir / "release.json",
+            f"{root_prefix}release.json",
+            "application/json; charset=utf-8",
+            "no-cache, no-store, must-revalidate",
+        ),
+        UploadAsset(
+            dist_dir / "release-notes.md",
+            f"{root_prefix}release-notes.md",
+            "text/markdown; charset=utf-8",
+            "no-cache, no-store, must-revalidate",
+        ),
+        UploadAsset(
+            dist_dir / "update-trusted-public-key.b64",
+            f"{root_prefix}update-trusted-public-key.b64",
+            "text/plain; charset=utf-8",
+            "no-cache, no-store, must-revalidate",
+        ),
         UploadAsset(dist_dir / "install.sh", f"{version_prefix}install.sh", "application/x-sh"),
         UploadAsset(
             dist_dir / "aerisun-installer-bundle.tar.gz",
@@ -145,6 +169,21 @@ def main() -> int:
         UploadAsset(
             dist_dir / "aerisun-installer-manifest.env",
             f"{version_prefix}aerisun-installer-manifest.env",
+            "text/plain; charset=utf-8",
+        ),
+        UploadAsset(
+            dist_dir / "release.json",
+            f"{version_prefix}release.json",
+            "application/json; charset=utf-8",
+        ),
+        UploadAsset(
+            dist_dir / "release-notes.md",
+            f"{version_prefix}release-notes.md",
+            "text/markdown; charset=utf-8",
+        ),
+        UploadAsset(
+            dist_dir / "update-trusted-public-key.b64",
+            f"{version_prefix}update-trusted-public-key.b64",
             "text/plain; charset=utf-8",
         ),
         UploadAsset(

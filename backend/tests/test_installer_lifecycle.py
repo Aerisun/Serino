@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import base64
 import hashlib
+import json
 import os
 import shutil
 import subprocess
 import tarfile
 from pathlib import Path
+
+import pytest
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -52,6 +56,67 @@ def parse_env_file(path: Path) -> dict[str, str]:
         key, value = line.split("=", 1)
         values[key] = value
     return values
+
+
+def generate_rsa_signing_key_pair_b64(tmp_path: Path, name: str) -> tuple[str, str]:
+    openssl = shutil.which("openssl")
+    if openssl is None:
+        pytest.skip("openssl is required for release signing tests")
+
+    private_key = tmp_path / f"{name}.private.pem"
+    public_key = tmp_path / f"{name}.public.pem"
+    subprocess.run(
+        [openssl, "genpkey", "-algorithm", "RSA", "-pkeyopt", "rsa_keygen_bits:2048", "-out", str(private_key)],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    subprocess.run(
+        [openssl, "pkey", "-in", str(private_key), "-pubout", "-out", str(public_key)],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return (
+        base64.b64encode(private_key.read_bytes()).decode("ascii"),
+        base64.b64encode(public_key.read_bytes()).decode("ascii"),
+    )
+
+
+def verify_release_signature(tmp_path: Path, release_payload: dict[str, object], public_key_b64: str) -> None:
+    openssl = shutil.which("openssl")
+    if openssl is None:
+        pytest.skip("openssl is required for release signing tests")
+
+    signed_payload = release_payload["signed"]
+    signature = release_payload["signature"]
+    assert isinstance(signed_payload, dict)
+    assert isinstance(signature, dict)
+
+    payload_file = tmp_path / "release-payload.json"
+    signature_file = tmp_path / "release-payload.sig"
+    public_key_file = tmp_path / "release-public.pem"
+    payload_file.write_bytes(
+        json.dumps(signed_payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    )
+    signature_file.write_bytes(base64.b64decode(str(signature["value"])))
+    public_key_file.write_bytes(base64.b64decode(public_key_b64))
+
+    subprocess.run(
+        [
+            openssl,
+            "dgst",
+            "-sha256",
+            "-verify",
+            str(public_key_file),
+            "-signature",
+            str(signature_file),
+            str(payload_file),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
 
 
 def test_installer_scripts_are_source_safe() -> None:
@@ -154,6 +219,182 @@ def test_package_installer_writes_bundle_sha256_to_manifest_and_latest(tmp_path:
 
     assert latest_values["AERISUN_INSTALL_BUNDLE_SHA256"] == bundle_sha256
     assert manifest_values["AERISUN_INSTALL_BUNDLE_SHA256"] == bundle_sha256
+    latest_json = dist_dir / "latest.json"
+    release_json = dist_dir / "release.json"
+    release_notes = dist_dir / "release-notes.md"
+    version_release_json = dist_dir / "v9.9.9" / "release.json"
+    version_release_notes = dist_dir / "v9.9.9" / "release-notes.md"
+
+    assert latest_json.is_file()
+    assert release_json.is_file()
+    assert release_notes.is_file()
+    assert version_release_json.is_file()
+    assert version_release_notes.is_file()
+
+    latest_payload = json.loads(latest_json.read_text(encoding="utf-8"))
+    release_payload = json.loads(release_json.read_text(encoding="utf-8"))
+    assert latest_payload["version"] == "v9.9.9"
+    assert latest_payload["release_json_url"] == "https://install.example.com/serino/v9.9.9/release.json"
+    assert release_payload["version"] == "v9.9.9"
+    assert release_payload["bundle_sha256"] == bundle_sha256
+    assert release_payload["signature"] is None
+    assert "v9.9.9" in release_notes.read_text(encoding="utf-8")
+
+
+def test_package_installer_requires_release_signing_when_enabled(tmp_path: Path) -> None:
+    dist_dir = tmp_path / "installer-dist"
+    env = os.environ.copy()
+    env.update(
+        {
+            "AERISUN_INSTALL_DIST_DIR": str(dist_dir),
+            "AERISUN_RELEASE_TAG": "v9.9.9",
+            "AERISUN_RELEASE_VERSION": "9.9.9",
+            "AERISUN_INSTALL_CHANNEL": "stable",
+            "AERISUN_IMAGE_REGISTRY": "registry.example.com/serino",
+            "AERISUN_INSTALL_BASE_URL": "https://install.example.com/serino",
+            "AERISUN_UPDATE_SIGNING_REQUIRED": "true",
+        }
+    )
+    env.pop("AERISUN_UPDATE_SIGNING_PRIVATE_KEY_B64", None)
+
+    completed = subprocess.run(
+        ["bash", "scripts/package-installer.sh"],
+        cwd=PROJECT_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+
+    assert completed.returncode != 0
+    assert "AERISUN_UPDATE_SIGNING_PRIVATE_KEY_B64" in completed.stderr
+
+
+def test_package_installer_signs_release_metadata_and_embeds_trusted_public_key(tmp_path: Path) -> None:
+    private_key_b64, public_key_b64 = generate_rsa_signing_key_pair_b64(tmp_path, "release")
+    dist_dir = tmp_path / "installer-dist"
+    env = os.environ.copy()
+    env.update(
+        {
+            "AERISUN_INSTALL_DIST_DIR": str(dist_dir),
+            "AERISUN_RELEASE_TAG": "v9.9.9",
+            "AERISUN_RELEASE_VERSION": "9.9.9",
+            "AERISUN_INSTALL_CHANNEL": "stable",
+            "AERISUN_IMAGE_REGISTRY": "registry.example.com/serino",
+            "AERISUN_INSTALL_BASE_URL": "https://install.example.com/serino",
+            "AERISUN_UPDATE_SIGNING_REQUIRED": "true",
+            "AERISUN_UPDATE_SIGNING_PRIVATE_KEY_B64": private_key_b64,
+            "AERISUN_UPDATE_SIGNATURE_KEY_ID": "serino-test-release",
+        }
+    )
+
+    subprocess.run(
+        ["bash", "scripts/package-installer.sh"],
+        cwd=PROJECT_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+
+    release_payload = json.loads((dist_dir / "release.json").read_text(encoding="utf-8"))
+    signature = release_payload["signature"]
+    manifest_values = parse_env_file(dist_dir / "aerisun-installer-manifest.env")
+    signed_payload = release_payload["signed"]
+    assert signature["alg"] == "rsa-sha256"
+    assert signature["key_id"] == "serino-test-release"
+    assert signature["value"]
+    assert signed_payload["channel"] == "stable"
+    assert signed_payload["trusted_public_key_b64"] == public_key_b64
+    assert (dist_dir / "update-trusted-public-key.b64").read_text(encoding="utf-8").strip() == public_key_b64
+    assert manifest_values["AERISUN_UPDATE_TRUSTED_PUBLIC_KEY_B64"] == public_key_b64
+    assert public_key_b64 in (dist_dir / "install.sh").read_text(encoding="utf-8")
+    assert public_key_b64 in (dist_dir / "install.latest.sh").read_text(encoding="utf-8")
+    verify_release_signature(tmp_path, release_payload, public_key_b64)
+
+
+def test_package_installer_signs_dev_channel_with_same_trust_contract(tmp_path: Path) -> None:
+    private_key_b64, public_key_b64 = generate_rsa_signing_key_pair_b64(tmp_path, "dev-release")
+    dist_dir = tmp_path / "installer-dist"
+    env = os.environ.copy()
+    env.update(
+        {
+            "AERISUN_INSTALL_DIST_DIR": str(dist_dir),
+            "AERISUN_RELEASE_TAG": "v9.9.9",
+            "AERISUN_RELEASE_VERSION": "9.9.9",
+            "AERISUN_INSTALL_CHANNEL": "dev",
+            "AERISUN_IMAGE_REGISTRY": "registry.example.com/serino",
+            "AERISUN_INSTALL_BASE_URL": "https://install.example.com/serino/dev",
+            "AERISUN_UPDATE_SIGNING_REQUIRED": "true",
+            "AERISUN_UPDATE_SIGNING_PRIVATE_KEY_B64": private_key_b64,
+            "AERISUN_UPDATE_SIGNATURE_KEY_ID": "serino-test-dev",
+        }
+    )
+
+    subprocess.run(
+        ["bash", "scripts/package-installer.sh"],
+        cwd=PROJECT_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+
+    latest_payload = json.loads((dist_dir / "latest.json").read_text(encoding="utf-8"))
+    release_payload = json.loads((dist_dir / "release.json").read_text(encoding="utf-8"))
+    manifest_values = parse_env_file(dist_dir / "aerisun-installer-manifest.env")
+    signed_payload = release_payload["signed"]
+    signature = release_payload["signature"]
+
+    assert latest_payload["channel"] == "dev"
+    assert latest_payload["release_json_url"] == "https://install.example.com/serino/dev/v9.9.9/release.json"
+    assert signed_payload["channel"] == "dev"
+    assert signed_payload["api_image_name"] == "serino-dev-api"
+    assert signed_payload["web_image_name"] == "serino-dev-web"
+    assert signed_payload["waline_image_name"] == "serino-dev-waline"
+    assert (
+        signed_payload["manifest_url"] == "https://install.example.com/serino/dev/v9.9.9/aerisun-installer-manifest.env"
+    )
+    assert signed_payload["trusted_public_key_b64"] == public_key_b64
+    assert signature["alg"] == "rsa-sha256"
+    assert signature["key_id"] == "serino-test-dev"
+    assert manifest_values["AERISUN_INSTALL_CHANNEL"] == "dev"
+    assert manifest_values["AERISUN_API_IMAGE_NAME"] == "serino-dev-api"
+    assert manifest_values["AERISUN_UPDATE_TRUSTED_PUBLIC_KEY_B64"] == public_key_b64
+    verify_release_signature(tmp_path, release_payload, public_key_b64)
+
+
+def test_package_installer_rejects_mismatched_trusted_public_key(tmp_path: Path) -> None:
+    private_key_b64, _ = generate_rsa_signing_key_pair_b64(tmp_path, "release")
+    _, mismatched_public_key_b64 = generate_rsa_signing_key_pair_b64(tmp_path, "other")
+    dist_dir = tmp_path / "installer-dist"
+    env = os.environ.copy()
+    env.update(
+        {
+            "AERISUN_INSTALL_DIST_DIR": str(dist_dir),
+            "AERISUN_RELEASE_TAG": "v9.9.9",
+            "AERISUN_RELEASE_VERSION": "9.9.9",
+            "AERISUN_INSTALL_CHANNEL": "stable",
+            "AERISUN_IMAGE_REGISTRY": "registry.example.com/serino",
+            "AERISUN_INSTALL_BASE_URL": "https://install.example.com/serino",
+            "AERISUN_UPDATE_SIGNING_REQUIRED": "true",
+            "AERISUN_UPDATE_SIGNING_PRIVATE_KEY_B64": private_key_b64,
+            "AERISUN_UPDATE_TRUSTED_PUBLIC_KEY_B64": mismatched_public_key_b64,
+        }
+    )
+
+    completed = subprocess.run(
+        ["bash", "scripts/package-installer.sh"],
+        cwd=PROJECT_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+
+    assert completed.returncode != 0
+    assert "AERISUN_UPDATE_TRUSTED_PUBLIC_KEY_B64" in completed.stderr
+    assert "does not match" in completed.stderr
 
 
 def test_load_release_manifest_safely_parses_whitelisted_values_and_sha256(tmp_path: Path) -> None:
@@ -169,6 +410,7 @@ def test_load_release_manifest_safely_parses_whitelisted_values_and_sha256(tmp_p
                 "AERISUN_WEB_IMAGE_NAME=serino-dev-web",
                 "AERISUN_WALINE_IMAGE_NAME=serino-dev-waline",
                 "AERISUN_INSTALL_BUNDLE_SHA256=" + ("a" * 64),
+                "AERISUN_UPDATE_TRUSTED_PUBLIC_KEY_B64=QUJDRA==",
             ]
         )
         + "\n",
@@ -186,6 +428,7 @@ load_release_manifest v1.2.3 '{destination}'
 printf '%s\\n' "${{AERISUN_INSTALL_CHANNEL}}"
 printf '%s\\n' "${{AERISUN_IMAGE_REGISTRY}}"
 printf '%s\\n' "${{AERISUN_INSTALL_BUNDLE_SHA256}}"
+printf '%s\\n' "${{AERISUN_UPDATE_TRUSTED_PUBLIC_KEY_B64}}"
 """
     )
 
@@ -193,6 +436,7 @@ printf '%s\\n' "${{AERISUN_INSTALL_BUNDLE_SHA256}}"
         "dev",
         "registry.example.com:5000/serino",
         "a" * 64,
+        "QUJDRA==",
     ]
 
 

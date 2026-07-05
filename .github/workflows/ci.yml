@@ -484,6 +484,10 @@ jobs:
           AERISUN_RELEASE_VERSION: ${{ steps.prep.outputs.version }}
           AERISUN_INSTALL_BASE_URL: ${{ steps.prep.outputs.dev_base_url }}
           AERISUN_IMAGE_REGISTRY: ${{ env.DEFAULT_IMAGE_REGISTRY }}
+          AERISUN_UPDATE_SIGNING_REQUIRED: "true"
+          AERISUN_UPDATE_SIGNING_PRIVATE_KEY_B64: ${{ secrets.AERISUN_UPDATE_SIGNING_PRIVATE_KEY_B64 }}
+          AERISUN_UPDATE_TRUSTED_PUBLIC_KEY_B64: ${{ vars.AERISUN_UPDATE_TRUSTED_PUBLIC_KEY_B64 }}
+          AERISUN_UPDATE_SIGNATURE_KEY_ID: ${{ vars.AERISUN_UPDATE_SIGNATURE_KEY_ID != '' && vars.AERISUN_UPDATE_SIGNATURE_KEY_ID || 'serino-release' }}
         run: bash ./scripts/package-installer.sh
 
       - name: Upload dev installer assets to Bitiful OSS
@@ -527,7 +531,11 @@ jobs:
         run: |
           bash ./scripts/refresh-bitiful-cdn.sh \
             "${DEV_INSTALL_BASE_URL}/install.sh" \
-            "${DEV_INSTALL_BASE_URL}/latest.env"
+            "${DEV_INSTALL_BASE_URL}/latest.env" \
+            "${DEV_INSTALL_BASE_URL}/latest.json" \
+            "${DEV_INSTALL_BASE_URL}/release.json" \
+            "${DEV_INSTALL_BASE_URL}/release-notes.md" \
+            "${DEV_INSTALL_BASE_URL}/update-trusted-public-key.b64"
 
   release-readiness:
     name: Release Readiness
@@ -739,6 +747,10 @@ jobs:
           AERISUN_RELEASE_VERSION: ${{ steps.prep.outputs.version }}
           AERISUN_IMAGE_REGISTRY: ${{ env.DEFAULT_IMAGE_REGISTRY }}
           AERISUN_INSTALL_BASE_URL: ${{ vars.BINFEN_INSTALL_BASE_URL }}
+          AERISUN_UPDATE_SIGNING_REQUIRED: "true"
+          AERISUN_UPDATE_SIGNING_PRIVATE_KEY_B64: ${{ secrets.AERISUN_UPDATE_SIGNING_PRIVATE_KEY_B64 }}
+          AERISUN_UPDATE_TRUSTED_PUBLIC_KEY_B64: ${{ vars.AERISUN_UPDATE_TRUSTED_PUBLIC_KEY_B64 }}
+          AERISUN_UPDATE_SIGNATURE_KEY_ID: ${{ vars.AERISUN_UPDATE_SIGNATURE_KEY_ID != '' && vars.AERISUN_UPDATE_SIGNATURE_KEY_ID || 'serino-release' }}
         run: bash ./scripts/package-installer.sh
 
       - uses: actions/upload-artifact@v4
@@ -754,6 +766,9 @@ jobs:
             dist/installer/install.sh
             dist/installer/aerisun-installer-bundle.tar.gz
             dist/installer/aerisun-installer-manifest.env
+            dist/installer/release.json
+            dist/installer/release-notes.md
+            dist/installer/update-trusted-public-key.b64
             dist/installer/docker-compose.release.yml
             dist/installer/.env.production.local.example
 
@@ -798,4 +813,8 @@ jobs:
         run: |
           bash ./scripts/refresh-bitiful-cdn.sh \
             "${BINFEN_INSTALL_BASE_URL}/install.sh" \
-            "${BINFEN_INSTALL_BASE_URL}/latest.env"
+            "${BINFEN_INSTALL_BASE_URL}/latest.env" \
+            "${BINFEN_INSTALL_BASE_URL}/latest.json" \
+            "${BINFEN_INSTALL_BASE_URL}/release.json" \
+            "${BINFEN_INSTALL_BASE_URL}/release-notes.md" \
+            "${BINFEN_INSTALL_BASE_URL}/update-trusted-public-key.b64"

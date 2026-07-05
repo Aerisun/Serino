@@ -178,7 +178,8 @@ release_manifest_key_allowed() {
     AERISUN_API_IMAGE_NAME|\
     AERISUN_WEB_IMAGE_NAME|\
     AERISUN_WALINE_IMAGE_NAME|\
-    AERISUN_INSTALL_BUNDLE_SHA256)
+    AERISUN_INSTALL_BUNDLE_SHA256|\
+    AERISUN_UPDATE_TRUSTED_PUBLIC_KEY_B64)
       return 0
       ;;
     *)
@@ -200,6 +201,9 @@ release_manifest_value_allowed() {
       ;;
     AERISUN_INSTALL_BUNDLE_SHA256)
       [[ "${value}" =~ ^[A-Fa-f0-9]{64}$ ]]
+      ;;
+    AERISUN_UPDATE_TRUSTED_PUBLIC_KEY_B64)
+      [[ "${value}" =~ ^[A-Za-z0-9+/=]+$ ]]
       ;;
     AERISUN_IMAGE_TAG|AERISUN_IMAGE_REGISTRY|AERISUN_API_IMAGE_NAME|AERISUN_WEB_IMAGE_NAME|AERISUN_WALINE_IMAGE_NAME)
       [[ "${value}" =~ ^[A-Za-z0-9][A-Za-z0-9._:/@+-]*$ ]]
@@ -262,6 +266,20 @@ load_release_manifest() {
 
   [[ -n "${AERISUN_IMAGE_TAG:-}" ]] || die "安装清单缺少 AERISUN_IMAGE_TAG。"
   [[ -n "${AERISUN_IMAGE_REGISTRY:-}" ]] || die "安装清单缺少 AERISUN_IMAGE_REGISTRY。"
+  if [[ -n "${AERISUN_EXPECTED_INSTALL_BUNDLE_SHA256:-}" ]]; then
+    [[ "${AERISUN_EXPECTED_INSTALL_BUNDLE_SHA256}" =~ ^[A-Fa-f0-9]{64}$ ]] || die "signed release metadata 中的安装包 sha256 格式无效。"
+    [[ -n "${AERISUN_INSTALL_BUNDLE_SHA256:-}" ]] || die "安装清单缺少 AERISUN_INSTALL_BUNDLE_SHA256，无法匹配 signed release metadata。"
+    if [[ "${AERISUN_INSTALL_BUNDLE_SHA256,,}" != "${AERISUN_EXPECTED_INSTALL_BUNDLE_SHA256,,}" ]]; then
+      die "安装清单中的 bundle sha256 与 signed release metadata 不一致。"
+    fi
+  fi
+  if [[ -n "${AERISUN_EXPECTED_UPDATE_TRUSTED_PUBLIC_KEY_B64:-}" ]]; then
+    [[ "${AERISUN_EXPECTED_UPDATE_TRUSTED_PUBLIC_KEY_B64}" =~ ^[A-Za-z0-9+/=]+$ ]] || die "signed release metadata 中的 trusted public key 格式无效。"
+    [[ -n "${AERISUN_UPDATE_TRUSTED_PUBLIC_KEY_B64:-}" ]] || die "安装清单缺少 AERISUN_UPDATE_TRUSTED_PUBLIC_KEY_B64，无法匹配 signed release metadata。"
+    if [[ "${AERISUN_UPDATE_TRUSTED_PUBLIC_KEY_B64}" != "${AERISUN_EXPECTED_UPDATE_TRUSTED_PUBLIC_KEY_B64}" ]]; then
+      die "安装清单中的 trusted public key 与 signed release metadata 不一致。"
+    fi
+  fi
   AERISUN_INSTALL_CHANNEL="${AERISUN_INSTALL_CHANNEL:-stable}"
   AERISUN_API_IMAGE_NAME="${AERISUN_API_IMAGE_NAME:-serino-api}"
   AERISUN_WEB_IMAGE_NAME="${AERISUN_WEB_IMAGE_NAME:-serino-web}"
