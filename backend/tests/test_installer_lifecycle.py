@@ -247,9 +247,10 @@ Overview
     assert release_payload["version"] == "v9.9.9"
     assert release_payload["bundle_sha256"] == bundle_sha256
     assert release_payload["signature"] is None
-    assert release_payload["signed"]["release_notes_sha256"] == hashlib.sha256(
-        release_notes_content.encode("utf-8")
-    ).hexdigest()
+    assert (
+        release_payload["signed"]["release_notes_sha256"]
+        == hashlib.sha256(release_notes_content.encode("utf-8")).hexdigest()
+    )
     assert release_notes.read_text(encoding="utf-8") == release_notes_content
     assert version_release_notes.read_text(encoding="utf-8") == release_notes_content
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -32,6 +32,9 @@ import { useI18n } from "@/i18n";
 import { extractApiErrorMessage } from "@/lib/api-error";
 import { formatDateTimeInBeijing } from "@/lib/time";
 import { cn } from "@/lib/utils";
+import {
+  shouldQueueSilentUpdateCheck,
+} from "@/pages/dashboard/systemUpdateNoticeLogic";
 
 type UpdateState = NonNullable<SystemUpdateStatusRead["state"]>;
 
@@ -79,6 +82,7 @@ export function SystemUpdateNotice() {
   const [lastStatus, setLastStatus] = useState<SystemUpdateStatusRead | null>(null);
   const [reconnectDelay, setReconnectDelay] = useState(3000);
   const [reloadScheduled, setReloadScheduled] = useState(false);
+  const lastAutoCheckRequestedAtRef = useRef(0);
 
   const { data: statusResponse, isError, refetch } = useUpdateStatusApiV1AdminSystemUpdatesStatusGet({
     query: {
@@ -177,6 +181,12 @@ export function SystemUpdateNotice() {
     },
   });
 
+  const autoCheckMutation = useCheckUpdatesApiV1AdminSystemUpdatesCheckPost({
+    mutation: {
+      onSuccess: refreshStatus,
+    },
+  });
+
   const upgradeMutation = useUpgradeSystemApiV1AdminSystemUpdatesUpgradePost({
     mutation: {
       onSuccess: () => {
@@ -200,6 +210,24 @@ export function SystemUpdateNotice() {
       },
     },
   });
+
+  useEffect(() => {
+    const now = Date.now();
+    if (!shouldQueueSilentUpdateCheck({
+      autoCheckPending: autoCheckMutation.isPending,
+      isError,
+      isStateActive: isActiveState(state),
+      lastAutoCheckRequestedAt: lastAutoCheckRequestedAtRef.current,
+      now,
+      state,
+      status,
+    })) {
+      return;
+    }
+
+    lastAutoCheckRequestedAtRef.current = now;
+    autoCheckMutation.mutate({ data: { force: false } });
+  }, [autoCheckMutation, isError, state, status]);
 
   const noticeCopy = useMemo(() => {
     if (reconnecting) {
