@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Serino Update Check Hourly
+
+[Timer]
+OnCalendar=hourly
+RandomizedDelaySec=20m
+Persistent=true
+Unit=serino-updater.service
+
+[Install]
+WantedBy=timers.target

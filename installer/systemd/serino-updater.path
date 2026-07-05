@@ -1,0 +1,11 @@
+[Unit]
+Description=Watch Serino Update Requests
+
+[Path]
+DirectoryNotEmpty=__SERINO_UPDATE_REQUESTS_DIR__
+MakeDirectory=true
+DirectoryMode=0750
+Unit=__SERINO_SYSTEMD_UPDATER_SERVICE__
+
+[Install]
+WantedBy=multi-user.target

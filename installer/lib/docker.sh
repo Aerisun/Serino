@@ -295,6 +295,8 @@ daemon_reload() {
 enable_serino_service() {
   run_as_root systemctl enable "${SERINO_SYSTEMD_UNIT}" >/dev/null 2>&1
   run_as_root systemctl start "${SERINO_SYSTEMD_UNIT}" >/dev/null 2>&1
+  run_as_root systemctl enable --now "${SERINO_SYSTEMD_UPDATER_TIMER}" >/dev/null 2>&1 || true
+  run_as_root systemctl enable --now "${SERINO_SYSTEMD_UPDATER_PATH}" >/dev/null 2>&1 || true
   run_as_root systemctl is-active --quiet "${SERINO_SYSTEMD_UNIT}"
 }
 
@@ -318,6 +320,9 @@ stop_and_remove_serino_units() {
   local unit=""
   for unit in \
     "${SERINO_SYSTEMD_UNIT}" \
+    "${SERINO_SYSTEMD_UPDATER_PATH}" \
+    "${SERINO_SYSTEMD_UPDATER_TIMER}" \
+    "${SERINO_SYSTEMD_UPDATER_SERVICE}" \
     "${SERINO_SYSTEMD_UPGRADE_TIMER}" \
     "${SERINO_SYSTEMD_UPGRADE_SERVICE}" \
     aerisun.service \
