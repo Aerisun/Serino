@@ -17,6 +17,7 @@ export interface BackupSyncConfig {
   max_retries?: unknown;
   retry_backoff_seconds?: unknown;
   max_retention_count?: unknown;
+  retention_days?: unknown;
   last_scheduled_at?: unknown;
   last_synced_at?: unknown;
   last_error?: unknown;

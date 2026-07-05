@@ -77,6 +77,7 @@ BACKUP_RETENTION_TOMBSTONE_TRIGGER = "retention-pruned"
 
 _restore_lock = threading.Lock()
 _restore_in_progress = threading.Event()
+_retention_cleanup_lock = threading.Lock()
 
 _SFTP_UNSAFE_RE = re.compile(r"[\n\r]")
 _SSH_NAME_RE = re.compile(r"^[A-Za-z0-9._-]+$")
@@ -1142,6 +1143,7 @@ def _config_read(config) -> BackupSyncConfig:
         max_retries=config.max_retries,
         retry_backoff_seconds=config.retry_backoff_seconds,
         max_retention_count=config.max_retention_count,
+        retention_days=config.retention_days,
         last_scheduled_at=config.last_scheduled_at,
         last_synced_at=config.last_synced_at,
         last_error=config.last_error,
@@ -1200,6 +1202,7 @@ def _config_object_from_payload(payload: BackupSyncConfigUpdate):
         max_retries=max(int(payload.max_retries or 0), 0),
         retry_backoff_seconds=max(int(payload.retry_backoff_seconds or 300), 30),
         max_retention_count=max(int(payload.max_retention_count or 0), 0),
+        retention_days=max(int(payload.retention_days or 0), 0),
     )
 
 
@@ -1221,6 +1224,8 @@ def get_or_create_backup_sync_config(session: Session):
             encrypt_runtime_data=True,
             max_retries=3,
             retry_backoff_seconds=300,
+            max_retention_count=settings.backup_sync_default_max_retention_count,
+            retention_days=settings.backup_sync_default_retention_days,
         )
         session.commit()
         session.refresh(config)
@@ -1410,12 +1415,14 @@ def update_backup_sync_config(session: Session, payload: BackupSyncConfigUpdate)
     config.max_retries = max(payload.max_retries, 0)
     config.retry_backoff_seconds = max(payload.retry_backoff_seconds, 30)
     config.max_retention_count = max(payload.max_retention_count, 0)
+    config.retention_days = max(payload.retention_days, 0)
     _validate_config(config)
     active_recovery_key = repo.get_active_backup_recovery_key(session, credential_ref=str(config.credential_ref))
     if active_recovery_key is None:
         raise ValidationError("请先设置恢复密码，然后再保存备份配置。")
     if active_recovery_key.acknowledged_at is None:
         raise ValidationError("请先确认恢复密码，然后再保存备份配置。")
+    retention_cleanup_needed = _retention_cleanup_required(session, config)
     session.commit()
     session.refresh(config)
     emit_backup_config_updated(
@@ -1426,6 +1433,8 @@ def update_backup_sync_config(session: Session, payload: BackupSyncConfigUpdate)
         transport_mode=config.transport_mode,
         interval_minutes=int(config.interval_minutes),
     )
+    if retention_cleanup_needed:
+        schedule_backup_retention_cleanup()
     return _config_read(config)
 
 
@@ -1649,7 +1658,8 @@ def reset_backup_sync_system(session: Session) -> BackupSystemResetRead:
     config.encrypt_runtime_data = True
     config.max_retries = 3
     config.retry_backoff_seconds = 300
-    config.max_retention_count = 0
+    config.max_retention_count = get_settings().backup_sync_default_max_retention_count
+    config.retention_days = get_settings().backup_sync_default_retention_days
     config.last_scheduled_at = None
     config.last_synced_at = None
     config.last_error = None
@@ -2016,18 +2026,125 @@ def _delete_remote_commit_index(transport: BackupTransport, commit) -> bool:
         logger.warning("Backup transport cannot delete remote commits; retention cleanup skipped for %s", commit.id)
         return False
     try:
-        transport.delete_commit(commit.remote_commit_id, created_at=commit.created_at.isoformat())
+        transport.delete_commit(
+            commit.remote_commit_id,
+            created_at=commit.created_at.isoformat(),
+            backup_path=commit.backup_path,
+        )
         return True
     except Exception:
         logger.warning("Failed to delete remote commit %s; local backup history kept", commit.id, exc_info=True)
         return False
 
 
+def _cleanup_unreferenced_remote_objects(
+    transport: BackupTransport,
+    *,
+    cleanup_candidates: list[Any],
+    protected_commits: list[Any],
+) -> bool:
+    protected_manifest_digests = {commit.manifest_digest for commit in protected_commits}
+    protected_chunk_digests: set[str] = set()
+    for commit in protected_commits:
+        protected_chunk_digests.update(_chunk_digests_from_commit(commit))
+    stale_manifest_digests = {
+        commit.manifest_digest
+        for commit in cleanup_candidates
+        if commit.manifest_digest not in protected_manifest_digests
+    }
+    stale_chunk_digests: set[str] = set()
+    for commit in cleanup_candidates:
+        stale_chunk_digests.update(_chunk_digests_from_commit(commit))
+    stale_chunk_digests.difference_update(protected_chunk_digests)
+    manifests_removed = _delete_remote_manifests(transport, stale_manifest_digests)
+    chunks_removed = _delete_remote_chunks(transport, stale_chunk_digests)
+    return manifests_removed and chunks_removed
+
+
+def _retention_cutoff(config) -> datetime | None:
+    retention_days = getattr(config, "retention_days", 0)
+    if not retention_days or retention_days <= 0:
+        return None
+    return _utcnow() - timedelta(days=int(retention_days))
+
+
+def _retention_removal_ids(visible_commits: list[Any], *, max_count: int, cutoff: datetime | None) -> set[str]:
+    removal_ids: set[str] = set()
+    if max_count > 0:
+        removal_ids.update(str(commit.id) for commit in visible_commits[max_count:])
+    if cutoff is not None:
+        normalized_cutoff = _as_shanghai(cutoff)
+        for commit in visible_commits:
+            created_at = _as_shanghai(commit.created_at)
+            if created_at is not None and normalized_cutoff is not None and created_at < normalized_cutoff:
+                removal_ids.add(str(commit.id))
+    return removal_ids
+
+
+def _retention_cleanup_required(session: Session, config) -> bool:
+    max_count = max(int(getattr(config, "max_retention_count", 0) or 0), 0)
+    cutoff = _retention_cutoff(config)
+    all_records = repo.list_backup_commits(session, include_retention_tombstones=True)
+    visible_commits = [commit for commit in all_records if commit.trigger_kind != BACKUP_RETENTION_TOMBSTONE_TRIGGER]
+    tombstones = [commit for commit in all_records if commit.trigger_kind == BACKUP_RETENTION_TOMBSTONE_TRIGGER]
+    if tombstones:
+        return True
+    if max_count <= 0 and cutoff is None:
+        return False
+    return bool(_retention_removal_ids(visible_commits, max_count=max_count, cutoff=cutoff))
+
+
+def _retention_config_snapshot(config) -> SimpleNamespace:
+    return SimpleNamespace(
+        transport_mode=config.transport_mode,
+        site_slug=config.site_slug,
+        remote_host=config.remote_host,
+        remote_port=config.remote_port,
+        remote_path=config.remote_path,
+        remote_username=config.remote_username,
+        credential_ref=config.credential_ref,
+        max_retention_count=config.max_retention_count,
+        retention_days=config.retention_days,
+    )
+
+
+def schedule_backup_retention_cleanup() -> None:
+    worker = threading.Thread(
+        target=_run_backup_retention_cleanup_safely,
+        name="backup-retention-cleanup",
+        daemon=True,
+    )
+    worker.start()
+
+
+def _run_backup_retention_cleanup_safely() -> None:
+    try:
+        _run_backup_retention_cleanup()
+    except Exception:
+        logger.warning("Retention cleanup after config update failed (non-fatal)", exc_info=True)
+
+
+def _run_backup_retention_cleanup() -> None:
+    with _retention_cleanup_lock:
+        session_factory = get_session_factory()
+        with session_factory() as session:
+            config = repo.get_backup_target_config(session)
+            if config is None:
+                return
+            _validate_config(config)
+            if not _retention_cleanup_required(session, config):
+                return
+            cleanup_config = _retention_config_snapshot(config)
+        credentials = load_backup_credentials(str(cleanup_config.credential_ref))
+        transport = build_transport(cleanup_config, credentials)
+        transport.begin_session()
+        _enforce_retention(cleanup_config, transport)
+
+
 def _enforce_retention(config, transport: BackupTransport) -> None:
-    """Delete oldest backup commits and remote objects that exceed max_retention_count."""
-    max_count = getattr(config, "max_retention_count", 0)
-    if not max_count or max_count <= 0:
-        return
+    """Delete backup commits and remote objects outside configured retention limits."""
+    max_count = max(int(getattr(config, "max_retention_count", 0) or 0), 0)
+    cutoff = _retention_cutoff(config)
     session_factory = get_session_factory()
     with session_factory() as session:
         all_records = repo.list_backup_commits(session, include_retention_tombstones=True)
@@ -2035,10 +2152,11 @@ def _enforce_retention(config, transport: BackupTransport) -> None:
             commit for commit in all_records if commit.trigger_kind != BACKUP_RETENTION_TOMBSTONE_TRIGGER
         ]
         tombstones = [commit for commit in all_records if commit.trigger_kind == BACKUP_RETENTION_TOMBSTONE_TRIGGER]
-        if len(visible_commits) <= max_count and not tombstones:
+        removal_ids = _retention_removal_ids(visible_commits, max_count=max_count, cutoff=cutoff)
+        if not removal_ids and not tombstones:
             return
-        to_remove = visible_commits[max_count:]
-        retained = visible_commits[:max_count]
+        to_remove = [commit for commit in visible_commits if str(commit.id) in removal_ids]
+        retained = [commit for commit in visible_commits if str(commit.id) not in removal_ids]
         removed: list[Any] = []
         protected = list(retained)
         for commit in to_remove:
@@ -2052,22 +2170,11 @@ def _enforce_retention(config, transport: BackupTransport) -> None:
         if not cleanup_candidates:
             return
 
-        protected_manifest_digests = {commit.manifest_digest for commit in protected}
-        protected_chunk_digests: set[str] = set()
-        for commit in protected:
-            protected_chunk_digests.update(_chunk_digests_from_commit(commit))
-        stale_manifest_digests = {
-            commit.manifest_digest
-            for commit in cleanup_candidates
-            if commit.manifest_digest not in protected_manifest_digests
-        }
-        stale_chunk_digests: set[str] = set()
-        for commit in cleanup_candidates:
-            stale_chunk_digests.update(_chunk_digests_from_commit(commit))
-        stale_chunk_digests.difference_update(protected_chunk_digests)
-        manifests_removed = _delete_remote_manifests(transport, stale_manifest_digests)
-        chunks_removed = _delete_remote_chunks(transport, stale_chunk_digests)
-        if manifests_removed and chunks_removed:
+        if _cleanup_unreferenced_remote_objects(
+            transport,
+            cleanup_candidates=cleanup_candidates,
+            protected_commits=protected,
+        ):
             for commit in cleanup_candidates:
                 session.delete(commit)
         session.commit()
@@ -2160,9 +2267,12 @@ def _execute_run(*, run_id: str, queue_item_id: str) -> None:
         _mark_run_completed(run_id=run_id, queue_item_id=queue_item_id, commit_id=commit_id, stats_json=stats)
 
         try:
-            _enforce_retention(config, transport)
+            with session_factory() as session:
+                current_config = repo.get_backup_target_config(session)
+                if current_config is not None and _retention_cleanup_required(session, current_config):
+                    schedule_backup_retention_cleanup()
         except Exception:
-            logger.warning("Retention cleanup failed (non-fatal)", exc_info=True)
+            logger.warning("Retention cleanup scheduling failed (non-fatal)", exc_info=True)
     finally:
         shutil.rmtree(prepared.temp_dir, ignore_errors=True)
 
@@ -2842,6 +2952,15 @@ class SftpTransport:
         dt = datetime.fromisoformat(created_at)
         return f"{self._commits_root()}/{dt:%Y/%m/%d}/{dt:%Y%m%dT%H%M%SZ}-{commit_id}"
 
+    def _commit_marker_path(self, commit_id: str, *, created_at: str, backup_path: str | None = None) -> str:
+        if backup_path:
+            marker_path = PurePosixPath(backup_path).as_posix()
+            commits_root = PurePosixPath(self._commits_root()).as_posix()
+            if marker_path.startswith(f"{commits_root}/") and marker_path.endswith("/manifest.json"):
+                return marker_path
+            logger.warning("Ignoring unexpected remote backup marker path for commit %s", commit_id)
+        return f"{self._human_commit_dir(commit_id, created_at)}/manifest.json"
+
     def fetch_repo_identity(self) -> dict[str, Any] | None:
         with tempfile.TemporaryDirectory() as temp_dir:
             local_path = Path(temp_dir) / "repo.json"
@@ -3012,13 +3131,13 @@ class SftpTransport:
             tmp_path.unlink(missing_ok=True)
         return {"remote_commit_id": commit_id, "backup_path": backup_path}
 
-    def delete_commit(self, commit_id: str, *, created_at: str) -> None:
+    def delete_commit(self, commit_id: str, *, created_at: str, backup_path: str | None = None) -> None:
         """Remove a commit's index entry and human-readable directory from remote."""
         index_path = self._commit_index_path(commit_id)
-        commit_dir = self._human_commit_dir(commit_id, created_at)
+        marker_path = self._commit_marker_path(commit_id, created_at=created_at, backup_path=backup_path)
         self._remove_remote_path(index_path)
         try:
-            self._remove_remote_path(f"{commit_dir}/manifest.json")
+            self._remove_remote_path(marker_path)
         except Exception:
             logger.warning("Failed to delete remote backup commit marker %s", commit_id, exc_info=True)
 
@@ -3084,6 +3203,7 @@ def restore_backup_commit(session: Session, commit_id: str) -> BackupCommitRead:
     if commit is None:
         raise ResourceNotFound("Backup commit not found")
     commit_record = _backup_commit_restore_record(commit)
+    all_records = repo.list_backup_commits(session, include_retention_tombstones=True)
     config = get_or_create_backup_sync_config(session)
     credentials = load_backup_credentials(config.credential_ref)
     transport = build_transport(config, credentials)
@@ -3104,6 +3224,10 @@ def restore_backup_commit(session: Session, commit_id: str) -> BackupCommitRead:
             restored_session.commit()
     except Exception:
         logger.warning("Failed to persist backup restored_at after runtime restore", exc_info=True)
+    try:
+        _prune_remote_commits_after_restore(transport, restored_commit_id=commit_id, all_records=all_records)
+    except Exception:
+        logger.warning("Failed to prune remote backup commits after restore", exc_info=True)
     return response.model_copy(update={"restored_at": restored_at})
 
 
@@ -3132,6 +3256,47 @@ def restore_backup_snapshot(session: Session, snapshot_id: str) -> BackupSnapsho
         raise ResourceNotFound("Backup snapshot not found")
     restored = restore_backup_commit(session, snapshot_id)
     return _to_snapshot(restored)
+
+
+def _restore_prune_plan(restored_commit_id: str, all_records: list[Any]) -> tuple[list[Any], list[Any]]:
+    visible_records = [commit for commit in all_records if commit.trigger_kind != BACKUP_RETENTION_TOMBSTONE_TRIGGER]
+    to_remove: list[Any] = []
+    protected: list[Any] = []
+    found_restored_commit = False
+    for commit in visible_records:
+        if str(commit.id) == restored_commit_id:
+            found_restored_commit = True
+            protected.append(commit)
+            continue
+        if found_restored_commit:
+            protected.append(commit)
+        else:
+            to_remove.append(commit)
+    if not found_restored_commit:
+        return [], visible_records
+    return to_remove, protected
+
+
+def _prune_remote_commits_after_restore(
+    transport: BackupTransport,
+    *,
+    restored_commit_id: str,
+    all_records: list[Any],
+) -> None:
+    to_remove, protected = _restore_prune_plan(restored_commit_id, all_records)
+    removed: list[Any] = []
+    for commit in to_remove:
+        if _delete_remote_commit_index(transport, commit):
+            removed.append(commit)
+        else:
+            protected.append(commit)
+    if not removed:
+        return
+    _cleanup_unreferenced_remote_objects(
+        transport,
+        cleanup_candidates=removed,
+        protected_commits=protected,
+    )
 
 
 def _repair_restored_backup_runtime_state(session: Session, *, restored_at: datetime) -> None:

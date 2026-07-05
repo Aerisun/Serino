@@ -20,4 +20,5 @@ export interface BackupSyncConfigUpdate {
   max_retries?: number;
   retry_backoff_seconds?: number;
   max_retention_count?: number;
+  retention_days?: number;
 }

@@ -3952,6 +3952,7 @@ export const GetBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponse = zo
   "max_retries": zod.unknown().optional(),
   "retry_backoff_seconds": zod.unknown().optional(),
   "max_retention_count": zod.unknown().optional(),
+  "retention_days": zod.unknown().optional(),
   "last_scheduled_at": zod.unknown().optional(),
   "last_synced_at": zod.unknown().optional(),
   "last_error": zod.unknown().optional(),
@@ -3970,13 +3971,14 @@ export const GetBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponse = zo
  */
 export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyEnabledDefault = false;
 export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyPausedDefault = false;
-export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyIntervalMinutesDefault = 60;
+export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyIntervalMinutesDefault = 1440;
 export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyTransportModeDefault = `sftp`;
 export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodySiteSlugDefault = `aerisun`;
 export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyEncryptRuntimeDataDefault = true;
 export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyMaxRetriesDefault = 3;
 export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyRetryBackoffSecondsDefault = 300;
-export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyMaxRetentionCountDefault = 0;
+export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyMaxRetentionCountDefault = 80;
+export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyRetentionDaysDefault = 60;
 
 export const UpdateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBody = zod.object({
   "enabled": zod.boolean().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyEnabledDefault),
@@ -3992,7 +3994,8 @@ export const UpdateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBody = zod
   "encrypt_runtime_data": zod.boolean().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyEncryptRuntimeDataDefault),
   "max_retries": zod.number().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyMaxRetriesDefault),
   "retry_backoff_seconds": zod.number().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyRetryBackoffSecondsDefault),
-  "max_retention_count": zod.number().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyMaxRetentionCountDefault)
+  "max_retention_count": zod.number().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyMaxRetentionCountDefault),
+  "retention_days": zod.number().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyRetentionDaysDefault)
 })
 
 export const UpdateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponse = zod.object({
@@ -4007,6 +4010,7 @@ export const UpdateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponse =
   "max_retries": zod.unknown().optional(),
   "retry_backoff_seconds": zod.unknown().optional(),
   "max_retention_count": zod.unknown().optional(),
+  "retention_days": zod.unknown().optional(),
   "last_scheduled_at": zod.unknown().optional(),
   "last_synced_at": zod.unknown().optional(),
   "last_error": zod.unknown().optional(),
@@ -4101,13 +4105,14 @@ export const AcknowledgeBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyAc
  */
 export const testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostBodyEnabledDefault = false;
 export const testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostBodyPausedDefault = false;
-export const testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostBodyIntervalMinutesDefault = 60;
+export const testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostBodyIntervalMinutesDefault = 1440;
 export const testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostBodyTransportModeDefault = `sftp`;
 export const testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostBodySiteSlugDefault = `aerisun`;
 export const testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostBodyEncryptRuntimeDataDefault = true;
 export const testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostBodyMaxRetriesDefault = 3;
 export const testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostBodyRetryBackoffSecondsDefault = 300;
-export const testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostBodyMaxRetentionCountDefault = 0;
+export const testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostBodyMaxRetentionCountDefault = 80;
+export const testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostBodyRetentionDaysDefault = 60;
 
 export const TestBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostBody = zod.object({
   "enabled": zod.boolean().default(testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostBodyEnabledDefault),
@@ -4123,7 +4128,8 @@ export const TestBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostBody = 
   "encrypt_runtime_data": zod.boolean().default(testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostBodyEncryptRuntimeDataDefault),
   "max_retries": zod.number().default(testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostBodyMaxRetriesDefault),
   "retry_backoff_seconds": zod.number().default(testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostBodyRetryBackoffSecondsDefault),
-  "max_retention_count": zod.number().default(testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostBodyMaxRetentionCountDefault)
+  "max_retention_count": zod.number().default(testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostBodyMaxRetentionCountDefault),
+  "retention_days": zod.number().default(testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostBodyRetentionDaysDefault)
 })
 
 export const testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostResponseRecoveryKeyReadyDefault = false;
@@ -4149,13 +4155,14 @@ export const TestBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostRespons
  */
 export const probeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePostBodyEnabledDefault = false;
 export const probeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePostBodyPausedDefault = false;
-export const probeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePostBodyIntervalMinutesDefault = 60;
+export const probeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePostBodyIntervalMinutesDefault = 1440;
 export const probeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePostBodyTransportModeDefault = `sftp`;
 export const probeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePostBodySiteSlugDefault = `aerisun`;
 export const probeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePostBodyEncryptRuntimeDataDefault = true;
 export const probeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePostBodyMaxRetriesDefault = 3;
 export const probeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePostBodyRetryBackoffSecondsDefault = 300;
-export const probeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePostBodyMaxRetentionCountDefault = 0;
+export const probeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePostBodyMaxRetentionCountDefault = 80;
+export const probeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePostBodyRetentionDaysDefault = 60;
 
 export const ProbeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePostBody = zod.object({
   "enabled": zod.boolean().default(probeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePostBodyEnabledDefault),
@@ -4171,7 +4178,8 @@ export const ProbeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionPro
   "encrypt_runtime_data": zod.boolean().default(probeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePostBodyEncryptRuntimeDataDefault),
   "max_retries": zod.number().default(probeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePostBodyMaxRetriesDefault),
   "retry_backoff_seconds": zod.number().default(probeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePostBodyRetryBackoffSecondsDefault),
-  "max_retention_count": zod.number().default(probeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePostBodyMaxRetentionCountDefault)
+  "max_retention_count": zod.number().default(probeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePostBodyMaxRetentionCountDefault),
+  "retention_days": zod.number().default(probeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePostBodyRetentionDaysDefault)
 })
 
 export const probeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePostResponseRecoveryKeyReadyDefault = false;
@@ -4197,13 +4205,14 @@ export const ProbeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionPro
  */
 export const previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostBodyConfigEnabledDefault = false;
 export const previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostBodyConfigPausedDefault = false;
-export const previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostBodyConfigIntervalMinutesDefault = 60;
+export const previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostBodyConfigIntervalMinutesDefault = 1440;
 export const previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostBodyConfigTransportModeDefault = `sftp`;
 export const previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostBodyConfigSiteSlugDefault = `aerisun`;
 export const previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostBodyConfigEncryptRuntimeDataDefault = true;
 export const previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostBodyConfigMaxRetriesDefault = 3;
 export const previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostBodyConfigRetryBackoffSecondsDefault = 300;
-export const previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostBodyConfigMaxRetentionCountDefault = 0;
+export const previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostBodyConfigMaxRetentionCountDefault = 80;
+export const previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostBodyConfigRetentionDaysDefault = 60;
 export const previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostBodyPassphraseMin = 8;
 
 
@@ -4223,7 +4232,8 @@ export const PreviewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHis
   "encrypt_runtime_data": zod.boolean().default(previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostBodyConfigEncryptRuntimeDataDefault),
   "max_retries": zod.number().default(previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostBodyConfigMaxRetriesDefault),
   "retry_backoff_seconds": zod.number().default(previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostBodyConfigRetryBackoffSecondsDefault),
-  "max_retention_count": zod.number().default(previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostBodyConfigMaxRetentionCountDefault)
+  "max_retention_count": zod.number().default(previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostBodyConfigMaxRetentionCountDefault),
+  "retention_days": zod.number().default(previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostBodyConfigRetentionDaysDefault)
 }),
   "passphrase": zod.string().min(previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostBodyPassphraseMin)
 })
@@ -4248,13 +4258,14 @@ export const PreviewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHis
  */
 export const restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostBodyConfigEnabledDefault = false;
 export const restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostBodyConfigPausedDefault = false;
-export const restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostBodyConfigIntervalMinutesDefault = 60;
+export const restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostBodyConfigIntervalMinutesDefault = 1440;
 export const restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostBodyConfigTransportModeDefault = `sftp`;
 export const restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostBodyConfigSiteSlugDefault = `aerisun`;
 export const restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostBodyConfigEncryptRuntimeDataDefault = true;
 export const restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostBodyConfigMaxRetriesDefault = 3;
 export const restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostBodyConfigRetryBackoffSecondsDefault = 300;
-export const restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostBodyConfigMaxRetentionCountDefault = 0;
+export const restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostBodyConfigMaxRetentionCountDefault = 80;
+export const restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostBodyConfigRetentionDaysDefault = 60;
 export const restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostBodyPassphraseMin = 8;
 
 
@@ -4275,7 +4286,8 @@ export const RestoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryIm
   "encrypt_runtime_data": zod.boolean().default(restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostBodyConfigEncryptRuntimeDataDefault),
   "max_retries": zod.number().default(restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostBodyConfigMaxRetriesDefault),
   "retry_backoff_seconds": zod.number().default(restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostBodyConfigRetryBackoffSecondsDefault),
-  "max_retention_count": zod.number().default(restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostBodyConfigMaxRetentionCountDefault)
+  "max_retention_count": zod.number().default(restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostBodyConfigMaxRetentionCountDefault),
+  "retention_days": zod.number().default(restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostBodyConfigRetentionDaysDefault)
 }),
   "passphrase": zod.string().min(restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostBodyPassphraseMin),
   "commit_id": zod.string().min(1)
@@ -4304,13 +4316,14 @@ export const RestoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryIm
  */
 export const overwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePostBodyEnabledDefault = false;
 export const overwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePostBodyPausedDefault = false;
-export const overwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePostBodyIntervalMinutesDefault = 60;
+export const overwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePostBodyIntervalMinutesDefault = 1440;
 export const overwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePostBodyTransportModeDefault = `sftp`;
 export const overwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePostBodySiteSlugDefault = `aerisun`;
 export const overwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePostBodyEncryptRuntimeDataDefault = true;
 export const overwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePostBodyMaxRetriesDefault = 3;
 export const overwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePostBodyRetryBackoffSecondsDefault = 300;
-export const overwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePostBodyMaxRetentionCountDefault = 0;
+export const overwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePostBodyMaxRetentionCountDefault = 80;
+export const overwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePostBodyRetentionDaysDefault = 60;
 
 export const OverwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePostBody = zod.object({
   "enabled": zod.boolean().default(overwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePostBodyEnabledDefault),
@@ -4326,7 +4339,8 @@ export const OverwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistory
   "encrypt_runtime_data": zod.boolean().default(overwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePostBodyEncryptRuntimeDataDefault),
   "max_retries": zod.number().default(overwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePostBodyMaxRetriesDefault),
   "retry_backoff_seconds": zod.number().default(overwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePostBodyRetryBackoffSecondsDefault),
-  "max_retention_count": zod.number().default(overwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePostBodyMaxRetentionCountDefault)
+  "max_retention_count": zod.number().default(overwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePostBodyMaxRetentionCountDefault),
+  "retention_days": zod.number().default(overwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePostBodyRetentionDaysDefault)
 })
 
 export const overwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePostResponseRecoveryKeyReadyDefault = false;
@@ -4363,6 +4377,7 @@ export const ResetBackupSyncSystemApiV1AdminSystemBackupSyncResetPostResponse = 
   "max_retries": zod.unknown().optional(),
   "retry_backoff_seconds": zod.unknown().optional(),
   "max_retention_count": zod.unknown().optional(),
+  "retention_days": zod.unknown().optional(),
   "last_scheduled_at": zod.unknown().optional(),
   "last_synced_at": zod.unknown().optional(),
   "last_error": zod.unknown().optional(),
@@ -4559,6 +4574,7 @@ export const PauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponse = zod.ob
   "max_retries": zod.unknown().optional(),
   "retry_backoff_seconds": zod.unknown().optional(),
   "max_retention_count": zod.unknown().optional(),
+  "retention_days": zod.unknown().optional(),
   "last_scheduled_at": zod.unknown().optional(),
   "last_synced_at": zod.unknown().optional(),
   "last_error": zod.unknown().optional(),
@@ -4587,6 +4603,7 @@ export const ResumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponse = zod.
   "max_retries": zod.unknown().optional(),
   "retry_backoff_seconds": zod.unknown().optional(),
   "max_retention_count": zod.unknown().optional(),
+  "retention_days": zod.unknown().optional(),
   "last_scheduled_at": zod.unknown().optional(),
   "last_synced_at": zod.unknown().optional(),
   "last_error": zod.unknown().optional(),

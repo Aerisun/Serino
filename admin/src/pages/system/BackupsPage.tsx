@@ -89,6 +89,9 @@ const DEFAULT_BACKUP_REMOTE_PATH = "/srv/serino-backups";
 const DEFAULT_BACKUP_CREDENTIAL_REF = "aerisun-backup-source";
 const DEFAULT_BACKUP_SITE_SLUG = "aerisun";
 const DEFAULT_BACKUP_CREDENTIAL_DIR = `.store/secrets/backup-sync/${DEFAULT_BACKUP_CREDENTIAL_REF}`;
+const DEFAULT_BACKUP_INTERVAL_MINUTES = 1440;
+const DEFAULT_BACKUP_MAX_RETENTION_COUNT = 80;
+const DEFAULT_BACKUP_RETENTION_DAYS = 60;
 const BACKUP_BOOTSTRAP_TTL_MINUTES = 10;
 const REMOTE_CLEANUP_COMMAND =
   "sudo bash -c 'set -euo pipefail\nuserdel -r serino-backup >/dev/null 2>&1 || true\nrm -rf /srv/serino-backups\necho \"Serino backup user and backup data have been removed.\"'";
@@ -139,7 +142,7 @@ async function copyTextToClipboard(value: string) {
 const emptyForm: BackupSyncConfigUpdate = {
   enabled: true,
   paused: false,
-  interval_minutes: 60,
+  interval_minutes: DEFAULT_BACKUP_INTERVAL_MINUTES,
   transport_mode: "sftp",
   site_slug: DEFAULT_BACKUP_SITE_SLUG,
   remote_host: "",
@@ -150,6 +153,8 @@ const emptyForm: BackupSyncConfigUpdate = {
   encrypt_runtime_data: true,
   max_retries: 3,
   retry_backoff_seconds: 300,
+  max_retention_count: DEFAULT_BACKUP_MAX_RETENTION_COUNT,
+  retention_days: DEFAULT_BACKUP_RETENTION_DAYS,
 };
 
 export default function BackupsPage() {
@@ -187,6 +192,8 @@ export default function BackupsPage() {
   const [remoteImportPreview, setRemoteImportPreview] =
     useState<BackupRemoteHistoryImportPreviewRead | null>(null);
   const [selectedRemoteCommitId, setSelectedRemoteCommitId] = useState("");
+  const [restoreConfirmCommit, setRestoreConfirmCommit] =
+    useState<BackupCommitRead | null>(null);
   const [remoteHistoryOverwriteAccepted, setRemoteHistoryOverwriteAccepted] =
     useState(false);
 
@@ -267,7 +274,7 @@ export default function BackupsPage() {
     setForm({
       enabled: true,
       paused: config.paused ?? false,
-      interval_minutes: config.interval_minutes ?? 60,
+      interval_minutes: config.interval_minutes ?? DEFAULT_BACKUP_INTERVAL_MINUTES,
       transport_mode: config.transport_mode ?? "sftp",
       site_slug: DEFAULT_BACKUP_SITE_SLUG,
       remote_host: config.transport.remote_host ?? "",
@@ -278,6 +285,8 @@ export default function BackupsPage() {
       encrypt_runtime_data: config.encrypt_runtime_data ?? true,
       max_retries: config.max_retries ?? 3,
       retry_backoff_seconds: config.retry_backoff_seconds ?? 300,
+      max_retention_count: config.max_retention_count ?? DEFAULT_BACKUP_MAX_RETENTION_COUNT,
+      retention_days: config.retention_days ?? DEFAULT_BACKUP_RETENTION_DAYS,
     });
     setHasInitializedForm(true);
   }, [config, hasInitializedForm]);
@@ -353,7 +362,7 @@ export default function BackupsPage() {
   ): BackupSyncConfigUpdate => ({
     enabled: true,
     paused: false,
-    interval_minutes: payload.interval_minutes ?? 60,
+    interval_minutes: payload.interval_minutes ?? DEFAULT_BACKUP_INTERVAL_MINUTES,
     transport_mode: "sftp",
     site_slug: DEFAULT_BACKUP_SITE_SLUG,
     remote_host: payload.remote_host ?? "",
@@ -364,6 +373,8 @@ export default function BackupsPage() {
     encrypt_runtime_data: Boolean(payload.encrypt_runtime_data),
     max_retries: payload.max_retries ?? 3,
     retry_backoff_seconds: payload.retry_backoff_seconds ?? 300,
+    max_retention_count: payload.max_retention_count ?? DEFAULT_BACKUP_MAX_RETENTION_COUNT,
+    retention_days: payload.retention_days ?? DEFAULT_BACKUP_RETENTION_DAYS,
   });
 
   const probeConnectionMutation = useMutation({
@@ -502,6 +513,21 @@ export default function BackupsPage() {
     },
   });
 
+  const restoreConfirmTime = restoreConfirmCommit
+    ? formatDate(
+        restoreConfirmCommit.snapshot_finished_at ||
+          restoreConfirmCommit.created_at,
+      )
+    : "-";
+
+  const handleConfirmRestoreCommit = () => {
+    if (!restoreConfirmCommit || restoreCommit.isPending) {
+      return;
+    }
+    restoreCommit.mutate({ commitId: restoreConfirmCommit.id });
+    setRestoreConfirmCommit(null);
+  };
+
   const latestRun = runs[0];
 
   const sectionItems = [
@@ -609,10 +635,12 @@ export default function BackupsPage() {
       remote_username: DEFAULT_BACKUP_REMOTE_USERNAME,
       remote_path: DEFAULT_BACKUP_REMOTE_PATH,
       remote_port: config?.transport.remote_port ?? 22,
-      interval_minutes: config?.interval_minutes ?? 60,
+      interval_minutes: config?.interval_minutes ?? DEFAULT_BACKUP_INTERVAL_MINUTES,
       encrypt_runtime_data: Boolean(config?.encrypt_runtime_data),
       max_retries: config?.max_retries ?? 3,
       retry_backoff_seconds: config?.retry_backoff_seconds ?? 300,
+      max_retention_count: config?.max_retention_count ?? DEFAULT_BACKUP_MAX_RETENTION_COUNT,
+      retention_days: config?.retention_days ?? DEFAULT_BACKUP_RETENTION_DAYS,
     }),
     [config],
   );
@@ -623,10 +651,12 @@ export default function BackupsPage() {
       remote_username: DEFAULT_BACKUP_REMOTE_USERNAME,
       remote_path: DEFAULT_BACKUP_REMOTE_PATH,
       remote_port: form.remote_port ?? 22,
-      interval_minutes: form.interval_minutes ?? 60,
+      interval_minutes: form.interval_minutes ?? DEFAULT_BACKUP_INTERVAL_MINUTES,
       encrypt_runtime_data: Boolean(form.encrypt_runtime_data),
       max_retries: form.max_retries ?? 3,
       retry_backoff_seconds: form.retry_backoff_seconds ?? 300,
+      max_retention_count: form.max_retention_count ?? DEFAULT_BACKUP_MAX_RETENTION_COUNT,
+      retention_days: form.retention_days ?? DEFAULT_BACKUP_RETENTION_DAYS,
     }),
     [form],
   );
@@ -1355,11 +1385,11 @@ export default function BackupsPage() {
                     <Input
                       type="number"
                       min={1}
-                      value={form.interval_minutes ?? 60}
+                      value={form.interval_minutes ?? DEFAULT_BACKUP_INTERVAL_MINUTES}
                       onChange={(e) =>
                         setField(
                           "interval_minutes",
-                          Number(e.target.value || 60),
+                          Number(e.target.value || DEFAULT_BACKUP_INTERVAL_MINUTES),
                         )
                       }
                     />
@@ -1379,6 +1409,48 @@ export default function BackupsPage() {
                       value={form.remote_port ?? 22}
                       onChange={(e) =>
                         setField("remote_port", Number(e.target.value || 22))
+                      }
+                    />
+                  </Field>
+                  <Field
+                    label={
+                      <LabelWithHelp
+                        label={t("system.backupRetentionDays")}
+                        title={t("system.backupRetentionDays")}
+                        description={t("system.backupRetentionDaysDescription")}
+                      />
+                    }
+                  >
+                    <Input
+                      type="number"
+                      min={0}
+                      value={form.retention_days ?? DEFAULT_BACKUP_RETENTION_DAYS}
+                      onChange={(e) =>
+                        setField(
+                          "retention_days",
+                          Number(e.target.value || DEFAULT_BACKUP_RETENTION_DAYS),
+                        )
+                      }
+                    />
+                  </Field>
+                  <Field
+                    label={
+                      <LabelWithHelp
+                        label={t("system.backupMaxRetentionCount")}
+                        title={t("system.backupMaxRetentionCount")}
+                        description={t("system.backupMaxRetentionCountDescription")}
+                      />
+                    }
+                  >
+                    <Input
+                      type="number"
+                      min={0}
+                      value={form.max_retention_count ?? DEFAULT_BACKUP_MAX_RETENTION_COUNT}
+                      onChange={(e) =>
+                        setField(
+                          "max_retention_count",
+                          Number(e.target.value || DEFAULT_BACKUP_MAX_RETENTION_COUNT),
+                        )
                       }
                     />
                   </Field>
@@ -1537,9 +1609,7 @@ export default function BackupsPage() {
                             disabled={restoreCommit.isPending}
                             onClick={(event) => {
                               event.stopPropagation();
-                              if (confirm(t("system.restoreConfirm"))) {
-                                restoreCommit.mutate({ commitId: row.id });
-                              }
+                              setRestoreConfirmCommit(row);
                             }}
                           >
                             <RotateCcw className="mr-1 h-4 w-4" />
@@ -1550,6 +1620,7 @@ export default function BackupsPage() {
                     ]}
                     data={commits}
                     total={commits.length}
+                    pageSize={10}
                     isLoading={isCommitsLoading}
                     renderExpandedRow={(row) => (
                       <div className="space-y-2 py-4 text-sm">
@@ -1593,6 +1664,7 @@ export default function BackupsPage() {
                     ]}
                     data={runs}
                     total={runs.length}
+                    pageSize={10}
                     isLoading={isRunsLoading}
                     renderExpandedRow={(row) => (
                       <div className="space-y-2 py-4 text-sm">
@@ -1854,6 +1926,74 @@ export default function BackupsPage() {
                 {t("common.done")}
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(restoreConfirmCommit)}
+        onOpenChange={(open) => {
+          if (!open && !restoreCommit.isPending) {
+            setRestoreConfirmCommit(null);
+          }
+        }}
+      >
+        <DialogContent
+          hideCloseButton
+          className="max-w-[560px] overflow-hidden rounded-[28px] border border-white/70 p-0 shadow-[0_26px_80px_rgba(15,23,42,0.28)]"
+        >
+          <div className="px-8 pb-7 pt-8">
+            <DialogHeader className="items-center space-y-0 text-center">
+              <div className="flex items-center justify-center gap-3">
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-destructive/20 bg-destructive/10 text-destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                </span>
+                <DialogTitle className="text-xl font-semibold leading-tight tracking-normal">
+                  {t("system.restoreConfirm")}
+                </DialogTitle>
+              </div>
+            </DialogHeader>
+            <DialogDescription asChild>
+              <div className="mt-5 space-y-2 text-left text-base leading-7 text-muted-foreground">
+                <p>
+                  {t("system.restoreConfirmPoint", {
+                    time: restoreConfirmTime,
+                  })}
+                </p>
+                <p>
+                  {t("system.restoreConfirmBodyPrefix")}
+                  <strong className="font-semibold text-foreground">
+                    {t("system.restoreConfirmBodyStrong")}
+                  </strong>
+                  {t("system.restoreConfirmBodySuffix")}
+                </p>
+                <p>
+                  {t("system.restoreConfirmFinalLine", {
+                    time: restoreConfirmTime,
+                  })}
+                </p>
+              </div>
+            </DialogDescription>
+          </div>
+          <div className="flex justify-end gap-3 border-t border-border/50 bg-muted/20 px-8 py-5">
+            <Button
+              type="button"
+              variant="outline"
+              className="min-w-28 rounded-2xl"
+              onClick={() => setRestoreConfirmCommit(null)}
+              disabled={restoreCommit.isPending}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              className="min-w-28 rounded-2xl"
+              onClick={handleConfirmRestoreCommit}
+              disabled={restoreCommit.isPending}
+            >
+              {restoreCommit.isPending ? t("common.loading") : t("system.confirmRestore")}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

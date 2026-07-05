@@ -615,6 +615,14 @@ export const enTranslations: TranslationDict = {
     "system.completed": "Completed",
     "system.snapshotType": "Type",
     "system.restoreConfirm": "Restore this backup?",
+    "system.restoreConfirmPoint": "Restore point: {time}",
+    "system.restoreConfirmBodyPrefix": "After restoring to this point, ",
+    "system.restoreConfirmBodyStrong":
+      "backup records after the restore point time will be removed from the local list and the backup machine",
+    "system.restoreConfirmBodySuffix": ", while earlier records are kept.",
+    "system.restoreConfirmFinalLine":
+      "Continue only if you no longer need backup points after {time}.",
+    "system.confirmRestore": "Confirm Restore",
     "system.deleteConfirm": "Delete?",
     "system.backupSyncConfig": "Sync Configuration",
     "system.backupSyncConfigDescription":
@@ -786,7 +794,7 @@ export const enTranslations: TranslationDict = {
     "system.backupScheduleAlwaysOnDescription":
       "Saving this form will enable scheduled sync directly. You only need to choose the interval.",
     "system.syncIntervalDescription":
-      "For example, 60 means the system will sync every 60 minutes.",
+      "The default is 1440, which means one automatic sync per day.",
     "system.backupManualOnlyHint":
       "When scheduled sync is off, you can still create backups manually from Records.",
     "system.backupSetupGuideTitle": "How It Connects",
@@ -812,7 +820,13 @@ export const enTranslations: TranslationDict = {
     "system.syncIntervalMinutes": "Sync Interval (minutes)",
     "system.syncIntervalLabel": "Automatic Sync Interval (minutes)",
     "system.syncIntervalLabelDescription":
-      "The system will automatically create one backup job using this interval.",
+      "The system will automatically create one backup job using this interval. The default is once per day.",
+    "system.backupRetentionDays": "Auto-Clear Backups Older Than (days)",
+    "system.backupRetentionDaysDescription":
+      "Default: 60 days. Backups older than this are removed from local records and the remote backup machine after the next successful backup. Use 0 to disable age-based cleanup.",
+    "system.backupMaxRetentionCount": "Maximum Backup Points",
+    "system.backupMaxRetentionCountDescription":
+      "Default: 80 points. The oldest backups are cleared when either the age limit or the count limit is reached first. Use 0 to disable count-based cleanup.",
     "system.maxRetries": "Max Retries",
     "system.maxRetriesDescription":
       "How many times the system should retry automatically after a sync failure.",

@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
 from urllib.parse import urlparse
+from zoneinfo import ZoneInfo
 
 import pytest
 from cryptography.hazmat.primitives import serialization
@@ -81,7 +82,7 @@ class FakeBackupTransport:
         self.deleted_manifests.append(digest)
         self.manifests.pop(digest, None)
 
-    def delete_commit(self, commit_id: str, *, created_at: str) -> None:
+    def delete_commit(self, commit_id: str, *, created_at: str, backup_path: str | None = None) -> None:
         if commit_id in self.fail_delete_commits:
             raise RuntimeError(f"cannot delete remote commit {commit_id}")
         self.deleted_commits.append(commit_id)
@@ -225,6 +226,37 @@ def test_sftp_delete_commit_reports_index_delete_failure(monkeypatch) -> None:
         transport.delete_commit("commit-1", created_at="2026-07-03T00:00:00+08:00")
 
 
+def test_sftp_delete_commit_uses_stored_backup_path_for_marker(monkeypatch) -> None:
+    from aerisun.domain.ops.backup_sync import SftpTransport
+
+    batches: list[str] = []
+
+    def fake_run(args, *, input, text, capture_output, check):
+        batches.append(input)
+        return subprocess.CompletedProcess(args, 0, "", "")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    transport = SftpTransport(
+        host="backup.example.test",
+        port=22,
+        username="serino-backup",
+        remote_root="/remote",
+        site_slug="site",
+    )
+
+    transport.delete_commit(
+        "commit-1",
+        created_at="2026-07-03T00:00:00+08:00",
+        backup_path="/remote/current/commits/2026/07/03/20260703T000005Z-commit-1/manifest.json",
+    )
+
+    assert batches == [
+        "rm /remote/current/catalog/commit-index/commit-1.json\n",
+        "rm /remote/current/commits/2026/07/03/20260703T000005Z-commit-1/manifest.json\n",
+    ]
+
+
 def test_atomic_sqlite_replace_removes_stale_sidecars(tmp_path: Path) -> None:
     from aerisun.domain.ops.backup_sync import _atomic_sqlite_replace
 
@@ -345,6 +377,7 @@ def _configure_backup(
     credential_ref: str = "default",
     encrypt_runtime_data: bool = True,
     max_retention_count: int = 0,
+    retention_days: int | None = None,
 ):
     app_settings = get_settings()
     _write_backup_credentials(app_settings.secrets_dir, credential_ref)
@@ -387,6 +420,7 @@ def _configure_backup(
             "max_retries": 2,
             "retry_backoff_seconds": 60,
             "max_retention_count": max_retention_count,
+            **({} if retention_days is None else {"retention_days": retention_days}),
         },
     )
     assert update_response.status_code == 200
@@ -405,6 +439,20 @@ def _trigger_backup(client, admin_headers) -> tuple[str, dict]:
     commits = commits_response.json()
     assert len(commits) == 1
     return commits[0]["id"], commits[0]
+
+
+def _trigger_backup_and_read_commit(client, admin_headers) -> tuple[str, dict]:
+    run_response = client.post(f"{BASE}/backup-sync/runs", headers=admin_headers)
+    assert run_response.status_code == 201
+    run_payload = run_response.json()
+    assert run_payload["status"] == "completed"
+    commit_id = run_payload["commit_id"]
+    assert commit_id
+
+    commits_response = client.get(f"{BASE}/backup-sync/commits", headers=admin_headers)
+    assert commits_response.status_code == 200
+    commit = next(item for item in commits_response.json() if item["id"] == commit_id)
+    return commit_id, commit
 
 
 def _remote_history_import_payload(*, passphrase: str = RECOVERY_PASSPHRASE, commit_id: str | None = None) -> dict:
@@ -440,6 +488,19 @@ def _commit_chunk_digests(commit: dict) -> set[str]:
     from aerisun.domain.ops.backup_sync import _manifest_chunk_digests
 
     return set(_manifest_chunk_digests({"datasets": commit["datasets"]}))
+
+
+def _capture_retention_cleanup_schedule(monkeypatch):
+    from aerisun.domain.ops import backup_sync
+
+    scheduled_cleanups: list[str] = []
+    monkeypatch.setattr(
+        backup_sync,
+        "schedule_backup_retention_cleanup",
+        lambda: scheduled_cleanups.append("cleanup"),
+        raising=False,
+    )
+    return backup_sync, scheduled_cleanups
 
 
 def _media_chunk_digests(commit: dict, relative_path: str) -> set[str]:
@@ -937,9 +998,38 @@ def test_initializing_new_remote_history_discards_local_backup_history(client, a
     assert config_response.json()["recovery_key_ready"] is True
 
 
+def test_backup_sync_config_defaults_to_daily_schedule_and_sixty_day_retention(client, admin_headers) -> None:
+    response = client.get(f"{BASE}/backup-sync/config", headers=admin_headers)
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["interval_minutes"] == 1440
+    assert payload["max_retention_count"] == 80
+    assert payload["retention_days"] == 60
+
+
+def test_backup_sync_reset_restores_retention_defaults(client, admin_headers) -> None:
+    _configure_backup(
+        client,
+        admin_headers,
+        encrypt_runtime_data=False,
+        max_retention_count=0,
+        retention_days=0,
+    )
+
+    response = client.post(f"{BASE}/backup-sync/reset", headers=admin_headers)
+
+    assert response.status_code == 200
+    payload = response.json()["config"]
+    assert payload["interval_minutes"] == 1440
+    assert payload["max_retention_count"] == 80
+    assert payload["retention_days"] == 60
+
+
 def test_retention_prunes_remote_manifest_and_unreferenced_chunks(client, admin_headers, monkeypatch) -> None:
     fake_transport = FakeBackupTransport()
     monkeypatch.setattr("aerisun.domain.ops.backup_sync.build_transport", lambda config, credentials: fake_transport)
+    backup_sync, scheduled_cleanups = _capture_retention_cleanup_schedule(monkeypatch)
 
     app_settings = get_settings()
     _write_runtime_sentinels("retention-one")
@@ -953,10 +1043,20 @@ def test_retention_prunes_remote_manifest_and_unreferenced_chunks(client, admin_
 
     _write_runtime_sentinels("retention-two")
     stable_media.write_bytes(b"shared-media-payload")
-    second_commit_id, second_commit = _trigger_backup(client, admin_headers)
+    second_commit_id, second_commit = _trigger_backup_and_read_commit(client, admin_headers)
     second_chunks = _commit_chunk_digests(second_commit)
 
     assert second_commit_id != first_commit_id
+    assert scheduled_cleanups == ["cleanup"]
+    assert fake_transport.deleted_commits == []
+
+    commits_response = client.get(f"{BASE}/backup-sync/commits", headers=admin_headers)
+    assert commits_response.status_code == 200
+    commits = commits_response.json()
+    assert [commit["id"] for commit in commits] == [second_commit_id, first_commit_id]
+
+    backup_sync._run_backup_retention_cleanup()
+
     assert first_commit_id in fake_transport.deleted_commits
     assert first_commit_id not in fake_transport.commits
     assert first_manifest_digest in fake_transport.deleted_manifests
@@ -976,9 +1076,192 @@ def test_retention_prunes_remote_manifest_and_unreferenced_chunks(client, admin_
     assert [commit["id"] for commit in commits] == [second_commit_id]
 
 
+def test_retention_prunes_backups_older_than_configured_days(client, admin_headers, monkeypatch) -> None:
+    from aerisun.core.db import get_session_factory
+    from aerisun.domain.ops import backup_sync
+    from aerisun.domain.ops.models import BackupCommit
+
+    fake_transport = FakeBackupTransport()
+    monkeypatch.setattr("aerisun.domain.ops.backup_sync.build_transport", lambda config, credentials: fake_transport)
+    scheduled_cleanups: list[str] = []
+    monkeypatch.setattr(
+        backup_sync,
+        "schedule_backup_retention_cleanup",
+        lambda: scheduled_cleanups.append("cleanup"),
+        raising=False,
+    )
+
+    app_settings = get_settings()
+    now = datetime(2026, 7, 5, 12, 0, tzinfo=ZoneInfo("Asia/Shanghai"))
+    current_time = {"value": now - timedelta(days=61)}
+    monkeypatch.setattr(backup_sync, "_utcnow", lambda: current_time["value"])
+
+    _write_runtime_sentinels("retention-age-old")
+    stable_media = app_settings.media_dir / "stable.bin"
+    stable_media.write_bytes(b"shared-media-payload")
+    _configure_backup(client, admin_headers, encrypt_runtime_data=False, max_retention_count=0)
+
+    old_commit_id, old_commit = _trigger_backup_and_read_commit(client, admin_headers)
+    old_manifest_digest = old_commit["manifest_digest"]
+    old_chunks = _commit_chunk_digests(old_commit)
+    with get_session_factory()() as session:
+        old_record = session.get(BackupCommit, old_commit_id)
+        assert old_record is not None
+        old_record.created_at = current_time["value"]
+        old_record.updated_at = current_time["value"]
+        session.commit()
+
+    current_time["value"] = now
+    _write_runtime_sentinels("retention-age-new")
+    stable_media.write_bytes(b"shared-media-payload")
+    new_commit_id, new_commit = _trigger_backup_and_read_commit(client, admin_headers)
+    new_chunks = _commit_chunk_digests(new_commit)
+
+    assert new_commit_id != old_commit_id
+    assert scheduled_cleanups == ["cleanup"]
+    assert old_commit_id in fake_transport.commits
+
+    backup_sync._run_backup_retention_cleanup()
+
+    assert old_commit_id in fake_transport.deleted_commits
+    assert old_commit_id not in fake_transport.commits
+    assert old_manifest_digest in fake_transport.deleted_manifests
+    assert old_manifest_digest not in fake_transport.manifests
+
+    old_only_chunks = old_chunks - new_chunks
+    shared_chunks = old_chunks & new_chunks
+    assert old_only_chunks
+    assert shared_chunks
+    assert old_only_chunks <= set(fake_transport.deleted_chunks)
+    assert all(digest not in fake_transport.chunks for digest in old_only_chunks)
+    assert all(digest in fake_transport.chunks for digest in shared_chunks)
+
+    commits_response = client.get(f"{BASE}/backup-sync/commits", headers=admin_headers)
+    assert commits_response.status_code == 200
+    assert [commit["id"] for commit in commits_response.json()] == [new_commit_id]
+
+
+def test_retention_prunes_existing_backups_when_limit_is_lowered(client, admin_headers, monkeypatch) -> None:
+    fake_transport = FakeBackupTransport()
+    monkeypatch.setattr("aerisun.domain.ops.backup_sync.build_transport", lambda config, credentials: fake_transport)
+    backup_sync, scheduled_cleanups = _capture_retention_cleanup_schedule(monkeypatch)
+
+    _write_runtime_sentinels("retention-config-one")
+    _configure_backup(
+        client,
+        admin_headers,
+        encrypt_runtime_data=False,
+        max_retention_count=0,
+        retention_days=0,
+    )
+    first_commit_id, _ = _trigger_backup_and_read_commit(client, admin_headers)
+
+    _write_runtime_sentinels("retention-config-two")
+    second_commit_id, _ = _trigger_backup_and_read_commit(client, admin_headers)
+
+    _write_runtime_sentinels("retention-config-three")
+    third_commit_id, third_commit = _trigger_backup_and_read_commit(client, admin_headers)
+
+    update_response = client.put(
+        f"{BASE}/backup-sync/config",
+        headers=admin_headers,
+        json={
+            "enabled": True,
+            "paused": False,
+            "interval_minutes": 1440,
+            "transport_mode": "sftp",
+            "site_slug": "test-site",
+            "remote_host": "backup.example.com",
+            "remote_port": 22,
+            "remote_path": "/srv/aerisun/backup",
+            "remote_username": "backup-user",
+            "credential_ref": "default",
+            "encrypt_runtime_data": False,
+            "max_retries": 2,
+            "retry_backoff_seconds": 60,
+            "max_retention_count": 1,
+            "retention_days": 0,
+        },
+    )
+
+    assert update_response.status_code == 200
+    assert update_response.json()["max_retention_count"] == 1
+    assert scheduled_cleanups == ["cleanup"]
+    assert fake_transport.deleted_commits == []
+    assert first_commit_id in fake_transport.commits
+    assert second_commit_id in fake_transport.commits
+    assert third_commit_id in fake_transport.commits
+
+    commits_response = client.get(f"{BASE}/backup-sync/commits", headers=admin_headers)
+    assert commits_response.status_code == 200
+    assert [commit["id"] for commit in commits_response.json()] == [
+        third_commit_id,
+        second_commit_id,
+        first_commit_id,
+    ]
+
+    backup_sync._run_backup_retention_cleanup()
+
+    assert first_commit_id in fake_transport.deleted_commits
+    assert second_commit_id in fake_transport.deleted_commits
+    assert third_commit_id not in fake_transport.deleted_commits
+    assert first_commit_id not in fake_transport.commits
+    assert second_commit_id not in fake_transport.commits
+    assert third_commit_id in fake_transport.commits
+    assert third_commit["manifest_digest"] in fake_transport.manifests
+
+    commits_response = client.get(f"{BASE}/backup-sync/commits", headers=admin_headers)
+    assert commits_response.status_code == 200
+    assert [commit["id"] for commit in commits_response.json()] == [third_commit_id]
+
+
+def test_restore_prunes_remote_commits_after_restored_point(client, admin_headers, monkeypatch) -> None:
+    fake_transport = FakeBackupTransport()
+    monkeypatch.setattr("aerisun.domain.ops.backup_sync.build_transport", lambda config, credentials: fake_transport)
+
+    app_settings = get_settings()
+    _write_runtime_sentinels("restore-prune-one")
+    stable_media = app_settings.media_dir / "stable.bin"
+    stable_media.write_bytes(b"shared-media-payload")
+    _configure_backup(client, admin_headers, encrypt_runtime_data=False, max_retention_count=0, retention_days=0)
+    first_commit_id, first_commit = _trigger_backup_and_read_commit(client, admin_headers)
+
+    _write_runtime_sentinels("restore-prune-two")
+    stable_media.write_bytes(b"shared-media-payload")
+    restore_commit_id, restore_commit = _trigger_backup_and_read_commit(client, admin_headers)
+
+    _write_runtime_sentinels("restore-prune-three")
+    stable_media.write_bytes(b"shared-media-payload")
+    future_commit_id, future_commit = _trigger_backup_and_read_commit(client, admin_headers)
+    future_manifest_digest = future_commit["manifest_digest"]
+
+    protected_chunks = _commit_chunk_digests(first_commit) | _commit_chunk_digests(restore_commit)
+    future_chunks = _commit_chunk_digests(future_commit)
+    future_only_chunks = future_chunks - protected_chunks
+    shared_chunks = future_chunks & protected_chunks
+    assert future_only_chunks
+    assert shared_chunks
+
+    restore_response = client.post(f"{BASE}/backup-sync/commits/{restore_commit_id}/restore", headers=admin_headers)
+
+    assert restore_response.status_code == 200
+    assert future_commit_id in fake_transport.deleted_commits
+    assert future_commit_id not in fake_transport.commits
+    assert future_manifest_digest in fake_transport.deleted_manifests
+    assert future_manifest_digest not in fake_transport.manifests
+    assert future_only_chunks <= set(fake_transport.deleted_chunks)
+    assert all(digest not in fake_transport.chunks for digest in future_only_chunks)
+    assert all(digest in fake_transport.chunks for digest in shared_chunks)
+
+    commits_response = client.get(f"{BASE}/backup-sync/commits", headers=admin_headers)
+    assert commits_response.status_code == 200
+    assert [commit["id"] for commit in commits_response.json()] == [restore_commit_id, first_commit_id]
+
+
 def test_retention_keeps_history_when_remote_commit_delete_fails(client, admin_headers, monkeypatch) -> None:
     fake_transport = FakeBackupTransport()
     monkeypatch.setattr("aerisun.domain.ops.backup_sync.build_transport", lambda config, credentials: fake_transport)
+    backup_sync, scheduled_cleanups = _capture_retention_cleanup_schedule(monkeypatch)
 
     _write_runtime_sentinels("retention-fail-one")
     _configure_backup(client, admin_headers, encrypt_runtime_data=False, max_retention_count=1)
@@ -991,6 +1274,9 @@ def test_retention_keeps_history_when_remote_commit_delete_fails(client, admin_h
     second_run_response = client.post(f"{BASE}/backup-sync/runs", headers=admin_headers)
     assert second_run_response.status_code == 201
     assert second_run_response.json()["status"] == "completed"
+    assert scheduled_cleanups == ["cleanup"]
+
+    backup_sync._run_backup_retention_cleanup()
 
     commits_response = client.get(f"{BASE}/backup-sync/commits", headers=admin_headers)
     assert commits_response.status_code == 200
@@ -1012,6 +1298,13 @@ def test_retention_retries_hidden_object_cleanup_after_chunk_delete_failure(clie
 
     fake_transport = FakeBackupTransport()
     monkeypatch.setattr("aerisun.domain.ops.backup_sync.build_transport", lambda config, credentials: fake_transport)
+    scheduled_cleanups: list[str] = []
+    monkeypatch.setattr(
+        backup_sync,
+        "schedule_backup_retention_cleanup",
+        lambda: scheduled_cleanups.append("cleanup"),
+        raising=False,
+    )
 
     _write_runtime_sentinels("retention-retry-one")
     _configure_backup(client, admin_headers, encrypt_runtime_data=False, max_retention_count=1)
@@ -1022,6 +1315,16 @@ def test_retention_retries_hidden_object_cleanup_after_chunk_delete_failure(clie
     _write_runtime_sentinels("retention-retry-two")
     second_run_response = client.post(f"{BASE}/backup-sync/runs", headers=admin_headers)
     assert second_run_response.status_code == 201
+    assert scheduled_cleanups == ["cleanup"]
+
+    visible_response = client.get(f"{BASE}/backup-sync/commits", headers=admin_headers)
+    assert visible_response.status_code == 200
+    assert [commit["id"] for commit in visible_response.json()] == [
+        second_run_response.json()["commit_id"],
+        first_commit_id,
+    ]
+
+    backup_sync._run_backup_retention_cleanup()
 
     visible_response = client.get(f"{BASE}/backup-sync/commits", headers=admin_headers)
     assert visible_response.status_code == 200

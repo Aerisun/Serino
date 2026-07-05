@@ -2359,6 +2359,22 @@
               "default": 10,
               "title": "Limit"
             }
+          },
+          {
+            "name": "aerisun_site_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Aerisun Site Session"
+            }
           }
         ],
         "responses": {
@@ -19034,6 +19050,9 @@
           "max_retention_count": {
             "title": "Max Retention Count"
           },
+          "retention_days": {
+            "title": "Retention Days"
+          },
           "last_scheduled_at": {
             "title": "Last Scheduled At"
           },
@@ -19176,7 +19195,7 @@
           "interval_minutes": {
             "type": "integer",
             "title": "Interval Minutes",
-            "default": 60
+            "default": 1440
           },
           "transport_mode": {
             "type": "string",
@@ -19261,7 +19280,12 @@
           "max_retention_count": {
             "type": "integer",
             "title": "Max Retention Count",
-            "default": 0
+            "default": 80
+          },
+          "retention_days": {
+            "type": "integer",
+            "title": "Retention Days",
+            "default": 60
           }
         },
         "type": "object",

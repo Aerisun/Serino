@@ -75,7 +75,9 @@ class Settings(BaseSettings):
     release_version: str = ""
     backup_sync_tmp_dir: Path = PROJECT_ROOT / ".store" / ".backup-sync-tmp"
     backup_sync_default_site_slug: str = "aerisun"
-    backup_sync_default_interval_minutes: int = 60
+    backup_sync_default_interval_minutes: int = 1440
+    backup_sync_default_max_retention_count: int = 80
+    backup_sync_default_retention_days: int = 60
     backup_sync_chunk_size_bytes: int = 8 * 1024 * 1024
     sqlite_busy_timeout_ms: int = 5000
     seed_reference_data: bool = True

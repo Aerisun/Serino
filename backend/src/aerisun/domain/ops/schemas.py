@@ -119,14 +119,15 @@ class BackupSyncConfig(ModelBase):
     id: str
     enabled: bool = False
     paused: bool = False
-    interval_minutes: int = 60
+    interval_minutes: int = 1440
     transport_mode: str = "sftp"
     site_slug: str = "aerisun"
     credential_ref: str | None = None
     encrypt_runtime_data: bool = True
     max_retries: int = 3
     retry_backoff_seconds: int = 300
-    max_retention_count: int = 0
+    max_retention_count: int = 80
+    retention_days: int = 60
     last_scheduled_at: datetime | None = None
     last_synced_at: datetime | None = None
     last_error: str | None = None
@@ -142,7 +143,7 @@ class BackupSyncConfig(ModelBase):
 class BackupSyncConfigUpdate(BaseModel):
     enabled: bool = False
     paused: bool = False
-    interval_minutes: int = 60
+    interval_minutes: int = 1440
     transport_mode: str = "sftp"
     site_slug: str = "aerisun"
     remote_host: str | None = None
@@ -153,7 +154,8 @@ class BackupSyncConfigUpdate(BaseModel):
     encrypt_runtime_data: bool = True
     max_retries: int = 3
     retry_backoff_seconds: int = 300
-    max_retention_count: int = 0
+    max_retention_count: int = 80
+    retention_days: int = 60
 
 
 class BackupCredentialEnsureWrite(BaseModel):

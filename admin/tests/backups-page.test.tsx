@@ -13,14 +13,15 @@ const api = vi.hoisted(() => {
     id: "config-1",
     enabled: false,
     paused: false,
-    interval_minutes: 60,
+    interval_minutes: 1440,
     transport_mode: "sftp",
     site_slug: "aerisun",
     credential_ref: "aerisun-backup-source",
     encrypt_runtime_data: true,
     max_retries: 3,
     retry_backoff_seconds: 300,
-    max_retention_count: 0,
+    max_retention_count: 80,
+    retention_days: 60,
     last_scheduled_at: null,
     last_synced_at: null,
     last_error: null,
@@ -435,11 +436,11 @@ describe("BackupsPage usability", () => {
         backup_path: "/srv/serino-backups/current/commits/commit-local-1/manifest.json",
         datasets: {},
         stats_json: {},
-        snapshot_started_at: "2026-07-02T00:00:00+08:00",
-        snapshot_finished_at: "2026-07-02T00:01:00+08:00",
+        snapshot_started_at: "2026-07-05T15:52:00+08:00",
+        snapshot_finished_at: "2026-07-05T15:53:00+08:00",
         restored_at: null,
-        created_at: "2026-07-02T00:00:00+08:00",
-        updated_at: "2026-07-02T00:01:00+08:00",
+        created_at: "2026-07-05T15:52:00+08:00",
+        updated_at: "2026-07-05T15:53:00+08:00",
       },
     ];
     const user = userEvent.setup();
@@ -872,11 +873,11 @@ describe("BackupsPage usability", () => {
         backup_path: "/srv/aerisun/backup/manifest.json",
         datasets: {},
         stats_json: {},
-        snapshot_started_at: "2026-07-02T00:00:00+08:00",
-        snapshot_finished_at: "2026-07-02T00:01:00+08:00",
+        snapshot_started_at: "2026-07-05T15:52:00+08:00",
+        snapshot_finished_at: "2026-07-05T15:53:00+08:00",
         restored_at: null,
-        created_at: "2026-07-02T00:00:00+08:00",
-        updated_at: "2026-07-02T00:01:00+08:00",
+        created_at: "2026-07-05T15:52:00+08:00",
+        updated_at: "2026-07-05T15:53:00+08:00",
       },
     ];
     const user = userEvent.setup();
@@ -888,12 +889,29 @@ describe("BackupsPage usability", () => {
     expect(screen.queryByText("远端提交 ID")).toBeNull();
     expect(screen.queryByText("remote-commit-1")).toBeNull();
 
-    vi.mocked(window.confirm).mockReturnValueOnce(false);
     await user.click(screen.getByRole("button", { name: "恢复" }));
+    let dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText("确认恢复此备份？")).not.toBeNull();
+    expect(within(dialog).getByText("恢复点：2026/07/05 15:53")).not.toBeNull();
+    expect(
+      within(dialog).getByText((_, element) =>
+        element?.tagName === "P" &&
+        element.textContent ===
+          "恢复到这个点后，恢复点时间之后的备份记录会从本地列表和备份机同时删除，此前记录保留。",
+      ),
+    ).not.toBeNull();
+    expect(
+      within(dialog).getByText(
+        "恢复点时间之后的备份记录会从本地列表和备份机同时删除",
+      ).tagName,
+    ).toBe("STRONG");
+    expect(within(dialog).getByText("请确认你不再需要 2026/07/05 15:53 之后的备份点。")).not.toBeNull();
+    await user.click(within(dialog).getByRole("button", { name: "取消" }));
     expect(api.restoreMutate).not.toHaveBeenCalled();
 
-    vi.mocked(window.confirm).mockReturnValueOnce(true);
     await user.click(screen.getByRole("button", { name: "恢复" }));
+    dialog = await screen.findByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "确认恢复" }));
     expect(api.restoreMutate).toHaveBeenCalledWith({ commitId: "commit-1" });
   });
 

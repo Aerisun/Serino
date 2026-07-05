@@ -594,6 +594,14 @@ export const zhTranslations: TranslationDict = {
   "system.completed": "完成时间",
   "system.snapshotType": "快照类型",
   "system.restoreConfirm": "确认恢复此备份？",
+  "system.restoreConfirmPoint": "恢复点：{time}",
+  "system.restoreConfirmBodyPrefix": "恢复到这个点后，",
+  "system.restoreConfirmBodyStrong":
+    "恢复点时间之后的备份记录会从本地列表和备份机同时删除",
+  "system.restoreConfirmBodySuffix": "，此前记录保留。",
+  "system.restoreConfirmFinalLine":
+    "请确认你不再需要 {time} 之后的备份点。",
+  "system.confirmRestore": "确认恢复",
   "system.deleteConfirm": "确认删除？",
   "system.backupSyncConfig": "同步配置",
   "system.backupSyncConfigDescription":
@@ -771,7 +779,7 @@ export const zhTranslations: TranslationDict = {
   "system.backupScheduleTitle": "定时同步",
   "system.backupScheduleAlwaysOnDescription":
     "保存后会直接启用定时同步，你只需要设置时间间隔。",
-  "system.syncIntervalDescription": "例如 60 表示每 60 分钟自动同步一次。",
+  "system.syncIntervalDescription": "默认 1440，表示每天自动同步一次。",
   "system.backupManualOnlyHint":
     "关闭定时同步后，你仍然可以在“记录”页手动创建备份。",
   "system.backupSetupGuideTitle": "接入方式",
@@ -796,7 +804,13 @@ export const zhTranslations: TranslationDict = {
   "system.syncIntervalMinutes": "同步间隔（分钟）",
   "system.syncIntervalLabel": "自动同步间隔（分钟）",
   "system.syncIntervalLabelDescription":
-    "系统会按这个时间间隔自动创建一次备份任务。",
+    "系统会按这个时间间隔自动创建一次备份任务，默认每天一次。",
+  "system.backupRetentionDays": "自动清理多少天前的备份",
+  "system.backupRetentionDaysDescription":
+    "默认 60 天。超过这个时间的备份点会在下次备份完成后从本地记录和远端备份机一起清理；填 0 表示不按天数清理。",
+  "system.backupMaxRetentionCount": "最大保留备份点数",
+  "system.backupMaxRetentionCountDescription":
+    "默认 80 个。超过数量或超过天数任一条件先达到时，系统会优先清理最旧的备份点；填 0 表示不按数量清理。",
   "system.maxRetries": "最大重试次数",
   "system.maxRetriesDescription": "单次同步失败后，系统最多自动再尝试多少次。",
   "system.retryBackoffSeconds": "重试退避（秒）",
