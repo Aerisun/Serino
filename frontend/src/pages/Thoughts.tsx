@@ -1,4 +1,4 @@
-import { Suspense, useDeferredValue, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Heart, MessageCircle, Search } from "lucide-react";
 import { useLocation } from "react-router-dom";
@@ -11,7 +11,7 @@ import { useContentReaction } from "@/hooks/use-content-reaction";
 import { useFrontendI18n } from "@/i18n";
 import { useInfiniteList } from "@/hooks/use-infinite-list";
 import { clampPageSize } from "@/lib/page-size";
-import { formatPublishedDate } from "@/lib/api/utils";
+import { formatContentRelativeDate } from "@/lib/api/utils";
 import { lazyWithPreload } from "@/lib/lazy";
 import { usePreviewChannel } from "@/lib/preview";
 import { readThoughtsApiV1SiteThoughtsGet } from "@serino/api-client/site";
@@ -37,12 +37,22 @@ interface ThoughtsPageConfig extends BaseViewPageConfig {
   };
 }
 
-const mapRemoteThought = (entry: ContentEntryRead): Thought => {
+type TranslateFn = (
+  key: string,
+  values?: Record<string, string | number>,
+  fallback?: string,
+) => string;
+
+const mapRemoteThought = (
+  entry: ContentEntryRead,
+  t: TranslateFn,
+  lang: "zh" | "en",
+  now: number,
+): Thought => {
   return {
     id: entry.slug,
     content: entry.body || entry.summary?.trim() || "",
-    date:
-      entry.relative_date ?? (formatPublishedDate(entry.published_at) || ""),
+    date: formatContentRelativeDate(entry, t, lang, now),
     isArchived: entry.visibility === "private",
     likes: entry.like_count ?? 0,
     comments: entry.comment_count ?? 0,
@@ -51,19 +61,25 @@ const mapRemoteThought = (entry: ContentEntryRead): Thought => {
   };
 };
 
-const buildPreviewThought = (preview: {
-  slug?: string;
-  title: string;
-  summary?: string;
-  body?: string;
-  published_at?: string | null;
-  mood?: string;
-  category?: string;
-}, draftLabel: string): Thought => {
+const buildPreviewThought = (
+  preview: {
+    slug?: string;
+    title: string;
+    summary?: string;
+    body?: string;
+    published_at?: string | null;
+    mood?: string;
+    category?: string;
+  },
+  draftLabel: string,
+  t: TranslateFn,
+  lang: "zh" | "en",
+  now: number,
+): Thought => {
   return {
     id: preview.slug || "__preview-thought",
     content: preview.body || preview.summary?.trim() || "",
-    date: formatPublishedDate(preview.published_at) || draftLabel,
+    date: formatContentRelativeDate(preview, t, lang, now) || draftLabel,
     isArchived: false,
     likes: 0,
     comments: 0,
@@ -139,7 +155,19 @@ const Thoughts = () => {
   const [search, setSearch] = useState("");
   const deferredSearch = useDeferredValue(search);
   const [activeCategory, setActiveCategory] = useState(allCategoryLabel);
+  const [relativeNow, setRelativeNow] = useState(() => Date.now());
   const { data: previewData } = usePreviewChannel(previewStorageKey);
+  const mapThoughtItem = useCallback(
+    (entry: ContentEntryRead) => mapRemoteThought(entry, t, lang, relativeNow),
+    [lang, relativeNow, t],
+  );
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setRelativeNow(Date.now());
+    }, 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const {
     items,
@@ -164,12 +192,14 @@ const Thoughts = () => {
       throw new Error(t("thoughts.invalidResponse"));
     },
     pageSize,
-    mapItem: mapRemoteThought,
+    mapItem: mapThoughtItem,
     staleTime: 60_000,
     gcTime: 20 * 60_000,
   });
   const previewThought =
-    previewData?.type === "thoughts" ? buildPreviewThought(previewData, t("common.draft")) : null;
+    previewData?.type === "thoughts"
+      ? buildPreviewThought(previewData, t("common.draft"), t, lang, relativeNow)
+      : null;
   const displayItems = useMemo(() => {
     if (!previewThought) {
       return items;

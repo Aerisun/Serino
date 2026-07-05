@@ -9,7 +9,7 @@ import { staggerItem } from "@/config";
 import { usePageConfig } from "@/contexts/runtime-config";
 import { useFrontendI18n } from "@/i18n";
 import { formatPostCount } from "@/lib/format";
-import { formatPublishedDate } from "@/lib/api/utils";
+import { formatContentRelativeDate } from "@/lib/api/utils";
 import { readPostApiV1SitePostsSlugGet, readPostsApiV1SitePostsGet } from "@serino/api-client/site";
 import type { ContentSummaryRead } from "@serino/api-client/models";
 import type { BaseViewPageConfig } from "@/lib/page-config";
@@ -36,11 +36,22 @@ interface PostsPageConfig extends BaseViewPageConfig {
   };
 }
 
-const mapRemotePost = (entry: ContentSummaryRead): Post => ({
+type TranslateFn = (
+  key: string,
+  values?: Record<string, string | number>,
+  fallback?: string,
+) => string;
+
+const mapRemotePost = (
+  entry: ContentSummaryRead,
+  t: TranslateFn,
+  lang: "zh" | "en",
+  now: number,
+): Post => ({
   slug: entry.slug,
   title: entry.title,
   excerpt: entry.summary ?? "",
-  date: entry.relative_date ?? (formatPublishedDate(entry.published_at) || ""),
+  date: formatContentRelativeDate(entry, t, lang, now),
   isArchived: entry.visibility === "private",
   category: entry.category || entry.tags[0] || "",
   tags: entry.tags,
@@ -49,7 +60,7 @@ const mapRemotePost = (entry: ContentSummaryRead): Post => ({
 });
 
 const Posts = () => {
-  const { t } = useFrontendI18n();
+  const { t, lang } = useFrontendI18n();
   const config = usePageConfig().posts as unknown as PostsPageConfig;
   const allCategoryLabel = config.categories?.all ?? t("posts.allCategory");
   const fallbackCategoryLabel = config.categories?.fallback ?? t("posts.fallbackCategory");
@@ -61,19 +72,24 @@ const Posts = () => {
   const [rawSearch, setRawSearch] = useState("");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [activeCategory, setActiveCategory] = useState(allCategoryLabel);
+  const [relativeNow, setRelativeNow] = useState(() => Date.now());
   const pageSize = clampPageSize(config.pageSize, 15);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const deferredSearch = useDeferredValue(search);
+  const mapPostItem = useCallback(
+    (entry: ContentSummaryRead) => ({
+      ...mapRemotePost(entry, t, lang, relativeNow),
+      category: entry.category || fallbackCategoryLabel,
+    }),
+    [fallbackCategoryLabel, lang, relativeNow, t],
+  );
 
   const { items, status, errorMessage, hasMore, isLoadingMore, sentinelRef, reload } = useInfiniteList({
     queryKey: ["site", "posts", pageSize],
     queryFn: (p) => readPostsApiV1SitePostsGet(p).then(r => r.data),
     pageSize,
-    mapItem: (entry) => ({
-      ...mapRemotePost(entry),
-      category: entry.category || fallbackCategoryLabel,
-    }),
+    mapItem: mapPostItem,
     staleTime: 60_000,
     gcTime: 20 * 60_000,
   });
@@ -82,6 +98,13 @@ const Posts = () => {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setRelativeNow(Date.now());
+    }, 60_000);
+    return () => window.clearInterval(timer);
   }, []);
 
   const allCategories = useMemo(() => [

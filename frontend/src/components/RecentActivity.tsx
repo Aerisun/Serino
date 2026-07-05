@@ -9,8 +9,8 @@ import { useFrontendI18n } from "@/i18n";
 import { useFeatureFlags, usePageConfig } from "@/contexts/runtime-config";
 import { useContainedWheelScroll } from "@/hooks/use-contained-wheel-scroll";
 import { useDeferredActivation } from "@/hooks/useDeferredActivation";
+import { formatContentRelativeDate } from "@/lib/api/utils";
 import { warmInternalHref } from "@/lib/route-preload";
-import { formatDateInBeijing } from "@/lib/time";
 
 type ActivityType =
   | "comment"
@@ -57,39 +57,6 @@ const GUESTBOOK_ROUTE = "/guestbook";
 type TranslateFn = (key: string, values?: Record<string, string | number>, fallback?: string) => string;
 
 const isPublishType = (value: ActivityType) => value.startsWith("publish_");
-
-const formatRelativeDate = (value: string, t: TranslateFn, lang: "zh" | "en") => {
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
-    return value;
-  }
-
-  const diffMs = Date.now() - parsed.getTime();
-  if (diffMs < 60_000) {
-    return t("recentActivity.justNow");
-  }
-
-  const hours = Math.floor(diffMs / 3_600_000);
-  if (hours < 24) {
-    return t("recentActivity.hoursAgo", { count: Math.max(1, hours) });
-  }
-
-  const days = Math.floor(hours / 24);
-  if (days === 1) {
-    return t("recentActivity.yesterday");
-  }
-
-  if (days < 7) {
-    return t("recentActivity.daysAgo", { count: days });
-  }
-
-  return formatDateInBeijing(parsed, lang === "zh" ? "zh-CN" : "en-US", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  })
-    .replaceAll("/", "-");
-};
 
 const looksMachineLike = (value: string) => {
   const normalized = value.trim();
@@ -148,7 +115,7 @@ export const normalizeActivity = (value: RecentActivityItemRead, t: TranslateFn,
     user: normalizeActorName(value.actor_name ?? "", t),
     target: humanizeTarget(value.target_title ?? ""),
     detail: isPublishType(type) ? value.excerpt?.trim() || undefined : undefined,
-    date: formatRelativeDate(value.created_at, t, lang),
+    date: formatContentRelativeDate({ published_at: value.created_at }, t, lang),
     href: value.href ?? (type === "guestbook" ? GUESTBOOK_ROUTE : undefined),
   };
 };
