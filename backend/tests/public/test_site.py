@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import threading
+from datetime import datetime, timedelta
 
 import httpx
 import pytest
@@ -118,6 +119,73 @@ def test_read_site_bootstrap_supports_conditional_get(client) -> None:
     )
     assert not_modified_by_last_modified.status_code == 304
     assert not not_modified_by_last_modified.content
+
+
+def test_conditional_get_prefers_etag_over_stale_last_modified(client) -> None:
+    from aerisun.core.db import get_session_factory
+    from aerisun.core.time import BEIJING_TZ
+    from aerisun.domain.social.models import Friend, FriendFeedItem, FriendFeedSource
+
+    factory = get_session_factory()
+    latest_published = datetime(2026, 1, 12, 7, 0, 1, tzinfo=BEIJING_TZ)
+    older_published = latest_published - timedelta(days=1)
+
+    with factory() as session:
+        friend = session.query(Friend).filter(Friend.status == "active").first()
+        assert friend is not None
+        source = FriendFeedSource(
+            friend_id=friend.id,
+            feed_url="https://cache-test.example.com/rss.xml",
+            is_enabled=True,
+        )
+        session.add(source)
+        session.flush()
+        session.add(
+            FriendFeedItem(
+                source_id=source.id,
+                title="Newest cached item",
+                url="https://cache-test.example.com/newest",
+                summary="Initial payload.",
+                published_at=latest_published,
+                raw_payload={},
+            )
+        )
+        session.commit()
+        source_id = source.id
+
+    initial = client.get("/api/v1/site/friend-feed?limit=200")
+    assert initial.status_code == 200
+    assert initial.headers["etag"]
+    assert initial.headers["last-modified"]
+    assert [item["title"] for item in initial.json()["items"]] == ["Newest cached item"]
+
+    with factory() as session:
+        session.add(
+            FriendFeedItem(
+                source_id=source_id,
+                title="Older item added later",
+                url="https://cache-test.example.com/older",
+                summary="New payload with an older published date.",
+                published_at=older_published,
+                raw_payload={},
+            )
+        )
+        session.commit()
+
+    revalidated = client.get(
+        "/api/v1/site/friend-feed?limit=200",
+        headers={
+            "If-None-Match": initial.headers["etag"],
+            "If-Modified-Since": initial.headers["last-modified"],
+        },
+    )
+
+    assert revalidated.status_code == 200
+    assert revalidated.headers["etag"] != initial.headers["etag"]
+    assert [item["title"] for item in revalidated.json()["items"]] == [
+        "Newest cached item",
+        "Older item added later",
+    ]
 
 
 @respx.mock

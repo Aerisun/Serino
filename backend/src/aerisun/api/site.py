@@ -101,8 +101,7 @@ def _request_is_not_modified(
         if if_none_match == "*":
             return True
         normalized_current = _normalize_etag_token(etag)
-        if any(_normalize_etag_token(candidate) == normalized_current for candidate in if_none_match.split(",")):
-            return True
+        return any(_normalize_etag_token(candidate) == normalized_current for candidate in if_none_match.split(","))
 
     if_modified_since = request.headers.get("if-modified-since", "").strip()
     if if_modified_since:
