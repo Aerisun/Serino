@@ -487,13 +487,16 @@ jobs:
         shell: bash
         run: |
           notes_file="${RUNNER_TEMP}/serino-release-notes.md"
-          notes_body="$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}" --jq '.body // ""' 2>/dev/null || true)"
-          if [[ -n "${notes_body//[[:space:]]/}" ]]; then
-            printf '%s\n' "${notes_body}" > "${notes_file}"
-            echo "release_notes_file=${notes_file}" >> "${GITHUB_OUTPUT}"
+          release_notes_file=""
+          if notes_body="$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}" --jq '.body // ""' 2>/dev/null)"; then
+            if [[ -n "${notes_body//[[:space:]]/}" ]]; then
+              printf '%s\n' "${notes_body}" > "${notes_file}"
+              release_notes_file="${notes_file}"
+            fi
           else
-            echo "release_notes_file=" >> "${GITHUB_OUTPUT}"
+            echo "GitHub Release ${RELEASE_TAG} not found; continuing without release notes."
           fi
+          echo "release_notes_file=${release_notes_file}" >> "${GITHUB_OUTPUT}"
 
       - name: Package dev installer assets
         env:
@@ -768,13 +771,16 @@ jobs:
         shell: bash
         run: |
           notes_file="${RUNNER_TEMP}/serino-release-notes.md"
-          notes_body="$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}" --jq '.body // ""' 2>/dev/null || true)"
-          if [[ -n "${notes_body//[[:space:]]/}" ]]; then
-            printf '%s\n' "${notes_body}" > "${notes_file}"
-            echo "release_notes_file=${notes_file}" >> "${GITHUB_OUTPUT}"
+          release_notes_file=""
+          if notes_body="$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}" --jq '.body // ""' 2>/dev/null)"; then
+            if [[ -n "${notes_body//[[:space:]]/}" ]]; then
+              printf '%s\n' "${notes_body}" > "${notes_file}"
+              release_notes_file="${notes_file}"
+            fi
           else
-            echo "release_notes_file=" >> "${GITHUB_OUTPUT}"
+            echo "GitHub Release ${RELEASE_TAG} not found; continuing without release notes."
           fi
+          echo "release_notes_file=${release_notes_file}" >> "${GITHUB_OUTPUT}"
 
       - name: Package installer assets
         env:

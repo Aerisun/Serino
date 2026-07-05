@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { SystemUpdateStatusRead } from "@serino/api-client/models";
 import {
   AUTO_CHECK_STALE_MS,
+  shouldShowUpdateReleaseNotes,
   shouldQueueSilentUpdateCheck,
 } from "../src/pages/dashboard/systemUpdateNoticeLogic";
 
@@ -52,6 +53,39 @@ describe("system update notice logic", () => {
         state: "idle",
         status: status(),
       }),
+    ).toBe(false);
+  });
+
+  it("hides GitHub release 404 JSON from dev channel update notes", () => {
+    expect(
+      shouldShowUpdateReleaseNotes(
+        status({
+          auto_update_supported: true,
+          channel: "dev",
+          release: {
+            version: "v0.1.64",
+            notes:
+              '{"message":"Not Found","documentation_url":"https://docs.github.com/rest/releases/releases#get-a-release-by-tag-name","status":"404"}',
+            notes_format: "markdown",
+          },
+        }),
+      ),
+    ).toBe(false);
+  });
+
+  it("hides generated empty release notes for dev channel tag-only builds", () => {
+    expect(
+      shouldShowUpdateReleaseNotes(
+        status({
+          auto_update_supported: true,
+          channel: "dev",
+          release: {
+            version: "v0.1.64",
+            notes: "# Serino v0.1.64\n\n- 发布版本：v0.1.64\n- 镜像版本：0.1.64\n\n本版本未提供额外更新说明。\n",
+            notes_format: "markdown",
+          },
+        }),
+      ),
     ).toBe(false);
   });
 });

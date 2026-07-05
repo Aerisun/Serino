@@ -33,6 +33,7 @@ import { extractApiErrorMessage } from "@/lib/api-error";
 import { formatDateTimeInBeijing } from "@/lib/time";
 import { cn } from "@/lib/utils";
 import {
+  shouldShowUpdateReleaseNotes,
   shouldQueueSilentUpdateCheck,
 } from "@/pages/dashboard/systemUpdateNoticeLogic";
 
@@ -100,7 +101,7 @@ export function SystemUpdateNotice() {
   const reconnecting = Boolean(isError && status && isActiveState(status.state));
   const targetVersion = status?.latest_version ?? status?.release?.version ?? "";
   const releaseNotes = status?.release?.notes?.trim() || t("dashboard.updateNoNotes");
-  const showReleaseNotes = Boolean(status?.auto_update_supported);
+  const showReleaseNotes = shouldShowUpdateReleaseNotes(status);
   const canUpgrade = Boolean(
     targetVersion
       && status?.update_available

@@ -2021,6 +2021,8 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     assert "update-trusted-public-key.b64" in upload_text
     assert "Resolve GitHub release notes" in workflow_text
     assert 'gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}"' in workflow_text
+    assert 'if notes_body="$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}"' in workflow_text
+    assert 'echo "GitHub Release ${RELEASE_TAG} not found; continuing without release notes."' in workflow_text
     assert "AERISUN_RELEASE_NOTES_FILE" in workflow_text
     assert 'AERISUN_UPDATE_SIGNING_REQUIRED: "true"' in workflow_text
     assert "secrets.AERISUN_UPDATE_SIGNING_PRIVATE_KEY_B64" in workflow_text
