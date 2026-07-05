@@ -9,7 +9,7 @@ from copy import deepcopy
 from datetime import datetime
 from html.parser import HTMLParser
 from ipaddress import ip_address
-from threading import Lock, Thread
+from threading import Condition, Lock, Thread
 from time import monotonic, sleep
 from typing import Any, Literal
 from urllib.parse import urljoin, urlsplit, urlunsplit
@@ -69,6 +69,7 @@ HitokotoCacheKey = tuple[tuple[str, ...], tuple[str, ...]]
 _HITOKOTO_CACHE: dict[HitokotoCacheKey, deque[SitePoemPreviewRead]] = {}
 _HITOKOTO_CACHE_REFRESHING: set[HitokotoCacheKey] = set()
 _HITOKOTO_CACHE_LOCK = Lock()
+_HITOKOTO_CACHE_CONDITION = Condition(_HITOKOTO_CACHE_LOCK)
 _HITOKOTO_REQUEST_LOCK = Lock()
 _HITOKOTO_NEXT_REQUEST_AT = 0.0
 _LINK_PREVIEW_CACHE: dict[str, tuple[float, LinkPreviewRead]] = {}
@@ -500,17 +501,35 @@ def _refill_hitokoto_cache(
     return len(new_items)
 
 
+def _claim_hitokoto_cache_refill(cache_key: HitokotoCacheKey, *, target_size: int) -> bool:
+    with _HITOKOTO_CACHE_CONDITION:
+        if cache_key in _HITOKOTO_CACHE_REFRESHING:
+            return False
+        if len(_HITOKOTO_CACHE.get(cache_key, ())) >= target_size:
+            return False
+        _HITOKOTO_CACHE_REFRESHING.add(cache_key)
+        return True
+
+
+def _finish_hitokoto_cache_refill(cache_key: HitokotoCacheKey) -> None:
+    with _HITOKOTO_CACHE_CONDITION:
+        _HITOKOTO_CACHE_REFRESHING.discard(cache_key)
+        _HITOKOTO_CACHE_CONDITION.notify_all()
+
+
+def _wait_for_hitokoto_cache_refill(cache_key: HitokotoCacheKey) -> None:
+    with _HITOKOTO_CACHE_CONDITION:
+        while cache_key in _HITOKOTO_CACHE_REFRESHING:
+            _HITOKOTO_CACHE_CONDITION.wait()
+
+
 def _schedule_hitokoto_cache_refill(
     cache_key: HitokotoCacheKey,
     *,
     types: list[str],
 ) -> None:
-    with _HITOKOTO_CACHE_LOCK:
-        if cache_key in _HITOKOTO_CACHE_REFRESHING:
-            return
-        if len(_HITOKOTO_CACHE.get(cache_key, ())) >= HITOKOTO_CACHE_SIZE:
-            return
-        _HITOKOTO_CACHE_REFRESHING.add(cache_key)
+    if not _claim_hitokoto_cache_refill(cache_key, target_size=HITOKOTO_CACHE_SIZE):
+        return
 
     def _worker() -> None:
         try:
@@ -522,8 +541,7 @@ def _schedule_hitokoto_cache_refill(
         except (httpx.HTTPError, ValueError, ValidationError):
             pass
         finally:
-            with _HITOKOTO_CACHE_LOCK:
-                _HITOKOTO_CACHE_REFRESHING.discard(cache_key)
+            _finish_hitokoto_cache_refill(cache_key)
 
     Thread(target=_worker, daemon=True).start()
 
@@ -534,11 +552,17 @@ def _get_cached_hitokoto_poem(types: list[str]) -> SitePoemPreviewRead:
 
     poem, remaining = _pop_cached_hitokoto_poem(cache_key)
     if poem is None:
-        _refill_hitokoto_cache(
-            cache_key,
-            types=normalized_types,
-            target_size=HITOKOTO_CACHE_SIZE,
-        )
+        if _claim_hitokoto_cache_refill(cache_key, target_size=HITOKOTO_CACHE_SIZE):
+            try:
+                _refill_hitokoto_cache(
+                    cache_key,
+                    types=normalized_types,
+                    target_size=HITOKOTO_CACHE_SIZE,
+                )
+            finally:
+                _finish_hitokoto_cache_refill(cache_key)
+        else:
+            _wait_for_hitokoto_cache_refill(cache_key)
         poem, remaining = _pop_cached_hitokoto_poem(cache_key)
 
     if poem is None:

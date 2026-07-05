@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import threading
+
 import httpx
 import pytest
 import respx
@@ -276,6 +278,63 @@ def test_hitokoto_rate_limit_spaces_requests(monkeypatch: pytest.MonkeyPatch) ->
 
     assert sleep_calls == [pytest.approx(0.4)]
     assert pytest.approx(11.0) == site_service._HITOKOTO_NEXT_REQUEST_AT
+
+
+def test_hitokoto_cold_cache_refill_is_singleflight(monkeypatch: pytest.MonkeyPatch) -> None:
+    from aerisun.domain.site_config import service as site_service
+    from aerisun.domain.site_config.schemas import SitePoemPreviewRead
+
+    monkeypatch.setattr(site_service, "HITOKOTO_CACHE_SIZE", 4)
+    monkeypatch.setattr(site_service, "HITOKOTO_CACHE_REFILL_THRESHOLD", -1)
+
+    second_fetch_started = threading.Event()
+    fetch_lock = threading.Lock()
+    fetch_count = 0
+    waiting_threads: set[int] = set()
+
+    def fake_fetch_hitokoto_poem_with_client(_client, *, types: list[str]) -> SitePoemPreviewRead:
+        nonlocal fetch_count
+
+        ident = threading.get_ident()
+        should_wait = False
+        with fetch_lock:
+            fetch_count += 1
+            index = fetch_count
+            if ident not in waiting_threads:
+                waiting_threads.add(ident)
+                should_wait = True
+                if len(waiting_threads) == 2:
+                    second_fetch_started.set()
+
+        if should_wait:
+            second_fetch_started.wait(timeout=1)
+
+        return SitePoemPreviewRead(
+            mode="hitokoto",
+            content=f"冷缓存诗句 {index}",
+        )
+
+    monkeypatch.setattr(site_service, "_fetch_hitokoto_poem_with_client", fake_fetch_hitokoto_poem_with_client)
+
+    results: list[str] = []
+    errors: list[BaseException] = []
+
+    def load_poem() -> None:
+        try:
+            results.append(site_service._get_cached_hitokoto_poem(["d", "i"]).content)
+        except BaseException as exc:  # pragma: no cover - surfaced by assertion below
+            errors.append(exc)
+
+    threads = [threading.Thread(target=load_poem) for _ in range(2)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(timeout=3)
+
+    assert all(not thread.is_alive() for thread in threads)
+    assert errors == []
+    assert len(results) == 2
+    assert fetch_count == site_service.HITOKOTO_CACHE_SIZE
 
 
 @respx.mock
