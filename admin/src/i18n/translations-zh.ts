@@ -1127,6 +1127,7 @@ export const zhTranslations: TranslationDict = {
   "dashboard.heroPages": "统计页面",
   "dashboard.heroModeration": "待审核",
   "dashboard.heroLastSnapshot": "最近快照",
+  "dashboard.heroLastBackup": "最近一次备份",
   "dashboard.heroSnapshotEmpty": "暂无",
   "dashboard.heroTopPage": "当前最高访问页面",
   "dashboard.heroTopPageEmpty": "有访问数据后会显示在这里。",

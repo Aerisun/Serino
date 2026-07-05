@@ -1206,6 +1206,7 @@ export const enTranslations: TranslationDict = {
     "dashboard.heroPages": "Tracked pages",
     "dashboard.heroModeration": "Pending review",
     "dashboard.heroLastSnapshot": "Latest snapshot",
+    "dashboard.heroLastBackup": "Latest backup",
     "dashboard.heroSnapshotEmpty": "Not available",
     "dashboard.heroTopPage": "Top page right now",
     "dashboard.heroTopPageEmpty":

@@ -17,7 +17,16 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
-import type { EnhancedDashboardStats, RecentContentItem } from "@serino/api-client/models";
+import {
+  useGetBackupSyncConfigApiV1AdminSystemBackupSyncConfigGet,
+  useListBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGet,
+} from "@serino/api-client/admin";
+import type {
+  BackupCommitRead,
+  BackupSyncConfig,
+  EnhancedDashboardStats,
+  RecentContentItem,
+} from "@serino/api-client/models";
 import { StatusBadge } from "@/components/StatusBadge";
 import {
   DashboardEmptyState,
@@ -26,7 +35,10 @@ import {
 import { useI18n } from "@/i18n";
 import { cn } from "@/lib/utils";
 import { formatDateTimeInBeijing } from "@/lib/time";
-import { dashboardStatsQueryOptions } from "@/pages/dashboard/dashboardQueries";
+import {
+  DASHBOARD_STATS_STALE_TIME,
+  dashboardStatsQueryOptions,
+} from "@/pages/dashboard/dashboardQueries";
 
 const CONTENT_TYPE_ROUTES: Record<string, string> = {
   post: "/posts",
@@ -50,6 +62,11 @@ function formatDateTime(value: string) {
     minute: "2-digit",
   });
   return formatted || value;
+}
+
+function formatBackupCommitTime(commit: BackupCommitRead | undefined) {
+  const value = commit?.snapshot_finished_at ?? commit?.created_at;
+  return typeof value === "string" ? formatDateTime(value) : null;
 }
 
 function greetingKey() {
@@ -172,7 +189,23 @@ export default function DashboardPage() {
   const navigate = useNavigate();
 
   const { data: dashboardStats, isLoading } = useQuery(dashboardStatsQueryOptions());
+  const { data: backupConfigRaw } =
+    useGetBackupSyncConfigApiV1AdminSystemBackupSyncConfigGet();
   const stats = dashboardStats as EnhancedDashboardStats | undefined;
+  const backupConfig = backupConfigRaw?.data as BackupSyncConfig | undefined;
+  const backupEnabled = backupConfig?.enabled === true;
+  const { data: backupCommitsRaw } =
+    useListBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGet({
+      query: {
+        enabled: backupEnabled,
+        staleTime: DASHBOARD_STATS_STALE_TIME,
+        refetchOnWindowFocus: false,
+      },
+    });
+  const backupCommits = (backupCommitsRaw?.data as BackupCommitRead[] | undefined) ?? [];
+  const latestBackupAt = backupEnabled
+    ? formatBackupCommitTime(backupCommits[0]) ?? t("dashboard.heroSnapshotEmpty")
+    : null;
 
   const recentContent = useMemo(
     () => (stats?.recent_content ?? []) as RecentContentItem[],
@@ -182,9 +215,6 @@ export default function DashboardPage() {
   const pendingModeration = stats?.aux_metrics?.pending_moderation ?? 0;
   const totalViews = stats?.traffic?.total_views ?? 0;
   const uniqueVisitors24h = stats?.visitors?.unique_visitors_24h ?? 0;
-  const lastSnapshotAt = stats?.traffic?.last_snapshot_at
-    ? formatDateTime(stats.traffic.last_snapshot_at)
-    : t("dashboard.heroSnapshotEmpty");
 
   const contentTiles: {
     key: string;
@@ -218,7 +248,9 @@ export default function DashboardPage() {
               </h2>
               <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
                 <span>{t("dashboard.welcomeSubtitle")}</span>
-                <span>{t("dashboard.heroLastSnapshot")} {lastSnapshotAt}</span>
+                {backupEnabled ? (
+                  <span>{t("dashboard.heroLastBackup")} {latestBackupAt}</span>
+                ) : null}
               </p>
             </div>
           </section>
