@@ -26,4 +26,5 @@ export interface AssetUploadPlanWrite {
   /** @maxLength 80 */
   category?: string;
   note?: string | null;
+  public_slug?: string | null;
 }

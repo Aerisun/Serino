@@ -11171,6 +11171,9 @@ if(bodyUploadAssetEndpointApiV1AdminAssetsPost.category !== undefined) {
 if(bodyUploadAssetEndpointApiV1AdminAssetsPost.note !== undefined && bodyUploadAssetEndpointApiV1AdminAssetsPost.note !== null) {
  formData.append(`note`, bodyUploadAssetEndpointApiV1AdminAssetsPost.note);
  }
+if(bodyUploadAssetEndpointApiV1AdminAssetsPost.public_slug !== undefined && bodyUploadAssetEndpointApiV1AdminAssetsPost.public_slug !== null) {
+ formData.append(`public_slug`, bodyUploadAssetEndpointApiV1AdminAssetsPost.public_slug);
+ }
 
   return customInstance<uploadAssetEndpointApiV1AdminAssetsPostResponse>(getUploadAssetEndpointApiV1AdminAssetsPostUrl(),
   {

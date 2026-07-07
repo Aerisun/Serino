@@ -10,4 +10,5 @@ export interface AssetAdminUpdate {
   scope?: 'system' | 'user' | null;
   category?: string | null;
   note?: string | null;
+  public_slug?: string | null;
 }
