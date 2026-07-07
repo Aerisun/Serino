@@ -12,6 +12,7 @@ class AssetAdminRead(ModelBase):
     id: str
     file_name: str
     resource_key: str
+    public_slug: str | None
     visibility: Literal["internal", "public"]
     scope: Literal["system", "user"]
     category: str
@@ -36,6 +37,7 @@ class AssetAdminUpdate(ModelBase):
     scope: Literal["system", "user"] | None = None
     category: str | None = None
     note: str | None = None
+    public_slug: str | None = Field(default=None, max_length=160)
 
 
 class AssetUploadPlanWrite(BaseModel):
@@ -47,6 +49,7 @@ class AssetUploadPlanWrite(BaseModel):
     scope: Literal["system", "user"] = "user"
     category: str = Field(default="general", max_length=80)
     note: str | None = Field(default=None, max_length=500)
+    public_slug: str | None = Field(default=None, max_length=160)
 
 
 class AssetUploadPlanRead(ModelBase):

@@ -32,6 +32,7 @@ def find_assets_paginated(
             or_(
                 Asset.file_name.ilike(pattern),
                 Asset.resource_key.ilike(pattern),
+                Asset.public_slug.ilike(pattern),
                 Asset.category.ilike(pattern),
                 Asset.visibility.ilike(pattern),
                 Asset.note.ilike(pattern),
@@ -58,6 +59,11 @@ def find_asset_by_id(session: Session, asset_id: str) -> Asset | None:
 def find_asset_by_resource_key(session: Session, resource_key: str) -> Asset | None:
     """Find asset by normalized resource key."""
     return session.query(Asset).filter(Asset.resource_key == resource_key).first()
+
+
+def find_asset_by_public_slug(session: Session, public_slug: str) -> Asset | None:
+    """Find asset by normalized public slug."""
+    return session.query(Asset).filter(Asset.public_slug == public_slug).first()
 
 
 def update_asset(session: Session, asset: Asset, **kwargs) -> Asset:

@@ -91,6 +91,67 @@ def test_media_gateway_rejects_public_alias_for_internal_asset(client) -> None:
     assert response.status_code == 404
 
 
+def test_media_gateway_serves_registered_public_slug(client) -> None:
+    media_root = get_settings().media_dir.expanduser().resolve()
+    local_path = media_root / "internal/assets/test/slug-alias.txt"
+    local_path.parent.mkdir(parents=True, exist_ok=True)
+    local_path.write_text("slug alias", encoding="utf-8")
+
+    factory = get_session_factory()
+    with factory() as session:
+        session.add(
+            Asset(
+                file_name="slug-alias.txt",
+                resource_key="internal/assets/test/slug-alias.txt",
+                public_slug="readme.txt",
+                visibility="public",
+                scope="user",
+                category="test",
+                storage_path=str(local_path),
+                mime_type="text/plain",
+                storage_provider="local",
+                remote_status="none",
+                mirror_status="completed",
+            )
+        )
+        session.commit()
+
+    response = client.get("/media/readme.txt")
+
+    assert response.status_code == 200
+    assert response.text == "slug alias"
+
+
+def test_media_gateway_rejects_registered_slug_for_internal_asset(client) -> None:
+    media_root = get_settings().media_dir.expanduser().resolve()
+    local_path = media_root / "internal/assets/test/internal-slug-alias.txt"
+    local_path.parent.mkdir(parents=True, exist_ok=True)
+    local_path.write_text("private slug alias", encoding="utf-8")
+
+    factory = get_session_factory()
+    with factory() as session:
+        session.add(
+            Asset(
+                file_name="internal-slug-alias.txt",
+                resource_key="internal/assets/test/internal-slug-alias.txt",
+                public_slug="private-readme.txt",
+                visibility="internal",
+                scope="user",
+                category="test",
+                storage_path=str(local_path),
+                mime_type="text/plain",
+                storage_provider="local",
+                remote_status="none",
+                mirror_status="completed",
+            )
+        )
+        session.commit()
+
+    response = client.get("/media/private-readme.txt")
+
+    assert response.status_code == 404
+
+
 def test_media_gateway_serves_internal_alias_for_legacy_public_asset(client) -> None:
     media_root = get_settings().media_dir.expanduser().resolve()
     local_path = media_root / "public/assets/test/legacy-public.txt"

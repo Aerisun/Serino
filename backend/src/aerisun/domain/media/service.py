@@ -51,6 +51,8 @@ _COMMENT_IMAGE_EXTENSIONS = {
     "image/webp": "webp",
 }
 _SAFE_SLUG_RE = re.compile(r"[^a-z0-9_-]+")
+_PUBLIC_SLUG_RE = re.compile(r"^[a-z0-9._-]+$")
+_RESERVED_PUBLIC_SLUGS = {"public", "internal"}
 _SAFE_FILE_STEM_RE = re.compile(r"[^a-zA-Z0-9._-]+")
 
 
@@ -77,6 +79,43 @@ def _normalize_scope(value: str | None) -> str:
 def _normalize_note(value: str | None) -> str | None:
     note = (value or "").strip()
     return note or None
+
+
+def _normalize_public_slug(value: str | None) -> str | None:
+    public_slug = (value or "").strip()
+    if not public_slug:
+        return None
+    if public_slug in _RESERVED_PUBLIC_SLUGS:
+        raise DomainValidationError("公开资源 slug 不能使用 public 或 internal")
+    if "/" in public_slug or public_slug.lower() != public_slug or _PUBLIC_SLUG_RE.fullmatch(public_slug) is None:
+        raise DomainValidationError("公开资源 slug 仅支持小写英文、数字、点、下划线和短横线")
+    return public_slug
+
+
+def _assert_public_slug_available(session: Session, public_slug: str | None, *, asset_id: str | None = None) -> None:
+    if not public_slug:
+        return
+    existing_slug = repo.find_asset_by_public_slug(session, public_slug)
+    if existing_slug is not None and existing_slug.id != asset_id:
+        raise StateConflict("公开资源 slug 已存在")
+    existing_resource = repo.find_asset_by_resource_key(session, public_slug)
+    if existing_resource is not None and existing_resource.id != asset_id:
+        raise StateConflict("公开资源 slug 与现有资源标识冲突")
+
+
+def _apply_public_slug_to_existing_asset(
+    session: Session,
+    asset: Asset,
+    public_slug: str | None,
+) -> None:
+    if not public_slug:
+        return
+    if asset.public_slug and asset.public_slug != public_slug:
+        raise StateConflict("该资源已设置不同的公开 slug，请在资源编辑中修改")
+    if asset.public_slug == public_slug:
+        return
+    _assert_public_slug_available(session, public_slug, asset_id=asset.id)
+    asset.public_slug = public_slug
 
 
 def list_assets(
@@ -140,6 +179,7 @@ def _create_asset_record(
     scope: str,
     category: str,
     note: str | None,
+    public_slug: str | None,
     storage_path: Path,
     mime_type: str | None,
     byte_size: int | None,
@@ -158,6 +198,7 @@ def _create_asset_record(
         scope=scope,
         category=category,
         note=note,
+        public_slug=public_slug,
         storage_path=str(storage_path),
         mime_type=mime_type,
         byte_size=byte_size,
@@ -181,6 +222,7 @@ def upload_asset(
     scope: str = "user",
     category: str = "general",
     note: str | None = None,
+    public_slug: str | None = None,
     resource_key_digest: str | None = None,
     resource_key_digest_prefix_length: int = 12,
 ) -> AssetAdminRead:
@@ -190,6 +232,7 @@ def upload_asset(
     normalized_scope = _normalize_scope(scope)
     normalized_category = _normalize_category(category)
     normalized_note = _normalize_note(note)
+    normalized_public_slug = _normalize_public_slug(public_slug)
     resource_key, sha = _build_resource_key(
         file_name=file_name,
         content=content,
@@ -201,6 +244,7 @@ def upload_asset(
     )
     existing = _existing_asset_or_none(session, resource_key)
     if existing is not None:
+        _apply_public_slug_to_existing_asset(session, existing, normalized_public_slug)
         storage_path = Path(existing.storage_path)
         if not storage_path.exists():
             provider = build_object_storage_provider(session)
@@ -216,10 +260,11 @@ def upload_asset(
                 _write_local_file(storage_path, content)
         if normalized_visibility == "public" and existing.visibility != "public":
             existing.visibility = "public"
-            session.commit()
-            session.refresh(existing)
+        session.commit()
+        session.refresh(existing)
         return asset_admin_read_from_model(existing)
 
+    _assert_public_slug_available(session, normalized_public_slug)
     storage_path = build_asset_storage_path(resource_key)
     use_oss = build_object_storage_provider(session) is not None
     if use_oss:
@@ -231,6 +276,7 @@ def upload_asset(
             scope=normalized_scope,
             category=normalized_category,
             note=normalized_note,
+            public_slug=normalized_public_slug,
             storage_path=storage_path,
             mime_type=mime_type,
             byte_size=len(content),
@@ -253,6 +299,7 @@ def upload_asset(
             scope=normalized_scope,
             category=normalized_category,
             note=normalized_note,
+            public_slug=normalized_public_slug,
             storage_path=storage_path,
             mime_type=mime_type,
             byte_size=len(content),
@@ -277,6 +324,7 @@ def prepare_asset_upload(session: Session, payload: AssetUploadPlanWrite) -> Ass
     normalized_scope = _normalize_scope(payload.scope)
     normalized_category = _normalize_category(payload.category)
     normalized_note = _normalize_note(payload.note)
+    normalized_public_slug = _normalize_public_slug(payload.public_slug)
     resource_key = build_resource_key_for_plan(
         payload,
         category=normalized_category,
@@ -284,12 +332,14 @@ def prepare_asset_upload(session: Session, payload: AssetUploadPlanWrite) -> Ass
     )
     existing = _existing_asset_or_none(session, resource_key)
     if existing is not None:
+        _apply_public_slug_to_existing_asset(session, existing, normalized_public_slug)
         if normalized_visibility == "public" and existing.visibility != "public":
             existing.visibility = "public"
-            session.commit()
-            session.refresh(existing)
+        session.commit()
+        session.refresh(existing)
         return AssetUploadPlanRead(mode="existing", asset=asset_admin_read_from_model(existing))
 
+    _assert_public_slug_available(session, normalized_public_slug)
     provider = build_object_storage_provider(session)
     if provider is None or not should_use_direct_upload(session):
         return AssetUploadPlanRead(mode="local")
@@ -303,6 +353,7 @@ def prepare_asset_upload(session: Session, payload: AssetUploadPlanWrite) -> Ass
         scope=normalized_scope,
         category=normalized_category,
         note=normalized_note,
+        public_slug=normalized_public_slug,
         storage_path=storage_path,
         mime_type=payload.mime_type,
         byte_size=payload.byte_size,
@@ -387,6 +438,11 @@ def update_asset(session: Session, asset_id: str, payload: AssetAdminUpdate) -> 
     next_scope = _normalize_scope(payload.scope or asset.scope)
     next_category = _normalize_category(payload.category or asset.category)
     next_note = _normalize_note(payload.note if payload.note is not None else asset.note)
+    if "public_slug" in payload.model_fields_set:
+        next_public_slug = _normalize_public_slug(payload.public_slug)
+    else:
+        next_public_slug = asset.public_slug
+    _assert_public_slug_available(session, next_public_slug, asset_id=asset.id)
 
     digest = asset.sha256
     current_path = Path(asset.storage_path)
@@ -468,6 +524,7 @@ def update_asset(session: Session, asset_id: str, payload: AssetAdminUpdate) -> 
     asset.scope = next_scope
     asset.category = next_category
     asset.note = next_note
+    asset.public_slug = next_public_slug
     session.commit()
     session.refresh(asset)
     emit_asset_updated(
@@ -642,4 +699,8 @@ def resolve_media_asset(session: Session, resource_key: str) -> Asset | None:
             return asset
     if key.startswith("internal/"):
         return repo.find_asset_by_resource_key(session, public_resource_key_for(key))
+    if "/" not in key and key not in _RESERVED_PUBLIC_SLUGS:
+        asset = repo.find_asset_by_public_slug(session, key)
+        if asset is not None and asset.visibility == "public":
+            return asset
     return None
