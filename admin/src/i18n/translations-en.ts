@@ -588,6 +588,8 @@ export const enTranslations: TranslationDict = {
     "assets.mimeType": "MIME Type",
     "assets.uploadedAt": "Uploaded",
     "assets.category": "Category",
+    "assets.publicSlug": "Public slug",
+    "assets.publicSlugPlaceholder": "hero-cover.webp",
     "assets.note": "Note",
     "assets.noteHint":
       "For description only; it does not affect the path or category.",

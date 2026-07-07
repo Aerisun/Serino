@@ -4,6 +4,7 @@ export interface UploadedAssetRead {
   id: string;
   file_name: string;
   resource_key: string;
+  public_slug?: string | null;
   visibility: "internal" | "public";
   scope: "system" | "user";
   category: string;
@@ -32,6 +33,7 @@ export interface ManagedAssetUploadInput {
   scope: "system" | "user";
   category: string;
   note?: string;
+  publicSlug?: string;
 }
 
 function getAuthHeaders(contentType = "application/json") {
@@ -80,6 +82,9 @@ async function localUpload(input: ManagedAssetUploadInput): Promise<UploadedAsse
   if (input.note?.trim()) {
     formData.append("note", input.note.trim());
   }
+  if (input.publicSlug?.trim()) {
+    formData.append("public_slug", input.publicSlug.trim());
+  }
 
   const response = await fetch("/api/v1/admin/assets/", {
     method: "POST",
@@ -103,6 +108,7 @@ export async function uploadManagedAsset(input: ManagedAssetUploadInput): Promis
       scope: input.scope,
       category: input.category,
       note: input.note?.trim() || undefined,
+      public_slug: input.publicSlug?.trim() || undefined,
     }),
   });
   const plan = await parseApiResponse<AssetUploadPlanRead>(initResponse);

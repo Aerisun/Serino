@@ -570,6 +570,8 @@ export const zhTranslations: TranslationDict = {
   "assets.mimeType": "MIME 类型",
   "assets.uploadedAt": "上传时间",
   "assets.category": "分类",
+  "assets.publicSlug": "公开 slug",
+  "assets.publicSlugPlaceholder": "hero-cover.webp",
   "assets.note": "备注",
   "assets.noteHint": "仅用于说明，不参与路径或分类",
   "assets.searchPlaceholder": "搜索文件名、备注、分类或标识",

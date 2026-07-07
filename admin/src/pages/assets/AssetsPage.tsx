@@ -49,10 +49,12 @@ export default function AssetsPage() {
   const [visibility, setVisibility] = useState<"internal" | "public">("internal");
   const [uploadMode, setUploadMode] = useState<"compress" | "original">("compress");
   const [category, setCategory] = useState("general");
+  const [publicSlug, setPublicSlug] = useState("");
   const [note, setNote] = useState("");
   const [editVisibility, setEditVisibility] = useState<"internal" | "public">("internal");
   const [editScope, setEditScope] = useState<"user" | "system">("user");
   const [editCategory, setEditCategory] = useState("general");
+  const [editPublicSlug, setEditPublicSlug] = useState("");
   const [editNote, setEditNote] = useState("");
   const [isCompressing, setIsCompressing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -162,6 +164,7 @@ export default function AssetsPage() {
     setEditVisibility(asset.visibility);
     setEditScope(asset.scope);
     setEditCategory(asset.category);
+    setEditPublicSlug(String(asset.public_slug ?? ""));
     setEditNote(asset.note ?? "");
     setEditOpen(true);
   };
@@ -177,6 +180,7 @@ export default function AssetsPage() {
           scope: editScope,
           category: editCategory,
           note: editNote.trim() || null,
+          public_slug: editPublicSlug.trim() || null,
         },
       });
       setEditOpen(false);
@@ -209,6 +213,7 @@ export default function AssetsPage() {
         scope,
         category,
         note: note.trim() || undefined,
+        publicSlug: publicSlug.trim() || undefined,
       });
       await queryClient.invalidateQueries({ queryKey: getListAssetsApiV1AdminAssetsGetQueryKey() });
       toast.success(t("common.operationSuccess"));
@@ -216,6 +221,7 @@ export default function AssetsPage() {
       if (fileRef.current) fileRef.current.value = "";
       setSelectedFile(null);
       setNote("");
+      setPublicSlug("");
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : extractApiErrorMessage(error, t("common.operationFailed")),
@@ -315,13 +321,24 @@ export default function AssetsPage() {
               </div>
             </div>
 
-            <div className="grid gap-2">
-              <Label>{t("assets.category")}</Label>
-              <Input
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                placeholder={t("assets.category")}
-              />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-2">
+                <Label>{t("assets.category")}</Label>
+                <Input
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  placeholder={t("assets.category")}
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label>{t("assets.publicSlug")}</Label>
+                <Input
+                  value={publicSlug}
+                  onChange={(e) => setPublicSlug(e.target.value)}
+                  placeholder={t("assets.publicSlugPlaceholder")}
+                />
+              </div>
             </div>
 
             <div className="grid gap-2">
@@ -414,13 +431,24 @@ export default function AssetsPage() {
               </NativeSelect>
             </div>
 
-            <div className="grid gap-2">
-              <Label>{t("assets.category")}</Label>
-              <Input
-                value={editCategory}
-                onChange={(e) => setEditCategory(e.target.value)}
-                placeholder={t("assets.category")}
-              />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-2">
+                <Label>{t("assets.category")}</Label>
+                <Input
+                  value={editCategory}
+                  onChange={(e) => setEditCategory(e.target.value)}
+                  placeholder={t("assets.category")}
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label>{t("assets.publicSlug")}</Label>
+                <Input
+                  value={editPublicSlug}
+                  onChange={(e) => setEditPublicSlug(e.target.value)}
+                  placeholder={t("assets.publicSlugPlaceholder")}
+                />
+              </div>
             </div>
 
             <div className="grid gap-2">
@@ -608,13 +636,21 @@ export default function AssetsPage() {
           onPageChange={setPage}
           isLoading={isLoading}
           renderExpandedRow={(row) => (
-            <div className="grid gap-3 px-4 py-3 text-sm sm:grid-cols-2">
+            <div className="grid gap-3 px-4 py-3 text-sm sm:grid-cols-3">
               <div className="space-y-1">
                 <div className="text-xs uppercase tracking-wide text-muted-foreground">
                   {t("assets.resourceKey")}
                 </div>
                 <div className="break-all rounded-md bg-background/60 px-3 py-2 font-mono text-xs text-foreground/80">
                   {row.resource_key}
+                </div>
+              </div>
+              <div className="space-y-1">
+                <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                  {t("assets.publicSlug")}
+                </div>
+                <div className="break-all rounded-md bg-background/60 px-3 py-2 font-mono text-xs text-foreground/80">
+                  {row.public_slug || "-"}
                 </div>
               </div>
               <div className="space-y-1">
