@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 from uuid import uuid4
 
 import aerisun.domain.ops.service as ops_service
+import aerisun.domain.ops.update_service as update_service
 from aerisun.core.db import get_session_factory
 from aerisun.core.settings import get_settings
 from aerisun.core.time import BEIJING_TZ, shanghai_now
@@ -259,6 +260,16 @@ class TestDashboardStats:
 
 
 class TestSystemUpdates:
+    def _write_supported_update_status(self, payload: dict[str, object]) -> None:
+        settings = get_settings()
+        update_dir = settings.data_dir / "update"
+        update_dir.mkdir(parents=True, exist_ok=True)
+        (update_dir / "updater-supported.json").write_text(
+            json.dumps({"schema_version": 1, "supported": True}),
+            encoding="utf-8",
+        )
+        (update_dir / "status.json").write_text(json.dumps(payload), encoding="utf-8")
+
     def test_update_status_is_unsupported_without_host_updater_marker(self, client, admin_headers):
         resp = client.get(f"{BASE}/updates/status", headers=admin_headers)
 
@@ -306,6 +317,133 @@ class TestSystemUpdates:
         assert payload["state"] == "available"
         assert payload["auto_update_supported"] is False
         assert "sha256" in payload["auto_update_blocked_reason"]
+
+    def test_update_status_surfaces_higher_latest_version_even_when_flag_is_false(self, client, admin_headers):
+        self._write_supported_update_status(
+            {
+                "schema_version": 1,
+                "state": "idle",
+                "current_version": "v1.2.3",
+                "latest_version": "v1.2.4",
+                "channel": "stable",
+                "update_available": False,
+                "auto_update_supported": False,
+                "signature_verified": False,
+                "release": {
+                    "version": "v1.2.4",
+                    "released_at": "2026-07-05T00:00:00Z",
+                    "notes": "## v1.2.4",
+                },
+                "recent_log": [],
+            }
+        )
+
+        resp = client.get(f"{BASE}/updates/status", headers=admin_headers)
+
+        assert resp.status_code == 200
+        payload = resp.json()
+        assert payload["state"] == "available"
+        assert payload["update_available"] is True
+        assert payload["latest_version"] == "v1.2.4"
+        assert payload["auto_update_supported"] is False
+
+    def test_update_status_does_not_surface_equal_latest_version(self, client, admin_headers, monkeypatch):
+        monkeypatch.setattr(update_service, "_current_version", lambda _settings=None: "v1.2.3")
+        self._write_supported_update_status(
+            {
+                "schema_version": 1,
+                "state": "available",
+                "current_version": "v1.2.3",
+                "latest_version": "v1.2.3",
+                "channel": "stable",
+                "update_available": True,
+                "auto_update_supported": True,
+                "signature_verified": True,
+                "release": {"version": "v1.2.3", "notes": "## v1.2.3"},
+                "recent_log": [],
+            }
+        )
+
+        resp = client.get(f"{BASE}/updates/status", headers=admin_headers)
+
+        assert resp.status_code == 200
+        payload = resp.json()
+        assert payload["state"] == "idle"
+        assert payload["update_available"] is False
+        assert payload["latest_version"] == "v1.2.3"
+
+    def test_update_status_does_not_surface_lower_latest_version(self, client, admin_headers, monkeypatch):
+        monkeypatch.setattr(update_service, "_current_version", lambda _settings=None: "v1.2.3")
+        self._write_supported_update_status(
+            {
+                "schema_version": 1,
+                "state": "available",
+                "current_version": "v1.2.3",
+                "latest_version": "v1.2.2",
+                "channel": "stable",
+                "update_available": True,
+                "auto_update_supported": True,
+                "signature_verified": True,
+                "release": {"version": "v1.2.2", "notes": "## v1.2.2"},
+                "recent_log": [],
+            }
+        )
+
+        resp = client.get(f"{BASE}/updates/status", headers=admin_headers)
+
+        assert resp.status_code == 200
+        payload = resp.json()
+        assert payload["state"] == "idle"
+        assert payload["update_available"] is False
+
+    def test_update_status_does_not_surface_invalid_latest_version(self, client, admin_headers, monkeypatch):
+        monkeypatch.setattr(update_service, "_current_version", lambda _settings=None: "v1.2.3")
+        self._write_supported_update_status(
+            {
+                "schema_version": 1,
+                "state": "available",
+                "current_version": "v1.2.3",
+                "latest_version": "nightly",
+                "channel": "stable",
+                "update_available": True,
+                "auto_update_supported": True,
+                "signature_verified": True,
+                "release": {"version": "nightly", "notes": "nightly"},
+                "recent_log": [],
+            }
+        )
+
+        resp = client.get(f"{BASE}/updates/status", headers=admin_headers)
+
+        assert resp.status_code == 200
+        payload = resp.json()
+        assert payload["state"] == "idle"
+        assert payload["update_available"] is False
+
+    def test_update_status_uses_runtime_current_version_for_comparison(self, client, admin_headers, monkeypatch):
+        monkeypatch.setattr(update_service, "_current_version", lambda _settings=None: "v1.2.4")
+        self._write_supported_update_status(
+            {
+                "schema_version": 1,
+                "state": "available",
+                "current_version": "v1.2.3",
+                "latest_version": "v1.2.4",
+                "channel": "stable",
+                "update_available": True,
+                "auto_update_supported": True,
+                "signature_verified": True,
+                "release": {"version": "v1.2.4", "notes": "## v1.2.4"},
+                "recent_log": [],
+            }
+        )
+
+        resp = client.get(f"{BASE}/updates/status", headers=admin_headers)
+
+        assert resp.status_code == 200
+        payload = resp.json()
+        assert payload["current_version"] == "v1.2.4"
+        assert payload["state"] == "idle"
+        assert payload["update_available"] is False
 
     def test_update_upgrade_request_is_persisted_atomically(self, client, admin_headers):
         settings = get_settings()

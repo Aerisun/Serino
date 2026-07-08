@@ -4,12 +4,8 @@ import {
   CheckCircle2,
   ChevronDown,
   Download,
-  Loader2,
   RefreshCw,
-  RotateCcw,
   ShieldAlert,
-  WifiOff,
-  XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -33,7 +29,11 @@ import { extractApiErrorMessage } from "@/lib/api-error";
 import { formatDateTimeInBeijing } from "@/lib/time";
 import { cn } from "@/lib/utils";
 import {
+  resolveUpdateNoticeStatus,
+  shouldCacheUpdateStatus,
+  shouldClearCachedUpdateStatus,
   shouldShowUpdateReleaseNotes,
+  shouldSurfaceUpdateStatus,
   shouldQueueSilentUpdateCheck,
 } from "@/pages/dashboard/systemUpdateNoticeLogic";
 
@@ -55,18 +55,6 @@ function isActiveState(state: SystemUpdateStatusRead["state"] | undefined) {
 
 function isTerminalAttentionState(state: SystemUpdateStatusRead["state"] | undefined) {
   return state === "failed" || state === "rolled_back";
-}
-
-function shouldSurfaceUpdateStatus(status: SystemUpdateStatusRead | null | undefined) {
-  const state = status?.state ?? "idle";
-  return Boolean(
-    status
-      && (
-        status.update_available
-        || isActiveState(state)
-        || (isTerminalAttentionState(state) && Boolean(status.latest_version))
-      ),
-  );
 }
 
 function readCachedUpdateStatus(): SystemUpdateStatusRead | null {
@@ -91,14 +79,15 @@ function readCachedUpdateStatus(): SystemUpdateStatusRead | null {
 
 function cacheUpdateStatus(status: SystemUpdateStatusRead) {
   if (typeof window === "undefined") return;
-  if (!shouldSurfaceUpdateStatus(status)) {
-    window.localStorage.removeItem(UPDATE_STATUS_CACHE_KEY);
-    return;
-  }
   window.localStorage.setItem(
     UPDATE_STATUS_CACHE_KEY,
     JSON.stringify({ cached_at: Date.now(), status }),
   );
+}
+
+function clearCachedUpdateStatus() {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(UPDATE_STATUS_CACHE_KEY);
 }
 
 function formatReleaseTime(value: string | null | undefined) {
@@ -143,45 +132,59 @@ export function SystemUpdateNotice() {
     },
   });
 
-  const status = statusResponse?.data ?? lastStatus;
+  const responseStatus = statusResponse?.data ?? null;
+  const status = resolveUpdateNoticeStatus(responseStatus, lastStatus);
+  const operationStatus = responseStatus ?? status;
   const state = status?.state ?? "idle";
-  const reconnecting = Boolean(isError && status && isActiveState(status.state));
+  const operationState = operationStatus?.state ?? "idle";
+  const operationActive = isActiveState(operationState);
+  const reconnecting = Boolean(isError && operationStatus && isActiveState(operationStatus.state));
   const targetVersion = status?.latest_version ?? status?.release?.version ?? "";
   const releaseNotes = status?.release?.notes?.trim() || t("dashboard.updateNoNotes");
   const showReleaseNotes = shouldShowUpdateReleaseNotes(status);
   const canUpgrade = Boolean(
     targetVersion
-      && status?.update_available
+      && shouldSurfaceUpdateStatus(status)
       && status?.auto_update_supported
       && status?.signature_verified
       && state === "available"
-      && !isError,
+      && !isError
+      && !operationActive
   );
-  const canCancelQueued = Boolean(state === "queued" && status?.request_id);
+  const canCancelQueued = Boolean(operationState === "queued" && operationStatus?.request_id);
   const shouldRender = shouldSurfaceUpdateStatus(status);
 
   useEffect(() => {
-    if (statusResponse?.data) {
-      setLastStatus(statusResponse.data);
-      cacheUpdateStatus(statusResponse.data);
+    const nextStatus = statusResponse?.data;
+    if (!nextStatus) {
+      return;
+    }
+    if (shouldCacheUpdateStatus(nextStatus)) {
+      setLastStatus(nextStatus);
+      cacheUpdateStatus(nextStatus);
+      return;
+    }
+    if (shouldClearCachedUpdateStatus(nextStatus)) {
+      setLastStatus(null);
+      clearCachedUpdateStatus();
     }
   }, [statusResponse]);
 
   useEffect(() => {
-    if (upgradeHandoffNotice && (state === "succeeded" || isTerminalAttentionState(state))) {
+    if (upgradeHandoffNotice && (operationState === "succeeded" || isTerminalAttentionState(operationState))) {
       setUpgradeHandoffNotice(false);
     }
-  }, [state, upgradeHandoffNotice]);
+  }, [operationState, upgradeHandoffNotice]);
 
   useEffect(() => {
-    if (!status || !isActiveState(status.state) || reconnecting) {
+    if (!operationStatus || !isActiveState(operationStatus.state) || reconnecting) {
       return;
     }
     const timer = window.setInterval(() => {
       void refetch();
     }, 3000);
     return () => window.clearInterval(timer);
-  }, [reconnecting, refetch, status]);
+  }, [operationStatus, reconnecting, refetch]);
 
   useEffect(() => {
     if (!reconnecting) {
@@ -199,10 +202,10 @@ export function SystemUpdateNotice() {
   useEffect(() => {
     if (
       reloadScheduled
-      || !status
-      || status.state !== "succeeded"
-      || !status.latest_version
-      || status.current_version !== status.latest_version
+      || !operationStatus
+      || operationStatus.state !== "succeeded"
+      || !operationStatus.latest_version
+      || operationStatus.current_version !== operationStatus.latest_version
     ) {
       return;
     }
@@ -211,7 +214,7 @@ export function SystemUpdateNotice() {
       window.location.reload();
     }, 1800);
     return () => window.clearTimeout(timer);
-  }, [reloadScheduled, status]);
+  }, [operationStatus, reloadScheduled]);
 
   const refreshStatus = useCallback(() => {
     void refetch();
@@ -266,60 +269,36 @@ export function SystemUpdateNotice() {
     if (!shouldQueueSilentUpdateCheck({
       autoCheckPending: autoCheckMutation.isPending,
       isError,
-      isStateActive: isActiveState(state),
+      isStateActive: operationActive,
       lastAutoCheckRequestedAt: lastAutoCheckRequestedAtRef.current,
       now,
-      state,
-      status,
+      state: operationState,
+      status: operationStatus,
     })) {
       return;
     }
 
     lastAutoCheckRequestedAtRef.current = now;
     autoCheckMutation.mutate({ data: { force: false } });
-  }, [autoCheckMutation, isError, state, status]);
+  }, [autoCheckMutation, isError, operationActive, operationState, operationStatus]);
 
   const noticeCopy = useMemo(() => {
-    if (reconnecting) {
-      return {
-        icon: WifiOff,
-        label: t("dashboard.updateServiceRestarting"),
-        tone: "amber",
-      };
-    }
-    switch (state) {
-      case "checking":
-        return { icon: RefreshCw, label: t("dashboard.updateChecking"), tone: "neutral" };
-      case "queued":
-      case "preflight":
-        return { icon: Loader2, label: t("dashboard.updateChecking"), tone: "blue" };
-      case "running":
-      case "restarting":
-        return { icon: Loader2, label: t("dashboard.updateRunning"), tone: "blue" };
-      case "succeeded":
-        return { icon: CheckCircle2, label: t("dashboard.updateSucceeded"), tone: "green" };
-      case "failed":
-        return { icon: XCircle, label: t("dashboard.updateFailed"), tone: "red" };
-      case "rolled_back":
-        return { icon: RotateCcw, label: t("dashboard.updateRolledBack"), tone: "amber" };
-      default:
-        return {
-          icon: Download,
-          label: t("dashboard.updateNewVersion", { version: targetVersion }),
-          tone: "blue",
-        };
-    }
-  }, [reconnecting, state, t, targetVersion]);
+    return {
+      icon: Download,
+      label: t("dashboard.updateNewVersion", { version: targetVersion }),
+      tone: "blue",
+    };
+  }, [t, targetVersion]);
 
   const statusHint = useMemo(() => {
     if (reconnecting) return t("dashboard.updateReconnectHint");
-    if (state === "preflight") return t("dashboard.updatePreflightHint");
-    if (state === "running" || state === "restarting") return t("dashboard.updateRunningHint");
-    if (state === "succeeded") return t("dashboard.updateSucceededHint");
-    if (state === "failed") return status?.last_error || t("dashboard.updateFailedHint");
-    if (state === "rolled_back") return status?.last_error || t("dashboard.updateRolledBackHint");
+    if (operationState === "preflight") return t("dashboard.updatePreflightHint");
+    if (operationState === "running" || operationState === "restarting") return t("dashboard.updateRunningHint");
+    if (operationState === "succeeded") return t("dashboard.updateSucceededHint");
+    if (operationState === "failed") return operationStatus?.last_error || t("dashboard.updateFailedHint");
+    if (operationState === "rolled_back") return operationStatus?.last_error || t("dashboard.updateRolledBackHint");
     return "";
-  }, [reconnecting, state, status, t]);
+  }, [operationState, operationStatus, reconnecting, t]);
 
   const startCheck = () => {
     checkMutation.mutate({ data: { force: true } });
@@ -336,8 +315,8 @@ export function SystemUpdateNotice() {
   };
 
   const cancelQueued = () => {
-    if (!status?.request_id) return;
-    cancelMutation.mutate({ requestId: status.request_id });
+    if (!operationStatus?.request_id) return;
+    cancelMutation.mutate({ requestId: operationStatus.request_id });
   };
 
   if (!shouldRender || !status) {
@@ -345,7 +324,8 @@ export function SystemUpdateNotice() {
   }
 
   const NoticeIcon = noticeCopy.icon;
-  const compactRestartDialog = upgradeHandoffNotice || reconnecting || state === "running" || state === "restarting";
+  const compactRestartDialog =
+    upgradeHandoffNotice || reconnecting || operationState === "running" || operationState === "restarting";
 
   return (
     <>
@@ -362,7 +342,7 @@ export function SystemUpdateNotice() {
           noticeCopy.tone === "neutral" && "border-border/60 bg-[rgb(var(--admin-surface-1)/0.7)] text-foreground",
         )}
       >
-        <NoticeIcon className={cn("h-4 w-4 shrink-0", isActiveState(state) && "animate-spin")} />
+        <NoticeIcon className="h-4 w-4 shrink-0" />
         <span className="truncate">{noticeCopy.label}</span>
       </button>
 
@@ -372,7 +352,7 @@ export function SystemUpdateNotice() {
             <div className="space-y-5 px-6 py-7">
               <DialogHeader className="items-center space-y-4 pr-0 text-center">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full border border-cyan-300/55 bg-[linear-gradient(135deg,rgb(14_165_233/0.2),rgb(45_212_191/0.16))] text-cyan-950 shadow-[0_16px_34px_-24px_rgb(14_165_233/0.95),0_0_0_1px_rgb(255_255_255/0.55)_inset] dark:border-cyan-300/40 dark:text-cyan-50">
-                  <NoticeIcon className={cn("h-5 w-5", isActiveState(state) && "animate-spin")} />
+                  <NoticeIcon className={cn("h-5 w-5", operationActive && "animate-spin")} />
                 </div>
                 <div className="space-y-4">
                   <DialogTitle className="text-center">{t("dashboard.updateInterruptingTitle")}</DialogTitle>
@@ -390,10 +370,12 @@ export function SystemUpdateNotice() {
             <div className="border-b border-border/60 px-5 py-5 sm:px-6">
               <DialogHeader className="space-y-2 pr-8 text-left">
                 <DialogTitle className="flex items-center gap-2 text-lg">
-                  <NoticeIcon className={cn("h-5 w-5", isActiveState(state) && "animate-spin")} />
+                  <NoticeIcon className="h-5 w-5" />
                   {t("dashboard.updateDialogTitle")}
                 </DialogTitle>
-                {statusHint ? <DialogDescription>{statusHint}</DialogDescription> : null}
+                <DialogDescription className={cn(!statusHint && "sr-only")}>
+                  {statusHint || t("dashboard.updateNewVersion", { version: targetVersion })}
+                </DialogDescription>
               </DialogHeader>
             </div>
 
@@ -434,6 +416,9 @@ export function SystemUpdateNotice() {
                   <p className="font-medium">
                     {status.signature_verified ? t("dashboard.updateSignatureTrusted") : t("dashboard.updateSignatureBlocked")}
                   </p>
+                  {!status.auto_update_supported && status.auto_update_blocked_reason ? (
+                    <p className="mt-1 leading-5 text-current/80">{status.auto_update_blocked_reason}</p>
+                  ) : null}
                 </div>
               </div>
 
@@ -475,7 +460,7 @@ export function SystemUpdateNotice() {
                 variant="outline"
                 size="sm"
                 onClick={startCheck}
-                disabled={checkMutation.isPending || isActiveState(state)}
+                disabled={checkMutation.isPending || operationActive}
                 className="gap-2"
               >
                 <RefreshCw className={cn("h-4 w-4", checkMutation.isPending && "animate-spin")} />

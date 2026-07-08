@@ -25,6 +25,7 @@ REQUESTS_DIRNAME = "requests"
 UPDATER_SUPPORTED_FILENAME = "updater-supported.json"
 STATUS_FILENAME = "status.json"
 VERSION_RE = re.compile(r"^v[0-9]+\.[0-9]+\.[0-9]+$")
+SEMVER_RE = re.compile(r"^v?([0-9]+)\.([0-9]+)\.([0-9]+)$")
 ACTIVE_STATES = {"checking", "queued", "preflight", "running", "restarting"}
 
 
@@ -78,6 +79,32 @@ def _current_version(settings: Settings | None = None) -> str:
     return get_runtime_version(settings)
 
 
+def _parse_semver(value: object) -> tuple[int, int, int] | None:
+    if not isinstance(value, str):
+        return None
+    match = SEMVER_RE.match(value.strip())
+    if not match:
+        return None
+    return tuple(int(part) for part in match.groups())
+
+
+def _is_higher_version(latest_version: object, current_version: object) -> bool:
+    latest = _parse_semver(latest_version)
+    current = _parse_semver(current_version)
+    return bool(latest and current and latest > current)
+
+
+def _normalize_update_availability(payload: dict[str, object]) -> None:
+    has_higher_version = _is_higher_version(payload.get("latest_version"), payload.get("current_version"))
+    payload["update_available"] = has_higher_version
+    if has_higher_version:
+        if payload.get("state") == "idle":
+            payload["state"] = "available"
+        return
+    if payload.get("state") == "available":
+        payload["state"] = "idle"
+
+
 def _updater_supported(settings: Settings | None = None) -> bool:
     marker = _update_dir(settings) / UPDATER_SUPPORTED_FILENAME
     payload = _read_json_file(marker)
@@ -119,7 +146,8 @@ def get_update_status(settings: Settings | None = None) -> SystemUpdateStatusRea
 
     persisted = _read_json_file(_update_dir(settings) / STATUS_FILENAME) or {}
     merged = {**base, **persisted}
-    merged["current_version"] = str(merged.get("current_version") or base["current_version"])
+    merged["current_version"] = str(base["current_version"])
+    _normalize_update_availability(merged)
     if not merged.get("signature_verified"):
         merged["auto_update_supported"] = False
         merged["auto_update_blocked_reason"] = str(

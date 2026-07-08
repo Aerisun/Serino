@@ -2,7 +2,11 @@ import { describe, expect, it } from "vitest";
 import type { SystemUpdateStatusRead } from "@serino/api-client/models";
 import {
   AUTO_CHECK_STALE_MS,
+  hasHigherUpdateVersion,
+  resolveUpdateNoticeStatus,
+  shouldClearCachedUpdateStatus,
   shouldShowUpdateReleaseNotes,
+  shouldSurfaceUpdateStatus,
   shouldQueueSilentUpdateCheck,
 } from "../src/pages/dashboard/systemUpdateNoticeLogic";
 
@@ -24,6 +28,95 @@ function status(overrides: Partial<SystemUpdateStatusRead> = {}): SystemUpdateSt
 }
 
 describe("system update notice logic", () => {
+  it("surfaces a higher latest version even when backend upgrade is unsupported", () => {
+    expect(
+      shouldSurfaceUpdateStatus(
+        status({
+          current_version: "0.1.62",
+          latest_version: "v0.1.63",
+          update_available: false,
+          auto_update_supported: false,
+          signature_verified: false,
+        }),
+      ),
+    ).toBe(true);
+  });
+
+  it("does not surface equal, lower, or invalid latest versions", () => {
+    expect(hasHigherUpdateVersion(status({ current_version: "v1.2.3", latest_version: "v1.2.3" }))).toBe(false);
+    expect(hasHigherUpdateVersion(status({ current_version: "v1.2.3", latest_version: "v1.2.2" }))).toBe(false);
+    expect(hasHigherUpdateVersion(status({ current_version: "v1.2.3", latest_version: "nightly" }))).toBe(false);
+  });
+
+  it("does not surface transient check states without a higher version", () => {
+    expect(shouldSurfaceUpdateStatus(status({ state: "checking", latest_version: null }))).toBe(false);
+    expect(shouldSurfaceUpdateStatus(status({ state: "queued", latest_version: null }))).toBe(false);
+    expect(shouldSurfaceUpdateStatus(status({ state: "failed", latest_version: null, last_error: "network" }))).toBe(false);
+  });
+
+  it("keeps the last confirmed higher version visible while a refresh is checking", () => {
+    const cached = status({
+      state: "available",
+      current_version: "v1.2.3",
+      latest_version: "v1.2.4",
+      update_available: true,
+    });
+
+    const resolved = resolveUpdateNoticeStatus(
+      status({
+        state: "checking",
+        current_version: "v1.2.3",
+        latest_version: null,
+        update_available: false,
+      }),
+      cached,
+    );
+
+    expect(resolved).toBe(cached);
+    expect(shouldSurfaceUpdateStatus(resolved)).toBe(true);
+  });
+
+  it("clears the visible update once a completed check reports no higher version", () => {
+    const cached = status({
+      state: "available",
+      current_version: "v1.2.3",
+      latest_version: "v1.2.4",
+      update_available: true,
+    });
+    const fresh = status({
+      state: "idle",
+      current_version: "v1.2.4",
+      latest_version: "v1.2.4",
+      update_available: false,
+    });
+
+    const resolved = resolveUpdateNoticeStatus(fresh, cached);
+
+    expect(resolved).toBe(fresh);
+    expect(shouldSurfaceUpdateStatus(resolved)).toBe(false);
+  });
+
+  it("does not clear a confirmed higher version when a later check fails", () => {
+    const cached = status({
+      state: "available",
+      current_version: "v1.2.3",
+      latest_version: "v1.2.4",
+      update_available: true,
+    });
+    const failed = status({
+      state: "failed",
+      current_version: "v1.2.3",
+      latest_version: null,
+      update_available: false,
+      last_error: "network",
+    });
+
+    expect(
+      shouldClearCachedUpdateStatus(failed),
+    ).toBe(false);
+    expect(resolveUpdateNoticeStatus(failed, cached)).toBe(cached);
+  });
+
   it("queues a silent check when the cached status is stale", () => {
     const now = Date.parse("2026-07-05T10:03:00Z");
 
