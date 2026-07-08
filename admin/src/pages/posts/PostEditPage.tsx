@@ -71,9 +71,24 @@ export default function PostEditPage() {
       />
 
       <form onSubmit={editor.handleSubmit} className="space-y-6 max-w-3xl mx-auto">
-        <div className="space-y-2">
-          <Label>{t("posts.postTitle")}</Label>
-          <Input value={form.title} onChange={(e) => setField("title", e.target.value)} required />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="post-title">{t("posts.postTitle")}</Label>
+            <Input
+              id="post-title"
+              value={form.title}
+              onChange={(e) => setField("title", e.target.value)}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="post-slug">{t("posts.slug")}</Label>
+            <Input
+              id="post-slug"
+              value={form.slug || ""}
+              onChange={(e) => setField("slug", e.target.value)}
+            />
+          </div>
         </div>
 
         <div className="space-y-2">
