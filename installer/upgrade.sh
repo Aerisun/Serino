@@ -99,6 +99,11 @@ run_upgrade_preflight() {
   bash "${SCRIPT_DIR}/doctor.sh"
 }
 
+repair_upgrade_preflight_layout() {
+  ensure_update_runtime_layout
+  install_systemd_units "${AERISUN_TEMPLATE_ROOT}"
+}
+
 current_api_started_at_epoch() {
   local container_id=""
   local started_at=""
@@ -205,6 +210,9 @@ main() {
   ensure_service_user
   load_env_file "${AERISUN_ENV_FILE}"
 
+  if [[ "${check_only}" != "true" ]]; then
+    repair_upgrade_preflight_layout
+  fi
   run_upgrade_preflight
 
   if [[ -n "${version}" ]]; then

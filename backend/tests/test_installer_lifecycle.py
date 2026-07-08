@@ -941,6 +941,7 @@ load_env_file() {
   AERISUN_IMAGE_REGISTRY='registry.example.com/current'
   AERISUN_IMAGE_TAG='v1.0.0'
 }
+repair_upgrade_preflight_layout() { record repair_upgrade_preflight_layout; }
 run_upgrade_preflight() { record run_upgrade_preflight; }
 resolve_release_tag() { printf '%s' "${AERISUN_INSTALL_VERSION:-v2.0.0}"; }
 make_temp_file() { printf '/tmp/manifest'; }
@@ -963,6 +964,64 @@ main --check v2.0.0
     )
 
     assert completed.stdout.strip().splitlines() == [
+        "run_upgrade_preflight",
+        "load_release_manifest:v2.0.0",
+    ]
+
+
+def test_upgrade_preflight_layout_repair_restores_runtime_and_units() -> None:
+    completed = run_project_bash(
+        """
+source installer/upgrade.sh
+
+record() {
+  printf '%s\\n' "$1"
+}
+
+ensure_update_runtime_layout() { record ensure_update_runtime_layout; }
+install_systemd_units() { record "install_systemd_units:$1"; }
+
+repair_upgrade_preflight_layout
+"""
+    )
+
+    assert completed.stdout.strip().splitlines() == [
+        "ensure_update_runtime_layout",
+        f"install_systemd_units:{PROJECT_ROOT}",
+    ]
+
+
+def test_full_upgrade_repairs_preflight_layout_before_doctor() -> None:
+    completed = run_project_bash(
+        """
+source installer/upgrade.sh
+
+record() {
+  printf '%s\\n' "$1"
+}
+
+require_supported_linux() { :; }
+require_root_or_sudo() { :; }
+ensure_supported_existing_installation() { :; }
+ensure_service_user() { :; }
+load_env_file() { :; }
+repair_upgrade_preflight_layout() { record repair_upgrade_preflight_layout; }
+run_upgrade_preflight() { record run_upgrade_preflight; }
+resolve_release_tag() { printf 'v2.0.0'; }
+make_temp_file() { printf '/tmp/manifest'; }
+load_release_manifest() {
+  record "load_release_manifest:$1"
+  return 42
+}
+
+main v2.0.0
+""",
+        check=False,
+    )
+
+    assert completed.returncode == 42
+    assert completed.stdout.strip().splitlines() == [
+        "repair_upgrade_preflight_layout",
         "run_upgrade_preflight",
         "load_release_manifest:v2.0.0",
     ]
@@ -1050,6 +1109,7 @@ load_env_file() {
   AERISUN_IMAGE_REGISTRY='registry.example.com/current'
   AERISUN_IMAGE_TAG='v1.0.0'
 }
+repair_upgrade_preflight_layout() { record repair_upgrade_preflight_layout; }
 run_upgrade_preflight() { record run_upgrade_preflight; }
 resolve_release_tag() { printf '%s' "${AERISUN_INSTALL_VERSION:-v2.0.0}"; }
 make_temp_file() { printf '/tmp/manifest'; }
@@ -1099,6 +1159,7 @@ main v2.0.0
 
     assert completed.returncode == 1
     assert completed.stdout.strip().splitlines() == [
+        "repair_upgrade_preflight_layout",
         "run_upgrade_preflight",
         "load_release_manifest:v2.0.0",
         "download_release_asset:v2.0.0",
@@ -1146,6 +1207,7 @@ load_env_file() {
   AERISUN_SITE_URL='https://example.test'
   AERISUN_WALINE_SERVER_URL='https://example.test/waline'
 }
+repair_upgrade_preflight_layout() { record repair_upgrade_preflight_layout; }
 run_upgrade_preflight() { record run_upgrade_preflight; }
 resolve_release_tag() { printf '%s' "${AERISUN_INSTALL_VERSION:-v2.0.0}"; }
 make_temp_file() { printf '/tmp/manifest'; }
@@ -1187,6 +1249,7 @@ main v2.0.0
     )
 
     assert completed.stdout.strip().splitlines() == [
+        "repair_upgrade_preflight_layout",
         "run_upgrade_preflight",
         "load_release_manifest:v2.0.0",
         "download_release_asset:v2.0.0",
@@ -1225,6 +1288,7 @@ require_root_or_sudo() { :; }
 ensure_supported_existing_installation() { :; }
 ensure_service_user() { :; }
 load_env_file() { :; }
+repair_upgrade_preflight_layout() { :; }
 run_upgrade_preflight() { :; }
 resolve_release_tag() { printf '%s' "${AERISUN_INSTALL_VERSION:-v2.0.0}"; }
 make_temp_file() { printf '/tmp/manifest'; }
