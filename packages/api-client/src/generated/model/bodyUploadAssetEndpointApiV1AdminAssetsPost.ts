@@ -11,4 +11,5 @@ export interface BodyUploadAssetEndpointApiV1AdminAssetsPost {
   scope?: string;
   category?: string;
   note?: string | null;
+  public_slug?: string | null;
 }

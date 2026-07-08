@@ -18208,6 +18208,9 @@
           "resource_key": {
             "title": "Resource Key"
           },
+          "public_slug": {
+            "title": "Public Slug"
+          },
           "visibility": {
             "title": "Visibility"
           },
@@ -18265,6 +18268,7 @@
           "id",
           "file_name",
           "resource_key",
+          "public_slug",
           "visibility",
           "scope",
           "category",
@@ -18338,6 +18342,18 @@
               }
             ],
             "title": "Note"
+          },
+          "public_slug": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 160
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Public Slug"
           }
         },
         "type": "object",
@@ -18453,6 +18469,18 @@
               }
             ],
             "title": "Note"
+          },
+          "public_slug": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 160
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Public Slug"
           }
         },
         "type": "object",
@@ -19540,6 +19568,17 @@
               }
             ],
             "title": "Note"
+          },
+          "public_slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Public Slug"
           }
         },
         "type": "object",

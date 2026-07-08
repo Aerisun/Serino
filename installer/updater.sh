@@ -604,7 +604,7 @@ PY
         updater_write_status "$(updater_state_payload succeeded "${target_version}" false true "" "" null)"
         return 0
       fi
-      updater_write_status "$(updater_state_payload rolled_back "${target_version}" true true "" "升级失败，已尝试回滚。" null)"
+      updater_write_status "$(updater_state_payload rolled_back "${target_version}" true true "" "升级失败，已回滚至之前版本。实在抱歉，希望您可以在 https://github.com/Aerisun/Serino/issues 告知我www" null)"
       return 1
       ;;
     *)

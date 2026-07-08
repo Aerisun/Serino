@@ -9,6 +9,7 @@ export interface AssetAdminRead {
   id: unknown;
   file_name: unknown;
   resource_key: unknown;
+  public_slug: unknown;
   visibility: unknown;
   scope: unknown;
   category: unknown;

@@ -14,6 +14,7 @@ class Asset(Base, TimestampMixin):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
     file_name: Mapped[str] = mapped_column(String(255), nullable=False)
     resource_key: Mapped[str] = mapped_column(String(500), nullable=False, unique=True)
+    public_slug: Mapped[str | None] = mapped_column(String(160), unique=True, index=True)
     visibility: Mapped[str] = mapped_column(String(32), nullable=False, default="internal")
     scope: Mapped[str] = mapped_column(String(32), nullable=False, default="user")
     category: Mapped[str] = mapped_column(String(80), nullable=False, default="general")

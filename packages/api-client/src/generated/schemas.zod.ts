@@ -3618,7 +3618,8 @@ export const UploadAssetEndpointApiV1AdminAssetsPostBody = zod.object({
   "visibility": zod.string().default(uploadAssetEndpointApiV1AdminAssetsPostBodyVisibilityDefault),
   "scope": zod.string().default(uploadAssetEndpointApiV1AdminAssetsPostBodyScopeDefault),
   "category": zod.string().default(uploadAssetEndpointApiV1AdminAssetsPostBodyCategoryDefault),
-  "note": zod.union([zod.string(),zod.null()]).optional()
+  "note": zod.union([zod.string(),zod.null()]).optional(),
+  "public_slug": zod.union([zod.string(),zod.null()]).optional()
 })
 
 
@@ -3640,6 +3641,8 @@ export const initUploadAssetEndpointApiV1AdminAssetsInitUploadPostBodyCategoryMa
 
 export const initUploadAssetEndpointApiV1AdminAssetsInitUploadPostBodyNoteOneMax = 500;
 
+export const initUploadAssetEndpointApiV1AdminAssetsInitUploadPostBodyPublicSlugOneMax = 160;
+
 
 
 export const InitUploadAssetEndpointApiV1AdminAssetsInitUploadPostBody = zod.object({
@@ -3650,7 +3653,8 @@ export const InitUploadAssetEndpointApiV1AdminAssetsInitUploadPostBody = zod.obj
   "visibility": zod.enum(['internal', 'public']).default(initUploadAssetEndpointApiV1AdminAssetsInitUploadPostBodyVisibilityDefault),
   "scope": zod.enum(['system', 'user']).default(initUploadAssetEndpointApiV1AdminAssetsInitUploadPostBodyScopeDefault),
   "category": zod.string().max(initUploadAssetEndpointApiV1AdminAssetsInitUploadPostBodyCategoryMax).default(initUploadAssetEndpointApiV1AdminAssetsInitUploadPostBodyCategoryDefault),
-  "note": zod.union([zod.string().max(initUploadAssetEndpointApiV1AdminAssetsInitUploadPostBodyNoteOneMax),zod.null()]).optional()
+  "note": zod.union([zod.string().max(initUploadAssetEndpointApiV1AdminAssetsInitUploadPostBodyNoteOneMax),zod.null()]).optional(),
+  "public_slug": zod.union([zod.string().max(initUploadAssetEndpointApiV1AdminAssetsInitUploadPostBodyPublicSlugOneMax),zod.null()]).optional()
 })
 
 export const InitUploadAssetEndpointApiV1AdminAssetsInitUploadPostResponse = zod.object({
@@ -3676,6 +3680,7 @@ export const CompleteUploadAssetEndpointApiV1AdminAssetsCompleteUploadPostRespon
   "id": zod.unknown(),
   "file_name": zod.unknown(),
   "resource_key": zod.unknown(),
+  "public_slug": zod.unknown(),
   "visibility": zod.unknown(),
   "scope": zod.unknown(),
   "category": zod.unknown(),
@@ -3719,6 +3724,7 @@ export const GetAssetEndpointApiV1AdminAssetsAssetIdGetResponse = zod.object({
   "id": zod.unknown(),
   "file_name": zod.unknown(),
   "resource_key": zod.unknown(),
+  "public_slug": zod.unknown(),
   "visibility": zod.unknown(),
   "scope": zod.unknown(),
   "category": zod.unknown(),
@@ -3746,17 +3752,23 @@ export const UpdateAssetEndpointApiV1AdminAssetsAssetIdPatchParams = zod.object(
   "asset_id": zod.string()
 })
 
+export const updateAssetEndpointApiV1AdminAssetsAssetIdPatchBodyPublicSlugOneMax = 160;
+
+
+
 export const UpdateAssetEndpointApiV1AdminAssetsAssetIdPatchBody = zod.object({
   "visibility": zod.union([zod.enum(['internal', 'public']),zod.null()]).optional(),
   "scope": zod.union([zod.enum(['system', 'user']),zod.null()]).optional(),
   "category": zod.union([zod.string(),zod.null()]).optional(),
-  "note": zod.union([zod.string(),zod.null()]).optional()
+  "note": zod.union([zod.string(),zod.null()]).optional(),
+  "public_slug": zod.union([zod.string().max(updateAssetEndpointApiV1AdminAssetsAssetIdPatchBodyPublicSlugOneMax),zod.null()]).optional()
 })
 
 export const UpdateAssetEndpointApiV1AdminAssetsAssetIdPatchResponse = zod.object({
   "id": zod.unknown(),
   "file_name": zod.unknown(),
   "resource_key": zod.unknown(),
+  "public_slug": zod.unknown(),
   "visibility": zod.unknown(),
   "scope": zod.unknown(),
   "category": zod.unknown(),

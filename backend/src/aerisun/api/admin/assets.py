@@ -50,6 +50,7 @@ def upload_asset_endpoint(
     scope: Annotated[str, Form()] = "user",
     category: Annotated[str, Form()] = "general",
     note: Annotated[str | None, Form()] = None,
+    public_slug: Annotated[str | None, Form()] = None,
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
@@ -63,6 +64,7 @@ def upload_asset_endpoint(
         scope=scope,
         category=category,
         note=note,
+        public_slug=public_slug,
     )
 
 

@@ -57,6 +57,92 @@ def test_upload_public_asset_returns_public_url(client, admin_headers):
     assert payload["public_url"] == f"{get_settings().site_url.rstrip('/')}/media/{public_key}"
 
 
+def test_upload_public_asset_with_slug_returns_short_url_and_preserves_resource_url(client, admin_headers):
+    response = client.post(
+        f"{BASE}/",
+        headers=admin_headers,
+        files={"file": ("cover.webp", b"cover-slug-bytes", "image/webp")},
+        data={"visibility": "public", "category": "site", "public_slug": "hero-cover.webp"},
+    )
+
+    assert response.status_code == 201
+    payload = response.json()
+    assert payload["public_slug"] == "hero-cover.webp"
+    assert payload["public_url"] == f"{get_settings().site_url.rstrip('/')}/media/hero-cover.webp"
+
+    slug_response = client.get("/media/hero-cover.webp")
+    assert slug_response.status_code == 200
+    assert slug_response.content == b"cover-slug-bytes"
+
+    public_key = payload["resource_key"].replace("internal/", "public/", 1)
+    original_response = client.get(f"/media/{public_key}")
+    assert original_response.status_code == 200
+    assert original_response.content == b"cover-slug-bytes"
+
+
+def test_internal_asset_slug_is_retained_but_not_public_until_visibility_changes(client, admin_headers):
+    created = client.post(
+        f"{BASE}/",
+        headers=admin_headers,
+        files={"file": ("private.webp", b"private-slug-bytes", "image/webp")},
+        data={"visibility": "internal", "category": "site", "public_slug": "private-cover.webp"},
+    )
+
+    assert created.status_code == 201
+    payload = created.json()
+    assert payload["public_slug"] == "private-cover.webp"
+    assert payload["public_url"] is None
+    assert client.get("/media/private-cover.webp").status_code == 404
+
+    published = client.patch(
+        f"{BASE}/{payload['id']}",
+        headers=admin_headers,
+        json={"visibility": "public"},
+    )
+
+    assert published.status_code == 200
+    published_payload = published.json()
+    assert published_payload["public_slug"] == "private-cover.webp"
+    assert published_payload["public_url"] == f"{get_settings().site_url.rstrip('/')}/media/private-cover.webp"
+    slug_response = client.get("/media/private-cover.webp")
+    assert slug_response.status_code == 200
+    assert slug_response.content == b"private-slug-bytes"
+
+
+def test_asset_slug_must_be_unique(client, admin_headers):
+    first = client.post(
+        f"{BASE}/",
+        headers=admin_headers,
+        files={"file": ("first.webp", b"first-slug-bytes", "image/webp")},
+        data={"visibility": "public", "category": "site", "public_slug": "shared-cover.webp"},
+    )
+    assert first.status_code == 201
+
+    duplicate = client.post(
+        f"{BASE}/",
+        headers=admin_headers,
+        files={"file": ("second.webp", b"second-slug-bytes", "image/webp")},
+        data={"visibility": "public", "category": "site", "public_slug": "shared-cover.webp"},
+    )
+
+    assert duplicate.status_code == 409
+    assert "slug" in duplicate.json()["detail"].lower()
+
+
+def test_asset_slug_rejects_reserved_and_invalid_values(client, admin_headers):
+    invalid_slugs = ["public", "internal", "BadSlug", "bad slug", "bad/slug"]
+
+    for public_slug in invalid_slugs:
+        response = client.post(
+            f"{BASE}/",
+            headers=admin_headers,
+            files={"file": (f"{public_slug.replace('/', '-')}.webp", b"bad-slug-bytes", "image/webp")},
+            data={"visibility": "public", "category": "site", "public_slug": public_slug},
+        )
+
+        assert response.status_code == 422, public_slug
+
+
 def test_update_asset_visibility_returns_absolute_public_url(client, admin_headers):
     created = client.post(
         f"{BASE}/",
@@ -220,6 +306,70 @@ def test_init_upload_existing_public_request_keeps_internal_resource(client, adm
     assert payload["asset"]["visibility"] == "public"
     public_key = asset["resource_key"].replace("internal/", "public/", 1)
     assert payload["asset"]["public_url"] == f"{get_settings().site_url.rstrip('/')}/media/{public_key}"
+
+
+def test_init_upload_existing_resource_can_bind_public_slug(client, admin_headers):
+    content = b"existing-bind-slug"
+    created = client.post(
+        f"{BASE}/",
+        headers=admin_headers,
+        files={"file": ("existing-bind.png", content, "image/png")},
+        data={"visibility": "internal", "category": "avatar"},
+    )
+    assert created.status_code == 201
+    asset = created.json()
+    assert asset["public_slug"] is None
+
+    response = client.post(
+        f"{BASE}/init-upload",
+        headers=admin_headers,
+        json={
+            "file_name": "existing-bind.png",
+            "byte_size": len(content),
+            "sha256": hashlib.sha256(content).hexdigest(),
+            "mime_type": "image/png",
+            "visibility": "public",
+            "scope": "user",
+            "category": "avatar",
+            "public_slug": "existing-bind.png",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["mode"] == "existing"
+    assert payload["asset"]["id"] == asset["id"]
+    assert payload["asset"]["public_slug"] == "existing-bind.png"
+    assert payload["asset"]["public_url"] == f"{get_settings().site_url.rstrip('/')}/media/existing-bind.png"
+
+
+def test_init_upload_existing_resource_rejects_different_public_slug(client, admin_headers):
+    content = b"existing-conflict-slug"
+    created = client.post(
+        f"{BASE}/",
+        headers=admin_headers,
+        files={"file": ("existing-conflict.png", content, "image/png")},
+        data={"visibility": "public", "category": "avatar", "public_slug": "existing-old.png"},
+    )
+    assert created.status_code == 201
+
+    response = client.post(
+        f"{BASE}/init-upload",
+        headers=admin_headers,
+        json={
+            "file_name": "existing-conflict.png",
+            "byte_size": len(content),
+            "sha256": hashlib.sha256(content).hexdigest(),
+            "mime_type": "image/png",
+            "visibility": "public",
+            "scope": "user",
+            "category": "avatar",
+            "public_slug": "existing-new.png",
+        },
+    )
+
+    assert response.status_code == 409
+    assert "slug" in response.json()["detail"].lower()
 
 
 def test_upload_asset_with_oss_queues_async_mirror_without_writing_local_file(client, admin_headers, monkeypatch):

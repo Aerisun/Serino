@@ -956,7 +956,9 @@ def build_resource_key_for_plan(plan: AssetUploadPlanWrite, *, category: str, vi
 def asset_admin_read_from_model(asset: Asset) -> AssetAdminRead:
     site_url = (get_settings().site_url or "").rstrip("/")
     internal_url = f"/media/{internal_resource_key_for(asset.resource_key)}"
-    public_path = f"/media/{public_resource_key_for(asset.resource_key)}"
+    public_path = (
+        f"/media/{asset.public_slug}" if asset.public_slug else f"/media/{public_resource_key_for(asset.resource_key)}"
+    )
     public_url = f"{site_url}{public_path}" if site_url else public_path
     if asset.visibility != "public":
         public_url = None
@@ -964,6 +966,7 @@ def asset_admin_read_from_model(asset: Asset) -> AssetAdminRead:
         id=asset.id,
         file_name=asset.file_name,
         resource_key=asset.resource_key,
+        public_slug=asset.public_slug,
         visibility=asset.visibility,
         scope=asset.scope,
         category=asset.category,
