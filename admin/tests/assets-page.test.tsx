@@ -150,6 +150,25 @@ afterEach(() => {
 });
 
 describe("AssetsPage public slug", () => {
+  it("truncates a long selected upload filename and exposes the full name on hover", async () => {
+    const user = userEvent.setup();
+    renderAssetsPage();
+
+    await user.click(screen.getByRole("button", { name: /上传/ }));
+
+    const dialog = screen.getByRole("dialog");
+    const fileInput = dialog.querySelector<HTMLInputElement>('input[type="file"]');
+    if (!fileInput) throw new Error("Expected the upload dialog to include a file input");
+
+    const fileName = "a-very-long-upload-filename-that-must-not-resize-the-dialog.png";
+    await user.upload(fileInput, new File(["image"], fileName, { type: "image/png" }));
+
+    const fileNameElement = within(dialog).getByText(fileName);
+    expect(fileNameElement.getAttribute("title")).toBe(fileName);
+    expect(fileNameElement.className).toContain("truncate");
+    expect(fileNameElement.parentElement?.className).toContain("min-w-0");
+  });
+
   it("keeps category and slug in the same two-column row for upload and edit dialogs", async () => {
     const user = userEvent.setup();
     renderAssetsPage();

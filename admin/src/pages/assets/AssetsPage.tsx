@@ -355,8 +355,11 @@ export default function AssetsPage() {
 
             <Card className="border-dashed border-border/70 bg-background/50">
               <div className="grid gap-4 p-5 sm:grid-cols-2 sm:items-center">
-                <div className="space-y-1 sm:min-w-0">
-                  <p className="text-sm font-medium text-foreground/80">
+                <div className="min-w-0 space-y-1">
+                  <p
+                    className="truncate text-sm font-medium text-foreground/80"
+                    title={selectedFile?.name}
+                  >
                     {selectedFile ? selectedFile.name : "点击选择文件"}
                   </p>
                   <p className="text-xs text-foreground/40">
