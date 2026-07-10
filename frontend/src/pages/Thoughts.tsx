@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { Heart, MessageCircle, Search } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import ArchiveBadge from "@/components/ArchiveBadge";
+import CommentMarkdownRenderer from "@/components/CommentMarkdownRenderer";
 import PageShell from "@/components/PageShell";
 import PreviewModeBadge from "@/components/PreviewModeBadge";
 import { staggerItem } from "@/config";
@@ -391,9 +392,10 @@ const Thoughts = () => {
                 )}
               </div>
 
-              <p className="mt-2 whitespace-pre-wrap text-[0.97rem] leading-7 text-foreground/71 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.8)]">
-                {thought.content}
-              </p>
+              <CommentMarkdownRenderer
+                content={thought.content}
+                className="mt-2 whitespace-pre-wrap text-[0.97rem] leading-7 text-foreground/71 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.8)] [&>p:first-child]:mt-0 [&>p:last-child]:mb-0"
+              />
 
               {thought.category ? (
                 <div className="mt-3 text-[10px] text-foreground/20 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.58)]">

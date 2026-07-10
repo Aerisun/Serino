@@ -97,6 +97,7 @@ export default function ThoughtEditPage() {
             value={form.body}
             onChange={(v) => setField("body", v)}
             minHeight="200px"
+            imageLayout="attachments"
             mobileFullscreen
           />
         </div>

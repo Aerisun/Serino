@@ -232,7 +232,6 @@ html.dark .aerisun-waline-host .wl-reaction img {
 }
 
 .aerisun-comment-attachment-picker,
-.aerisun-comment-attachment-grid,
 .aerisun-comment-body p:has(> .aerisun-comment-image-button),
 .aerisun-comment-preview p:has(> .aerisun-comment-image-button) {
   display: grid;
@@ -243,11 +242,6 @@ html.dark .aerisun-waline-host .wl-reaction img {
 .aerisun-comment-attachment-picker {
   width: min(100%, 22rem);
   margin: 0.3rem 0 0.75rem;
-}
-
-.aerisun-comment-attachment-grid {
-  width: min(100%, 22rem);
-  margin: 0 0 0.9rem;
 }
 
 .aerisun-comment-body p:has(> .aerisun-comment-image-button),
@@ -293,71 +287,6 @@ html.dark .aerisun-waline-host .wl-reaction img {
 .aerisun-comment-attachment-picker__remove:hover {
   background: hsl(0 0% 0% / 0.68);
   transform: scale(1.05);
-}
-
-.aerisun-comment-image-button {
-  appearance: none;
-  display: block;
-  width: 100%;
-  aspect-ratio: 1;
-  overflow: hidden;
-  border: 1px solid hsl(var(--foreground) / 0.08);
-  border-radius: 0.75rem;
-  background: hsl(var(--foreground) / 0.04);
-  padding: 0;
-  cursor: zoom-in;
-}
-
-.aerisun-comment-image-button img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  object-fit: cover;
-  transition: transform 0.18s ease;
-}
-
-.aerisun-comment-image-button:hover img {
-  transform: scale(1.035);
-}
-
-.aerisun-comment-image-lightbox {
-  position: fixed;
-  inset: 0;
-  z-index: 80;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: hsl(var(--foreground) / 0.78);
-  padding: min(6vw, 3rem);
-  cursor: zoom-out;
-}
-
-.aerisun-comment-image-lightbox__image {
-  max-width: min(100%, 72rem);
-  max-height: min(100%, 82vh);
-  border-radius: 0.9rem;
-  object-fit: contain;
-  box-shadow: 0 24px 80px hsl(0 0% 0% / 0.32);
-  cursor: default;
-}
-
-.aerisun-comment-image-lightbox__close {
-  position: fixed;
-  top: 1rem;
-  right: 1rem;
-  display: inline-flex;
-  width: 2.5rem;
-  height: 2.5rem;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid hsl(0 0% 100% / 0.26);
-  border-radius: 999px;
-  background: hsl(0 0% 0% / 0.34);
-  color: white;
-  font-size: 1.6rem;
-  line-height: 1;
-  cursor: pointer;
 }
 
 .aerisun-comment-context {

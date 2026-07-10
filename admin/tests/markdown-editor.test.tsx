@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useState } from "react";
@@ -25,6 +25,56 @@ function MarkdownEditorHarness() {
   return (
     <LanguageProvider>
       <MarkdownEditor value={value} onChange={setValue} minHeight="200px" />
+    </LanguageProvider>
+  );
+}
+
+function AttachmentMarkdownEditorHarness() {
+  const [value, setValue] = useState("正文开头\n\n![上传截图](/media/internal/assets/markdown-image/example.png)");
+
+  return (
+    <LanguageProvider>
+      <MarkdownEditor
+        value={value}
+        onChange={setValue}
+        minHeight="200px"
+        imageLayout="attachments"
+      />
+      <output data-testid="markdown-value">{value}</output>
+    </LanguageProvider>
+  );
+}
+
+function MarkdownAttachmentRoundTripHarness() {
+  const [value, setValue] = useState(
+    "正文\n\n```md\n![代码示例](/media/code.png)\n``` not-a-close\n![仍在代码块](/media/still-code.png)\n```\n\n![带标题的图片](/media/image_(1).png \"图片标题\")",
+  );
+
+  return (
+    <LanguageProvider>
+      <MarkdownEditor
+        value={value}
+        onChange={setValue}
+        minHeight="200px"
+        imageLayout="attachments"
+      />
+      <output data-testid="round-trip-markdown-value">{value}</output>
+    </LanguageProvider>
+  );
+}
+
+function InlineAttachmentPositionHarness() {
+  const [value, setValue] = useState("前文 ![配图](/media/inline.png \"标题\") 后文");
+
+  return (
+    <LanguageProvider>
+      <MarkdownEditor
+        value={value}
+        onChange={setValue}
+        minHeight="200px"
+        imageLayout="attachments"
+      />
+      <output data-testid="inline-position-markdown-value">{value}</output>
     </LanguageProvider>
   );
 }
@@ -87,5 +137,78 @@ describe("MarkdownEditor desktop resize", () => {
         );
       }
     }
+  });
+});
+
+describe("MarkdownEditor attachment layout", () => {
+  it("extracts Markdown images from the textarea and removes them from the saved body", async () => {
+    const user = userEvent.setup();
+    render(<AttachmentMarkdownEditorHarness />);
+
+    const textarea = screen.getByRole("textbox");
+    expect((textarea as HTMLTextAreaElement).value).toContain("正文开头");
+    expect((textarea as HTMLTextAreaElement).value).not.toContain("![上传截图]");
+    expect(screen.getByRole("img", { name: "上传截图" }).getAttribute("src")).toBe(
+      "/media/internal/assets/markdown-image/example.png",
+    );
+
+    await user.click(screen.getByRole("button", { name: "删除图片：上传截图" }));
+
+    expect(screen.getByTestId("markdown-value").textContent).toContain("正文开头");
+    expect(screen.getByTestId("markdown-value").textContent).not.toContain("markdown-image/example.png");
+  });
+
+  it("preserves code examples and exact attachment Markdown when the body changes", async () => {
+    const user = userEvent.setup();
+    render(<MarkdownAttachmentRoundTripHarness />);
+
+    const textarea = screen.getByRole("textbox");
+    expect((textarea as HTMLTextAreaElement).value).toContain("![代码示例](/media/code.png)");
+    expect(screen.queryByRole("img", { name: "代码示例" })).toBeNull();
+    expect((textarea as HTMLTextAreaElement).value).toContain("![仍在代码块](/media/still-code.png)");
+    expect(screen.queryByRole("img", { name: "仍在代码块" })).toBeNull();
+    expect(screen.getByRole("img", { name: "带标题的图片" }).getAttribute("src")).toBe(
+      "/media/image_(1).png",
+    );
+
+    await user.type(textarea, "。");
+
+    const saved = screen.getByTestId("round-trip-markdown-value").textContent ?? "";
+    expect(saved).toContain("![代码示例](/media/code.png)");
+    expect(saved).toContain("![仍在代码块](/media/still-code.png)");
+    expect(saved).toContain('![带标题的图片](/media/image_(1).png "图片标题")');
+  });
+
+  it("keeps an existing attachment at its original document position when text changes", async () => {
+    render(<InlineAttachmentPositionHarness />);
+
+    const textarea = screen.getByRole("textbox") as HTMLTextAreaElement;
+    fireEvent.change(textarea, { target: { value: "前文 新增 后文" } });
+
+    expect(screen.getByTestId("inline-position-markdown-value").textContent).toBe(
+      "前文 新增![配图](/media/inline.png \"标题\") 后文",
+    );
+  });
+});
+
+describe("MarkdownEditor image upload dialog", () => {
+  it("keeps a long selected filename inside the upload dialog", async () => {
+    const user = userEvent.setup();
+    render(<MarkdownEditorHarness />);
+
+    await user.click(screen.getByTitle("上传图片"));
+
+    const dialog = screen.getByRole("dialog");
+    const fileInput = dialog.querySelector<HTMLInputElement>('input[type="file"]');
+    if (!fileInput) throw new Error("Expected the image upload dialog to include a file input");
+
+    const fileName = "a-very-long-upload-filename-that-must-not-widen-the-dialog.png";
+    await user.upload(fileInput, new File(["image"], fileName, { type: "image/png" }));
+
+    const fileNameElement = within(dialog).getByText(fileName);
+    expect(fileNameElement.getAttribute("title")).toBe(fileName);
+    expect(fileNameElement.className).toContain("truncate");
+    expect(fileNameElement.parentElement?.className).toContain("min-w-0");
+    expect(fileNameElement.parentElement?.parentElement?.className).toContain("min-w-0");
   });
 });

@@ -3,12 +3,14 @@ import { motion, AnimatePresence } from "motion/react";
 import { BookOpen, MessageCircle, Search, X } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import ArchiveBadge from "@/components/ArchiveBadge";
+import CommentMarkdownRenderer from "@/components/CommentMarkdownRenderer";
 import PageShell from "@/components/PageShell";
 import PreviewModeBadge from "@/components/PreviewModeBadge";
 import { staggerItem } from "@/config";
 import { usePageConfig } from "@/contexts/runtime-config";
 import { useFrontendI18n } from "@/i18n";
 import { formatPublishedDate } from "@/lib/api/utils";
+import { stripMarkdownImages } from "@/lib/markdown-images";
 import { clampPageSize } from "@/lib/page-size";
 import { lazyWithPreload } from "@/lib/lazy";
 import { usePreviewChannel } from "@/lib/preview";
@@ -367,9 +369,9 @@ const Excerpts = () => {
 
               <p
                 className="mt-1 line-clamp-3 indent-[2em] text-[14.5px] font-body leading-relaxed text-foreground/54 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.78)]"
-                style={{ fontFamily: getExcerptFontFamily(excerpt.content) }}
+                style={{ fontFamily: getExcerptFontFamily(stripMarkdownImages(excerpt.content)) }}
               >
-                {excerpt.content}
+                {stripMarkdownImages(excerpt.content)}
               </p>
 
               {excerpt.category ? (
@@ -447,12 +449,11 @@ const Excerpts = () => {
               </div>
 
               <div className="min-h-0 overflow-y-auto pr-1 scrollbar-hide overscroll-y-contain touch-pan-y [-webkit-overflow-scrolling:touch]">
-                <p
-                  className="indent-[2em] text-[0.935rem] font-body leading-8 text-foreground/74 transition-colors [overflow-wrap:anywhere] [word-break:break-word] whitespace-pre-wrap"
-                  style={{ fontFamily: getExcerptFontFamily(selected.content) }}
-                >
-                  {selected.content}
-                </p>
+                <CommentMarkdownRenderer
+                  content={selected.content}
+                  className="aerisun-excerpt-markdown indent-[2em] text-[0.935rem] leading-8 text-foreground/74 transition-colors [overflow-wrap:anywhere] [word-break:break-word] whitespace-pre-wrap [&>p:first-child]:mt-0 [&>p:last-child]:mb-0"
+                  style={{ fontFamily: getExcerptFontFamily(stripMarkdownImages(selected.content)) }}
+                />
                 {selected.category ? (
                   <div className="mt-6 text-[11px] font-body text-foreground/25 transition-colors">
                     {selected.category}

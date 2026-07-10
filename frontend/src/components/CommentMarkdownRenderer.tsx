@@ -1,46 +1,15 @@
-import { useState, type ComponentPropsWithoutRef } from "react";
+import { useState, type ComponentPropsWithoutRef, type CSSProperties } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { extractMarkdownImageAttachments } from "@/lib/markdown-images";
+import "./CommentMarkdownRenderer.css";
 
 interface CommentMarkdownRendererProps {
   content: string;
   className?: string;
   imageSourceMap?: Record<string, string>;
+  style?: CSSProperties;
 }
-
-interface MarkdownImageAttachment {
-  key: string;
-  src: string;
-  alt: string;
-}
-
-const MARKDOWN_IMAGE_RE = /!\[([^\]]*)]\(([^)\s]+)(?:\s+"[^"]*")?\)/g;
-
-const extractImageAttachments = (
-  content: string,
-  imageSourceMap: Record<string, string> | undefined,
-) => {
-  const images: MarkdownImageAttachment[] = [];
-  const text = content
-    .replace(MARKDOWN_IMAGE_RE, (match, alt: string, rawSrc: string) => {
-      const src = rawSrc.trim();
-      const resolvedSrc = imageSourceMap?.[src] ?? src;
-      if (!resolvedSrc) {
-        return match;
-      }
-
-      images.push({
-        key: `${src}-${images.length}`,
-        src: resolvedSrc,
-        alt: alt.trim(),
-      });
-      return "";
-    })
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
-
-  return { images, text };
-};
 
 const buildComponents = (
   imageSourceMap: Record<string, string> | undefined,
@@ -118,14 +87,18 @@ export default function CommentMarkdownRenderer({
   content,
   className = "",
   imageSourceMap,
+  style,
 }: CommentMarkdownRendererProps) {
   const [lightboxImage, setLightboxImage] = useState<{ src: string; alt: string } | null>(null);
-  const { images, text } = extractImageAttachments(content, imageSourceMap);
+  const { images, text } = extractMarkdownImageAttachments(content, imageSourceMap);
   const openImage = (src: string, alt: string) => setLightboxImage({ src, alt });
 
   return (
     <>
-      <div className={`prose prose-sm dark:prose-invert max-w-none font-body ${className}`}>
+      <div
+        className={`prose prose-sm dark:prose-invert max-w-none font-body ${className}`}
+        style={style}
+      >
         {images.length > 0 ? (
           <div className="aerisun-comment-attachment-grid">
             {images.map((image) => (

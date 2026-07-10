@@ -91,6 +91,7 @@ export default function ExcerptEditPage() {
             value={form.body}
             onChange={(v) => setField("body", v)}
             minHeight="250px"
+            imageLayout="attachments"
             mobileFullscreen
           />
         </div>

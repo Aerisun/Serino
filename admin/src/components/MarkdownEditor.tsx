@@ -15,6 +15,7 @@ import {
   Maximize2,
   PenLine,
   Upload,
+  X,
   Expand,
   Minimize2,
 } from "lucide-react";
@@ -45,10 +46,19 @@ interface MarkdownEditorProps {
   placeholder?: string;
   minHeight?: string;
   mobileFullscreen?: boolean;
+  imageLayout?: "inline" | "attachments";
 }
 
 type InsertAction = { prefix: string; suffix: string; placeholder: string };
 type ImageSelection = { start: number; end: number; altText: string };
+type MarkdownImageAttachment = {
+  id: string;
+  src: string;
+  alt: string;
+  raw: string;
+  start: number;
+  end: number;
+};
 
 const FIXED_IMAGE_CATEGORY = "markdown-image";
 const MOBILE_EDITOR_QUERY = "(max-width: 767px)";
@@ -76,12 +86,246 @@ function parsePixelHeight(value: string) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function findUnescapedClosingBracket(value: string, start: number) {
+  let depth = 0;
+
+  for (let index = start; index < value.length; index += 1) {
+    if (value[index] === "\\") {
+      index += 1;
+      continue;
+    }
+    if (value[index] === "[") {
+      depth += 1;
+    } else if (value[index] === "]") {
+      if (depth === 0) return index;
+      depth -= 1;
+    }
+  }
+
+  return -1;
+}
+
+function findClosingImageParenthesis(value: string, start: number) {
+  let depth = 1;
+
+  for (let index = start; index < value.length; index += 1) {
+    if (value[index] === "\\") {
+      index += 1;
+      continue;
+    }
+    if (value[index] === "(") {
+      depth += 1;
+    } else if (value[index] === ")") {
+      depth -= 1;
+      if (depth === 0) return index;
+    }
+  }
+
+  return -1;
+}
+
+function getImageSource(imageBody: string) {
+  const trimmed = imageBody.trim();
+  if (!trimmed) return "";
+
+  if (trimmed.startsWith("<")) {
+    const closingIndex = trimmed.indexOf(">");
+    return closingIndex > 0 ? trimmed.slice(1, closingIndex) : "";
+  }
+
+  let depth = 0;
+  for (let index = 0; index < trimmed.length; index += 1) {
+    const character = trimmed[index];
+    if (character === "\\") {
+      index += 1;
+      continue;
+    }
+    if (character === "(") depth += 1;
+    if (character === ")") depth -= 1;
+    if (/\s/.test(character) && depth === 0) {
+      return trimmed.slice(0, index);
+    }
+  }
+
+  return trimmed;
+}
+
+function parseMarkdownImage(value: string, start: number) {
+  if (!value.startsWith("![", start)) return null;
+
+  const altEnd = findUnescapedClosingBracket(value, start + 2);
+  if (altEnd < 0 || value[altEnd + 1] !== "(") return null;
+
+  const imageEnd = findClosingImageParenthesis(value, altEnd + 2);
+  if (imageEnd < 0) return null;
+
+  const src = getImageSource(value.slice(altEnd + 2, imageEnd));
+  if (!src) return null;
+
+  return {
+    alt: value.slice(start + 2, altEnd),
+    end: imageEnd + 1,
+    raw: value.slice(start, imageEnd + 1),
+    src,
+  };
+}
+
+function isClosingFenceLine(line: string, openingDelimiter: string) {
+  const fenceMatch = line.match(/^ {0,3}(`{3,}|~{3,})/);
+  if (
+    !fenceMatch ||
+    fenceMatch[1][0] !== openingDelimiter[0] ||
+    fenceMatch[1].length < openingDelimiter.length
+  ) {
+    return false;
+  }
+
+  return /^[ \t]*(?:\r?\n)?$/.test(line.slice(fenceMatch[0].length));
+}
+
+function extractMarkdownImageAttachments(value: string) {
+  const attachments: MarkdownImageAttachment[] = [];
+  let text = "";
+  let index = 0;
+  let fencedCodeDelimiter: string | null = null;
+
+  while (index < value.length) {
+    const lineEnd = value.indexOf("\n", index);
+    const nextLineIndex = lineEnd < 0 ? value.length : lineEnd + 1;
+    const line = value.slice(index, nextLineIndex);
+    const fenceMatch = line.match(/^ {0,3}(`{3,}|~{3,})/);
+
+    if (fencedCodeDelimiter) {
+      text += line;
+      if (isClosingFenceLine(line, fencedCodeDelimiter)) {
+        fencedCodeDelimiter = null;
+      }
+      index = nextLineIndex;
+      continue;
+    }
+
+    if (fenceMatch) {
+      fencedCodeDelimiter = fenceMatch[1];
+      text += line;
+      index = nextLineIndex;
+      continue;
+    }
+
+    let lineIndex = 0;
+    while (lineIndex < line.length) {
+      if (line[lineIndex] === "\\") {
+        text += line.slice(lineIndex, lineIndex + 2);
+        lineIndex += 2;
+        continue;
+      }
+
+      if (line[lineIndex] === "`") {
+        const run = line.slice(lineIndex).match(/^`+/)?.[0] ?? "`";
+        const closingIndex = line.indexOf(run, lineIndex + run.length);
+        if (closingIndex >= 0) {
+          text += line.slice(lineIndex, closingIndex + run.length);
+          lineIndex = closingIndex + run.length;
+          continue;
+        }
+      }
+
+      const image = parseMarkdownImage(line, lineIndex);
+      if (image) {
+        attachments.push({
+          id: `${index + lineIndex}-${attachments.length}`,
+          src: image.src,
+          alt: image.alt,
+          raw: image.raw,
+          start: index + lineIndex,
+          end: index + lineIndex + image.raw.length,
+        });
+        lineIndex = image.end;
+        continue;
+      }
+
+      text += line[lineIndex];
+      lineIndex += 1;
+    }
+    index = nextLineIndex;
+  }
+
+  return { text, attachments };
+}
+
+function applyAttachmentModeTextEdit(
+  source: string,
+  previousText: string,
+  nextText: string,
+  attachments: MarkdownImageAttachment[],
+) {
+  let prefixLength = 0;
+  while (
+    prefixLength < previousText.length &&
+    prefixLength < nextText.length &&
+    previousText[prefixLength] === nextText[prefixLength]
+  ) {
+    prefixLength += 1;
+  }
+
+  let previousSuffixIndex = previousText.length;
+  let nextSuffixIndex = nextText.length;
+  while (
+    previousSuffixIndex > prefixLength &&
+    nextSuffixIndex > prefixLength &&
+    previousText[previousSuffixIndex - 1] === nextText[nextSuffixIndex - 1]
+  ) {
+    previousSuffixIndex -= 1;
+    nextSuffixIndex -= 1;
+  }
+
+  const insertedText = nextText.slice(prefixLength, nextSuffixIndex);
+  const attachmentRanges = [...attachments].sort((left, right) => left.start - right.start);
+  const parts: string[] = [];
+  let sourceIndex = 0;
+  let textIndex = 0;
+  let inserted = false;
+
+  const appendTextSegment = (segment: string) => {
+    for (const character of segment) {
+      if (!inserted && textIndex >= prefixLength) {
+        parts.push(insertedText);
+        inserted = true;
+      }
+      if (textIndex < prefixLength || textIndex >= previousSuffixIndex) {
+        parts.push(character);
+      }
+      textIndex += character.length;
+    }
+  };
+
+  for (const attachment of attachmentRanges) {
+    appendTextSegment(source.slice(sourceIndex, attachment.start));
+    if (!inserted && textIndex >= prefixLength) {
+      parts.push(insertedText);
+      inserted = true;
+    }
+    parts.push(source.slice(attachment.start, attachment.end));
+    sourceIndex = attachment.end;
+  }
+
+  appendTextSegment(source.slice(sourceIndex));
+  if (!inserted) parts.push(insertedText);
+  return parts.join("");
+}
+
+function appendAttachmentMarkdown(source: string, markdown: string) {
+  if (!source) return markdown;
+  const separator = source.endsWith("\n\n") ? "" : source.endsWith("\n") ? "\n" : "\n\n";
+  return `${source}${separator}${markdown}`;
+}
+
 export function MarkdownEditor({
   value,
   onChange,
   placeholder,
   minHeight = "300px",
   mobileFullscreen = false,
+  imageLayout = "inline",
 }: MarkdownEditorProps) {
   const { t } = useI18n();
   const [preview, setPreview] = useState(false);
@@ -101,16 +345,31 @@ export function MarkdownEditor({
   const fileRef = useRef<HTMLInputElement | null>(null);
   const pendingImageSelectionRef = useRef<ImageSelection | null>(null);
   const pendingImageFileNameRef = useRef<string>("");
+  const attachmentMode = imageLayout === "attachments";
+  const { text: editorText, attachments } = useMemo(
+    () =>
+      attachmentMode
+        ? extractMarkdownImageAttachments(value)
+        : { text: value, attachments: [] as MarkdownImageAttachment[] },
+    [attachmentMode, value],
+  );
+  const emitEditorValue = useCallback((nextText: string) => {
+    onChange(
+      attachmentMode
+        ? applyAttachmentModeTextEdit(value, editorText, nextText, attachments)
+        : nextText,
+    );
+  }, [attachmentMode, attachments, editorText, onChange, value]);
   const minHeightPx = useMemo(() => {
     const parsed = Number.parseFloat(minHeight);
     return Number.isFinite(parsed) ? parsed : 300;
   }, [minHeight]);
   const useMobileFullscreen = mobileFullscreen && isMobileViewport;
   const mobileCharacterCount = useMemo(
-    () => Array.from(value.replace(/\s/g, "")).length,
-    [value],
+    () => Array.from(editorText.replace(/\s/g, "")).length,
+    [editorText],
   );
-  const mobileSnippet = useMemo(() => value.trim(), [value]);
+  const mobileSnippet = useMemo(() => editorText.trim(), [editorText]);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia(MOBILE_EDITOR_QUERY);
@@ -236,53 +495,66 @@ export function MarkdownEditor({
     const { prefix, suffix, placeholder: ph } = ACTIONS[action];
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
-    const selected = value.slice(start, end) || ph;
-    const newValue = value.slice(0, start) + prefix + selected + suffix + value.slice(end);
-    onChange(newValue);
+    const selected = editorText.slice(start, end) || ph;
+    const newValue = editorText.slice(0, start) + prefix + selected + suffix + editorText.slice(end);
+    emitEditorValue(newValue);
     requestAnimationFrame(() => {
       textarea.focus();
       const newCursorPos = start + prefix.length + selected.length;
       textarea.setSelectionRange(newCursorPos, newCursorPos);
     });
-  }, [value, onChange]);
+  }, [editorText, emitEditorValue]);
 
   const insertImageMarkdown = useCallback((imageUrl: string) => {
     const textarea = textareaRef.current;
     const selection = pendingImageSelectionRef.current;
-    const start = selection?.start ?? textarea?.selectionStart ?? value.length;
+    const start = selection?.start ?? textarea?.selectionStart ?? editorText.length;
     const end = selection?.end ?? textarea?.selectionEnd ?? start;
     const altText =
       selection?.altText ||
       pendingImageFileNameRef.current.replace(/\.[^.]+$/, "").trim() ||
       "image";
+    const nextText = editorText.slice(0, start) + editorText.slice(end);
     const markdown = `![${altText}](${imageUrl})`;
-    const nextValue = value.slice(0, start) + markdown + value.slice(end);
+    const nextValue = attachmentMode
+      ? appendAttachmentMarkdown(
+          applyAttachmentModeTextEdit(value, editorText, nextText, attachments),
+          markdown,
+        )
+      : editorText.slice(0, start) + markdown + editorText.slice(end);
     onChange(nextValue);
 
     requestAnimationFrame(() => {
       textarea?.focus();
-      const nextCursor = start + markdown.length;
+      const nextCursor = attachmentMode ? start : start + markdown.length;
       textarea?.setSelectionRange(nextCursor, nextCursor);
     });
 
     pendingImageSelectionRef.current = null;
     pendingImageFileNameRef.current = "";
-  }, [value, onChange]);
+  }, [attachmentMode, attachments, editorText, onChange, value]);
 
   const openImageUploadDialog = useCallback(() => {
     const textarea = textareaRef.current;
-    const start = textarea?.selectionStart ?? value.length;
+    const start = textarea?.selectionStart ?? editorText.length;
     const end = textarea?.selectionEnd ?? start;
     pendingImageSelectionRef.current = {
       start,
       end,
-      altText: value.slice(start, end).trim(),
+      altText: editorText.slice(start, end).trim(),
     };
     setImageUploadMode("compress");
     setImageNote("");
     setSelectedImageFile(null);
     setImageUploadOpen(true);
-  }, [value]);
+  }, [editorText]);
+
+  const removeImageAttachment = useCallback((attachmentId: string) => {
+    const attachment = attachments.find((item) => item.id === attachmentId);
+    if (attachment) {
+      onChange(value.slice(0, attachment.start) + value.slice(attachment.end));
+    }
+  }, [attachments, onChange, value]);
 
   const handleImageFileChange = useCallback(() => {
     const file = fileRef.current?.files?.[0] ?? null;
@@ -366,6 +638,32 @@ export function MarkdownEditor({
     });
   }, []);
 
+  const attachmentGrid = attachmentMode && attachments.length > 0 ? (
+    <div className="mx-auto grid w-full shrink-0 max-w-[22rem] grid-cols-3 gap-2 p-4 pb-0">
+      {attachments.map((attachment) => (
+        <div
+          key={attachment.id}
+          className="relative aspect-square overflow-hidden rounded-xl border border-border/70 bg-muted/40"
+        >
+          <img
+            src={attachment.src}
+            alt={attachment.alt}
+            loading="lazy"
+            className="h-full w-full object-cover"
+          />
+          <button
+            type="button"
+            onClick={() => removeImageAttachment(attachment.id)}
+            aria-label={`删除图片：${attachment.alt}`}
+            className="absolute right-1.5 top-1.5 inline-flex h-7 w-7 items-center justify-center rounded-full border border-white/25 bg-black/55 text-white transition hover:bg-black/75"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      ))}
+    </div>
+  ) : null;
+
   const renderToolbar = (fullScreen = false) => (
     <div
       className={cn(
@@ -442,31 +740,44 @@ export function MarkdownEditor({
               : { minHeight, maxHeight: minHeight }
         }
       >
+        {attachmentGrid}
         <Suspense fallback={<div className="text-sm text-muted-foreground">{t("common.loading")}</div>}>
-          <MarkdownPreview content={value} />
+          <MarkdownPreview content={attachmentMode ? editorText : value} />
         </Suspense>
       </div>
+    ) : fullScreen ? (
+      <div className="flex h-full min-h-0 flex-col">
+        {attachmentGrid}
+        <textarea
+          ref={textareaRef}
+          data-mobile-editor-scroll="true"
+          className="min-h-0 flex-1 resize-none overflow-y-auto overscroll-none bg-transparent px-5 py-5 font-serif text-[17px] leading-8 caret-primary outline-none selection:bg-primary/10 placeholder:text-muted-foreground/60"
+          style={{ minHeight: 0 }}
+          value={editorText}
+          onChange={(event) => emitEditorValue(event.target.value)}
+          placeholder={placeholder ?? t("editor.mobilePlaceholder")}
+        />
+      </div>
     ) : (
-      <textarea
-        ref={textareaRef}
-        data-mobile-editor-scroll={fullScreen ? "true" : undefined}
-        className={cn(
-          "w-full bg-transparent outline-none",
-          fullScreen
-            ? "h-full resize-none overflow-y-auto overscroll-none px-5 py-5 font-serif text-[17px] leading-8 caret-primary selection:bg-primary/10 placeholder:text-muted-foreground/60"
-            : `p-4 font-mono text-sm ${autoExpand ? "resize-none overflow-hidden" : "resize-y overflow-auto"}`,
-        )}
-        style={
-          fullScreen
-            ? { minHeight: 0 }
-            : autoExpand
+      <>
+        {attachmentGrid}
+        <textarea
+          ref={textareaRef}
+          data-mobile-editor-scroll={undefined}
+          className={cn(
+            "w-full bg-transparent outline-none",
+            `p-4 font-mono text-sm ${autoExpand ? "resize-none overflow-hidden" : "resize-y overflow-auto"}`,
+          )}
+          style={
+            autoExpand
               ? { minHeight, height: editorHeight }
               : { minHeight }
-        }
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={fullScreen ? placeholder ?? t("editor.mobilePlaceholder") : placeholder}
-      />
+          }
+          value={editorText}
+          onChange={(event) => emitEditorValue(event.target.value)}
+          placeholder={placeholder}
+        />
+      </>
     )
   );
 
@@ -516,7 +827,7 @@ export function MarkdownEditor({
                 </NativeSelect>
               </div>
 
-              <div className="grid gap-2">
+              <div className="grid min-w-0 gap-2">
                 <Label>选择文件</Label>
                 <input
                   ref={fileRef}
@@ -528,11 +839,13 @@ export function MarkdownEditor({
                 <Button
                   type="button"
                   variant="outline"
-                  className="h-10 min-h-10 sm:h-10 sm:min-h-[2.75rem]"
+                  className="h-10 min-h-10 w-full min-w-0 max-w-full justify-start overflow-hidden sm:h-10 sm:min-h-[2.75rem]"
                   onClick={() => fileRef.current?.click()}
                 >
-                  <Upload className="mr-2 h-4 w-4" />
-                  <span className="truncate">{selectedImageFile ? selectedImageFile.name : "选择文件"}</span>
+                  <Upload className="mr-2 h-4 w-4 shrink-0" />
+                  <span className="min-w-0 flex-1 truncate" title={selectedImageFile?.name}>
+                    {selectedImageFile ? selectedImageFile.name : "选择文件"}
+                  </span>
                 </Button>
               </div>
             </div>
