@@ -27,7 +27,7 @@ Serino 设计初衷是打造一个专注内容、方便配置、探索融入 Age
 ```bash
 curl -fsSL https://install.aerisun.top/serino/install.sh | bash
 ```
-[**点击查看《详细的部署与使用指南》**](https://aerisun.top/posts/15)
+[**点击查看《详细的部署与使用指南》**](https://aerisun.top/posts/about_serino)
 
 <details>
 <summary>安装器会干什么：</summary>
