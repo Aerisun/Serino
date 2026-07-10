@@ -1402,6 +1402,7 @@ export const enTranslations: TranslationDict = {
     "siteConfig.featureFlags": "Feature Toggles",
     "siteConfig.featureFlagsDescription":
       "Enable or disable optional frontend features",
+    "siteConfig.personalization": "Personalization",
     "siteConfig.featureToc": "Table of Contents",
     "siteConfig.featureTocDesc": "Show heading navigation on article pages",
     "siteConfig.featureReadingProgress": "Reading Progress",
@@ -1410,6 +1411,10 @@ export const enTranslations: TranslationDict = {
     "siteConfig.featureDiaryPrivate": "Private Diary Details",
     "siteConfig.featureDiaryPrivateDesc":
       "When enabled, visitors can see the diary list, but opening details requires login and approval.",
+    "siteConfig.recentActivityOwnerComment": "Include owner comments in recent activity",
+    "siteConfig.recentActivityOwnerCommentHelp":
+      "Owners may add explanations and reflections below posts, diary entries, thoughts, or excerpts. Including every comment can flood recent activity.",
+    "siteConfig.recentActivityOwnerCommentTypes": "Included content types",
     "siteConfig.featureSocialSharing": "Social Sharing",
     "siteConfig.featureSocialSharingDesc":
       "Show share buttons at the bottom of articles",

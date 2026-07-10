@@ -6,7 +6,7 @@ import aerisun.domain.activity.service as activity_service
 from aerisun.core.db import get_session_factory
 from aerisun.core.settings import get_settings
 from aerisun.core.time import BEIJING_TZ
-from aerisun.domain.content.models import DiaryEntry, PostEntry
+from aerisun.domain.content.models import DiaryEntry, PostEntry, ThoughtEntry
 from aerisun.domain.diary_access.service import DIARY_PRIVATE_FEATURE_FLAG
 from aerisun.domain.engagement.models import Reaction
 from aerisun.domain.site_config.models import SiteProfile
@@ -90,6 +90,97 @@ def test_read_recent_activity_falls_back_to_published_content_when_no_interactio
     assert payload["items"]
     assert all(item["kind"].startswith("publish_") for item in payload["items"])
     assert any((item["target_title"] or item["excerpt"]) for item in payload["items"])
+
+
+def test_read_recent_activity_includes_latest_public_thought(client) -> None:
+    session_factory = get_session_factory()
+    with session_factory() as session:
+        session.add(
+            ThoughtEntry(
+                slug="latest-public-thought",
+                title="Latest public thought",
+                body="A fresh thought with an image ![diagram](/media/diagram.png)",
+                summary=None,
+                tags=[],
+                visibility="public",
+                published_at=datetime(2099, 7, 10, 12, tzinfo=BEIJING_TZ),
+            )
+        )
+        session.commit()
+
+    response = client.get("/api/v1/site/recent-activity?limit=1")
+
+    assert response.status_code == 200
+    item = response.json()["items"][0]
+    assert item["kind"] == "publish_thought"
+    assert item["target_title"] == ""
+    assert item["excerpt"] == "A fresh thought with an image"
+    assert item["created_at"] == "2099-07-10T12:00:00+08:00"
+    assert item["href"] == "/thoughts#latest-public-thought"
+
+
+def test_read_recent_activity_excludes_owner_comments_for_unselected_content_types(client) -> None:
+    from aerisun.domain.site_auth.models import SiteAdminIdentity, SiteUser
+    from aerisun.domain.waline.service import create_waline_record
+
+    owner_email = "activity-owner@example.com"
+    session_factory = get_session_factory()
+    with session_factory() as session:
+        owner = SiteUser(
+            email=owner_email,
+            display_name="Activity Owner",
+            avatar_url="",
+        )
+        session.add(owner)
+        session.flush()
+        session.add(
+            SiteAdminIdentity(
+                site_user_id=owner.id,
+                provider="email",
+                identifier=owner_email,
+                email=owner_email,
+            )
+        )
+        profile = session.query(SiteProfile).one()
+        profile.feature_flags = {
+            **dict(profile.feature_flags or {}),
+            "recent_activity_owner_comment_content_types": ["thoughts"],
+        }
+        session.commit()
+
+    create_waline_record(
+        comment="Owner post comment should be hidden",
+        nick="Activity Owner",
+        mail=owner_email,
+        link=None,
+        status="approved",
+        url="/posts/from-zero-design-system",
+    )
+    create_waline_record(
+        comment="Owner thought comment should be shown",
+        nick="Activity Owner",
+        mail=owner_email,
+        link=None,
+        status="approved",
+        url="/thoughts/spacing-rhythm-note",
+    )
+    create_waline_record(
+        comment="Visitor post comment should stay visible",
+        nick="Visitor",
+        mail="visitor@example.com",
+        link=None,
+        status="approved",
+        url="/posts/from-zero-design-system",
+    )
+
+    response = client.get("/api/v1/site/recent-activity?limit=8")
+
+    assert response.status_code == 200
+    items = response.json()["items"]
+    assert not any(item["excerpt"] == "Owner post comment should be hidden" for item in items)
+    assert any(item["excerpt"] == "Owner thought comment should be shown" for item in items)
+    assert any(item["excerpt"] == "Visitor post comment should stay visible" for item in items)
+    assert any(item["kind"].startswith("publish_") for item in items)
 
 
 def test_read_recent_activity_keeps_private_diary_publish_visible_with_preview(client) -> None:

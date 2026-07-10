@@ -1379,6 +1379,7 @@ export const zhTranslations: TranslationDict = {
   // feature flags
   "siteConfig.featureFlags": "功能开关",
   "siteConfig.featureFlagsDescription": "启用或关闭可选的前端功能",
+  "siteConfig.personalization": "个性化",
   "siteConfig.featureToc": "文章目录",
   "siteConfig.featureTocDesc": "在文章详情页显示标题目录导航",
   "siteConfig.featureReadingProgress": "阅读进度条",
@@ -1386,6 +1387,10 @@ export const zhTranslations: TranslationDict = {
   "siteConfig.featureDiaryPrivate": "日记内容不公开",
   "siteConfig.featureDiaryPrivateDesc":
     "开启后，普通访客只能看日记列表，查看详情需要登录并获得站长授权。",
+  "siteConfig.recentActivityOwnerComment": "站长评论计入最近动态",
+  "siteConfig.recentActivityOwnerCommentHelp":
+    "站长可能会在文章、日记、碎碎念或文摘下补充解释和感想；全部计入最近动态时，连续评论可能会刷屏。",
+  "siteConfig.recentActivityOwnerCommentTypes": "计入的内容类型",
   "siteConfig.featureSocialSharing": "社交分享",
   "siteConfig.featureSocialSharingDesc": "在文章底部显示分享按钮",
   "siteConfig.contentSubscription": "内容订阅",

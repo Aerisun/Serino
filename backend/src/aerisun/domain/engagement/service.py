@@ -28,7 +28,7 @@ from aerisun.domain.engagement.schemas import (
 from aerisun.domain.exceptions import PermissionDenied, ResourceNotFound, StateConflict
 from aerisun.domain.exceptions import ValidationError as DomainValidationError
 from aerisun.domain.site_auth import repository as site_auth_repo
-from aerisun.domain.site_auth.models import SiteUser, SiteUserSession
+from aerisun.domain.site_auth.models import SiteAdminIdentity, SiteUser, SiteUserSession
 from aerisun.domain.site_auth.service import get_admin_comment_identity, is_site_user_admin
 from aerisun.domain.site_config import repository as site_config_repo
 from aerisun.domain.site_config.schemas import (
@@ -79,6 +79,12 @@ class AuthenticatedCommentProfile:
     link: str | None
     avatar_key: str
     avatar_url: str
+
+
+@dataclass(frozen=True, slots=True)
+class BoundAdminCommentIdentities:
+    emails: frozenset[str]
+    site_user_ids: frozenset[str]
 
 
 def _avatar_for_name(name: str) -> str:
@@ -187,17 +193,45 @@ def _pending_records_for_current_user(records: list, current_user: SiteUser | No
     ]
 
 
-def _is_bound_admin_comment(
+def list_bound_admin_comment_identities(session: Session) -> BoundAdminCommentIdentities:
+    rows = (
+        session.query(
+            SiteAdminIdentity.site_user_id,
+            SiteAdminIdentity.email,
+            SiteUser.email,
+        )
+        .join(SiteUser, SiteUser.id == SiteAdminIdentity.site_user_id)
+        .all()
+    )
+    emails = {
+        normalized
+        for identity_email, user_email in ((row[1], row[2]) for row in rows)
+        for normalized in (_email_key(identity_email), _email_key(user_email))
+        if normalized
+    }
+    return BoundAdminCommentIdentities(
+        emails=frozenset(emails),
+        site_user_ids=frozenset(str(row[0]) for row in rows),
+    )
+
+
+def is_bound_admin_comment(
     session: Session,
     *,
     email: str | None,
     avatar_key: str | None,
+    identities: BoundAdminCommentIdentities | None = None,
 ) -> bool:
     site_user_id = _site_user_id_from_avatar_key(avatar_key)
+    normalized_email = _email_key(email)
+    if identities is not None:
+        return bool(
+            (site_user_id and site_user_id in identities.site_user_ids) or normalized_email in identities.emails
+        )
+
     if site_user_id and site_auth_repo.find_admin_identity_for_user(session, site_user_id=site_user_id) is not None:
         return True
 
-    normalized_email = _email_key(email)
     if not normalized_email:
         return False
 
@@ -587,7 +621,7 @@ def _guestbook_entry_from_waline(
     *,
     current_user: SiteUser | None = None,
 ) -> GuestbookEntryRead:
-    is_author = _is_bound_admin_comment(
+    is_author = is_bound_admin_comment(
         session,
         email=item.mail,
         avatar_key=item.avatar_key,
@@ -725,7 +759,7 @@ def create_public_guestbook_entry(
             created_at=entry.created_at,
             avatar=entry.avatar_key or entry.avatar_url,
             avatar_url=entry.avatar_url,
-            is_author=_is_bound_admin_comment(
+            is_author=is_bound_admin_comment(
                 session,
                 email=entry.mail,
                 avatar_key=entry.avatar_key,
@@ -751,7 +785,7 @@ def _build_waline_comment_tree(
     def convert(node) -> CommentRead:
         raw_author_name = (node.nick or "访客").strip() or "访客"
         raw_avatar = node.avatar_url or _avatar_for_name(raw_author_name)
-        is_author = _is_bound_admin_comment(
+        is_author = is_bound_admin_comment(
             session,
             email=node.mail,
             avatar_key=node.avatar_key,
@@ -936,7 +970,7 @@ def create_public_comment(
             avatar_url=item.avatar_url or _avatar_for_name(item.nick or "访客"),
             like_count=item.like,
             liked=False,
-            is_author=_is_bound_admin_comment(
+            is_author=is_bound_admin_comment(
                 session,
                 email=item.mail,
                 avatar_key=item.avatar_key,

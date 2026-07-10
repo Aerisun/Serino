@@ -22,10 +22,16 @@ from aerisun.domain.activity.schemas import (
 )
 from aerisun.domain.avatars.service import notionists_avatar_url
 from aerisun.domain.diary_access.service import diary_private_enabled
+from aerisun.domain.engagement.service import (
+    is_bound_admin_comment,
+    list_bound_admin_comment_identities,
+)
 from aerisun.domain.site_config.models import SiteProfile
 from aerisun.domain.waline.service import list_all_waline_records, parse_comment_path
 
 DEFAULT_ACTIVITY_HEATMAP_TZ = "Asia/Shanghai"
+RECENT_ACTIVITY_OWNER_COMMENT_CONTENT_TYPES_FLAG = "recent_activity_owner_comment_content_types"
+RECENT_ACTIVITY_OWNER_COMMENT_CONTENT_TYPES = frozenset({"posts", "diary", "thoughts", "excerpts"})
 
 
 def _avatar_for_name(name: str) -> str:
@@ -81,6 +87,22 @@ def _get_site_owner_name(session: Session) -> str:
     return str(value or "").strip() or "站长"
 
 
+def _recent_activity_owner_comment_content_types(session: Session) -> set[str]:
+    feature_flags = session.scalar(select(SiteProfile.feature_flags).limit(1))
+    raw_types = (
+        feature_flags.get(RECENT_ACTIVITY_OWNER_COMMENT_CONTENT_TYPES_FLAG) if isinstance(feature_flags, dict) else None
+    )
+    if not isinstance(raw_types, list):
+        return set(RECENT_ACTIVITY_OWNER_COMMENT_CONTENT_TYPES)
+    return {
+        value
+        for item in raw_types
+        if isinstance(item, str)
+        for value in [item.strip()]
+        if value in RECENT_ACTIVITY_OWNER_COMMENT_CONTENT_TYPES
+    }
+
+
 def list_calendar_events(session: Session, from_date: date, to_date: date) -> CalendarRead:
     events = []
     for published_at, kind, title, slug, href in repo.find_content_events(session, include_diary=True):
@@ -107,20 +129,39 @@ def list_recent_activity(session: Session, limit: int = 8) -> RecentActivityRead
     items: list[RecentActivityItemRead] = []
     site_owner_name = _get_site_owner_name(session)
     private_diary_enabled = diary_private_enabled(session)
+    owner_comment_content_types = _recent_activity_owner_comment_content_types(session)
+    bound_admin_comment_identities = (
+        list_bound_admin_comment_identities(session)
+        if owner_comment_content_types != RECENT_ACTIVITY_OWNER_COMMENT_CONTENT_TYPES
+        else None
+    )
 
     # Collect all (content_type, slug) pairs for batch title resolution
     title_pairs: list[tuple[str, str]] = []
 
-    comments = list_all_waline_records(status="approved", guestbook_only=False)[:limit]
+    comments = list_all_waline_records(status="approved", guestbook_only=False)
     visible_comments = []
     comment_pairs = []
     for item in comments:
         pair = parse_comment_path(item.url)
         if pair[0] == "diary" and private_diary_enabled:
             continue
+        if (
+            pair[0] in RECENT_ACTIVITY_OWNER_COMMENT_CONTENT_TYPES
+            and pair[0] not in owner_comment_content_types
+            and is_bound_admin_comment(
+                session,
+                email=item.mail,
+                avatar_key=item.avatar_key,
+                identities=bound_admin_comment_identities,
+            )
+        ):
+            continue
         visible_comments.append(item)
         comment_pairs.append(pair)
         title_pairs.append(pair)
+        if len(visible_comments) >= limit:
+            break
 
     reactions = repo.find_recent_reactions(session, limit=limit)
     if private_diary_enabled:

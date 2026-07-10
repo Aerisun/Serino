@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ChevronRight, RotateCcw } from "lucide-react";
 import {
@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { AppleSwitch } from "@/components/ui/AppleSwitch";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
+import { CollapsibleSection } from "@/components/ui/CollapsibleSection";
 import { DirtySaveButton, PendingSaveBadge } from "@/components/ui/DirtySaveButton";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
@@ -24,6 +25,14 @@ import { extractApiErrorMessage } from "@/lib/api-error";
 import { cn } from "@/lib/utils";
 
 const FEATURE_FLAGS = ["toc", "reading_progress", "diary_private_enabled"] as const;
+const OWNER_COMMENT_ACTIVITY_CONTENT_TYPES_FLAG =
+  "recent_activity_owner_comment_content_types";
+const OWNER_COMMENT_ACTIVITY_CONTENT_TYPE_OPTIONS = [
+  { key: "posts", labelKey: "nav.posts" },
+  { key: "diary", labelKey: "nav.diary" },
+  { key: "thoughts", labelKey: "nav.thoughts" },
+  { key: "excerpts", labelKey: "nav.excerpts" },
+] as const;
 const SUBSCRIPTION_CONTENT_OPTIONS = [
   { key: "posts", label: "文章" },
   { key: "diary", label: "日记" },
@@ -40,6 +49,9 @@ const SUBSCRIPTION_TEMPLATE_FIELD_CLASS =
   "mx-px w-[calc(100%-2px)] max-w-full border-border/70 bg-background/72 shadow-none [backdrop-filter:none] [-webkit-backdrop-filter:none] focus:!border-[rgb(var(--admin-accent-rgb)/0.36)] focus:shadow-none focus-visible:!ring-[rgb(var(--admin-accent-rgb)/0.26)] focus-visible:!ring-offset-0";
 
 type SubscriptionContentType = (typeof SUBSCRIPTION_CONTENT_OPTIONS)[number]["key"];
+type OwnerCommentActivityContentType =
+  (typeof OWNER_COMMENT_ACTIVITY_CONTENT_TYPE_OPTIONS)[number]["key"];
+type FeatureFlags = Record<string, unknown>;
 
 interface AdvancedSubscriptionForm {
   allowed_content_types: SubscriptionContentType[];
@@ -125,6 +137,33 @@ function isSameCommentFeedbackForm(
   );
 }
 
+function createOwnerCommentActivityContentTypes(
+  featureFlags?: FeatureFlags,
+): OwnerCommentActivityContentType[] {
+  const stored = featureFlags?.[OWNER_COMMENT_ACTIVITY_CONTENT_TYPES_FLAG];
+  if (!Array.isArray(stored)) {
+    return OWNER_COMMENT_ACTIVITY_CONTENT_TYPE_OPTIONS.map((option) => option.key);
+  }
+
+  const selected = new Set(
+    stored.filter(
+      (item): item is OwnerCommentActivityContentType =>
+        typeof item === "string" &&
+        OWNER_COMMENT_ACTIVITY_CONTENT_TYPE_OPTIONS.some((option) => option.key === item),
+    ),
+  );
+  return OWNER_COMMENT_ACTIVITY_CONTENT_TYPE_OPTIONS
+    .map((option) => option.key)
+    .filter((key) => selected.has(key));
+}
+
+function isSameOwnerCommentActivityContentTypes(
+  left: OwnerCommentActivityContentType[],
+  right: OwnerCommentActivityContentType[],
+): boolean {
+  return left.length === right.length && left.every((item, index) => item === right[index]);
+}
+
 export function FeatureTogglesSection() {
   const { t } = useI18n();
   const queryClient = useQueryClient();
@@ -138,7 +177,7 @@ export function FeatureTogglesSection() {
   const smtpTestPassed = Boolean(
     subscriptionConfig?.smtp_test_passed,
   );
-  const [featureFlags, setFeatureFlags] = useState<Record<string, boolean>>({});
+  const [featureFlags, setFeatureFlags] = useState<FeatureFlags>({});
   const [subscriptionEnabled, setSubscriptionEnabled] = useState(false);
   const [commentFeedbackEnabled, setCommentFeedbackEnabled] = useState(false);
   const [advancedForm, setAdvancedForm] = useState<AdvancedSubscriptionForm>(() =>
@@ -152,10 +191,23 @@ export function FeatureTogglesSection() {
     useState<CommentFeedbackForm>(() => createCommentFeedbackForm());
   const [advancedExpanded, setAdvancedExpanded] = useState(false);
   const [commentFeedbackExpanded, setCommentFeedbackExpanded] = useState(false);
+  const [ownerCommentActivityExpanded, setOwnerCommentActivityExpanded] = useState(false);
+  const ownerCommentActivityContentId = useId();
+  const [ownerCommentActivityContentTypes, setOwnerCommentActivityContentTypes] = useState<
+    OwnerCommentActivityContentType[]
+  >(() => createOwnerCommentActivityContentTypes());
+  const [savedOwnerCommentActivityContentTypes, setSavedOwnerCommentActivityContentTypes] = useState<
+    OwnerCommentActivityContentType[]
+  >(() => createOwnerCommentActivityContentTypes());
 
   useEffect(() => {
     if (profile) {
-      setFeatureFlags(profile.feature_flags ?? {});
+      const nextFeatureFlags = (profile.feature_flags ?? {}) as FeatureFlags;
+      setFeatureFlags(nextFeatureFlags);
+      const nextOwnerCommentActivityContentTypes =
+        createOwnerCommentActivityContentTypes(nextFeatureFlags);
+      setOwnerCommentActivityContentTypes(nextOwnerCommentActivityContentTypes);
+      setSavedOwnerCommentActivityContentTypes(nextOwnerCommentActivityContentTypes);
     }
   }, [profile]);
 
@@ -215,7 +267,7 @@ export function FeatureTogglesSection() {
   const resolvedFeatureFlags = useMemo(
     () =>
       FEATURE_FLAGS.reduce<Record<string, boolean>>((acc, key) => {
-        acc[key] = featureFlags[key] ?? true;
+        acc[key] = typeof featureFlags[key] === "boolean" ? Boolean(featureFlags[key]) : true;
         return acc;
       }, {}),
     [featureFlags],
@@ -225,7 +277,7 @@ export function FeatureTogglesSection() {
     return <p className="py-4 text-muted-foreground">{t("common.loading")}</p>;
   }
 
-  const flags = [
+  const personalizationFlags = [
     {
       key: "toc",
       label: t("siteConfig.featureToc"),
@@ -236,14 +288,9 @@ export function FeatureTogglesSection() {
       label: t("siteConfig.featureReadingProgress"),
       desc: t("siteConfig.featureReadingProgressDesc"),
     },
-    {
-      key: "diary_private_enabled",
-      label: t("siteConfig.featureDiaryPrivate"),
-      desc: t("siteConfig.featureDiaryPrivateDesc"),
-    },
   ] as const;
 
-  const buildSaveData = (nextFeatureFlags: Record<string, boolean>) => ({
+  const buildSaveData = (nextFeatureFlags: FeatureFlags) => ({
     name: profile?.name ?? "",
     title: profile?.title ?? "",
     bio: profile?.bio ?? "",
@@ -263,6 +310,35 @@ export function FeatureTogglesSection() {
 
     try {
       await saveProfile.mutateAsync({ data: buildSaveData(nextFeatureFlags) });
+    } catch {
+      setFeatureFlags(previousFlags);
+    }
+  };
+
+  const toggleOwnerCommentActivityContentType = (
+    contentType: OwnerCommentActivityContentType,
+  ) => {
+    setOwnerCommentActivityContentTypes((current) => {
+      const selected = current.includes(contentType)
+        ? current.filter((item) => item !== contentType)
+        : [...current, contentType];
+      return OWNER_COMMENT_ACTIVITY_CONTENT_TYPE_OPTIONS
+        .map((option) => option.key)
+        .filter((key) => selected.includes(key));
+    });
+  };
+
+  const saveOwnerCommentActivitySettings = async () => {
+    const previousFlags = featureFlags;
+    const nextFeatureFlags = {
+      ...featureFlags,
+      [OWNER_COMMENT_ACTIVITY_CONTENT_TYPES_FLAG]: ownerCommentActivityContentTypes,
+    };
+    setFeatureFlags(nextFeatureFlags);
+
+    try {
+      await saveProfile.mutateAsync({ data: buildSaveData(nextFeatureFlags) });
+      setSavedOwnerCommentActivityContentTypes(ownerCommentActivityContentTypes);
     } catch {
       setFeatureFlags(previousFlags);
     }
@@ -358,6 +434,10 @@ export function FeatureTogglesSection() {
     : t("siteConfig.contentSubscriptionSetupGuide");
   const advancedDirty = !isSameAdvancedForm(advancedForm, savedAdvancedForm);
   const commentFeedbackDirty = !isSameCommentFeedbackForm(commentFeedbackForm, savedCommentFeedbackForm);
+  const ownerCommentActivityDirty = !isSameOwnerCommentActivityContentTypes(
+    ownerCommentActivityContentTypes,
+    savedOwnerCommentActivityContentTypes,
+  );
   const canExpandAdvanced = smtpTestPassed && subscriptionEnabled;
   const canExpandCommentFeedback = commentFeedbackEnabled;
   const commentFeedbackDescription = smtpTestPassed
@@ -376,16 +456,13 @@ export function FeatureTogglesSection() {
           </div>
 
           <div className="space-y-4">
-            {flags.map((flag) => (
-              <AppleSwitch
-                key={flag.key}
-                checked={resolvedFeatureFlags[flag.key]}
-                onCheckedChange={() => void handleFeatureToggle(flag.key)}
-                label={flag.label}
-                description={flag.desc}
-                disabled={saveProfile.isPending}
-              />
-            ))}
+            <AppleSwitch
+              checked={resolvedFeatureFlags.diary_private_enabled}
+              onCheckedChange={() => void handleFeatureToggle("diary_private_enabled")}
+              label={t("siteConfig.featureDiaryPrivate")}
+              description={t("siteConfig.featureDiaryPrivateDesc")}
+              disabled={saveProfile.isPending}
+            />
 
             <AppleSwitch
               checked={subscriptionEnabled}
@@ -662,6 +739,104 @@ export function FeatureTogglesSection() {
               }
               disabled={saveSubscription.isPending}
             />
+
+            <CollapsibleSection title={t("siteConfig.personalization")}>
+              <div className="space-y-4">
+                {personalizationFlags.map((flag) => (
+                  <AppleSwitch
+                    key={flag.key}
+                    checked={resolvedFeatureFlags[flag.key]}
+                    onCheckedChange={() => void handleFeatureToggle(flag.key)}
+                    label={flag.label}
+                    description={flag.desc}
+                    disabled={saveProfile.isPending}
+                  />
+                ))}
+
+                <div className="rounded-[var(--admin-radius-lg)] admin-glass px-4 py-3 shadow-[var(--admin-shadow-sm)]">
+                  <div className="flex items-start justify-between gap-4">
+                    <LabelWithHelp
+                      className="min-w-0 gap-1.5"
+                      label={
+                        <span className="text-sm font-medium tracking-tight text-foreground/92">
+                          {t("siteConfig.recentActivityOwnerComment")}
+                        </span>
+                      }
+                      title={t("siteConfig.recentActivityOwnerComment")}
+                      description={t("siteConfig.recentActivityOwnerCommentHelp")}
+                    />
+                    <button
+                      type="button"
+                      aria-label={
+                        ownerCommentActivityExpanded ? t("common.collapse") : t("common.expand")
+                      }
+                      aria-controls={ownerCommentActivityContentId}
+                      aria-expanded={ownerCommentActivityExpanded}
+                      onClick={() => setOwnerCommentActivityExpanded((current) => !current)}
+                      className={cn(
+                        "inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-border/70 bg-background/40 text-muted-foreground transition hover:bg-background/70 hover:text-foreground",
+                        ownerCommentActivityExpanded && "text-foreground",
+                      )}
+                    >
+                      <ChevronRight
+                        className={cn(
+                          "h-4 w-4 transition-transform duration-200",
+                          ownerCommentActivityExpanded && "rotate-90",
+                        )}
+                      />
+                    </button>
+                  </div>
+
+                  <div
+                    id={ownerCommentActivityContentId}
+                    aria-hidden={!ownerCommentActivityExpanded}
+                    inert={!ownerCommentActivityExpanded ? true : undefined}
+                    className={cn(
+                      "overflow-hidden transition-[max-height,opacity,margin,padding] duration-200 ease-in-out",
+                      ownerCommentActivityExpanded
+                        ? "mt-3 max-h-80 border-t border-border/60 pt-3 opacity-100"
+                        : "max-h-0 opacity-0",
+                    )}
+                  >
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <Label>{t("siteConfig.recentActivityOwnerCommentTypes")}</Label>
+                        <div className="flex items-center gap-2">
+                          {ownerCommentActivityDirty ? <PendingSaveBadge /> : null}
+                          <DirtySaveButton
+                            dirty={ownerCommentActivityDirty}
+                            saving={saveProfile.isPending}
+                            onClick={() => void saveOwnerCommentActivitySettings()}
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                        {OWNER_COMMENT_ACTIVITY_CONTENT_TYPE_OPTIONS.map((option) => {
+                          const checked = ownerCommentActivityContentTypes.includes(option.key);
+                          return (
+                            <button
+                              key={option.key}
+                              type="button"
+                              onClick={() => toggleOwnerCommentActivityContentType(option.key)}
+                              disabled={saveProfile.isPending}
+                              className={cn(
+                                "w-full rounded-[var(--admin-radius-md)] border px-2 py-2 text-sm font-medium transition",
+                                checked
+                                  ? "border-[rgb(var(--admin-accent-rgb)/0.28)] bg-[rgb(var(--admin-accent-rgb)/0.12)] text-foreground"
+                                  : "border-border/70 bg-background/40 text-muted-foreground hover:text-foreground",
+                                saveProfile.isPending && "cursor-not-allowed opacity-60",
+                              )}
+                            >
+                              {t(option.labelKey)}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CollapsibleSection>
           </div>
         </CardContent>
       </Card>

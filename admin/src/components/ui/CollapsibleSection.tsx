@@ -1,4 +1,4 @@
-import { type ReactNode, useState, useRef, useEffect } from "react";
+import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -18,6 +18,7 @@ export function CollapsibleSection({
   className,
 }: CollapsibleSectionProps) {
   const [open, setOpen] = useState(defaultOpen);
+  const contentId = useId();
   const bodyRef = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState<number | undefined>(
     defaultOpen ? undefined : 0,
@@ -40,6 +41,8 @@ export function CollapsibleSection({
       <button
         type="button"
         onClick={() => setOpen(!open)}
+        aria-controls={contentId}
+        aria-expanded={open}
         className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-4 py-3 transition-colors hover:bg-white/20 dark:hover:bg-white/5"
       >
         <ChevronRight
@@ -57,6 +60,9 @@ export function CollapsibleSection({
       </button>
       <div
         ref={bodyRef}
+        id={contentId}
+        aria-hidden={!open}
+        inert={!open ? true : undefined}
         className="overflow-hidden transition-[max-height] duration-200 ease-in-out"
         style={{ maxHeight: height !== undefined ? `${height}px` : "none" }}
       >
