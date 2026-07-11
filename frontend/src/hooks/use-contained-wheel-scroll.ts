@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 
 const SCROLL_EDGE_EPSILON = 1;
+const WHEEL_DELTA_LINE = 1;
+const WHEEL_DELTA_PAGE = 2;
 
 const canScrollInDirection = (
   scrollOffset: number,
@@ -24,6 +26,44 @@ const canScrollInDirection = (
   return scrollOffset < maxScrollOffset - SCROLL_EDGE_EPSILON;
 };
 
+export const getVerticalWheelDelta = ({
+  deltaX,
+  deltaY,
+  deltaMode,
+  pageSize,
+}: {
+  deltaX: number;
+  deltaY: number;
+  deltaMode: number;
+  pageSize: number;
+}) => {
+  if (deltaY === 0 || Math.abs(deltaY) < Math.abs(deltaX)) {
+    return 0;
+  }
+
+  const multiplier =
+    deltaMode === WHEEL_DELTA_LINE
+      ? 16
+      : deltaMode === WHEEL_DELTA_PAGE
+        ? pageSize
+        : 1;
+
+  return deltaY * multiplier;
+};
+
+export const shouldCaptureWheelScroll = ({
+  scrollTop,
+  clientHeight,
+  scrollHeight,
+  deltaY,
+}: {
+  scrollTop: number;
+  clientHeight: number;
+  scrollHeight: number;
+  deltaY: number;
+}) =>
+  canScrollInDirection(scrollTop, clientHeight, scrollHeight, deltaY);
+
 export const useContainedWheelScroll = <T extends HTMLElement>() => {
   const regionRef = useRef<T | null>(null);
   const scrollViewportRef = useRef<T | null>(null);
@@ -44,25 +84,27 @@ export const useContainedWheelScroll = <T extends HTMLElement>() => {
         return;
       }
 
-      const canScrollVertically = canScrollInDirection(
-        viewport.scrollTop,
-        viewport.clientHeight,
-        viewport.scrollHeight,
-        event.deltaY,
-      );
-      const canScrollHorizontally = canScrollInDirection(
-        viewport.scrollLeft,
-        viewport.clientWidth,
-        viewport.scrollWidth,
-        event.deltaX,
-      );
+      const deltaY = getVerticalWheelDelta({
+        deltaX: event.deltaX,
+        deltaY: event.deltaY,
+        deltaMode: event.deltaMode,
+        pageSize: viewport.clientHeight,
+      });
+      const canScrollVertically = shouldCaptureWheelScroll({
+        scrollTop: viewport.scrollTop,
+        clientHeight: viewport.clientHeight,
+        scrollHeight: viewport.scrollHeight,
+        deltaY,
+      });
 
-      if (canScrollVertically || canScrollHorizontally) {
+      if (canScrollVertically) {
+        event.preventDefault();
         event.stopPropagation();
+        viewport.scrollTop += deltaY;
       }
     };
 
-    region.addEventListener("wheel", handleWheel, { passive: true });
+    region.addEventListener("wheel", handleWheel, { passive: false });
     return () => region.removeEventListener("wheel", handleWheel);
   }, []);
 

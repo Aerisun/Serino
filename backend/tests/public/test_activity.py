@@ -241,6 +241,34 @@ def test_read_activity_heatmap_returns_weeks(client) -> None:
     assert "total_contributions" in payload["stats"]
 
 
+def test_activity_heatmap_refreshes_after_public_post_is_published(client, admin_headers) -> None:
+    activity_service._heatmap_cache.clear()
+    initial_response = client.get("/api/v1/site/activity-heatmap?weeks=52")
+
+    assert initial_response.status_code == 200
+    initial_total = initial_response.json()["stats"]["total_contributions"]
+    assert activity_service._heatmap_cache
+
+    publish_response = client.post(
+        "/api/v1/admin/posts/",
+        headers=admin_headers,
+        json={
+            "slug": "heatmap-cache-refresh-post",
+            "title": "Heatmap Cache Refresh",
+            "body": "Publishing this post must refresh the activity heatmap.",
+            "visibility": "public",
+        },
+    )
+
+    assert publish_response.status_code == 201
+    assert not activity_service._heatmap_cache
+
+    refreshed_response = client.get("/api/v1/site/activity-heatmap?weeks=52")
+
+    assert refreshed_response.status_code == 200
+    assert refreshed_response.json()["stats"]["total_contributions"] == initial_total + 1
+
+
 def test_read_activity_heatmap_includes_thoughts_and_likes_in_shanghai_timezone(client, monkeypatch) -> None:
     activity_service._heatmap_cache.clear()
     monkeypatch.setattr(activity_service, "datetime", _FixedDateTime)

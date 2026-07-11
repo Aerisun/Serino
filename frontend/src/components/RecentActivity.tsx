@@ -324,7 +324,7 @@ const RecentActivity = ({ enabled = true }: RecentActivityProps) => {
 
       <div
         ref={setScrollRefs}
-        className="scrollbar-hide relative ml-1 mr-4 flex max-h-[24rem] overflow-y-auto overscroll-y-auto pr-0.5 [touch-action:pan-y] [-webkit-overflow-scrolling:touch] [will-change:scroll-position] md:-mr-1 md:ml-0 md:block md:max-h-[420px] md:overscroll-contain md:pr-1"
+        className="scrollbar-hide relative ml-1 mr-4 flex max-h-[24rem] overflow-y-auto overscroll-y-auto pr-0.5 [touch-action:pan-y] [-webkit-overflow-scrolling:touch] [will-change:scroll-position] md:-mr-1 md:ml-0 md:block md:max-h-[420px] md:pr-1"
         data-wheel-scroll-region="recent-activity"
         data-wheel-scroll-viewport="recent-activity"
       >

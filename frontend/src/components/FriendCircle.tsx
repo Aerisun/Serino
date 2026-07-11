@@ -135,7 +135,7 @@ const FriendCircle = ({ enabled = true }: FriendCircleProps) => {
 
       <div
         ref={setScrollRefs}
-        className="scrollbar-hide ml-1 mr-4 flex max-h-[24rem] flex-col gap-0.5 overflow-y-auto overscroll-y-auto pr-0.5 [touch-action:pan-y] [-webkit-overflow-scrolling:touch] [will-change:scroll-position] md:-mr-1 md:ml-0 md:max-h-[420px] md:overscroll-contain md:pr-1"
+        className="scrollbar-hide ml-1 mr-4 flex max-h-[24rem] flex-col gap-0.5 overflow-y-auto overscroll-y-auto pr-0.5 [touch-action:pan-y] [-webkit-overflow-scrolling:touch] [will-change:scroll-position] md:-mr-1 md:ml-0 md:max-h-[420px] md:pr-1"
         data-wheel-scroll-region="friend-circle"
         data-wheel-scroll-viewport="friend-circle"
       >

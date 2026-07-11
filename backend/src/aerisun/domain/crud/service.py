@@ -68,6 +68,15 @@ def _content_type_for_model(model: type[Base]) -> str:
     return CONTENT_TYPE_BY_MODEL.get(model, getattr(model, "__tablename__", model.__name__.lower()))
 
 
+def _invalidate_activity_heatmap_if_needed(model: type[Base]) -> None:
+    if model not in CONTENT_PUBLICATION_MODELS:
+        return
+
+    from aerisun.domain.activity.service import invalidate_activity_heatmap_cache
+
+    invalidate_activity_heatmap_cache()
+
+
 def _content_snapshot(obj: Any) -> dict[str, Any]:
     return {
         "item_id": str(getattr(obj, "id", "") or ""),
@@ -158,6 +167,7 @@ def create_item(
             title=snapshot["title"],
         )
         _dispatch_content_subscriptions_if_needed(model, obj=obj)
+    _invalidate_activity_heatmap_if_needed(model)
     return read_schema.model_validate(obj)
 
 
@@ -219,6 +229,7 @@ def update_item(
         )
     if became_public:
         _dispatch_content_subscriptions_if_needed(model, should_dispatch=True)
+    _invalidate_activity_heatmap_if_needed(model)
     return read_schema.model_validate(obj)
 
 
@@ -243,6 +254,7 @@ def delete_item(
         slug=snapshot["slug"],
         title=snapshot["title"],
     )
+    _invalidate_activity_heatmap_if_needed(model)
 
 
 def bulk_delete_items(
@@ -261,6 +273,7 @@ def bulk_delete_items(
         ids=ids,
         affected=affected,
     )
+    _invalidate_activity_heatmap_if_needed(model)
     return {"affected": affected}
 
 
@@ -346,4 +359,5 @@ def bulk_update_visibility_items(
             )
     if should_dispatch_subscriptions:
         _dispatch_content_subscriptions_if_needed(model, should_dispatch=True)
+    _invalidate_activity_heatmap_if_needed(model)
     return {"affected": affected}

@@ -244,6 +244,11 @@ _heatmap_cache: dict[str, tuple[float, ActivityHeatmapRead]] = {}
 _HEATMAP_TTL = 300  # 5 minutes
 
 
+def invalidate_activity_heatmap_cache() -> None:
+    """Drop cached activity totals after a contribution-affecting write."""
+    _heatmap_cache.clear()
+
+
 def build_activity_heatmap(session: Session, weeks: int = 52, tz_name: str | None = None) -> ActivityHeatmapRead:
     weeks = max(1, min(weeks, 104))
     resolved_tz_name = tz_name or DEFAULT_ACTIVITY_HEATMAP_TZ
