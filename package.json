@@ -33,7 +33,7 @@
     "lint:workspace": "pnpm -r --if-present run lint",
     "lint:backend": "uv run --directory backend ruff check src/ tests/ && uv run --directory backend ruff format --check src/ tests/",
     "lint": "pnpm run lint:workspace && pnpm run lint:backend && pnpm run lint:boundaries",
-    "test:workspace": "pnpm --filter @serino/api-client test && pnpm -C admin test",
+    "test:workspace": "pnpm --filter @serino/api-client test && pnpm -C admin test && pnpm -C frontend test",
     "test:backend": "uv run --directory backend pytest",
     "test": "pnpm run test:backend && pnpm run test:workspace",
     "verify:generated:api-client": "bash ./scripts/verify-generated-api-client.sh",

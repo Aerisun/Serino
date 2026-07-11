@@ -2,34 +2,58 @@ import { useEffect, useState } from "react";
 
 type Dependency = string | number | boolean | null | undefined;
 
-export function useDeferredActivation(enabled: boolean, deps: Dependency[] = []) {
+type DeferredActivationOptions = {
+  minimumDelayMs?: number;
+};
+
+export function useDeferredActivation(
+  enabled: boolean,
+  deps: Dependency[] = [],
+  options: DeferredActivationOptions = {},
+) {
   const [active, setActive] = useState(false);
+  const [activeDepsKey, setActiveDepsKey] = useState<string | null>(null);
   const depsKey = deps.join("|");
+  const minimumDelayMs = Math.max(0, options.minimumDelayMs ?? 0);
 
   useEffect(() => {
     if (!enabled) {
       setActive(false);
+      setActiveDepsKey(null);
       return;
     }
 
     let cancelled = false;
     let timeoutId: number | null = null;
     let idleId: number | null = null;
+    let delayTimeoutId: number | null = null;
 
     const activate = () => {
       if (!cancelled) {
+        setActiveDepsKey(depsKey);
         setActive(true);
       }
     };
 
-    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-      idleId = window.requestIdleCallback(activate, { timeout: 400 });
+    const queueIdleActivation = () => {
+      if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+        idleId = window.requestIdleCallback(activate, { timeout: 400 });
+      } else {
+        timeoutId = window.setTimeout(activate, 180);
+      }
+    };
+
+    if (minimumDelayMs > 0) {
+      delayTimeoutId = window.setTimeout(queueIdleActivation, minimumDelayMs);
     } else {
-      timeoutId = window.setTimeout(activate, 180);
+      queueIdleActivation();
     }
 
     return () => {
       cancelled = true;
+      if (delayTimeoutId !== null) {
+        window.clearTimeout(delayTimeoutId);
+      }
       if (timeoutId !== null) {
         window.clearTimeout(timeoutId);
       }
@@ -37,7 +61,7 @@ export function useDeferredActivation(enabled: boolean, deps: Dependency[] = [])
         window.cancelIdleCallback(idleId);
       }
     };
-  }, [enabled, depsKey]);
+  }, [enabled, depsKey, minimumDelayMs]);
 
-  return active;
+  return active && activeDepsKey === depsKey;
 }

@@ -5,7 +5,6 @@ import HeroContent from "@/components/HeroContent";
 import LazyOnVisible from "@/components/LazyOnVisible";
 import PageMeta from "@/components/PageMeta";
 import { useSiteConfig } from "@/contexts/runtime-config";
-import { useDeferredActivation } from "@/hooks/useDeferredActivation";
 import { scheduleIdleTask, shouldBackgroundPrefetch } from "@/lib/idle";
 import { lazyWithPreload } from "@/lib/lazy";
 
@@ -17,11 +16,16 @@ const Index = () => {
   const videoUrl = site.heroVideoUrl;
   const posterUrl = site.heroPosterUrl;
   const [videoFailed, setVideoFailed] = useState(false);
-  const videoActivated = useDeferredActivation(Boolean(videoUrl), [videoUrl]);
+  const [videoPlaying, setVideoPlaying] = useState(false);
   const fadeTo = resolvedTheme === "dark" ? "hsl(0 0% 4%)" : "hsl(0 0% 100%)";
   const heroOverlayClass = "bg-black/12";
-  const showVideo = Boolean(videoUrl) && videoActivated && !videoFailed;
+  const showVideo = Boolean(videoUrl) && !videoFailed;
   const showImageFallback = Boolean(posterUrl);
+
+  useEffect(() => {
+    setVideoPlaying(false);
+    setVideoFailed(false);
+  }, [videoUrl]);
 
   useEffect(() => {
     if (!shouldBackgroundPrefetch()) {
@@ -54,18 +58,23 @@ const Index = () => {
 
         {/* Background Video */}
         {showVideo && (
-        <video
-          className="absolute inset-0 w-full h-full object-cover z-0"
-          autoPlay
-          loop
-          muted
-          playsInline
-          preload="metadata"
-          poster={posterUrl}
-          onError={() => setVideoFailed(true)}
-        >
-          <source src={videoUrl} type="video/mp4" />
-        </video>
+          <video
+            key={videoUrl}
+            className={`absolute inset-0 w-full h-full object-cover z-0 transition-opacity duration-100 ${videoPlaying ? "opacity-100" : "opacity-0"}`}
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="auto"
+            poster={posterUrl}
+            onPlaying={() => setVideoPlaying(true)}
+            onError={() => {
+              setVideoPlaying(false);
+              setVideoFailed(true);
+            }}
+          >
+            <source src={videoUrl} type="video/mp4" />
+          </video>
         )}
 
         {/* Overlay */}
