@@ -15,8 +15,21 @@ Serino 设计初衷是打造一个专注内容、方便配置、探索融入 Age
 
 | | |
 | --- | --- |
-| ![效果展示](docs/assets/showcase/home.png) | ![效果展示](docs/assets/showcase/post.png) |
-| ![效果展示](docs/assets/showcase/admin-home.png) | ![效果展示](docs/assets/showcase/admin-mcp.png) |
+| ![效果展示 1](docs/assets/showcase/1.png) | ![效果展示 2](docs/assets/showcase/2.png) |
+| ![效果展示 3](docs/assets/showcase/3.png) | ![效果展示 4](docs/assets/showcase/4.png) |
+
+<details>
+<summary>展开查看其余效果展示</summary>
+
+| | |
+| --- | --- |
+| ![效果展示 5](docs/assets/showcase/5.png) | ![效果展示 6](docs/assets/showcase/6.png) |
+| ![效果展示 7](docs/assets/showcase/7.png) | ![效果展示 8](docs/assets/showcase/8.png) |
+| ![效果展示 9](docs/assets/showcase/9.png) | ![效果展示 10](docs/assets/showcase/10.png) |
+| ![效果展示 11](docs/assets/showcase/11.png) | ![效果展示 12](docs/assets/showcase/12.png) |
+| ![效果展示 13](docs/assets/showcase/13.png) | ![效果展示 14](docs/assets/showcase/14.png) |
+
+</details>
 
 ---
 
@@ -27,7 +40,7 @@ Serino 设计初衷是打造一个专注内容、方便配置、探索融入 Age
 ```bash
 curl -fsSL https://install.aerisun.top/serino/install.sh | bash
 ```
-[**点击查看《详细的部署与使用指南》**](https://aerisun.top/posts/about_serino)
+[**点击查看《详细的部署与使用指南》**](https://aerisun.top/posts/serino-tutorial)
 
 <details>
 <summary>安装器会干什么：</summary>
@@ -68,26 +81,30 @@ curl -fsSL https://install.aerisun.top/serino/install.sh | bash
 
 **已测试通过**
 
-- [x] 安装器一键部署流程（国内网络已测试）
-- [x] 站点前端展示侧的全部页面、功能和内容展示
-- [x] 后端管理台中，文章、随想、摘录、日记、分类这些主体内容的编辑与管理（移动端做过优化，纵享丝滑）
-- [x] 基本实现了开发环境和生产运维的自动化链路流程
-- [x] 站点各类配置管理、友链管理、评论管理、访客管理、OSS 加速、静态资源管理、订阅邮箱、审计日志追踪等后台高级能力
-- [x] 访客追踪系统的 debug
-- [x] 优化后端管理台的概览页面信息密度与实用性
-- [x] MCP 服务测试通过，真实可用
-- [x] 备份服务做了简化和完善，测试通过
-- [x] SEO/GEO 优化
-- [x] 实现生产环境自动发现更新，提醒更新，并在管理台中一键更新系统
+- [x] 安装器一键部署流程（国内网络已测试） `5月6日完成`
+- [x] 站点前端展示侧的全部页面、功能和内容展示 `5月6日完成`
+- [x] 后端管理台中，文章、随想、摘录、日记、分类这些主体内容的编辑与管理（移动端做过优化，纵享丝滑） `5月6日完成`
+- [x] 基本实现了开发环境和生产运维的自动化链路流程 `5月6日完成`
+- [x] 站点各类配置管理、友链管理、评论管理、访客管理、OSS 加速、静态资源管理、订阅邮箱、审计日志追踪等后台高级能力 `7月2日完成`
+- [x] 访客追踪系统的升级 `7月1日完成`
+- [x] 优化后端管理台的概览页面信息密度与实用性 `7月1日完成`
+- [x] MCP 服务测试通过，真实可用 `7月2日完成`
+- [x] 备份服务做了简化和完善，测试通过 `7月3日完成`
+- [x] SEO/GEO 优化 `7月4日完成`
+- [x] 实现生产环境自动发现更新，提醒更新，并在管理台中一键更新系统 `7月5日完成`
 
 **有待努力**
 
-- [ ] 添加日常自动诊断的功能
+- [ ] 添加集成型的高级配置(API，OSS，SMTP，代理，备份连接，MCP服务的有效性)日常诊断和失效提醒功能
+- [ ] 添加好看的画廊页面
+- [ ] 探索将网站内容 embedding 化，结合 RAG 来实现类似数字人的问答体验
+- 发挥想象力......
+
+**止于至善**
+
 - [ ] 对 MCP 服务进行进一步拓展和完善，进行现代化封装
 - [ ] Agent 系统的通用性和编排体验
-- [ ] 管理台中，站点配置管理、集成系统等高级功能的移动端适配效果
-- [ ] 更完整的 `sercli` 运维命令集
-- [ ] 更深入的安全约束与权限隔离策略
+- [ ] 更精美的界面，更丝滑人性化的交互，更有效的缓存与性能优化，更深入的安全约束与权限隔离策略
 
 ---
 
