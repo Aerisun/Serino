@@ -339,7 +339,10 @@ const PostDetail = () => {
                   </div>
                 }
               >
-                <ArticleMarkdownRenderer content={post.content} className="detail-markdown" />
+                <ArticleMarkdownRenderer
+                  content={post.content}
+                  className="detail-markdown post-detail-markdown"
+                />
               </Suspense>
             </motion.article>
 

@@ -368,7 +368,7 @@ const Excerpts = () => {
               </div>
 
               <p
-                className="mt-1 line-clamp-3 indent-[2em] text-[14.5px] font-body leading-relaxed text-foreground/54 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.78)]"
+                className="mt-1 line-clamp-3 indent-[2em] text-[14.5px] font-body leading-relaxed text-foreground/76 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.78)]"
                 style={{ fontFamily: getExcerptFontFamily(stripMarkdownImages(excerpt.content)) }}
               >
                 {stripMarkdownImages(excerpt.content)}
@@ -451,7 +451,7 @@ const Excerpts = () => {
               <div className="min-h-0 overflow-y-auto pr-1 scrollbar-hide overscroll-y-contain touch-pan-y [-webkit-overflow-scrolling:touch]">
                 <CommentMarkdownRenderer
                   content={selected.content}
-                  className="aerisun-excerpt-markdown indent-[2em] text-[0.935rem] leading-8 text-foreground/74 transition-colors [overflow-wrap:anywhere] [word-break:break-word] whitespace-pre-wrap [&>p:first-child]:mt-0 [&>p:last-child]:mb-0"
+                  className="aerisun-excerpt-markdown indent-[2em] text-[0.935rem] leading-8 text-foreground/90 transition-colors [overflow-wrap:anywhere] [word-break:break-word] whitespace-pre-wrap [&>p:first-child]:mt-0 [&>p:last-child]:mb-0"
                   style={{ fontFamily: getExcerptFontFamily(stripMarkdownImages(selected.content)) }}
                 />
                 {selected.category ? (

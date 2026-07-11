@@ -183,9 +183,13 @@ code:not([class*="language-"]) {
 /* Markdown headings stay upright even when page shells use italic display type. */
 .prose :where(h1, h2, h3, h4, h5, h6) {
   font-style: normal;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: 0;
   text-wrap: pretty;
+}
+
+.prose :where(h1, h2) {
+  font-weight: 900;
 }
 
 .prose .markdown-heading-number {
@@ -1510,13 +1514,19 @@ code:not([class*="language-"]) {
 }
 
 .detail-markdown.prose {
-  --tw-prose-body: hsl(var(--foreground) / 0.8);
+  --tw-prose-body: hsl(var(--foreground) / 0.91);
   --tw-prose-headings: hsl(var(--foreground) / 0.92);
   --tw-prose-bold: hsl(var(--foreground) / 0.9);
   --tw-prose-links: rgb(var(--shiro-accent-rgb) / 0.86);
-  --tw-prose-quotes: hsl(var(--foreground) / 0.78);
+  --tw-prose-quotes: hsl(var(--foreground) / 0.88);
   --detail-reading-font: "Noto Serif SC", "Source Han Serif SC", "Source Han Serif CN", "Songti SC", "STSong", "SimSun", serif;
   font-size: 1.02rem;
+}
+
+@media (max-width: 639px) {
+  .detail-markdown.prose {
+    font-size: 0.96rem;
+  }
 }
 
 .detail-markdown.prose p,
@@ -1525,6 +1535,10 @@ code:not([class*="language-"]) {
   font-family: var(--detail-reading-font);
   line-height: 1.95;
   letter-spacing: 0.01em;
+}
+
+.post-detail-markdown.prose :where(p, li, blockquote) {
+  font-weight: 500;
 }
 
 .detail-markdown.prose .markdown-figure-caption,

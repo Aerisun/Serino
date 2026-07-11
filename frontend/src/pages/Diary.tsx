@@ -12,7 +12,7 @@ import { useDiaryAccessPrompt } from "@/components/DiaryAccessPrompt";
 import PageShell from "@/components/PageShell";
 import { staggerItem } from "@/config";
 import { useFeatureFlags, usePageConfig } from "@/contexts/runtime-config";
-import { useFrontendI18n, type FrontendLang } from "@/i18n";
+import { useFrontendI18n } from "@/i18n";
 import { useInfiniteList } from "@/hooks/use-infinite-list";
 import { formatPublishedDate } from "@/lib/api/utils";
 import { clampPageSize } from "@/lib/page-size";
@@ -32,7 +32,7 @@ interface DiaryEntry {
   id: number;
   slug: string;
   date: string;
-  day: string;
+  compactDate: string;
   weekday: string;
   isArchived: boolean;
   weather?: DiaryWeather;
@@ -46,16 +46,21 @@ interface DiaryPageConfig extends BaseViewPageConfig {
   detailCtaLabel?: string;
 }
 
-const formatDayOfMonth = (value: string | null) => {
+const MONTH_LABELS = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+
+const formatCompactDiaryDate = (value: string | null) => {
   const parts = value ? getBeijingDateParts(value) : null;
-  return parts ? String(parts.day).padStart(2, "0") : "";
+  if (!parts) return "";
+  return MONTH_LABELS[parts.month - 1] + " · " + String(parts.day).padStart(2, "0");
 };
 
-const formatWeekday = (value: string | null, lang: FrontendLang) => {
-  return value
-    ? formatDateInBeijing(value, lang === "zh" ? "zh-CN" : "en-US", { weekday: "short" })
+const formatWeekday = (value: string | null) =>
+  value
+    ? formatDateInBeijing(value, "zh-CN", { weekday: "short" })
     : "";
-};
 
 const splitPoemAuthor = (poem?: string) => {
   if (!poem) return null;
@@ -78,7 +83,6 @@ const mapRemoteDiaryEntry = (
   entry: ContentSummaryRead,
   index: number,
   t: (key: string, values?: Record<string, string | number>, fallback?: string) => string,
-  lang: FrontendLang,
 ): DiaryEntry => {
   const weather = normalizeDiaryWeather(entry.weather);
   const weatherLabelKey = getDiaryWeatherLabelKey(entry.weather);
@@ -87,8 +91,8 @@ const mapRemoteDiaryEntry = (
     id: index + 1,
     slug: entry.slug,
     date: formatPublishedDate(entry.published_at) || "",
-    day: formatDayOfMonth(entry.published_at),
-    weekday: formatWeekday(entry.published_at, lang),
+    compactDate: formatCompactDiaryDate(entry.published_at),
+    weekday: formatWeekday(entry.published_at),
     isArchived: entry.visibility === "private",
     weather,
     weatherLabel: weatherLabelKey ? t(weatherLabelKey) : "",
@@ -108,7 +112,7 @@ const matchesSearchText = (fields: Array<string | null | undefined>, query: stri
 };
 
 const Diary = () => {
-  const { t, lang } = useFrontendI18n();
+  const { t } = useFrontendI18n();
   const queryClient = useQueryClient();
   const pages = usePageConfig();
   const featureFlags = useFeatureFlags();
@@ -173,7 +177,7 @@ const Diary = () => {
       throw new Error(t("diary.invalidResponse"));
     },
     pageSize,
-    mapItem: (entry, index) => mapRemoteDiaryEntry(entry, index, t, lang),
+    mapItem: (entry, index) => mapRemoteDiaryEntry(entry, index, t),
     staleTime: 60_000,
     gcTime: 20 * 60_000,
   });
@@ -181,7 +185,7 @@ const Diary = () => {
   const filtered = useMemo(() => {
     return items.filter((entry) =>
       matchesSearchText(
-        [entry.date, entry.day, entry.weekday, entry.weatherLabel, entry.mood, entry.content, entry.poem],
+        [entry.date, entry.compactDate, entry.weekday, entry.weatherLabel, entry.mood, entry.content, entry.poem],
         deferredSearch,
       ),
     );
@@ -236,8 +240,8 @@ const Diary = () => {
             <div key={`diary-skeleton-${index}`} className="liquid-glass rounded-2xl px-5 py-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="flex min-w-[42px] flex-col items-center">
-                    <div className="h-5 w-6 rounded-full bg-foreground/[0.05]" />
+                  <div className="flex min-w-[56px] flex-col items-center">
+                    <div className="h-3.5 w-12 rounded-full bg-foreground/[0.05]" />
                     <div className="mt-1 h-2.5 w-8 rounded-full bg-foreground/[0.035]" />
                   </div>
                   <div className="h-8 w-px bg-foreground/[0.08]" />
@@ -308,11 +312,11 @@ const Diary = () => {
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="flex min-w-[42px] flex-col items-center">
-                          <span className="text-lg font-body font-medium leading-none text-foreground/80 tabular-nums transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.92)]">
-                            {entry.day || "--"}
+                        <div className="flex min-w-[56px] flex-col items-center">
+                          <span className="whitespace-nowrap text-base font-body font-medium leading-none tabular-nums text-foreground/80 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.92)]">
+                            {entry.compactDate || "--"}
                           </span>
-                          <span className="mt-0.5 text-[10px] font-body text-foreground/25 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.68)]">
+                          <span className="mt-1 text-[10px] font-body text-foreground/25 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.68)]">
                             {entry.weekday}
                           </span>
                         </div>

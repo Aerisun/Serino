@@ -79,7 +79,7 @@ export default {
             "h1, h2, h3, h4": {
               fontFamily: "'Instrument Serif', serif",
               fontStyle: "normal",
-              fontWeight: "700",
+              fontWeight: "800",
               letterSpacing: "0",
             },
             a: {

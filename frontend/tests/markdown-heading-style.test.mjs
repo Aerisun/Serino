@@ -53,7 +53,7 @@ test("article markdown heading typography is upright and refined", () => {
 
   assert.doesNotMatch(headingBlock, /fontStyle:\s*"italic"/);
   assert.match(headingBlock, /fontStyle:\s*"normal"/);
-  assert.match(headingBlock, /fontWeight:\s*"700"/);
+  assert.match(headingBlock, /fontWeight:\s*"800"/);
   assert.match(headingBlock, /letterSpacing:\s*"0"/);
 });
 
@@ -63,11 +63,58 @@ test("light mode markdown body copy is readable enough", () => {
   assert.match(tailwindConfig, /"--tw-prose-body":\s*"hsl\(var\(--foreground\) \/ 0\.68\)"/);
 });
 
+test("article and diary detail prose use readable body contrast", () => {
+  const css = readSource("frontend/src/components/markdown.css");
+  const detailBlock = extractCssBlock(css, ".detail-markdown.prose");
+
+  assert.match(detailBlock, /--tw-prose-body:\s*hsl\(var\(--foreground\) \/ 0\.91\);/);
+  assert.match(detailBlock, /--tw-prose-quotes:\s*hsl\(var\(--foreground\) \/ 0\.88\);/);
+  assert.match(
+    readSource("frontend/src/pages/PostDetail.tsx"),
+    /className="detail-markdown(?: post-detail-markdown)?"/,
+  );
+  assert.match(readSource("frontend/src/pages/DiaryDetail.tsx"), /className="detail-markdown"/);
+});
+
+test("post detail body copy is slightly stronger without affecting diary copy", () => {
+  const css = readSource("frontend/src/components/markdown.css");
+  const postBlock = extractCssBlock(
+    css,
+    ".post-detail-markdown.prose :where(p, li, blockquote)",
+  );
+  const postDetail = readSource("frontend/src/pages/PostDetail.tsx");
+  const diaryDetail = readSource("frontend/src/pages/DiaryDetail.tsx");
+
+  assert.match(postBlock, /font-weight:\s*500;/);
+  assert.match(postDetail, /className="detail-markdown post-detail-markdown"/);
+  assert.doesNotMatch(diaryDetail, /post-detail-markdown/);
+});
+
+test("thoughts and excerpts use readable body contrast", () => {
+  const thoughts = readSource("frontend/src/pages/Thoughts.tsx");
+  const excerpts = readSource("frontend/src/pages/Excerpts.tsx");
+  const thoughtBodyClass = thoughts.match(
+    /<CommentMarkdownRenderer\s+content=\{thought\.content\}\s+className="([^"]+)"/s,
+  )?.[1];
+
+  assert.notEqual(thoughtBodyClass, undefined, "thought body renderer should have a static className");
+  assert.match(thoughtBodyClass, /text-foreground\/90/);
+  assert.match(excerpts, /line-clamp-3[^\"]*text-foreground\/76/);
+  assert.match(excerpts, /aerisun-excerpt-markdown[^\"]*text-foreground\/90/);
+});
+
 test("markdown css protects headings from page-level italic styles", () => {
   const css = readSource("frontend/src/components/markdown.css");
 
   assert.match(css, /\.prose\s+:where\(h1,\s*h2,\s*h3,\s*h4,\s*h5,\s*h6\)\s*\{[\s\S]*font-style:\s*normal;/);
-  assert.match(css, /\.prose\s+:where\(h1,\s*h2,\s*h3,\s*h4,\s*h5,\s*h6\)\s*\{[\s\S]*font-weight:\s*700;/);
+  assert.match(css, /\.prose\s+:where\(h1,\s*h2,\s*h3,\s*h4,\s*h5,\s*h6\)\s*\{[\s\S]*font-weight:\s*800;/);
+});
+
+test("markdown h1 and h2 headings are the strongest hierarchy level", () => {
+  const css = readSource("frontend/src/components/markdown.css");
+  const headingBlock = extractCssBlock(css, ".prose :where(h1, h2)");
+
+  assert.match(headingBlock, /font-weight:\s*900;/);
 });
 
 test("numbered markdown headings separate section numbers from titles", () => {
@@ -151,6 +198,6 @@ test("friends application markdown does not force italic headings", () => {
   const friendsPage = readSource("frontend/src/pages/Friends.tsx");
 
   assert.doesNotMatch(friendsPage, /prose-headings:italic/);
-  assert.doesNotMatch(friendsPage, /prose-headings:font-semibold/);
-  assert.match(friendsPage, /prose-headings:font-bold/);
+  assert.doesNotMatch(friendsPage, /prose-headings:font-(?:semibold|bold)/);
+  assert.match(friendsPage, /prose-headings:font-extrabold/);
 });

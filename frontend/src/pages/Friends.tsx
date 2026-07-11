@@ -14,7 +14,7 @@ import {
   useReadFriendFeedApiV1SiteFriendFeedGet,
   useReadFriendsApiV1SiteFriendsGet,
 } from "@serino/api-client/site";
-import { formatFriendFeedDate, formatRelativeUpdatedAt } from "@/lib/api/utils";
+import { formatFriendFeedDate } from "@/lib/api/utils";
 import type { FriendRead, FriendFeedItemRead } from "@serino/api-client/models";
 
 interface Friend {
@@ -36,12 +36,8 @@ interface CirclePost {
 
 interface FriendsPageConfig extends BaseViewPageConfig {
   pageSize?: number;
-  circleTitle?: string;
   applicationMarkdown?: string;
   loadMoreLabel?: string;
-  refreshLabel?: string;
-  refreshAriaLabel?: string;
-  summaryTemplate?: string;
   footerSummaryTemplate?: string;
   randomPickerLabel?: string;
   randomRefreshLabel?: string;
@@ -106,14 +102,10 @@ const readPositiveConfigNumber = (value: unknown, fallback: number) => {
 const Friends = () => {
   const { t } = useFrontendI18n();
   const config = usePageConfig().friends as unknown as FriendsPageConfig;
-  const circleTitle = config.circleTitle ?? t("friends.circleTitle");
   const loadingLabel = config.loadingLabel ?? t("common.loading");
   const loadMoreLabel = config.loadMoreLabel ?? t("friends.loadMore");
   const retryLabel = config.retryLabel ?? t("common.retry");
   const errorTitle = config.errorTitle ?? t("friends.errorTitle");
-  const refreshLabel = config.refreshLabel ?? t("friendCircle.refresh");
-  const refreshAriaLabel = config.refreshAriaLabel ?? t("friendCircle.refreshAria");
-  const summaryTemplate = config.summaryTemplate ?? t("friends.summaryTemplate");
   const footerSummaryTemplate =
     config.footerSummaryTemplate ?? t("friends.footerSummaryTemplate");
   const randomRecentDays = readPositiveConfigNumber(config.randomRecentDays, 66);
@@ -133,14 +125,12 @@ const Friends = () => {
   const pageSize = clampPageSize(config.pageSize, 10);
   const [visibleCount, setVisibleCount] = useState(pageSize);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [relativeNow, setRelativeNow] = useState(() => Date.now());
   const [randomPostKey, setRandomPostKey] = useState<string | null>(null);
   const loadMoreTimerRef = useRef<number | null>(null);
 
   const {
     data: friendsResponse,
     isLoading: friendsLoading,
-    isFetching: friendsFetching,
     isError: friendsError,
     error: friendsErr,
     refetch: refetchFriends,
@@ -153,8 +143,6 @@ const Friends = () => {
   const {
     data: feedResponse,
     isLoading: feedLoading,
-    isFetching: feedFetching,
-    dataUpdatedAt: feedUpdatedAt,
     isError: feedError,
     error: feedErr,
     refetch: refetchFeed,
@@ -183,7 +171,6 @@ const Friends = () => {
   );
 
   const isLoading = friendsLoading || feedLoading;
-  const isRefreshing = friendsFetching || feedFetching;
   const isError = friendsError || feedError;
   const status: "loading" | "ready" | "empty" | "error" = isLoading
     ? "loading"
@@ -195,7 +182,6 @@ const Friends = () => {
   const errorMessage = isError
     ? ((friendsErr ?? feedErr) instanceof Error ? (friendsErr ?? feedErr)!.message : t("friends.errorTitle"))
     : "";
-  const updatedLabel = formatRelativeUpdatedAt(feedUpdatedAt, relativeNow);
   const recentEligiblePosts = useMemo(
     () =>
       allCirclePosts.filter(
@@ -223,19 +209,9 @@ const Friends = () => {
   };
 
   useEffect(() => {
-    const timerId = window.setInterval(() => {
-      setRelativeNow(Date.now());
-    }, 1000);
-
-    return () => {
-      window.clearInterval(timerId);
-    };
-  }, []);
-
-  useEffect(() => {
     const next = pickRandomRecentPost(allCirclePosts, randomRecentDays);
     setRandomPostKey(next ? `${next.blogName}-${next.title}-${next.url}` : null);
-  }, [allCirclePosts, feedUpdatedAt, randomRecentDays]);
+  }, [allCirclePosts, randomRecentDays]);
 
   useEffect(() => {
     return () => {
@@ -356,42 +332,13 @@ const Friends = () => {
             )}
       </div>
 
-      <div className="mb-10 mt-16 border-t border-foreground/[0.06]" />
-
       <motion.div
+        className="mt-14 border-t border-foreground/[0.06] pt-4"
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: config.motion.duration + 0.05, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
       >
-        <div className="mb-2 flex items-baseline justify-between">
-          <h2 className="text-2xl font-heading italic tracking-tight text-foreground transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.92)] sm:text-3xl">
-            {circleTitle}
-          </h2>
-          <div className="flex items-center gap-3">
-            <div className="text-xs font-body text-foreground/25">
-              {updatedLabel}
-            </div>
-            <button
-              type="button"
-              onClick={refetchAll}
-              disabled={isRefreshing}
-              className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-body text-foreground/38 transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.88)] disabled:opacity-60"
-              aria-label={refreshAriaLabel}
-              title={refreshAriaLabel}
-            >
-              <RefreshCw className={`h-3 w-3 ${isRefreshing ? "animate-spin" : ""}`} />
-              {refreshLabel}
-            </button>
-          </div>
-        </div>
-        <p className="mb-8 text-xs font-body text-foreground/20">
-          {interpolateTemplate(summaryTemplate, {
-            sites: friends.length,
-            articles: allCirclePosts.length,
-          })}
-        </p>
-
-        <div className="mb-8 flex items-start gap-4 border-t border-foreground/[0.06] py-4">
+        <div className="mb-8 flex items-start gap-4">
           <div className="min-w-0 flex-1">
             <p className="mb-2 text-[12px] font-body tracking-[0.08em] text-foreground/24">
               {randomPickerLabel}
@@ -602,7 +549,7 @@ const Friends = () => {
           >
             <ArticleMarkdownRenderer
               content={applicationMarkdown}
-              className="prose-headings:font-heading prose-headings:not-italic prose-headings:font-bold prose-headings:tracking-normal prose-headings:text-foreground prose-p:text-[15px] prose-p:leading-8 prose-li:text-[15px] prose-li:leading-8 prose-strong:text-foreground prose-a:text-[rgb(var(--shiro-accent-rgb)/0.88)]"
+              className="prose-headings:font-heading prose-headings:not-italic prose-headings:font-extrabold prose-headings:tracking-normal prose-headings:text-foreground prose-p:text-[15px] prose-p:leading-8 prose-li:text-[15px] prose-li:leading-8 prose-strong:text-foreground prose-a:text-[rgb(var(--shiro-accent-rgb)/0.88)]"
             />
           </motion.section>
         ) : null}

@@ -253,7 +253,7 @@ const Posts = () => {
                   {post.title}
                 </h2>
               </div>
-              <p className="mt-2 line-clamp-1 text-sm leading-relaxed text-foreground/35 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.68)]">
+              <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-foreground/35 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.68)]">
                 {post.excerpt}
               </p>
               <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-foreground/25 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.7)]">
@@ -266,14 +266,16 @@ const Posts = () => {
                     /{tag}
                   </span>
                 ))}
-                <span className="ml-auto flex items-center gap-1 text-foreground/22 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.34)]">
-                  <Eye className="h-3 w-3" />
-                  {post.views.toLocaleString()}
-                </span>
-                <span className="flex items-center gap-1 text-foreground/22 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.34)]">
-                  <MessageCircle className="h-3 w-3" />
-                  {post.comments}
-                </span>
+                <div className="ml-auto flex shrink-0 items-center gap-4 whitespace-nowrap">
+                  <span className="flex items-center gap-1 text-foreground/22 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.34)]">
+                    <Eye className="h-3 w-3" />
+                    {post.views.toLocaleString()}
+                  </span>
+                  <span className="flex items-center gap-1 text-foreground/22 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.34)]">
+                    <MessageCircle className="h-3 w-3" />
+                    {post.comments}
+                  </span>
+                </div>
               </div>
             </motion.article>
           ))}
