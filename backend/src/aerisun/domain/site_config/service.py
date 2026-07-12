@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import random
+import re
 import socket
 from collections import deque
 from copy import deepcopy
@@ -55,6 +56,9 @@ LINK_PREVIEW_MAX_BYTES = 512 * 1024
 LINK_PREVIEW_MAX_REDIRECTS = 4
 LINK_PREVIEW_IMAGE_MAX_BYTES = 5 * 1024 * 1024
 LINK_PREVIEW_USER_AGENT = "Mozilla/5.0 (compatible; AerisunLinkPreview/1.0; +https://aerisun.example)"
+GITHUB_API_ACCEPT = "application/vnd.github+json"
+GITHUB_API_VERSION = "2022-11-28"
+_GITHUB_PROFILE_LOGIN_PATTERN = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$")
 INTERNAL_SITE_FEATURE_FLAGS = {
     "agent_model_config",
     "agent_workflows",
@@ -232,6 +236,66 @@ def _parse_positive_int(value: str | None) -> int | None:
     return parsed if parsed > 0 else None
 
 
+def _github_profile_login(url: str) -> str | None:
+    parsed = urlsplit(url)
+    if (parsed.hostname or "").lower().removeprefix("www.") != "github.com":
+        return None
+
+    segments = [segment for segment in parsed.path.split("/") if segment]
+    if len(segments) != 1:
+        return None
+
+    login = segments[0]
+    return login if _GITHUB_PROFILE_LOGIN_PATTERN.fullmatch(login) else None
+
+
+def _fetch_github_profile_preview(url: str) -> LinkPreviewRead | None:
+    login = _github_profile_login(url)
+    if not login:
+        return None
+
+    headers = {
+        "User-Agent": LINK_PREVIEW_USER_AGENT,
+        "Accept": GITHUB_API_ACCEPT,
+        "X-GitHub-Api-Version": GITHUB_API_VERSION,
+    }
+    api_url = f"https://api.github.com/users/{login}"
+
+    try:
+        with httpx.Client(timeout=LINK_PREVIEW_TIMEOUT, headers=headers) as client:
+            response = client.get(api_url)
+    except httpx.HTTPError:
+        return None
+
+    if not response.is_success:
+        return None
+
+    try:
+        payload = response.json()
+    except ValueError:
+        return None
+    if not isinstance(payload, dict):
+        return None
+
+    display_name = _trim_preview_text(str(payload.get("login") or login), limit=180)
+    bio = _trim_preview_text(payload.get("bio"), limit=320)
+    avatar_url = _resolve_link_preview_asset(payload.get("avatar_url"), base_url=api_url)
+
+    return LinkPreviewRead(
+        url=url,
+        resolved_url=url,
+        hostname="github.com",
+        title=display_name,
+        description=bio,
+        site_name="GitHub",
+        image_url=avatar_url,
+        card_type="github_profile",
+        image_mode="thumbnail",
+        available=bool(display_name or bio or avatar_url),
+        error=None,
+    )
+
+
 def _read_link_preview_body(response: httpx.Response) -> str:
     chunks: list[bytes] = []
     total = 0
@@ -318,7 +382,11 @@ def _extract_link_preview(url: str) -> LinkPreviewRead:
     )
     site_name = _trim_preview_text(meta.get("og:site_name"), limit=80) or hostname.replace("www.", "", 1)
     image_url = _resolve_link_preview_asset(
-        meta.get("og:image") or meta.get("twitter:image") or meta.get("twitter:image:src"),
+        meta.get("og:image:secure_url")
+        or meta.get("og:image:url")
+        or meta.get("og:image")
+        or meta.get("twitter:image")
+        or meta.get("twitter:image:src"),
         base_url=final_url,
     )
     image_width = _parse_positive_int(meta.get("og:image:width") or meta.get("twitter:image:width"))
@@ -335,6 +403,8 @@ def _extract_link_preview(url: str) -> LinkPreviewRead:
         image_url=image_url,
         image_width=image_width,
         image_height=image_height,
+        card_type="generic",
+        image_mode="cover",
         icon_url=icon_url,
         available=bool(title or description or image_url or icon_url),
         error=None,
@@ -350,7 +420,7 @@ def get_site_link_preview(url: str) -> LinkPreviewRead:
         if cached and cached[0] > now:
             return cached[1]
 
-    preview = _extract_link_preview(normalized_url)
+    preview = _fetch_github_profile_preview(normalized_url) or _extract_link_preview(normalized_url)
 
     with _LINK_PREVIEW_CACHE_LOCK:
         _LINK_PREVIEW_CACHE[normalized_url] = (now + LINK_PREVIEW_CACHE_TTL_SECONDS, preview)

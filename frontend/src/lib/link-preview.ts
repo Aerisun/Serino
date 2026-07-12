@@ -10,6 +10,8 @@ export interface LinkPreviewPayload {
   image_url: string | null;
   image_width: number | null;
   image_height: number | null;
+  card_type: "generic" | "github_profile";
+  image_mode: "cover" | "thumbnail";
   icon_url: string | null;
   available: boolean;
   error: string | null;

@@ -23603,6 +23603,14 @@
             "title": "Image Height",
             "description": "Preview image height if declared"
           },
+          "card_type": {
+            "title": "Card Type",
+            "description": "Semantic source type used to render the preview card"
+          },
+          "image_mode": {
+            "title": "Image Mode",
+            "description": "Whether the image is a content cover or a compact identity thumbnail"
+          },
           "icon_url": {
             "title": "Icon Url",
             "description": "Site icon URL"

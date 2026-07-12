@@ -9,11 +9,12 @@ import {
   useMemo,
   useRef,
   useState,
+  useCallback,
   type ComponentPropsWithoutRef,
-  type CSSProperties,
   type HTMLAttributes,
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent,
+  type PointerEvent as ReactPointerEvent,
   type ReactNode,
   type SyntheticEvent,
 } from "react";
@@ -27,7 +28,6 @@ import {
   Lightbulb,
   Link2,
   TriangleAlert,
-  X,
   type LucideIcon,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
@@ -48,7 +48,9 @@ import {
   type LinkPreviewPayload,
 } from "@/lib/link-preview";
 import MarkdownMermaid from "@/components/MarkdownMermaid";
+import MarkdownCarousel from "@/components/MarkdownCarousel";
 import { remarkAerisunDirectives } from "@/components/markdown-directives";
+import { resolveMarkdownImageSrc } from "@/lib/markdown-image-url";
 import "katex/dist/katex.min.css";
 import "./markdown.css";
 
@@ -64,9 +66,6 @@ type MarkdownDataPropsBase = {
   "data-md-label"?: string;
   "data-md-value"?: string;
   "data-md-summary"?: string;
-  "data-md-cols"?: string;
-  "data-md-gap"?: string;
-  "data-md-min"?: string;
 };
 
 type MarkdownDataDivProps = ComponentPropsWithoutRef<"div"> & MarkdownDataPropsBase;
@@ -87,9 +86,6 @@ type MarkdownHeadingLevel = "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
 type MarkdownHeadingProps = HTMLAttributes<HTMLHeadingElement> & {
   level: MarkdownHeadingLevel;
 };
-
-const envApiBaseUrl =
-  (typeof __AERISUN_API_BASE_URL__ === "string" ? __AERISUN_API_BASE_URL__ : "").replace(/\/+$/, "");
 
 const rehypeHighlightOptions: RehypeHighlightOptions = {
   plainText: ["mermaid", "text", "txt", "plain"],
@@ -129,24 +125,6 @@ const extractTextContent = (node: ReactNode): string => {
 };
 
 const normalizeCodeContent = (value: string) => value.replace(/\n$/, "");
-
-const resolveMarkdownImageSrc = (src?: string) => {
-  if (!src) {
-    return src;
-  }
-  if (!src.startsWith("/")) {
-    return src;
-  }
-  if (!envApiBaseUrl) {
-    return src;
-  }
-
-  try {
-    return new URL(src, envApiBaseUrl).toString();
-  } catch {
-    return src;
-  }
-};
 
 const getText = (key: string, fallback: string) => {
   const lang = getFrontendLang();
@@ -397,30 +375,6 @@ const normalizeRichLinkDescription = (description: string, title: string, fallba
   return normalizedDescription;
 };
 
-const flattenDirectiveChildren = (children: ReactNode) => {
-  const items: ReactNode[] = [];
-
-  cleanChildrenArray(children).forEach((child) => {
-    if (isValidElement<{ children?: ReactNode }>(child) && child.type === "p") {
-      const paragraphChildren = cleanChildrenArray(child.props.children);
-      const containsText = paragraphChildren.some(
-        (node) => typeof node === "string" && node.trim() !== "",
-      );
-
-      if (!containsText && paragraphChildren.length > 0) {
-        paragraphChildren.forEach((node) => {
-          items.push(node);
-        });
-        return;
-      }
-    }
-
-    items.push(child);
-  });
-
-  return items;
-};
-
 const getAdmonitionConfig = (type: MarkdownAdmonitionType): { icon: LucideIcon; label: string } => {
   switch (type) {
     case "tip":
@@ -504,10 +458,6 @@ function MarkdownRichLinkCard({ href }: { href: string }) {
   const cardMeta = preview?.description
     ? normalizeRichLinkDescription(preview.description, cardTitle, fallbackMeta)
     : fallbackMeta;
-  const imageRatio =
-    preview?.image_width && preview?.image_height
-      ? preview.image_width / preview.image_height
-      : null;
   const primaryImageUrl = preview?.image_url ? buildPreviewImageUrl(preview.image_url) : null;
   const fallbackImageUrl = deriveFallbackImageUrl(preview, href);
   const imageUrl =
@@ -517,12 +467,14 @@ function MarkdownRichLinkCard({ href }: { href: string }) {
         ? fallbackImageUrl
         : null;
   const iconUrl = preview?.icon_url || null;
-  const mediaVariantClass = imageUrl
-    ? imageRatio !== null && imageRatio >= 1.65
-      ? " has-wide-media"
-      : imageRatio !== null && imageRatio <= 0.95
-        ? " has-tall-media"
-        : " has-regular-media"
+  const imageMode =
+    preview?.image_mode === "thumbnail" || preview?.card_type === "github_profile"
+      ? "thumbnail"
+      : "cover";
+  const mediaModeClass = imageUrl
+    ? imageMode === "thumbnail"
+      ? " has-thumbnail-media"
+      : " has-cover-media"
     : "";
 
   return (
@@ -530,7 +482,7 @@ function MarkdownRichLinkCard({ href }: { href: string }) {
       href={cardHref}
       target="_blank"
       rel="noopener noreferrer"
-      className={`markdown-link-card${imageUrl ? " has-media" : ""}${mediaVariantClass}`}
+      className={`markdown-link-card${imageUrl ? " has-media" : ""}${mediaModeClass}`}
     >
       {imageUrl ? (
         <span className="markdown-link-card-media">
@@ -584,9 +536,27 @@ function MarkdownImage({
 }: ComponentPropsWithoutRef<"img">) {
   const [open, setOpen] = useState(false);
   const [isPortrait, setIsPortrait] = useState(false);
+  const [viewerZoom, setViewerZoom] = useState(1);
+  const [viewerOffset, setViewerOffset] = useState({ x: 0, y: 0 });
+  const [isViewerDragging, setIsViewerDragging] = useState(false);
+  const viewerZoomRef = useRef(1);
+  const viewerOffsetRef = useRef({ x: 0, y: 0 });
+  const viewerImageRef = useRef<HTMLImageElement | null>(null);
+  const viewerOverlayRef = useRef<HTMLDivElement | null>(null);
+  const viewerPointersRef = useRef(new Map<number, { x: number; y: number }>());
+  const viewerDragRef = useRef<{
+    pointerId: number;
+    origin: { x: number; y: number };
+    offset: { x: number; y: number };
+  } | null>(null);
+  const viewerPinchRef = useRef<{
+    distance: number;
+    center: { x: number; y: number };
+    zoom: number;
+    offset: { x: number; y: number };
+  } | null>(null);
   const caption = title?.trim() || alt?.trim();
   const resolvedSrc = resolveMarkdownImageSrc(src);
-  const closeLabel = getText("markdown.imageClose", "关闭大图");
   const zoomLabel = getText("markdown.imageZoom", "查看大图");
   const imageClassName = [
     "markdown-figure-image",
@@ -600,6 +570,131 @@ function MarkdownImage({
     onLoad?.(event);
   };
 
+  const resetViewerTransform = useCallback(() => {
+    viewerPointersRef.current.clear();
+    viewerDragRef.current = null;
+    viewerPinchRef.current = null;
+    viewerZoomRef.current = 1;
+    viewerOffsetRef.current = { x: 0, y: 0 };
+    setViewerZoom(1);
+    setViewerOffset({ x: 0, y: 0 });
+    setIsViewerDragging(false);
+  }, []);
+
+  const closeViewer = useCallback(() => {
+    resetViewerTransform();
+    setOpen(false);
+  }, [resetViewerTransform]);
+
+  const clampViewerOffset = (offset: { x: number; y: number }, zoom: number) => {
+    const image = viewerImageRef.current;
+    if (!image) {
+      return offset;
+    }
+
+    const maxX = Math.max(0, (image.offsetWidth * (zoom - 1)) / 2);
+    const maxY = Math.max(0, (image.offsetHeight * (zoom - 1)) / 2);
+    return {
+      x: Math.min(maxX, Math.max(-maxX, offset.x)),
+      y: Math.min(maxY, Math.max(-maxY, offset.y)),
+    };
+  };
+
+  const getViewerPointerPair = () => Array.from(viewerPointersRef.current.values()).slice(0, 2);
+
+  const handleViewerPointerDown = (event: ReactPointerEvent<HTMLElement>) => {
+    event.currentTarget.setPointerCapture(event.pointerId);
+    viewerPointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    const pointers = getViewerPointerPair();
+    const currentZoom = viewerZoomRef.current;
+
+    if (pointers.length === 2) {
+      const [first, second] = pointers;
+      viewerDragRef.current = null;
+      viewerPinchRef.current = {
+        distance: Math.hypot(second.x - first.x, second.y - first.y),
+        center: { x: (first.x + second.x) / 2, y: (first.y + second.y) / 2 },
+        zoom: currentZoom,
+        offset: viewerOffsetRef.current,
+      };
+      setIsViewerDragging(true);
+      return;
+    }
+
+    if (currentZoom > 1) {
+      viewerDragRef.current = {
+        pointerId: event.pointerId,
+        origin: { x: event.clientX, y: event.clientY },
+        offset: viewerOffsetRef.current,
+      };
+      setIsViewerDragging(true);
+    }
+  };
+
+  const handleViewerPointerMove = (event: ReactPointerEvent<HTMLElement>) => {
+    if (!viewerPointersRef.current.has(event.pointerId)) {
+      return;
+    }
+
+    viewerPointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    const pointers = getViewerPointerPair();
+    const pinch = viewerPinchRef.current;
+
+    if (pointers.length === 2 && pinch) {
+      const [first, second] = pointers;
+      const distance = Math.hypot(second.x - first.x, second.y - first.y);
+      const center = { x: (first.x + second.x) / 2, y: (first.y + second.y) / 2 };
+      const nextZoom = Math.min(4, Math.max(1, pinch.zoom * (distance / Math.max(pinch.distance, 1))));
+      const nextOffset = clampViewerOffset(
+        {
+          x: pinch.offset.x + center.x - pinch.center.x,
+          y: pinch.offset.y + center.y - pinch.center.y,
+        },
+        nextZoom,
+      );
+      viewerZoomRef.current = nextZoom;
+      viewerOffsetRef.current = nextOffset;
+      setViewerZoom(nextZoom);
+      setViewerOffset(nextOffset);
+      return;
+    }
+
+    const drag = viewerDragRef.current;
+    const currentZoom = viewerZoomRef.current;
+    if (drag?.pointerId !== event.pointerId || currentZoom <= 1) {
+      return;
+    }
+
+    const nextOffset = clampViewerOffset({
+      x: drag.offset.x + event.clientX - drag.origin.x,
+      y: drag.offset.y + event.clientY - drag.origin.y,
+    }, currentZoom);
+    viewerOffsetRef.current = nextOffset;
+    setViewerOffset(nextOffset);
+  };
+
+  const handleViewerPointerEnd = (event: ReactPointerEvent<HTMLElement>) => {
+    viewerPointersRef.current.delete(event.pointerId);
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+
+    const [remainingPointer] = viewerPointersRef.current.entries();
+    if (remainingPointer && viewerZoomRef.current > 1) {
+      const [pointerId, origin] = remainingPointer;
+      viewerDragRef.current = {
+        pointerId,
+        origin,
+        offset: viewerOffsetRef.current,
+      };
+      setIsViewerDragging(true);
+    } else {
+      viewerDragRef.current = null;
+      setIsViewerDragging(false);
+    }
+    viewerPinchRef.current = null;
+  };
+
   useEffect(() => {
     if (!open || typeof window === "undefined") {
       return undefined;
@@ -608,7 +703,7 @@ function MarkdownImage({
     const originalOverflow = document.body.style.overflow;
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setOpen(false);
+        closeViewer();
       }
     };
 
@@ -619,6 +714,34 @@ function MarkdownImage({
       document.body.style.overflow = originalOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
+  }, [open, closeViewer]);
+
+  useEffect(() => {
+    if (!open) {
+      return undefined;
+    }
+
+    const overlay = viewerOverlayRef.current;
+    if (!overlay) {
+      return undefined;
+    }
+
+    const handleNativeViewerWheel = (event: WheelEvent) => {
+      if (!event.ctrlKey && !event.metaKey) {
+        return;
+      }
+
+      event.preventDefault();
+      const nextZoom = Math.min(4, Math.max(1, viewerZoomRef.current * Math.exp(-event.deltaY * 0.002)));
+      viewerZoomRef.current = nextZoom;
+      setViewerZoom(nextZoom);
+      const nextOffset = clampViewerOffset(viewerOffsetRef.current, nextZoom);
+      viewerOffsetRef.current = nextOffset;
+      setViewerOffset(nextOffset);
+    };
+
+    overlay.addEventListener("wheel", handleNativeViewerWheel, { passive: false });
+    return () => overlay.removeEventListener("wheel", handleNativeViewerWheel);
   }, [open]);
 
   return (
@@ -627,7 +750,10 @@ function MarkdownImage({
         <button
           type="button"
           className="markdown-figure-button"
-          onClick={() => setOpen(true)}
+          onClick={() => {
+            resetViewerTransform();
+            setOpen(true);
+          }}
           aria-label={zoomLabel}
         >
           <img
@@ -635,6 +761,7 @@ function MarkdownImage({
             alt={alt}
             className={imageClassName}
             loading="lazy"
+            decoding="async"
             onLoad={handleImageLoad}
             {...props}
           />
@@ -645,30 +772,34 @@ function MarkdownImage({
       {open && resolvedSrc && typeof document !== "undefined"
         ? createPortal(
             <div
+              ref={viewerOverlayRef}
               className="markdown-image-lightbox"
               role="dialog"
               aria-modal="true"
               aria-label={zoomLabel}
-              onClick={() => setOpen(false)}
+              onClick={closeViewer}
             >
-              <button
-                type="button"
-                className="markdown-image-lightbox-close"
-                aria-label={closeLabel}
-                onClick={() => setOpen(false)}
-              >
-                <X className="h-4 w-4" />
-              </button>
-
               <figure
                 className="markdown-image-lightbox-frame"
                 onClick={(event) => event.stopPropagation()}
               >
-                <img
-                  src={resolvedSrc}
-                  alt={alt}
-                  className="markdown-image-lightbox-image"
-                />
+                <div
+                  className="markdown-image-lightbox-viewport"
+                  onPointerDown={handleViewerPointerDown}
+                  onPointerMove={handleViewerPointerMove}
+                  onPointerUp={handleViewerPointerEnd}
+                  onPointerCancel={handleViewerPointerEnd}
+                >
+                  <img
+                    ref={viewerImageRef}
+                    src={resolvedSrc}
+                    alt={alt}
+                    className={`markdown-image-lightbox-image ${viewerZoom > 1 ? "is-zoomed" : ""} ${isViewerDragging ? "is-dragging" : ""}`}
+                    style={{ transform: `translate3d(${viewerOffset.x}px, ${viewerOffset.y}px, 0) scale(${viewerZoom})` }}
+                    draggable={false}
+                    onDragStart={(event) => event.preventDefault()}
+                  />
+                </div>
                 {caption ? (
                   <figcaption className="markdown-image-lightbox-caption">{caption}</figcaption>
                 ) : null}
@@ -743,52 +874,16 @@ function MarkdownDetailsBlock({ summary, children }: { summary: string; children
   );
 }
 
-function MarkdownGalleryBlock({ children }: { children: ReactNode }) {
-  const items = useMemo(() => flattenDirectiveChildren(children), [children]);
-
-  return (
-    <div className="markdown-gallery">
-      {items.map((item, index) => (
-        <div key={index} className="markdown-gallery-item">
-          {item}
-        </div>
-      ))}
-    </div>
-  );
+function MarkdownUnderline({ children }: { children: ReactNode }) {
+  return <span className="markdown-underline">{children}</span>;
 }
 
-function MarkdownGridBlock({
-  children,
-  cols,
-  gap,
-  min,
-  type,
-}: {
-  children: ReactNode;
-  cols?: string;
-  gap?: string;
-  min?: string;
-  type?: string;
-}) {
-  const style = {
-    "--md-grid-cols": cols || "3",
-    "--md-grid-gap": `${Number(gap || "14")}px`,
-    "--md-grid-min": min || "220px",
-  } as CSSProperties;
-  const items = useMemo(() => flattenDirectiveChildren(children), [children]);
+function MarkdownThumbnailBlock({ children }: { children: ReactNode }) {
+  return <div className="markdown-thumbnail">{children}</div>;
+}
 
-  return (
-    <div
-      className={`markdown-grid ${type === "images" ? "markdown-grid-images" : ""}`}
-      style={style}
-    >
-      {items.map((item, index) => (
-        <div key={index} className="markdown-grid-item">
-          {item}
-        </div>
-      ))}
-    </div>
-  );
+function MarkdownCarouselBlock({ children }: { children: ReactNode }) {
+  return <MarkdownCarousel>{children}</MarkdownCarousel>;
 }
 
 function MarkdownTabsBlock({ children }: { children: ReactNode }) {
@@ -987,21 +1082,12 @@ function MarkdownDiv({
     );
   }
 
-  if (kind === "gallery") {
-    return <MarkdownGalleryBlock>{children}</MarkdownGalleryBlock>;
+  if (kind === "thumbnail") {
+    return <MarkdownThumbnailBlock>{children}</MarkdownThumbnailBlock>;
   }
 
-  if (kind === "grid") {
-    return (
-      <MarkdownGridBlock
-        cols={props["data-md-cols"]}
-        gap={props["data-md-gap"]}
-        min={props["data-md-min"]}
-        type={props["data-md-type"]}
-      >
-        {children}
-      </MarkdownGridBlock>
-    );
+  if (kind === "carousel") {
+    return <MarkdownCarouselBlock>{children}</MarkdownCarouselBlock>;
   }
 
   if (kind === "tabs") {
@@ -1044,6 +1130,10 @@ function MarkdownSpan({
   className,
   ...props
 }: MarkdownDataSpanProps) {
+  if (props["data-md-kind"] === "underline") {
+    return <MarkdownUnderline>{children}</MarkdownUnderline>;
+  }
+
   if (props["data-md-kind"] === "copy") {
     return (
       <MarkdownCopySurface

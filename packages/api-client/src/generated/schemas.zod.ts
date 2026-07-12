@@ -133,6 +133,8 @@ export const ReadLinkPreviewApiV1SiteLinkPreviewGetResponse = zod.object({
   "image_url": zod.unknown().optional().describe('Preview image URL'),
   "image_width": zod.unknown().optional().describe('Preview image width if declared'),
   "image_height": zod.unknown().optional().describe('Preview image height if declared'),
+  "card_type": zod.unknown().optional().describe('Semantic source type used to render the preview card'),
+  "image_mode": zod.unknown().optional().describe('Whether the image is a content cover or a compact identity thumbnail'),
   "icon_url": zod.unknown().optional().describe('Site icon URL'),
   "available": zod.unknown().optional().describe('Whether preview metadata was successfully fetched'),
   "error": zod.unknown().optional().describe('Optional fetch error detail')

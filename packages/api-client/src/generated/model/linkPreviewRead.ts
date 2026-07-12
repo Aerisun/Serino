@@ -24,6 +24,10 @@ export interface LinkPreviewRead {
   image_width?: unknown;
   /** Preview image height if declared */
   image_height?: unknown;
+  /** Semantic source type used to render the preview card */
+  card_type?: unknown;
+  /** Whether the image is a content cover or a compact identity thumbnail */
+  image_mode?: unknown;
   /** Site icon URL */
   icon_url?: unknown;
   /** Whether preview metadata was successfully fetched */

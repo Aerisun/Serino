@@ -3,10 +3,12 @@ import { createPortal } from "react-dom";
 import {
   Bold,
   Italic,
+  Underline,
   Heading1,
   Heading2,
   Link,
   Image,
+  Images,
   Code,
   ChevronDown,
   List,
@@ -66,6 +68,8 @@ const MOBILE_EDITOR_QUERY = "(max-width: 767px)";
 const ACTIONS: Record<string, InsertAction> = {
   bold: { prefix: "**", suffix: "**", placeholder: "bold text" },
   italic: { prefix: "*", suffix: "*", placeholder: "italic text" },
+  underline: { prefix: ":underline[", suffix: "]", placeholder: "underline text" },
+  thumbnail: { prefix: ":::thumb\n", suffix: "\n:::", placeholder: "![image](url)" },
   h1: { prefix: "# ", suffix: "", placeholder: "Heading 1" },
   h2: { prefix: "## ", suffix: "", placeholder: "Heading 2" },
   link: { prefix: "[", suffix: "](url)", placeholder: "link text" },
@@ -499,7 +503,7 @@ export function MarkdownEditor({
     const newValue = editorText.slice(0, start) + prefix + selected + suffix + editorText.slice(end);
     emitEditorValue(newValue);
     requestAnimationFrame(() => {
-      textarea.focus();
+      textarea.focus({ preventScroll: true });
       const newCursorPos = start + prefix.length + selected.length;
       textarea.setSelectionRange(newCursorPos, newCursorPos);
     });
@@ -525,7 +529,7 @@ export function MarkdownEditor({
     onChange(nextValue);
 
     requestAnimationFrame(() => {
-      textarea?.focus();
+      textarea?.focus({ preventScroll: true });
       const nextCursor = attachmentMode ? start : start + markdown.length;
       textarea?.setSelectionRange(nextCursor, nextCursor);
     });
@@ -608,10 +612,12 @@ export function MarkdownEditor({
   const toolbarButtons = [
     { action: "bold", icon: Bold },
     { action: "italic", icon: Italic },
+    { action: "underline", icon: Underline },
     { action: "h1", icon: Heading1 },
     { action: "h2", icon: Heading2 },
     { action: "link", icon: Link },
     { action: "image", icon: Image },
+    { action: "thumbnail", icon: Images, label: "缩略图" },
     { action: "code", icon: Code },
     { action: "list", icon: List },
   ];
@@ -673,7 +679,7 @@ export function MarkdownEditor({
           : "px-2 py-1",
       )}
     >
-      {toolbarButtons.map(({ action, icon: Icon }) => (
+      {toolbarButtons.map(({ action, icon: Icon, label }) => (
         <button
           key={action}
           type="button"
@@ -690,8 +696,8 @@ export function MarkdownEditor({
             }
             insertMarkdown(action);
           }}
-          title={action === "image" ? "上传图片" : action}
-          aria-label={action === "image" ? "上传图片" : action}
+          title={action === "image" ? "上传图片" : label ?? action}
+          aria-label={action === "image" ? "上传图片" : label ?? action}
         >
           <Icon className="h-4 w-4" />
         </button>

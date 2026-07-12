@@ -98,6 +98,12 @@ class LinkPreviewRead(ModelBase):
     image_url: str | None = Field(default=None, description="Preview image URL")
     image_width: int | None = Field(default=None, description="Preview image width if declared")
     image_height: int | None = Field(default=None, description="Preview image height if declared")
+    card_type: Literal["generic", "github_profile"] = Field(
+        default="generic", description="Semantic source type used to render the preview card"
+    )
+    image_mode: Literal["cover", "thumbnail"] = Field(
+        default="cover", description="Whether the image is a content cover or a compact identity thumbnail"
+    )
     icon_url: str | None = Field(default=None, description="Site icon URL")
     available: bool = Field(default=True, description="Whether preview metadata was successfully fetched")
     error: str | None = Field(default=None, description="Optional fetch error detail")

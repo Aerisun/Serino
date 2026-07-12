@@ -449,7 +449,9 @@ def test_read_link_preview_returns_open_graph_metadata(client, monkeypatch: pyte
         <meta property="og:title" content="Open Graph Title" />
         <meta property="og:description" content="A rich preview description." />
         <meta property="og:site_name" content="Example Site" />
-        <meta property="og:image" content="/images/social-card.png" />
+        <meta property="og:image" content="/images/fallback-social-card.png" />
+        <meta property="og:image:url" content="/images/canonical-social-card.png" />
+        <meta property="og:image:secure_url" content="https://cdn.example.com/images/secure-social-card.png" />
         <link rel="icon" href="/favicon.ico" />
       </head>
       <body>Hello</body>
@@ -473,10 +475,48 @@ def test_read_link_preview_returns_open_graph_metadata(client, monkeypatch: pyte
     assert payload["title"] == "Open Graph Title"
     assert payload["description"] == "A rich preview description."
     assert payload["site_name"] == "Example Site"
-    assert payload["image_url"] == "https://example.com/images/social-card.png"
+    assert payload["card_type"] == "generic"
+    assert payload["image_mode"] == "cover"
+    assert payload["image_url"] == "https://cdn.example.com/images/secure-social-card.png"
     assert payload["image_width"] is None
     assert payload["image_height"] is None
     assert payload["icon_url"] == "https://example.com/favicon.ico"
+
+
+@respx.mock
+def test_read_link_preview_uses_github_profile_data_for_identity_cards(client, monkeypatch: pytest.MonkeyPatch) -> None:
+    from aerisun.domain.site_config import service as site_service
+
+    preview_url = "https://github.com/Aerisun"
+    api_url = "https://api.github.com/users/Aerisun"
+    monkeypatch.setattr(site_service, "_ensure_public_link_preview_url", lambda value: value)
+
+    respx.get(api_url).mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "login": "Aerisun",
+                "name": "Wenbo Yang",
+                "bio": "Builds thoughtful things.",
+                "avatar_url": "https://avatars.githubusercontent.com/u/198885116?v=4",
+                "html_url": preview_url,
+                "type": "User",
+            },
+            request=httpx.Request("GET", api_url),
+        )
+    )
+
+    response = client.get("/api/v1/site/link-preview", params={"url": preview_url})
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["available"] is True
+    assert payload["card_type"] == "github_profile"
+    assert payload["image_mode"] == "thumbnail"
+    assert payload["resolved_url"] == preview_url
+    assert payload["title"] == "Aerisun"
+    assert payload["description"] == "Builds thoughtful things."
+    assert payload["image_url"] == "https://avatars.githubusercontent.com/u/198885116?v=4"
 
 
 def test_read_link_preview_rejects_private_hosts(client) -> None:

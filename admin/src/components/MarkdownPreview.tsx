@@ -11,8 +11,10 @@ import {
 } from "react";
 import { ExternalLink, Link2 } from "lucide-react";
 import ReactMarkdown, { type Components } from "react-markdown";
+import remarkDirective from "remark-directive";
 import remarkGfm from "remark-gfm";
 import { buildPreviewImageUrl, fetchLinkPreview, type LinkPreviewPayload } from "@/lib/link-preview";
+import { remarkAdminMarkdownDirectives } from "@/components/markdown-directives";
 
 interface MarkdownPreviewProps {
   content: string;
@@ -21,6 +23,27 @@ interface MarkdownPreviewProps {
 
 const cleanChildrenArray = (children: ReactNode) =>
   Children.toArray(children).filter((child) => !(typeof child === "string" && child.trim() === ""));
+
+const flattenDirectiveChildren = (children: ReactNode) => {
+  const items: ReactNode[] = [];
+
+  cleanChildrenArray(children).forEach((child) => {
+    if (isValidElement<{ children?: ReactNode }>(child) && child.type === "p") {
+      const paragraphChildren = cleanChildrenArray(child.props.children);
+      const containsText = paragraphChildren.some(
+        (node) => typeof node === "string" && node.trim() !== "",
+      );
+      if (!containsText && paragraphChildren.length > 0) {
+        items.push(...paragraphChildren);
+        return;
+      }
+    }
+
+    items.push(child);
+  });
+
+  return items;
+};
 
 const getHostnameLabel = (hostname: string) => hostname.replace(/^www\./, "");
 
@@ -197,10 +220,6 @@ function MarkdownRichLinkCard({ href }: { href: string }) {
   const cardMeta = preview?.description
     ? normalizeRichLinkDescription(preview.description, cardTitle, fallbackMeta)
     : fallbackMeta;
-  const imageRatio =
-    preview?.image_width && preview?.image_height
-      ? preview.image_width / preview.image_height
-      : null;
   const primaryImageUrl = preview?.image_url ? buildPreviewImageUrl(preview.image_url) : null;
   const fallbackImageUrl = deriveFallbackImageUrl(preview, href);
   const imageUrl =
@@ -210,27 +229,40 @@ function MarkdownRichLinkCard({ href }: { href: string }) {
         ? fallbackImageUrl
         : null;
   const iconUrl = preview?.icon_url || null;
-  const mediaClass = imageUrl
-    ? imageRatio !== null && imageRatio >= 1.65
-      ? " aspect-[1.9/1]"
-      : imageRatio !== null && imageRatio <= 0.95
-        ? " aspect-[1/1.15]"
-        : " aspect-[1.45/1]"
-    : "";
+  const imageMode =
+    preview?.image_mode === "thumbnail" || preview?.card_type === "github_profile"
+      ? "thumbnail"
+      : "cover";
+  const hasThumbnailImage = Boolean(imageUrl && imageMode === "thumbnail");
 
   return (
     <a
       href={cardHref}
       target="_blank"
       rel="noopener noreferrer"
-      className="group block overflow-hidden rounded-2xl border border-border/70 bg-background/95 no-underline shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
+      className={[
+        "group overflow-hidden rounded-2xl border border-border/70 bg-background/95 no-underline shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md",
+        hasThumbnailImage
+          ? "grid grid-cols-[minmax(0,1fr)_4rem_auto] items-center gap-x-3 p-4"
+          : "block",
+      ].join(" ")}
     >
       {imageUrl ? (
-        <span className={`block overflow-hidden border-b border-border/60 bg-muted/40 ${mediaClass}`}>
+        <span
+          className={
+            hasThumbnailImage
+              ? "col-start-2 row-start-1 h-16 w-16 self-center overflow-hidden rounded-xl border border-border/60 bg-muted/40"
+              : "block aspect-[1.9/1] overflow-hidden border-b border-border/60 bg-muted/40"
+          }
+        >
           <img
             src={imageUrl}
             alt={cardTitle}
-            className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+            className={
+              hasThumbnailImage
+                ? "m-0 h-full w-full max-w-none origin-[50%_46%] scale-[1.22] border-0 object-cover shadow-none transition duration-300 group-hover:scale-[1.27]"
+                : "m-0 h-full w-full max-w-none border-0 object-cover shadow-none transition duration-300 group-hover:scale-[1.02]"
+            }
             loading="lazy"
             referrerPolicy="no-referrer"
             onError={() => {
@@ -244,22 +276,24 @@ function MarkdownRichLinkCard({ href }: { href: string }) {
         </span>
       ) : null}
 
-      <span className="flex items-start gap-3 p-4">
-        <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border/70 bg-muted/60 text-muted-foreground">
-          {iconUrl ? (
-            <img
-              src={iconUrl}
-              alt=""
-              className="h-5 w-5 object-contain"
-              loading="lazy"
-              referrerPolicy="no-referrer"
-            />
-          ) : (
-            <Link2 className="h-4 w-4" />
-          )}
-        </span>
+      <span className={hasThumbnailImage ? "col-start-1 row-start-1 min-w-0 self-center" : "flex items-start gap-3 p-4"}>
+        {!hasThumbnailImage ? (
+          <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border/70 bg-muted/60 text-muted-foreground">
+            {iconUrl ? (
+              <img
+                src={iconUrl}
+                alt=""
+                className="h-5 w-5 object-contain"
+                loading="lazy"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <Link2 className="h-4 w-4" />
+            )}
+          </span>
+        ) : null}
 
-        <span className="min-w-0 flex-1">
+        <span className={hasThumbnailImage ? "block min-w-0" : "min-w-0 flex-1"}>
           <span className="mb-1.5 block truncate text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             {badgeLabel}
           </span>
@@ -271,10 +305,18 @@ function MarkdownRichLinkCard({ href }: { href: string }) {
           </span>
         </span>
 
-        <span className="mt-0.5 inline-flex shrink-0 text-muted-foreground transition group-hover:text-foreground">
+        {!hasThumbnailImage ? (
+          <span className="mt-0.5 inline-flex shrink-0 text-muted-foreground transition group-hover:text-foreground">
+            <ExternalLink className="h-4 w-4" />
+          </span>
+        ) : null}
+      </span>
+
+      {hasThumbnailImage ? (
+        <span className="col-start-3 row-start-1 inline-flex shrink-0 self-center text-muted-foreground transition group-hover:text-foreground">
           <ExternalLink className="h-4 w-4" />
         </span>
-      </span>
+      ) : null}
     </a>
   );
 }
@@ -348,10 +390,72 @@ function MarkdownPreviewImage({
   );
 }
 
+function MarkdownPreviewUnderline({ children }: { children: ReactNode }) {
+  return <span className="decoration-primary/70 underline decoration-[0.08em] underline-offset-[0.18em]">{children}</span>;
+}
+
+function MarkdownPreviewThumbnail({ children }: { children: ReactNode }) {
+  return (
+    <div className="mx-auto my-5 w-full max-w-xs [&>p]:m-0 [&_.markdown-preview-image]:block [&_.markdown-preview-image]:aspect-[4/3] [&_.markdown-preview-image]:h-full [&_.markdown-preview-image]:w-full [&_.markdown-preview-image]:object-cover">
+      {children}
+    </div>
+  );
+}
+
+function MarkdownPreviewCarousel({ children }: { children: ReactNode }) {
+  const items = flattenDirectiveChildren(children);
+  if (items.length === 0) return null;
+
+  return (
+    <div className="my-5">
+      <div className="relative min-h-52 pr-5">
+        {items.slice(1, 3).map((item, index) => (
+          <div
+            key={index}
+            aria-hidden="true"
+            className={
+              index === 0
+                ? "absolute inset-3 -right-1 overflow-hidden rounded-2xl border border-border/60 bg-muted/30 opacity-60"
+                : "absolute inset-5 -right-3 overflow-hidden rounded-2xl border border-border/50 bg-muted/20 opacity-30"
+            }
+          >
+            {item}
+          </div>
+        ))}
+        <div className="relative z-10 grid min-h-52 place-items-center overflow-hidden rounded-2xl border border-border/70 bg-muted/25 p-3 shadow-sm [&_.markdown-preview-image]:max-h-72 [&_.markdown-preview-image]:w-auto [&_.markdown-preview-image]:max-w-full [&_.markdown-preview-image]:object-contain">
+          {items[0]}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MarkdownPreviewDiv({ children, ...props }: ComponentPropsWithoutRef<"div">) {
+  if (props["data-md-kind" as keyof typeof props] === "thumbnail") {
+    return <MarkdownPreviewThumbnail>{children}</MarkdownPreviewThumbnail>;
+  }
+
+  if (props["data-md-kind" as keyof typeof props] === "carousel") {
+    return <MarkdownPreviewCarousel>{children}</MarkdownPreviewCarousel>;
+  }
+
+  return <div {...props}>{children}</div>;
+}
+
+function MarkdownPreviewSpan({ children, ...props }: ComponentPropsWithoutRef<"span">) {
+  if (props["data-md-kind" as keyof typeof props] === "underline") {
+    return <MarkdownPreviewUnderline>{children}</MarkdownPreviewUnderline>;
+  }
+
+  return <span {...props}>{children}</span>;
+}
+
 const components = {
   a: MarkdownAnchor,
   p: MarkdownParagraph,
   img: MarkdownPreviewImage,
+  div: MarkdownPreviewDiv,
+  span: MarkdownPreviewSpan,
   code: ({ className, children, ...props }: ComponentPropsWithoutRef<"code">) => {
     const content = String(children ?? "");
     const isBlock = /\n/.test(content) || Boolean(className);
@@ -390,7 +494,7 @@ const components = {
 export default function MarkdownPreview({ content, className = "" }: MarkdownPreviewProps) {
   return (
     <div className={`prose prose-sm dark:prose-invert max-w-none font-body ${className}`}>
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+      <ReactMarkdown remarkPlugins={[remarkGfm, remarkDirective, remarkAdminMarkdownDirectives]} components={components}>
         {content}
       </ReactMarkdown>
     </div>

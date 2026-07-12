@@ -75,23 +75,28 @@ export const remarkAerisunDirectives: Plugin = () => {
           };
           return;
 
-        case "gallery":
+        case "underline":
           data.hName = tagName;
           data.hProperties = {
             ...baseProps,
-            "data-md-kind": "gallery",
+            "data-md-kind": "underline",
           };
           return;
 
-        case "grid":
+        case "thumb":
+        case "thumbnail":
           data.hName = tagName;
           data.hProperties = {
             ...baseProps,
-            "data-md-kind": "grid",
-            "data-md-cols": getStringAttribute(attributes.cols),
-            "data-md-gap": getStringAttribute(attributes.gap),
-            "data-md-min": getStringAttribute(attributes.min),
-            "data-md-type": getStringAttribute(attributes.type),
+            "data-md-kind": "thumbnail",
+          };
+          return;
+
+        case "carousel":
+          data.hName = tagName;
+          data.hProperties = {
+            ...baseProps,
+            "data-md-kind": "carousel",
           };
           return;
 

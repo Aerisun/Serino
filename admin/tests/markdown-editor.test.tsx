@@ -4,6 +4,8 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useState } from "react";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { MarkdownEditor } from "../src/components/MarkdownEditor";
 import { LanguageProvider } from "../src/i18n";
 
@@ -137,6 +139,63 @@ describe("MarkdownEditor desktop resize", () => {
         );
       }
     }
+  });
+});
+
+describe("MarkdownEditor toolbar focus", () => {
+  it("returns focus after bold insertion without scrolling the expanded editor", async () => {
+    const user = userEvent.setup();
+    render(<MarkdownEditorHarness />);
+
+    const textarea = screen.getByRole("textbox") as HTMLTextAreaElement;
+    textarea.focus();
+    textarea.setSelectionRange(0, 0);
+    const focus = vi.spyOn(textarea, "focus");
+
+    await user.click(screen.getByTitle("bold"));
+
+    await waitFor(() => {
+      expect(focus).toHaveBeenCalledWith({ preventScroll: true });
+    });
+    expect(textarea.value).toBe("**bold text**");
+    expect(textarea.selectionStart).toBe(11);
+    expect(textarea.selectionEnd).toBe(11);
+  });
+
+  it("uses the same scroll-preserving focus behavior after image insertion", () => {
+    const source = readFileSync(resolve(process.cwd(), "src/components/MarkdownEditor.tsx"), "utf8");
+
+    expect(source).toMatch(/textarea\?\.focus\(\{ preventScroll: true \}\)/);
+  });
+});
+
+describe("MarkdownEditor underline toolbar action", () => {
+  it("wraps the selected text in the underline directive", async () => {
+    const user = userEvent.setup();
+    render(<MarkdownEditorHarness />);
+
+    const textarea = screen.getByRole("textbox") as HTMLTextAreaElement;
+    await user.type(textarea, "需要强调");
+    textarea.setSelectionRange(0, 4);
+
+    await user.click(screen.getByTitle("underline"));
+
+    expect(textarea.value).toBe(":underline[需要强调]");
+  });
+});
+
+describe("MarkdownEditor thumbnail toolbar action", () => {
+  it("wraps a selected Markdown image without requiring directive syntax", async () => {
+    const user = userEvent.setup();
+    render(<MarkdownEditorHarness />);
+
+    const textarea = screen.getByRole("textbox") as HTMLTextAreaElement;
+    fireEvent.change(textarea, { target: { value: "![窄图](/media/narrow.png)" } });
+    textarea.setSelectionRange(0, textarea.value.length);
+
+    await user.click(screen.getByTitle("缩略图"));
+
+    expect(textarea.value).toBe(":::thumb\n![窄图](/media/narrow.png)\n:::");
   });
 });
 
