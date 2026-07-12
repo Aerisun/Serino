@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef, type FormEvent, type SetStateAction } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback, type FormEvent, type SetStateAction } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { getDefaultContentTitle, useGetDefaultContentTitle } from "@serino/api-client/admin";
@@ -20,9 +20,11 @@ import {
   hasMeaningfulEditorContent,
   invalidateContentEditorQueries,
   isManualPublishedAtValid,
+  readEditorDraftSnapshot,
   readSavedPublishedAtManualState,
   readSavedTitleAutoState,
   resolvePublishedAtState,
+  saveEditorDraftSnapshot,
   savePublishedAtManualState,
   saveTitleAutoState,
 } from "@/lib/content-editor";
@@ -115,6 +117,7 @@ export function useContentEditor(config: ContentEditorConfig) {
   const autoTitleEnabledRef = useRef(isDefaultTitleContentType && isNew);
   const hydratedRef = useRef(false);
   const baselineSnapshotRef = useRef("");
+  const sourceUpdatedAtRef = useRef<string | null>(null);
   const suggestedTitleRef = useRef("");
   const defaultTitleParamsKeyRef = useRef("");
 
@@ -188,13 +191,21 @@ export function useContentEditor(config: ContentEditorConfig) {
     hydratedRef.current = false;
     suggestedTitleRef.current = "";
     defaultTitleParamsKeyRef.current = "";
+    sourceUpdatedAtRef.current = null;
 
     const draftId = id ?? "new";
-    clearEditorDraftSnapshot(config.contentType, draftId);
+    const snapshot = isNew
+      ? readEditorDraftSnapshot(config.contentType, draftId, null)
+      : null;
+    const nextForm = snapshot
+      ? { ...config.defaultForm, ...snapshot.form } as ContentCreate
+      : config.defaultForm;
+    const nextManualState = snapshot?.isPublishedAtManual ?? false;
+    const nextAutoTitleEnabled = snapshot?.isAutoTitleEnabled ?? (isDefaultTitleContentType && isNew);
 
-    setForm(config.defaultForm);
-    setIsPublishedAtManual(false);
-    setIsAutoTitleEnabled(isDefaultTitleContentType && isNew);
+    setForm(nextForm);
+    setIsPublishedAtManual(nextManualState);
+    setIsAutoTitleEnabled(nextAutoTitleEnabled);
     baselineSnapshotRef.current = buildDraftSignature(
       config.defaultForm,
       false,
@@ -212,16 +223,29 @@ export function useContentEditor(config: ContentEditorConfig) {
     const result = config.serverToForm(item);
     const savedManualState = readSavedPublishedAtManualState(config.contentType, item.id);
     const savedAutoTitleState = readSavedTitleAutoState(config.contentType, item.id);
-    clearEditorDraftSnapshot(config.contentType, item.id);
-    const nextForm = result.form;
-    const nextManualState = savedManualState ?? result.isPublishedAtManual;
-    const nextAutoTitleEnabled = isDefaultTitleContentType
+    const sourceUpdatedAt = typeof item.updated_at === "string" ? item.updated_at : null;
+    sourceUpdatedAtRef.current = sourceUpdatedAt;
+    const snapshot = readEditorDraftSnapshot(config.contentType, item.id, sourceUpdatedAt);
+    if (!snapshot) {
+      clearEditorDraftSnapshot(config.contentType, item.id);
+    }
+    const serverManualState = savedManualState ?? result.isPublishedAtManual;
+    const serverAutoTitleEnabled = isDefaultTitleContentType
       ? (savedAutoTitleState ?? isLikelyAutoTitle(config.contentType, result.form.title))
       : false;
+    const nextForm = snapshot
+      ? { ...result.form, ...snapshot.form } as ContentCreate
+      : result.form;
+    const nextManualState = snapshot?.isPublishedAtManual ?? serverManualState;
+    const nextAutoTitleEnabled = snapshot?.isAutoTitleEnabled ?? serverAutoTitleEnabled;
     setForm(nextForm);
     setIsPublishedAtManual(nextManualState);
     setIsAutoTitleEnabled(nextAutoTitleEnabled);
-    baselineSnapshotRef.current = buildDraftSignature(nextForm, nextManualState, nextAutoTitleEnabled);
+    baselineSnapshotRef.current = buildDraftSignature(
+      result.form,
+      serverManualState,
+      serverAutoTitleEnabled,
+    );
     hydratedRef.current = true;
   }, [config.contentType, config.serverToForm, isDefaultTitleContentType, item]);
 
@@ -298,6 +322,54 @@ export function useContentEditor(config: ContentEditorConfig) {
     return hasMeaningfulEditorContent(nextForm as Record<string, unknown>);
   }, [form, isAutoTitleEnabled, isDefaultTitleContentType, isNew]);
   const hasUnsavedChanges = isDraftDirty && (!isNew || hasMeaningfulContent);
+
+  const persistEditorDraftSnapshot = useCallback(() => {
+    if (!hydratedRef.current) {
+      return;
+    }
+    const currentForm = formRef.current;
+    const currentManualState = manualPublishedAtRef.current;
+    const currentAutoTitleEnabled = autoTitleEnabledRef.current;
+    const draftId = currentRouteIdRef.current ?? "new";
+    const currentIsNew = draftId === "new";
+    const isDirty =
+      buildDraftSignature(currentForm, currentManualState, currentAutoTitleEnabled) !==
+      baselineSnapshotRef.current;
+    const formForMeaningfulContent = { ...currentForm };
+    if (
+      currentIsNew &&
+      isDefaultTitleContentType &&
+      currentAutoTitleEnabled &&
+      suggestedTitleRef.current &&
+      formForMeaningfulContent.title?.trim() === suggestedTitleRef.current
+    ) {
+      formForMeaningfulContent.title = "";
+    }
+    if (!isDirty || (currentIsNew && !hasMeaningfulEditorContent(formForMeaningfulContent))) {
+      return;
+    }
+    saveEditorDraftSnapshot({
+      contentType: config.contentType,
+      draftId,
+      form: { ...currentForm } as Record<string, unknown>,
+      isPublishedAtManual: currentManualState,
+      isAutoTitleEnabled: currentAutoTitleEnabled,
+      sourceUpdatedAt: sourceUpdatedAtRef.current,
+    });
+  }, [config.contentType, isDefaultTitleContentType]);
+
+  useEffect(() => {
+    if (!hasUnsavedChanges) {
+      return;
+    }
+    const timeoutId = window.setTimeout(persistEditorDraftSnapshot, 800);
+    return () => window.clearTimeout(timeoutId);
+  }, [form, hasUnsavedChanges, isAutoTitleEnabled, isPublishedAtManual, persistEditorDraftSnapshot]);
+
+  useEffect(() => {
+    window.addEventListener("pagehide", persistEditorDraftSnapshot);
+    return () => window.removeEventListener("pagehide", persistEditorDraftSnapshot);
+  }, [persistEditorDraftSnapshot]);
 
   type PersistOptions = {
     navigateToList?: boolean;
@@ -451,8 +523,6 @@ export function useContentEditor(config: ContentEditorConfig) {
     if (hasUnsavedChanges && !window.confirm(t("common.discardChangesConfirm"))) {
       return;
     }
-    clearEditorDraftSnapshot(config.contentType, "new");
-    clearEditorDraftSnapshot(config.contentType, currentRouteIdRef.current ?? "new");
     navigate(config.listRoute);
   };
 

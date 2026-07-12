@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import PostEditPage from "../src/pages/posts/PostEditPage";
 import { LanguageProvider } from "../src/i18n";
+import { readEditorDraftSnapshot, saveEditorDraftSnapshot } from "../src/lib/content-editor";
 
 const api = vi.hoisted(() => ({
   updatePost: vi.fn(),
@@ -97,6 +98,69 @@ afterEach(() => {
 });
 
 describe("PostEditPage", () => {
+  it("restores the matching local draft after an unexpected exit", async () => {
+    saveEditorDraftSnapshot({
+      contentType: "posts",
+      draftId: "post-1",
+      form: {
+        ...api.postResponse.data,
+        slug: "recovered-slug",
+        body: "Recovered body",
+      },
+      isPublishedAtManual: false,
+      isAutoTitleEnabled: false,
+      sourceUpdatedAt: api.postResponse.data.updated_at,
+    });
+
+    renderPostEditPage();
+
+    await waitFor(() => {
+      expect((screen.getByLabelText("Slug") as HTMLInputElement).value).toBe("recovered-slug");
+    });
+    expect((screen.getByLabelText("正文") as HTMLTextAreaElement).value).toBe("Recovered body");
+  });
+
+  it("keeps the server content when a cached draft belongs to an older server version", async () => {
+    saveEditorDraftSnapshot({
+      contentType: "posts",
+      draftId: "post-1",
+      form: {
+        ...api.postResponse.data,
+        slug: "stale-local-slug",
+      },
+      isPublishedAtManual: false,
+      isAutoTitleEnabled: false,
+      sourceUpdatedAt: "2026-07-01T09:00:00+08:00",
+    });
+
+    renderPostEditPage();
+
+    await waitFor(() => {
+      expect((screen.getByLabelText("Slug") as HTMLInputElement).value).toBe("current-slug");
+    });
+  });
+
+  it("keeps a draft on page exit and clears it only after a successful save", async () => {
+    const user = userEvent.setup();
+    api.updatePost.mockResolvedValue({ data: { id: "post-1" } });
+    renderPostEditPage();
+
+    const slugInput = screen.getByLabelText("Slug") as HTMLInputElement;
+    await user.clear(slugInput);
+    await user.type(slugInput, "exit-safe-slug");
+    window.dispatchEvent(new Event("pagehide"));
+
+    expect(readEditorDraftSnapshot("posts", "post-1", api.postResponse.data.updated_at))
+      .toMatchObject({ form: { slug: "exit-safe-slug" } });
+
+    await user.click(screen.getByRole("button", { name: "保存私密" }));
+
+    await waitFor(() => {
+      expect(readEditorDraftSnapshot("posts", "post-1", api.postResponse.data.updated_at))
+        .toBeNull();
+    });
+  });
+
   it("lets editors change the post slug and saves it with the article payload", async () => {
     api.updatePost.mockResolvedValue({ data: { id: "post-1" } });
     renderPostEditPage();

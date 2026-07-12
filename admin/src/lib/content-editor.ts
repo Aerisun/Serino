@@ -5,10 +5,24 @@ import { getCurrentBeijingIsoString } from "./time";
 
 export type EditorContentType = "posts" | "diary" | "thoughts" | "excerpts";
 
+export interface EditorDraftSnapshotInput {
+  contentType: EditorContentType;
+  draftId: string;
+  form: Record<string, unknown>;
+  isPublishedAtManual: boolean;
+  isAutoTitleEnabled: boolean;
+  sourceUpdatedAt: string | null;
+}
+
+export interface EditorDraftSnapshot extends EditorDraftSnapshotInput {
+  savedAt: string;
+}
+
 const MANUAL_PUBLISHED_AT_PREF_KEY = "aerisun-admin-published-at-manual-v1";
 const TITLE_AUTO_PREF_KEY = "aerisun-admin-title-auto-v1";
-const EDITOR_DRAFT_STORAGE_PREFIX = "aerisun-admin-editor-draft-v1";
+const EDITOR_DRAFT_STORAGE_KEY = "aerisun-admin-editor-draft-v1";
 const PUBLIC_CONTENT_REFRESH_KEY = "aerisun:content-updated:v1";
+const MAX_EDITOR_DRAFT_STORAGE_CHARS = 1_000_000;
 
 type SaveableContentForm = {
   visibility?: string | null;
@@ -171,8 +185,87 @@ export function announcePublicContentChange(contentType: EditorContentType) {
   window.dispatchEvent(new CustomEvent("aerisun:content-updated", { detail: payload }));
 }
 
-function editorDraftKey(contentType: EditorContentType, draftId: string) {
-  return `${EDITOR_DRAFT_STORAGE_PREFIX}:${contentType}:${draftId}`;
+function isEditorContentType(value: unknown): value is EditorContentType {
+  return value === "posts" || value === "diary" || value === "thoughts" || value === "excerpts";
+}
+
+function editorDraftStorageKey(contentType: EditorContentType) {
+  return `${EDITOR_DRAFT_STORAGE_KEY}:${contentType}`;
+}
+
+function parseEditorDraftSnapshot(raw: string | null): EditorDraftSnapshot | null {
+  if (!raw) {
+    return null;
+  }
+  try {
+    const parsed = JSON.parse(raw) as Partial<EditorDraftSnapshot>;
+    if (
+      !parsed ||
+      typeof parsed !== "object" ||
+      !isEditorContentType(parsed.contentType) ||
+      typeof parsed.draftId !== "string" ||
+      !parsed.draftId ||
+      !parsed.form ||
+      typeof parsed.form !== "object" ||
+      Array.isArray(parsed.form) ||
+      typeof parsed.isPublishedAtManual !== "boolean" ||
+      typeof parsed.isAutoTitleEnabled !== "boolean" ||
+      (parsed.sourceUpdatedAt !== null && typeof parsed.sourceUpdatedAt !== "string") ||
+      typeof parsed.savedAt !== "string"
+    ) {
+      return null;
+    }
+    return parsed as EditorDraftSnapshot;
+  } catch {
+    return null;
+  }
+}
+
+export function saveEditorDraftSnapshot(snapshot: EditorDraftSnapshotInput) {
+  if (typeof window === "undefined") {
+    return;
+  }
+  try {
+    const nextSnapshot: EditorDraftSnapshot = {
+      ...snapshot,
+      savedAt: new Date().toISOString(),
+    };
+    const serialized = JSON.stringify(nextSnapshot);
+    if (serialized.length > MAX_EDITOR_DRAFT_STORAGE_CHARS) {
+      window.localStorage.removeItem(editorDraftStorageKey(snapshot.contentType));
+      return;
+    }
+    window.localStorage.setItem(editorDraftStorageKey(snapshot.contentType), serialized);
+  } catch {
+    // Ignore localStorage errors (private mode / quota).
+  }
+}
+
+export function readEditorDraftSnapshot(
+  contentType: EditorContentType,
+  draftId: string,
+  sourceUpdatedAt: string | null,
+) {
+  if (typeof window === "undefined") {
+    return null;
+  }
+  try {
+    const snapshot = parseEditorDraftSnapshot(
+      window.localStorage.getItem(editorDraftStorageKey(contentType)),
+    );
+    if (!snapshot || snapshot.contentType !== contentType || snapshot.draftId !== draftId) {
+      return null;
+    }
+    if (
+      draftId !== "new" &&
+      (typeof sourceUpdatedAt !== "string" || snapshot.sourceUpdatedAt !== sourceUpdatedAt)
+    ) {
+      return null;
+    }
+    return snapshot;
+  } catch {
+    return null;
+  }
 }
 
 export function clearEditorDraftSnapshot(contentType: EditorContentType, draftId: string) {
@@ -180,7 +273,11 @@ export function clearEditorDraftSnapshot(contentType: EditorContentType, draftId
     return;
   }
   try {
-    window.localStorage.removeItem(editorDraftKey(contentType, draftId));
+    const storageKey = editorDraftStorageKey(contentType);
+    const snapshot = parseEditorDraftSnapshot(window.localStorage.getItem(storageKey));
+    if (snapshot?.contentType === contentType && snapshot.draftId === draftId) {
+      window.localStorage.removeItem(storageKey);
+    }
   } catch {
     // Ignore localStorage errors.
   }
