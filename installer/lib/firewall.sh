@@ -16,5 +16,5 @@ configure_local_firewall() {
     run_as_root firewall-cmd --reload >/dev/null
   fi
 
-  log_warn "如果你使用了云服务器，请确认安全组也已放行 80/443。"
+  log_warn "如果你使用了云服务器，请在安全组手动放行 80 和 443 端口并确认！！！"
 }
