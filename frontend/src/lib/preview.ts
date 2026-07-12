@@ -17,6 +17,7 @@ export interface ContentPreviewData {
   weather?: string;
   poem?: string;
   published_at?: string | null;
+  updated_at?: string | null;
   created_at?: string;
   location?: string;
   email?: string;

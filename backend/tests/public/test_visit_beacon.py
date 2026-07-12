@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import timedelta
+
 from aerisun.core.db import get_session_factory
 from aerisun.core.time import shanghai_now
 from aerisun.domain.content.models import PostEntry
@@ -157,3 +159,33 @@ def test_persisted_content_visit_increments_article_historical_view_count(client
 
     assert detail["view_count"] == 42
     assert listed_post["view_count"] == 42
+
+
+def test_persisted_content_visit_does_not_change_article_updated_at(client):
+    path = "/posts/why-i-choose-indie-design"
+    session_factory = get_session_factory()
+
+    with session_factory() as session:
+        post = session.query(PostEntry).filter(PostEntry.slug == "why-i-choose-indie-design").one()
+        post.view_count = 0
+        post.updated_at = shanghai_now() - timedelta(days=1)
+        session.commit()
+        edited_at = post.updated_at
+
+        persist_visit_record_payload(
+            session,
+            VisitRecordPayload(
+                visited_at=shanghai_now(),
+                path=path,
+                ip_address="203.0.113.44",
+                user_agent="Mozilla/5.0",
+                referer=None,
+                status_code=200,
+                duration_ms=120,
+                is_bot=False,
+            ),
+        )
+        session.refresh(post)
+
+        assert post.view_count == 1
+        assert post.updated_at.replace(tzinfo=None) == edited_at.replace(tzinfo=None)

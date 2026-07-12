@@ -71,9 +71,12 @@ test("article and diary detail prose use readable body contrast", () => {
   assert.match(detailBlock, /--tw-prose-quotes:\s*hsl\(var\(--foreground\) \/ 0\.88\);/);
   assert.match(
     readSource("frontend/src/pages/PostDetail.tsx"),
-    /className="detail-markdown(?: post-detail-markdown)?"/,
+    /className="(?:content-detail-markdown )?detail-markdown(?: post-detail-markdown)?"/,
   );
-  assert.match(readSource("frontend/src/pages/DiaryDetail.tsx"), /className="detail-markdown"/);
+  assert.match(
+    readSource("frontend/src/pages/DiaryDetail.tsx"),
+    /className="(?:content-detail-markdown )?detail-markdown"/,
+  );
 });
 
 test("post detail body copy is slightly stronger without affecting diary copy", () => {
@@ -86,7 +89,10 @@ test("post detail body copy is slightly stronger without affecting diary copy", 
   const diaryDetail = readSource("frontend/src/pages/DiaryDetail.tsx");
 
   assert.match(postBlock, /font-weight:\s*500;/);
-  assert.match(postDetail, /className="detail-markdown post-detail-markdown"/);
+  assert.match(
+    postDetail,
+    /className="(?:content-detail-markdown )?detail-markdown post-detail-markdown"/,
+  );
   assert.doesNotMatch(diaryDetail, /post-detail-markdown/);
 });
 
@@ -101,6 +107,37 @@ test("thoughts and excerpts use readable body contrast", () => {
   assert.match(thoughtBodyClass, /text-foreground\/90/);
   assert.match(excerpts, /line-clamp-3[^\"]*text-foreground\/76/);
   assert.match(excerpts, /aerisun-excerpt-markdown[^\"]*text-foreground\/90/);
+});
+
+test("content detail bodies make Markdown bold text visibly distinct", () => {
+  const css = readSource("frontend/src/index.css");
+  const postDetail = readSource("frontend/src/pages/PostDetail.tsx");
+  const diaryDetail = readSource("frontend/src/pages/DiaryDetail.tsx");
+  const thoughts = readSource("frontend/src/pages/Thoughts.tsx");
+  const excerpts = readSource("frontend/src/pages/Excerpts.tsx");
+  const emphasisBlock = extractCssBlock(
+    css,
+    ".content-detail-markdown.prose :where(strong, b)",
+  );
+
+  assert.match(emphasisBlock, /color:\s*hsl\(var\(--foreground\) \/ 0\.96\);/);
+  assert.match(emphasisBlock, /font-weight:\s*700;/);
+  assert.match(
+    postDetail,
+    /<ArticleMarkdownRenderer\s+content=\{post\.content\}\s+className="[^"]*content-detail-markdown[^"]*"/s,
+  );
+  assert.match(
+    diaryDetail,
+    /<ArticleMarkdownRenderer\s+content=\{entry\.body\}\s+className="[^"]*content-detail-markdown[^"]*"/s,
+  );
+  assert.match(
+    thoughts,
+    /<CommentMarkdownRenderer\s+content=\{thought\.content\}\s+className="[^"]*content-detail-markdown[^"]*"/s,
+  );
+  assert.match(
+    excerpts,
+    /<CommentMarkdownRenderer\s+content=\{selected\.content\}\s+className="[^"]*content-detail-markdown[^"]*"/s,
+  );
 });
 
 test("markdown css protects headings from page-level italic styles", () => {

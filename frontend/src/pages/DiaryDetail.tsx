@@ -399,7 +399,7 @@ const DiaryDetail = () => {
               >
                 <ArticleMarkdownRenderer
                   content={entry.body}
-                  className="detail-markdown"
+                  className="content-detail-markdown detail-markdown"
                 />
               </Suspense>
             </motion.div>

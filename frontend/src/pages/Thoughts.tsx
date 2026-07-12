@@ -394,7 +394,7 @@ const Thoughts = () => {
 
               <CommentMarkdownRenderer
                 content={thought.content}
-                className="mt-2 whitespace-pre-wrap text-[0.97rem] leading-7 text-foreground/90 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.8)] [&>p:first-child]:mt-0 [&>p:last-child]:mb-0"
+                className="content-detail-markdown mt-2 whitespace-pre-wrap text-[0.97rem] leading-7 text-foreground/90 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.8)] [&>p:first-child]:mt-0 [&>p:last-child]:mb-0"
               />
 
               {thought.category ? (

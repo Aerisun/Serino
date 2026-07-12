@@ -167,25 +167,41 @@ export const formatFriendFeedDate = (value: string | null | undefined) => {
 };
 
 export const formatRelativeUpdatedAt = (value: number | null | undefined, now = Date.now()) => {
-  if (!value) {
-    return "--";
+  if (value === null || value === undefined || !Number.isFinite(value) || value > now) {
+    return "";
   }
 
-  const diffSeconds = Math.max(0, Math.floor((now - value) / 1000));
+  const diffMs = now - value;
+  const diffSeconds = Math.max(1, Math.floor(diffMs / 1_000));
   if (diffSeconds < 60) {
-    return translateFrontendText("api.updatedSeconds", { count: diffSeconds }, `${diffSeconds}s前更新`);
+    return translateFrontendText("api.updatedSeconds", { count: diffSeconds }, `${diffSeconds} 秒`);
   }
 
   const diffMinutes = Math.floor(diffSeconds / 60);
   if (diffMinutes < 60) {
-    return translateFrontendText("api.updatedMinutes", { count: diffMinutes }, `${diffMinutes}min前更新`);
+    return translateFrontendText("api.updatedMinutes", { count: diffMinutes }, `${diffMinutes} 分钟`);
   }
 
   const diffHours = Math.floor(diffMinutes / 60);
   if (diffHours < 24) {
-    return translateFrontendText("api.updatedHours", { count: diffHours }, `${diffHours}h前更新`);
+    return translateFrontendText("api.updatedHours", { count: diffHours }, `${diffHours} 小时`);
   }
 
-  const diffDays = Math.floor(diffHours / 24);
-  return translateFrontendText("api.updatedDays", { count: diffDays }, `${diffDays}d前更新`);
+  const diffDays = Math.floor(diffMs / MS_PER_DAY);
+  if (diffDays === 1) {
+    return translateFrontendText("api.updatedYesterday", undefined, "昨天");
+  }
+  if (diffDays === 2) {
+    return translateFrontendText("api.updatedDayBeforeYesterday", undefined, "前天");
+  }
+  if (diffDays < 90) {
+    return translateFrontendText("api.updatedDays", { count: diffDays }, `${diffDays} 天`);
+  }
+  if (diffDays < 365) {
+    const months = Math.max(1, Math.floor(diffDays / 30));
+    return translateFrontendText("api.updatedMonths", { count: months }, `${months} 个月`);
+  }
+
+  const years = Math.max(1, Math.floor(diffDays / 365));
+  return translateFrontendText("api.updatedYears", { count: years }, `${years} 年`);
 };

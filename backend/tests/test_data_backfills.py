@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib
+from datetime import timedelta
 
 from sqlalchemy import text
 
@@ -53,6 +54,9 @@ def test_content_view_count_backfill_preserves_the_highest_existing_total(tmp_pa
                 ]
             )
             session.commit()
+            post.updated_at = shanghai_now() - timedelta(days=1)
+            session.commit()
+            edited_at = post.updated_at
 
         set_counter_value(url=path, pageview_count=10)
         module = importlib.import_module(
@@ -65,6 +69,7 @@ def test_content_view_count_backfill_preserves_the_highest_existing_total(tmp_pa
             post = session.query(PostEntry).filter(PostEntry.slug == "historical-view-count").one()
 
         assert post.view_count == 12
+        assert post.updated_at.replace(tzinfo=None) == edited_at.replace(tzinfo=None)
     finally:
         teardown_runtime_state()
 

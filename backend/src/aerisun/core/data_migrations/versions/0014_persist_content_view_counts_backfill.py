@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
@@ -30,4 +31,14 @@ def apply(session: Session) -> None:
             path = paths_by_slug[item.slug]
             waline_views = waline_stats.get(path).pageview_count if path in waline_stats else 0
             recorded_visits = visit_counts.get(path, 0)
-            item.view_count = max(int(item.view_count or 0), waline_views, recorded_visits)
+            view_count = max(int(item.view_count or 0), waline_views, recorded_visits)
+            if view_count == item.view_count:
+                continue
+            session.execute(
+                update(model)
+                .where(model.id == item.id)
+                .values(
+                    view_count=view_count,
+                    updated_at=model.updated_at,
+                ),
+            )

@@ -9,6 +9,7 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 
 import structlog
+from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 from aerisun.core.runtime_version import get_runtime_version
@@ -173,11 +174,16 @@ def _increment_content_view_count(session: Session, path: str) -> bool:
     model = content_repo.CONTENT_MODELS.get(content_type)
     if model is None or not slug or "/" in slug:
         return False
-    entry = session.query(model).filter(model.slug == slug).first()
-    if entry is None:
-        return False
-    entry.view_count = int(entry.view_count or 0) + 1
-    return True
+    session.flush()
+    result = session.execute(
+        update(model)
+        .where(model.slug == slug)
+        .values(
+            view_count=model.view_count + 1,
+            updated_at=model.updated_at,
+        ),
+    )
+    return bool(result.rowcount)
 
 
 def persist_visit_record_payload(session: Session, payload: VisitRecordPayload) -> None:

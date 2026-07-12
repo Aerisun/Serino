@@ -451,7 +451,7 @@ const Excerpts = () => {
               <div className="min-h-0 overflow-y-auto pr-1 scrollbar-hide overscroll-y-contain touch-pan-y [-webkit-overflow-scrolling:touch]">
                 <CommentMarkdownRenderer
                   content={selected.content}
-                  className="aerisun-excerpt-markdown indent-[2em] text-[0.935rem] leading-8 text-foreground/90 transition-colors [overflow-wrap:anywhere] [word-break:break-word] whitespace-pre-wrap [&>p:first-child]:mt-0 [&>p:last-child]:mb-0"
+                  className="content-detail-markdown aerisun-excerpt-markdown indent-[2em] text-[0.935rem] leading-8 text-foreground/90 transition-colors [overflow-wrap:anywhere] [word-break:break-word] whitespace-pre-wrap [&>p:first-child]:mt-0 [&>p:last-child]:mb-0"
                   style={{ fontFamily: getExcerptFontFamily(stripMarkdownImages(selected.content)) }}
                 />
                 {selected.category ? (

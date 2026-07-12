@@ -16,7 +16,7 @@ import ArticleEnhancements from "@/components/ArticleEnhancements";
 import { useFeatureFlags } from "@/contexts/runtime-config";
 import { usePageConfig } from "@/contexts/runtime-config";
 import { useFrontendI18n, type FrontendLang } from "@/i18n";
-import { formatPublishedDate } from "@/lib/api/utils";
+import { formatPublishedDate, formatRelativeUpdatedAt } from "@/lib/api/utils";
 import { usePreviewChannel, type ContentPreviewData } from "@/lib/preview";
 import { useReadPostApiV1SitePostsSlugGet } from "@serino/api-client/site";
 import type { ContentEntryRead } from "@serino/api-client/models";
@@ -30,6 +30,7 @@ interface PostData {
   slug: string;
   title: string;
   date: string;
+  updatedAt: number | null;
   isArchived: boolean;
   category: string;
   tags: string[];
@@ -49,6 +50,25 @@ interface PostDetailPageConfig extends BaseViewPageConfig {
   detailMissingDescription?: string;
   detailEndLabel?: string;
 }
+
+const parseUpdateTimestamp = (value: unknown) => {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const timestamp = Date.parse(value);
+  return Number.isFinite(timestamp) ? timestamp : null;
+};
+
+const normalizeContentTags = (value: unknown): string[] => {
+  const rawTags = Array.isArray(value) ? value : [value];
+
+  return rawTags.flatMap((tag) =>
+    typeof tag === "string"
+      ? tag.split(/[,，]/).map((item) => item.trim()).filter(Boolean)
+      : [],
+  );
+};
 
 const estimateWordCount = (value: string, lang: FrontendLang, wordsLabel: string) => {
   const plainText = value
@@ -79,9 +99,10 @@ const buildRemotePost = (
   slug: entry.slug,
   title: entry.title,
   date: formatPublishedDate(entry.published_at) || "",
+  updatedAt: parseUpdateTimestamp(entry.updated_at),
   isArchived: entry.visibility === "private",
   category: entry.category || fallbackCategoryLabel,
-  tags: entry.tags,
+  tags: normalizeContentTags(entry.tags),
   likes: entry.like_count ?? 0,
   views: entry.view_count ?? 0,
   comments: entry.comment_count ?? 0,
@@ -96,9 +117,10 @@ const buildPreviewPost = (
   slug: preview.slug || "",
   title: preview.title,
   date: formatPublishedDate(preview.published_at) || draftLabel,
+  updatedAt: parseUpdateTimestamp(preview.updated_at),
   isArchived: false,
   category: preview.category || fallbackCategoryLabel,
-  tags: preview.tags || [],
+  tags: normalizeContentTags(preview.tags),
   likes: 0,
   views: 0,
   comments: 0,
@@ -204,6 +226,11 @@ const PostDetail = () => {
     : !id ? t("postDetail.missingId") : "";
   const showArticleEnhancements = Boolean(post) && featureFlags.toc;
   const wordCount = useEstimatedWordCount(post?.content ?? "", lang, t("common.words"));
+  const updatedRelativeLabel = post?.updatedAt != null
+    ? formatRelativeUpdatedAt(post.updatedAt)
+    : "";
+  const updatedRelativeSuffix =
+    updatedRelativeLabel === "昨天" || updatedRelativeLabel === "前天" ? "" : "前";
 
   useEffect(() => {
     if (post) {
@@ -289,9 +316,13 @@ const PostDetail = () => {
             >
               <div className="mb-4 flex flex-wrap items-center gap-3 text-xs font-body text-foreground/25">
                 {post.isArchived ? <ArchiveBadge /> : null}
-                <span>{post.date}</span>
-                <span className="rounded-md border border-[rgb(var(--shiro-border-rgb)/0.18)] bg-[rgb(var(--shiro-panel-rgb)/0.28)] px-2 py-0.5 text-[rgb(var(--shiro-accent-rgb)/0.72)]">
-                  {post.category}
+                <span className="inline-flex items-baseline gap-1 mr-4">
+                  <span>{post.date}</span>
+                  {updatedRelativeLabel ? (
+                    <span className="post-updated-at">
+                          {" ("}最后更新于 <span className="post-updated-at-value">{updatedRelativeLabel}</span>{updatedRelativeSuffix ? ` ${updatedRelativeSuffix}` : ""})
+                    </span>
+                  ) : null}
                 </span>
                 <span className="flex items-center gap-1">
                   <FileText className="h-3 w-3" />
@@ -304,14 +335,17 @@ const PostDetail = () => {
                     />
                   )}
                 </span>
-              </div>
+                  </div>
 
               <h1 className="text-3xl sm:text-4xl font-heading font-bold not-italic tracking-normal text-foreground leading-[1.08]">
                 {post.title}
               </h1>
 
-              <div className="mt-4 flex flex-wrap gap-2">
-                {post.tags.map((tag) => (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <span className="inline-flex items-center rounded-lg border border-[rgb(var(--shiro-border-rgb)/0.18)] bg-[rgb(var(--shiro-panel-rgb)/0.28)] px-2.5 py-1 text-[11px] font-body text-[rgb(var(--shiro-accent-rgb)/0.72)]">
+                      {post.category}
+                    </span>
+                    {post.tags.map((tag) => (
                   <span
                     key={tag}
                     className="inline-flex items-center gap-1 rounded-lg border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-foreground/5 px-2.5 py-1 text-[11px] font-body text-foreground/30 transition-colors hover:border-[rgb(var(--shiro-accent-rgb)/0.28)] hover:text-[rgb(var(--shiro-accent-rgb)/0.78)]"
@@ -341,7 +375,7 @@ const PostDetail = () => {
               >
                 <ArticleMarkdownRenderer
                   content={post.content}
-                  className="detail-markdown post-detail-markdown"
+                  className="content-detail-markdown detail-markdown post-detail-markdown"
                 />
               </Suspense>
             </motion.article>

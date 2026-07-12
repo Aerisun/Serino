@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatContentRelativeDate } from "../src/lib/api/utils";
+import { formatContentRelativeDate, formatRelativeUpdatedAt } from "../src/lib/api/utils";
 
 const zh = (key: string, values?: Record<string, string | number>, fallback?: string) => {
   const count = values?.count;
@@ -92,5 +92,38 @@ describe("content relative date", () => {
         afterMidnight,
       ),
     ).toBe("前天");
+  });
+});
+
+describe("content updated relative date", () => {
+  const now = new Date("2026-07-12T12:00:00+08:00").getTime();
+
+  it("uses seconds and minutes before switching to hours", () => {
+    expect(formatRelativeUpdatedAt(now - 20 * 1000, now)).toBe("20 秒");
+    expect(formatRelativeUpdatedAt(now - 20 * 60 * 1000, now)).toBe("20 分钟");
+  });
+
+  it("uses Chinese hour labels within 24 hours", () => {
+    expect(formatRelativeUpdatedAt(now - 2 * 60 * 60 * 1000, now)).toBe("2 小时");
+  });
+
+  it("uses yesterday, the day before yesterday, and elapsed days through three months", () => {
+    expect(formatRelativeUpdatedAt(now - 24 * 60 * 60 * 1000, now)).toBe("昨天");
+    expect(formatRelativeUpdatedAt(now - 2 * 24 * 60 * 60 * 1000, now)).toBe("前天");
+    expect(formatRelativeUpdatedAt(now - 12 * 24 * 60 * 60 * 1000, now)).toBe("12 天");
+  });
+
+  it("uses months after three months and years after one year", () => {
+    expect(formatRelativeUpdatedAt(now - 90 * 24 * 60 * 60 * 1000, now)).toBe("3 个月");
+    expect(formatRelativeUpdatedAt(now - 365 * 24 * 60 * 60 * 1000, now)).toBe("1 年");
+  });
+
+  it("hides future and non-finite timestamps instead of misreporting them as past updates", () => {
+    expect(formatRelativeUpdatedAt(now + 60 * 60 * 1000, now)).toBe("");
+    expect(formatRelativeUpdatedAt(Number.POSITIVE_INFINITY, now)).toBe("");
+  });
+
+  it("keeps the Unix epoch as a valid timestamp", () => {
+    expect(formatRelativeUpdatedAt(0, now)).not.toBe("--");
   });
 });

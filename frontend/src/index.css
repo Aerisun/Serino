@@ -949,3 +949,19 @@
     display: none;
   }
 }
+
+.content-detail-markdown.prose :where(strong, b) {
+  color: hsl(var(--foreground) / 0.96);
+  font-weight: 700;
+}
+
+.post-updated-at {
+  font-family: "Instrument Serif", "Noto Serif SC", serif;
+  font-size: 1.08em;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.025em;
+}
+
+.post-updated-at-value {
+  color: rgb(var(--shiro-accent-rgb) / 0.7);
+}
