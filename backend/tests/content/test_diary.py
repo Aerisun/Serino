@@ -112,6 +112,16 @@ def test_read_diary_detail_returns_seeded_entry(client) -> None:
     assert payload["body"]
 
 
+def test_read_diary_detail_is_never_stored_and_varies_by_cookie(client) -> None:
+    _set_diary_private_enabled(False)
+
+    response = client.get("/api/v1/site/diary/spring-equinox-and-warm-light")
+
+    assert response.status_code == 200
+    assert response.headers["cache-control"] == "private, no-store"
+    assert response.headers["vary"] == "Cookie"
+
+
 def test_read_diary_detail_returns_404_for_unknown_slug(client) -> None:
     _set_diary_private_enabled(False)
     response = client.get("/api/v1/site/diary/missing-entry")

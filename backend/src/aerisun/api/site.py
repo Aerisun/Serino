@@ -412,7 +412,13 @@ def read_diary_entry(
     )
     if request is None:
         return payload
-    return _build_conditional_json_response(request, payload=payload)
+    response = _build_conditional_json_response(
+        request,
+        payload=payload,
+        cache_control="private, no-store",
+    )
+    response.headers["Vary"] = "Cookie"
+    return response
 
 
 @base_router.get("/thoughts", response_model=ContentCollectionRead, summary="获取碎碎念列表")
