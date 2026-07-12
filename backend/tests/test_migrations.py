@@ -9,7 +9,7 @@ from alembic.script import ScriptDirectory
 from aerisun.core.db import dispose_engine, run_database_migrations
 from aerisun.core.settings import get_settings
 
-CURRENT_SCHEMA_HEAD = "0013_asset_public_slug"
+CURRENT_SCHEMA_HEAD = "0014_persist_content_view_counts"
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
 
@@ -74,6 +74,7 @@ def test_active_alembic_history_is_reset_to_single_production_baseline_head() ->
         "0011_content_notification_failed_attempts.py",
         "0012_backup_retention_days.py",
         "0013_asset_public_slug.py",
+        "0014_persist_content_view_counts.py",
     ]
     assert not (BACKEND_ROOT / "alembic" / "legacy_versions").exists()
 

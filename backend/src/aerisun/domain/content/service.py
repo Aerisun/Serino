@@ -26,7 +26,6 @@ from aerisun.domain.content.schemas import (
     ContentTitleSuggestionRead,
 )
 from aerisun.domain.exceptions import ResourceNotFound, StateConflict, ValidationError
-from aerisun.domain.ops import repository as ops_repo
 from aerisun.domain.waline.service import build_comment_path, count_records_by_urls, get_counter_stats_by_urls
 
 ContentModel = TypeVar("ContentModel", PostEntry, DiaryEntry, ThoughtEntry, ExcerptEntry)
@@ -495,6 +494,7 @@ def normalize_content_create_state(session: Session, data: dict) -> dict:
 
 def normalize_content_update_state(session: Session, existing: ContentModel, patch: dict) -> dict:
     normalized = dict(patch)
+    normalized.pop("view_count", None)
     content_type = MANAGED_MODEL_CONTENT_TYPES.get(type(existing))
     if content_type is None:
         raise ValidationError("不支持的内容类型")
@@ -625,17 +625,12 @@ def _engagement_stats_by_slug(
     paths = [build_comment_path(content_type, slug) for slug in slugs]
     counts_by_path = count_records_by_urls(urls=paths, status="approved")
     counter_stats_by_path = get_counter_stats_by_urls(urls=paths)
-    visit_counts_by_path = ops_repo.count_successful_visit_records_by_paths(session, paths=paths)
     stats_by_slug: dict[str, dict[str, int | None]] = {}
     for slug in slugs:
         path = build_comment_path(content_type, slug)
         counter_stats = counter_stats_by_path.get(path)
-        counter_view_count = counter_stats.pageview_count if counter_stats is not None else None
-        visit_view_count = visit_counts_by_path.get(path)
-        view_count_candidates = [value for value in (counter_view_count, visit_view_count) if value is not None]
         stats_by_slug[slug] = {
             "comment_count": counts_by_path.get(path, 0),
-            "view_count": max(view_count_candidates) if view_count_candidates else None,
             "like_count": counter_stats.reaction_count if counter_stats is not None else 0,
         }
     return stats_by_slug
@@ -672,8 +667,6 @@ def _content_summary_payload(
     source = getattr(item, "source", None)
     fallback_view_count = getattr(item, "view_count", 0) or 0
     stats = engagement_stats.get(item.slug, {})
-    measured_view_count = stats.get("view_count")
-    view_count = max(value for value in (fallback_view_count, measured_view_count) if value is not None)
 
     summary = item.summary
     if not (summary or "").strip() and summary_fallback_body:
@@ -698,7 +691,7 @@ def _content_summary_payload(
         ),
         "display_date": _format_display_date(published_reference),
         "relative_date": _format_relative_date(published_reference),
-        "view_count": view_count,
+        "view_count": fallback_view_count,
         "comment_count": stats.get("comment_count", 0),
         "like_count": stats.get("like_count", 0),
         "repost_count": 0,

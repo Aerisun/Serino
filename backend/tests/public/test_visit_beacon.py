@@ -7,7 +7,7 @@ from aerisun.core.time import shanghai_now
 from aerisun.domain.content.models import PostEntry
 from aerisun.domain.ops import service as ops_service
 from aerisun.domain.ops.service import VisitRecordPayload, persist_visit_record_payload
-from aerisun.domain.waline.service import get_counter_stats_by_urls, set_counter_value
+from aerisun.domain.waline.service import set_counter_value
 
 ENDPOINT = "/api/v1/site-interactions/visit"
 
@@ -62,9 +62,13 @@ def test_content_visit_beacon_is_visible_on_immediate_public_refresh(client):
     assert detail["view_count"] == 1
 
 
-def test_content_visit_updates_public_counter_before_async_queue(monkeypatch, client):
+def test_content_visit_updates_persisted_view_count_before_async_queue(monkeypatch, client):
     path = "/posts/why-i-choose-indie-design"
     set_counter_value(url=path, pageview_count=0)
+    with get_session_factory()() as session:
+        post = session.query(PostEntry).filter(PostEntry.slug == "why-i-choose-indie-design").one()
+        post.view_count = 0
+        session.commit()
     enqueued_payloads: list[VisitRecordPayload] = []
 
     def fake_enqueue(payload: VisitRecordPayload) -> bool:
@@ -83,13 +87,17 @@ def test_content_visit_updates_public_counter_before_async_queue(monkeypatch, cl
 
     assert accepted is True
     assert len(enqueued_payloads) == 1
-    assert get_counter_stats_by_urls(urls=[path])[path].pageview_count == 1
+    with get_session_factory()() as session:
+        post = session.query(PostEntry).filter(PostEntry.slug == "why-i-choose-indie-design").one()
+        assert post.view_count == 1
     assert enqueued_payloads[0].increment_public_counter is False
 
     session_factory = get_session_factory()
     with session_factory() as session:
         persist_visit_record_payload(session, enqueued_payloads[0])
-    assert get_counter_stats_by_urls(urls=[path])[path].pageview_count == 1
+    with session_factory() as session:
+        post = session.query(PostEntry).filter(PostEntry.slug == "why-i-choose-indie-design").one()
+        assert post.view_count == 1
 
 
 def test_visit_beacon_ignores_static_and_ai_entry_paths(monkeypatch):
@@ -119,7 +127,7 @@ def test_visit_beacon_requires_url(client):
     assert resp.status_code == 422
 
 
-def test_persisted_content_visit_increments_public_view_counter(client):
+def test_persisted_content_visit_increments_article_historical_view_count(client):
     path = "/posts/why-i-choose-indie-design"
     set_counter_value(url=path, pageview_count=0)
 
@@ -127,7 +135,7 @@ def test_persisted_content_visit_increments_public_view_counter(client):
     with session_factory() as session:
         post = session.query(PostEntry).filter(PostEntry.slug == "why-i-choose-indie-design").first()
         assert post is not None
-        post.view_count = 0
+        post.view_count = 41
         persist_visit_record_payload(
             session,
             VisitRecordPayload(
@@ -141,9 +149,11 @@ def test_persisted_content_visit_increments_public_view_counter(client):
                 is_bot=False,
             ),
         )
-
-    stats = get_counter_stats_by_urls(urls=[path])
-    assert stats[path].pageview_count == 1
+        assert post.view_count == 42
 
     detail = client.get("/api/v1/site/posts/why-i-choose-indie-design").json()
-    assert detail["view_count"] == 1
+    listing = client.get("/api/v1/site/posts").json()["items"]
+    listed_post = next(item for item in listing if item["slug"] == "why-i-choose-indie-design")
+
+    assert detail["view_count"] == 42
+    assert listed_post["view_count"] == 42

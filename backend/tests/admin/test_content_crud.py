@@ -111,6 +111,22 @@ class TestContentCRUDLifecycle:
         # slug should remain unchanged
         assert resp.json()["slug"] == payload["slug"]
 
+    def test_update_does_not_change_historical_view_count(self, client, admin_headers, content_type):
+        payload = _make_payload(content_type, "-view-count")
+        payload["view_count"] = 42
+        create_resp = client.post(f"{BASE}/{content_type}/", json=payload, headers=admin_headers)
+        item_id = create_resp.json()["id"]
+
+        resp = client.put(
+            f"{BASE}/{content_type}/{item_id}",
+            json={"title": "Updated without resetting views", "view_count": 0},
+            headers=admin_headers,
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["title"] == "Updated without resetting views"
+        assert resp.json()["view_count"] == 42
+
     def test_create_without_slug_generates_unique_slug(self, client, admin_headers, content_type):
         payload = _make_payload(content_type, "-auto-slug")
         payload.pop("slug")

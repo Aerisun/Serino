@@ -59,7 +59,6 @@ from aerisun.domain.ops.visit_tracking import (
 from aerisun.domain.social.models import Friend
 from aerisun.domain.waline.service import (
     count_waline_records,
-    increment_counter_pageview,
     list_counter_history_by_date,
     list_counter_stats,
 )
@@ -167,6 +166,20 @@ def _should_increment_content_pageview(payload: VisitRecordPayload) -> bool:
     )
 
 
+def _increment_content_view_count(session: Session, path: str) -> bool:
+    from aerisun.domain.content import repository as content_repo
+
+    content_type, _, slug = path.strip("/").partition("/")
+    model = content_repo.CONTENT_MODELS.get(content_type)
+    if model is None or not slug or "/" in slug:
+        return False
+    entry = session.query(model).filter(model.slug == slug).first()
+    if entry is None:
+        return False
+    entry.view_count = int(entry.view_count or 0) + 1
+    return True
+
+
 def persist_visit_record_payload(session: Session, payload: VisitRecordPayload) -> None:
     repo.create_visit_record(
         session,
@@ -194,10 +207,9 @@ def persist_visit_record_payload(session: Session, payload: VisitRecordPayload) 
         duration_ms=payload.duration_ms,
         is_bot=payload.is_bot,
     )
-    session.commit()
-
     if payload.increment_public_counter and _should_increment_content_pageview(payload):
-        increment_counter_pageview(url=payload.path)
+        _increment_content_view_count(session, payload.path)
+    session.commit()
 
 
 def _persist_visit_record_payload_inline(payload: VisitRecordPayload) -> bool:
@@ -217,7 +229,12 @@ def _increment_public_counter_before_queue(payload: VisitRecordPayload) -> bool:
     if not _should_increment_content_pageview(payload):
         return False
     try:
-        increment_counter_pageview(url=payload.path)
+        from aerisun.core.db import get_session_factory
+
+        with get_session_factory()() as session:
+            if not _increment_content_view_count(session, payload.path):
+                return False
+            session.commit()
     except Exception:
         _visit_logger.exception("visit_public_counter_increment_failed", path=payload.path)
         return False

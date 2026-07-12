@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import importlib
+
 from sqlalchemy import text
 
 from aerisun.core.data_migrations.registry import DataMigrationSpec
@@ -11,8 +13,60 @@ from aerisun.core.data_migrations.runner import (
 from aerisun.core.data_migrations.state import get_migration_entry
 from aerisun.core.db import get_session_factory, run_database_migrations
 from aerisun.core.production_baseline import PRODUCTION_BASELINE_SCHEMA_REVISION, apply_production_baseline
-from aerisun.domain.ops.models import AuditLog, ConfigRevision
+from aerisun.core.time import shanghai_now
+from aerisun.domain.content.models import PostEntry
+from aerisun.domain.ops.models import AuditLog, ConfigRevision, VisitRecord
 from aerisun.domain.site_config.models import PageCopy
+from aerisun.domain.waline.service import set_counter_value
+
+
+def test_content_view_count_backfill_preserves_the_highest_existing_total(tmp_path, monkeypatch) -> None:
+    from tests.support.runtime import configure_runtime_environment, reset_runtime_state, teardown_runtime_state
+
+    configure_runtime_environment(tmp_path, monkeypatch)
+    reset_runtime_state()
+    try:
+        run_database_migrations()
+        apply_production_baseline(force=True)
+
+        path = "/posts/historical-view-count"
+        session_factory = get_session_factory()
+        with session_factory() as session:
+            post = PostEntry(
+                slug="historical-view-count",
+                title="Historical view count",
+                body="Historical body",
+                visibility="public",
+                view_count=5,
+            )
+            session.add(post)
+            session.add_all(
+                [
+                    VisitRecord(
+                        visited_at=shanghai_now(),
+                        path=path,
+                        ip_address=f"203.0.113.{index}",
+                        status_code=200,
+                        is_bot=False,
+                    )
+                    for index in range(1, 13)
+                ]
+            )
+            session.commit()
+
+        set_counter_value(url=path, pageview_count=10)
+        module = importlib.import_module(
+            "aerisun.core.data_migrations.versions.0014_persist_content_view_counts_backfill"
+        )
+
+        with session_factory() as session:
+            module.apply(session)
+            session.commit()
+            post = session.query(PostEntry).filter(PostEntry.slug == "historical-view-count").one()
+
+        assert post.view_count == 12
+    finally:
+        teardown_runtime_state()
 
 
 def test_collect_migration_status_reports_baseline_and_pending_modes(tmp_path, monkeypatch) -> None:
