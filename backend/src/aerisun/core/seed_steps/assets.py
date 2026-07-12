@@ -89,6 +89,7 @@ def ensure_seed_asset(
     source_path: Path,
     category: str,
     visibility: str = "internal",
+    public_slug: str | None = None,
     note: str | None = None,
 ) -> str:
     settings = get_settings()
@@ -102,6 +103,13 @@ def ensure_seed_asset(
     resource_key = f"{visibility}/assets/{category}/{digest}.{ext}"
     existing = session.query(Asset).filter(Asset.resource_key == resource_key).first()
     if existing is not None:
+        if existing.visibility != visibility:
+            existing.visibility = visibility
+        if public_slug:
+            slug_owner = session.query(Asset).filter(Asset.public_slug == public_slug).first()
+            if slug_owner is not None and slug_owner.id != existing.id:
+                raise RuntimeError(f"Public asset slug is already in use: {public_slug}")
+            existing.public_slug = public_slug
         if existing.scope != "system":
             existing.scope = "system"
         if note and not existing.note:
@@ -119,6 +127,7 @@ def ensure_seed_asset(
         file_name=source_path.name,
         resource_key=resource_key,
         visibility=visibility,
+        public_slug=public_slug,
         scope="system",
         category=category,
         note=note,

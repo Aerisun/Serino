@@ -94,12 +94,20 @@ def test_apply_production_baseline_uses_backend_system_asset_sources(tmp_path, m
             site = session.query(SiteProfile).one()
             resume = session.query(ResumeBasics).one()
             assets = {asset.category: asset for asset in session.query(Asset).all()}
+            friends_page = session.query(PageCopy).filter(PageCopy.page_key == "friends").one()
 
         assert site.og_image.startswith("/media/internal/assets/site-og/")
         assert site.site_icon_url.startswith("/media/internal/assets/site-icon/")
-        assert site.hero_image_url.startswith("/media/internal/assets/hero-image/")
+        assert site.hero_image_url.startswith("/media/public/assets/hero-image/")
         assert site.hero_poster_url.startswith("/media/internal/assets/hero-poster/")
         assert resume.profile_image_url.startswith("/media/internal/assets/resume-avatar/")
+        assert assets["hero-image"].visibility == "public"
+        assert assets["hero-image"].public_slug == "avatar"
+        assert ":copy[https://your_site.com/media/avatar]" in friends_page.extras["applicationMarkdown"]
+        assert (
+            "（/media/avatar 后缀已经和你的 Hero 翻转视觉图绑定，点击试试）"
+            in friends_page.extras["applicationMarkdown"]
+        )
 
         asset_root = get_system_asset_root()
         assert asset_root == (

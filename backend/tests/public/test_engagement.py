@@ -686,7 +686,7 @@ def test_read_comments_marks_email_bound_admin_identity(client) -> None:
     comment = next(item for item in _flatten_comments(payload["items"]) if item["body"] == "邮箱绑定管理员评论")
     assert comment["author_name"] == "Felix"
     assert comment["is_author"] is True
-    assert "/media/internal/assets/hero-image/" in comment["avatar_url"]
+    assert "/media/public/assets/hero-image/" in comment["avatar_url"]
 
 
 def test_create_comment_marks_bound_admin_user_as_author(client) -> None:
@@ -713,7 +713,7 @@ def test_create_comment_marks_bound_admin_user_as_author(client) -> None:
     assert payload["item"]["author_name"] == "Felix"
     assert payload["item"]["is_author"] is True
     assert payload["item"]["avatar"] == "site-admin"
-    assert "/media/internal/assets/hero-image/" in payload["item"]["avatar_url"]
+    assert "/media/public/assets/hero-image/" in payload["item"]["avatar_url"]
 
 
 def test_read_guestbook_marks_email_bound_admin_identity(client) -> None:
@@ -738,7 +738,7 @@ def test_read_guestbook_marks_email_bound_admin_identity(client) -> None:
     entry = next(item for item in payload["items"] if item["body"] == "管理员留言")
     assert entry["name"] == "Felix"
     assert entry["is_author"] is True
-    assert "/media/internal/assets/hero-image/" in entry["avatar_url"]
+    assert "/media/public/assets/hero-image/" in entry["avatar_url"]
 
 
 def test_create_guestbook_marks_bound_admin_user_as_author(client) -> None:
@@ -765,7 +765,7 @@ def test_create_guestbook_marks_bound_admin_user_as_author(client) -> None:
     assert payload["item"]["name"] == "Felix"
     assert payload["item"]["is_author"] is True
     assert payload["item"]["avatar"] == "site-admin"
-    assert "/media/internal/assets/hero-image/" in payload["item"]["avatar_url"]
+    assert "/media/public/assets/hero-image/" in payload["item"]["avatar_url"]
 
 
 def test_create_comment_requires_login(client) -> None:

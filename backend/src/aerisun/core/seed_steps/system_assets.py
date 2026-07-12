@@ -16,6 +16,8 @@ class CoreSystemAssetSpec:
     field_name: str
     source_relative_path: str | None
     category: str
+    visibility: str
+    public_slug: str | None
     seed_note: str | None
     reference_note: str
 
@@ -26,6 +28,8 @@ CORE_SYSTEM_ASSET_SPECS = (
         field_name="hero_image_url",
         source_relative_path="hero_flip_visual.webp",
         category="hero-image",
+        visibility="public",
+        public_slug="avatar",
         seed_note="首页 Hero 翻转视觉图（系统资源初始化）",
         reference_note="首页 Hero 翻转视觉图（系统资源归拢）",
     ),
@@ -34,6 +38,8 @@ CORE_SYSTEM_ASSET_SPECS = (
         field_name="hero_poster_url",
         source_relative_path="hero_video_poster.webp",
         category="hero-poster",
+        visibility="internal",
+        public_slug=None,
         seed_note="首页 Hero 视频封面图（系统资源初始化）",
         reference_note="首页 Hero 视频封面图（系统资源归拢）",
     ),
@@ -42,6 +48,8 @@ CORE_SYSTEM_ASSET_SPECS = (
         field_name="hero_video_url",
         source_relative_path=None,
         category="hero-video",
+        visibility="internal",
+        public_slug=None,
         seed_note=None,
         reference_note="首页 Hero 背景视频（系统资源归拢）",
     ),
@@ -50,6 +58,8 @@ CORE_SYSTEM_ASSET_SPECS = (
         field_name="og_image",
         source_relative_path="share_fallback_bg.webp",
         category="site-og",
+        visibility="internal",
+        public_slug=None,
         seed_note="站点默认 OG 分享图（系统资源初始化）",
         reference_note="站点分享图（系统资源归拢）",
     ),
@@ -58,6 +68,8 @@ CORE_SYSTEM_ASSET_SPECS = (
         field_name="site_icon_url",
         source_relative_path="browser_tab_icon.svg",
         category="site-icon",
+        visibility="internal",
+        public_slug=None,
         seed_note="站点默认标签页图标（系统资源初始化）",
         reference_note="站点标签页图标（系统资源归拢）",
     ),
@@ -66,6 +78,8 @@ CORE_SYSTEM_ASSET_SPECS = (
         field_name="profile_image_url",
         source_relative_path="resume_avatar.webp",
         category="resume-avatar",
+        visibility="internal",
+        public_slug=None,
         seed_note="简历默认头像（系统资源初始化）",
         reference_note="简历默认头像（系统资源归拢）",
     ),
@@ -88,6 +102,8 @@ def seed_core_system_asset_urls(session: Session) -> dict[str, str]:
             session,
             source_path=asset_root / spec.source_relative_path,
             category=spec.category,
+            visibility=spec.visibility,
+            public_slug=spec.public_slug,
             note=spec.seed_note,
         )
     return seeded_urls
