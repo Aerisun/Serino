@@ -38,6 +38,10 @@ def create_user(session: Session, **kwargs) -> SiteUser:
     return user
 
 
+def delete_user(session: Session, user: SiteUser) -> None:
+    session.delete(user)
+
+
 def find_session_by_token(session: Session, token: str) -> SiteUserSession | None:
     return session.scalars(select(SiteUserSession).where(SiteUserSession.session_token == token)).first()
 
@@ -201,6 +205,20 @@ def find_admin_identity_for_user(session: Session, *, site_user_id: str) -> Site
         .where(SiteAdminIdentity.site_user_id == site_user_id)
         .order_by(SiteAdminIdentity.updated_at.desc(), SiteAdminIdentity.created_at.desc())
     ).first()
+
+
+def has_active_admin_identity_for_user(session: Session, *, site_user_id: str) -> bool:
+    return (
+        session.scalar(
+            select(SiteAdminIdentity.id)
+            .where(
+                SiteAdminIdentity.site_user_id == site_user_id,
+                SiteAdminIdentity.admin_user_id.is_not(None),
+            )
+            .limit(1)
+        )
+        is not None
+    )
 
 
 def find_admin_email_identity(session: Session, *, email: str) -> SiteAdminIdentity | None:

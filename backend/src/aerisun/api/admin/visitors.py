@@ -21,6 +21,7 @@ from aerisun.domain.site_auth.service import (
     bind_site_admin_identity_by_email,
     bind_site_admin_identity_from_current_user,
     delete_site_admin_identity,
+    delete_site_user_admin,
     get_site_auth_admin_config,
     list_site_admin_identities_admin,
     list_site_users_admin,
@@ -78,6 +79,23 @@ def list_visitor_users(
         page_size=page_size,
     )
     return build_paginated_response(items, total=total, page=page, page_size=page_size)
+
+
+@router.delete(
+    "/users/{user_id}",
+    status_code=204,
+    summary="删除站点访客及关联互动记录",
+    responses={
+        404: {"description": "访客不存在"},
+        409: {"description": "访客已绑定管理员身份"},
+    },
+)
+def delete_visitor_user(
+    user_id: str,
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> None:
+    delete_site_user_admin(session, user_id)
 
 
 @router.get("/admin-identities", response_model=list[SiteAdminIdentityAdminRead], summary="获取管理员前台身份绑定")

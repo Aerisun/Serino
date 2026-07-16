@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
+from aerisun.domain.exceptions import ResourceNotFound, StateConflict
 from aerisun.domain.site_auth import repository as repo
 from aerisun.domain.site_auth.schemas import SiteUserAdminRead, SiteUserOAuthAccountAdminRead
 
@@ -73,3 +74,21 @@ def list_site_users_admin(
         for user in users
     ]
     return items, total
+
+
+def delete_site_user_admin(session: Session, user_id: str) -> None:
+    user = repo.find_user_by_id(session, user_id)
+    if user is None:
+        raise ResourceNotFound("访客不存在。")
+    if repo.has_active_admin_identity_for_user(session, site_user_id=user.id):
+        raise StateConflict("该访客已绑定管理员身份，请先在管理员认证中解除绑定。")
+
+    from aerisun.domain.waline.service import stage_waline_records_deletion_for_site_user
+
+    try:
+        with stage_waline_records_deletion_for_site_user(site_user_id=user.id):
+            repo.delete_user(session, user)
+            session.commit()
+    except Exception:
+        session.rollback()
+        raise
