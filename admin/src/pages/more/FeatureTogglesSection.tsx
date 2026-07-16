@@ -445,7 +445,7 @@ export function FeatureTogglesSection() {
     : t("siteConfig.commentFeedbackSetupGuide");
 
   return (
-    <div className="mt-4 space-y-5">
+    <div className="mt-4 w-full max-w-2xl space-y-5">
       <Card className="max-w-2xl">
         <CardContent className="space-y-4 pt-6">
           <div>

@@ -52,19 +52,21 @@ export default function MorePage() {
         description={t("more.description")}
         secondary={<MoreSectionSwitch />}
       />
-      <Suspense fallback={<SectionLoader label={t("common.loading")} />}>
-        {section === "mail-config" ? (
-          <ExternalConfigSection />
-        ) : section === "api-config" ? (
-          <ApiConfigSection />
-        ) : section === "object-storage" ? (
-          <ObjectStorageSection />
-        ) : section === "proxy-config" ? (
-          <ProxyConfigSection />
-        ) : (
-          <FeatureTogglesSection />
-        )}
-      </Suspense>
+      <div className="flex justify-center">
+        <Suspense fallback={<SectionLoader label={t("common.loading")} />}>
+          {section === "mail-config" ? (
+            <ExternalConfigSection />
+          ) : section === "api-config" ? (
+            <ApiConfigSection />
+          ) : section === "object-storage" ? (
+            <ObjectStorageSection />
+          ) : section === "proxy-config" ? (
+            <ProxyConfigSection />
+          ) : (
+            <FeatureTogglesSection />
+          )}
+        </Suspense>
+      </div>
     </div>
   );
 }
