@@ -1,6 +1,7 @@
 import { useState, type ComponentPropsWithoutRef, type CSSProperties } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
+import ImageLightbox from "@/components/ImageLightbox";
 import { extractMarkdownImageAttachments } from "@/lib/markdown-images";
 import "./CommentMarkdownRenderer.css";
 
@@ -129,27 +130,11 @@ export default function CommentMarkdownRenderer({
         ) : null}
       </div>
       {lightboxImage ? (
-        <div
-          className="aerisun-comment-image-lightbox"
-          role="dialog"
-          aria-modal="true"
-          onClick={() => setLightboxImage(null)}
-        >
-          <button
-            type="button"
-            className="aerisun-comment-image-lightbox__close"
-            onClick={() => setLightboxImage(null)}
-            aria-label="关闭图片预览"
-          >
-            ×
-          </button>
-          <img
-            src={lightboxImage.src}
-            alt={lightboxImage.alt}
-            className="aerisun-comment-image-lightbox__image"
-            onClick={(event) => event.stopPropagation()}
-          />
-        </div>
+        <ImageLightbox
+          src={lightboxImage.src}
+          alt={lightboxImage.alt}
+          onClose={() => setLightboxImage(null)}
+        />
       ) : null}
     </>
   );

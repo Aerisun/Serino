@@ -229,8 +229,10 @@ function MarkdownRichLinkCard({ href }: { href: string }) {
         ? fallbackImageUrl
         : null;
   const iconUrl = preview?.icon_url || null;
+  const isGithubProfile = preview?.card_type === "github_profile";
+  const showExternalLink = !isGithubProfile;
   const imageMode =
-    preview?.image_mode === "thumbnail" || preview?.card_type === "github_profile"
+    preview?.image_mode === "thumbnail" || isGithubProfile
       ? "thumbnail"
       : "cover";
   const hasThumbnailImage = Boolean(imageUrl && imageMode === "thumbnail");
@@ -243,7 +245,9 @@ function MarkdownRichLinkCard({ href }: { href: string }) {
       className={[
         "group overflow-hidden rounded-2xl border border-border/70 bg-background/95 no-underline shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md",
         hasThumbnailImage
-          ? "grid grid-cols-[minmax(0,1fr)_4rem_auto] items-center gap-x-3 p-4"
+          ? isGithubProfile
+            ? "grid grid-cols-[minmax(0,1fr)_4rem] items-center gap-x-3 p-4 sm:grid-cols-[minmax(0,1fr)_5rem]"
+            : "grid grid-cols-[minmax(0,1fr)_4rem_auto] items-center gap-x-3 p-4"
           : "block",
       ].join(" ")}
     >
@@ -251,7 +255,9 @@ function MarkdownRichLinkCard({ href }: { href: string }) {
         <span
           className={
             hasThumbnailImage
-              ? "col-start-2 row-start-1 h-16 w-16 self-center overflow-hidden rounded-xl border border-border/60 bg-muted/40"
+              ? isGithubProfile
+                ? "col-start-2 row-start-1 h-16 w-16 self-center overflow-hidden rounded-xl border border-border/60 bg-muted/40 sm:h-20 sm:w-20"
+                : "col-start-2 row-start-1 h-16 w-16 self-center overflow-hidden rounded-xl border border-border/60 bg-muted/40"
               : "block aspect-[1.9/1] overflow-hidden border-b border-border/60 bg-muted/40"
           }
         >
@@ -305,14 +311,14 @@ function MarkdownRichLinkCard({ href }: { href: string }) {
           </span>
         </span>
 
-        {!hasThumbnailImage ? (
+        {!hasThumbnailImage && showExternalLink ? (
           <span className="mt-0.5 inline-flex shrink-0 text-muted-foreground transition group-hover:text-foreground">
             <ExternalLink className="h-4 w-4" />
           </span>
         ) : null}
       </span>
 
-      {hasThumbnailImage ? (
+      {hasThumbnailImage && showExternalLink ? (
         <span className="col-start-3 row-start-1 inline-flex shrink-0 self-center text-muted-foreground transition group-hover:text-foreground">
           <ExternalLink className="h-4 w-4" />
         </span>

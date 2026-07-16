@@ -9,16 +9,13 @@ import {
   useMemo,
   useRef,
   useState,
-  useCallback,
   type ComponentPropsWithoutRef,
   type HTMLAttributes,
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent,
-  type PointerEvent as ReactPointerEvent,
   type ReactNode,
   type SyntheticEvent,
 } from "react";
-import { createPortal } from "react-dom";
 import {
   Check,
   ChevronDown,
@@ -49,6 +46,7 @@ import {
 } from "@/lib/link-preview";
 import MarkdownMermaid from "@/components/MarkdownMermaid";
 import MarkdownCarousel from "@/components/MarkdownCarousel";
+import ImageLightbox from "@/components/ImageLightbox";
 import { remarkAerisunDirectives } from "@/components/markdown-directives";
 import { resolveMarkdownImageSrc } from "@/lib/markdown-image-url";
 import "katex/dist/katex.min.css";
@@ -467,8 +465,10 @@ function MarkdownRichLinkCard({ href }: { href: string }) {
         ? fallbackImageUrl
         : null;
   const iconUrl = preview?.icon_url || null;
+  const isGithubProfile = preview?.card_type === "github_profile";
+  const showExternalLink = !isGithubProfile;
   const imageMode =
-    preview?.image_mode === "thumbnail" || preview?.card_type === "github_profile"
+    preview?.image_mode === "thumbnail" || isGithubProfile
       ? "thumbnail"
       : "cover";
   const mediaModeClass = imageUrl
@@ -482,7 +482,7 @@ function MarkdownRichLinkCard({ href }: { href: string }) {
       href={cardHref}
       target="_blank"
       rel="noopener noreferrer"
-      className={`markdown-link-card${imageUrl ? " has-media" : ""}${mediaModeClass}`}
+      className={`markdown-link-card${imageUrl ? " has-media" : ""}${mediaModeClass}${isGithubProfile ? " is-github-profile" : ""}`}
     >
       {imageUrl ? (
         <span className="markdown-link-card-media">
@@ -519,9 +519,11 @@ function MarkdownRichLinkCard({ href }: { href: string }) {
       </span>
       <span className="markdown-link-card-title">{cardTitle}</span>
       <span className="markdown-link-card-meta">{cardMeta}</span>
-      <span className="markdown-link-card-arrow">
-        <ExternalLink className="h-4 w-4" />
-      </span>
+      {showExternalLink ? (
+        <span className="markdown-link-card-arrow">
+          <ExternalLink className="h-4 w-4" />
+        </span>
+      ) : null}
     </a>
   );
 }
@@ -536,25 +538,6 @@ function MarkdownImage({
 }: ComponentPropsWithoutRef<"img">) {
   const [open, setOpen] = useState(false);
   const [isPortrait, setIsPortrait] = useState(false);
-  const [viewerZoom, setViewerZoom] = useState(1);
-  const [viewerOffset, setViewerOffset] = useState({ x: 0, y: 0 });
-  const [isViewerDragging, setIsViewerDragging] = useState(false);
-  const viewerZoomRef = useRef(1);
-  const viewerOffsetRef = useRef({ x: 0, y: 0 });
-  const viewerImageRef = useRef<HTMLImageElement | null>(null);
-  const viewerOverlayRef = useRef<HTMLDivElement | null>(null);
-  const viewerPointersRef = useRef(new Map<number, { x: number; y: number }>());
-  const viewerDragRef = useRef<{
-    pointerId: number;
-    origin: { x: number; y: number };
-    offset: { x: number; y: number };
-  } | null>(null);
-  const viewerPinchRef = useRef<{
-    distance: number;
-    center: { x: number; y: number };
-    zoom: number;
-    offset: { x: number; y: number };
-  } | null>(null);
   const caption = title?.trim() || alt?.trim();
   const resolvedSrc = resolveMarkdownImageSrc(src);
   const zoomLabel = getText("markdown.imageZoom", "查看大图");
@@ -570,190 +553,13 @@ function MarkdownImage({
     onLoad?.(event);
   };
 
-  const resetViewerTransform = useCallback(() => {
-    viewerPointersRef.current.clear();
-    viewerDragRef.current = null;
-    viewerPinchRef.current = null;
-    viewerZoomRef.current = 1;
-    viewerOffsetRef.current = { x: 0, y: 0 };
-    setViewerZoom(1);
-    setViewerOffset({ x: 0, y: 0 });
-    setIsViewerDragging(false);
-  }, []);
-
-  const closeViewer = useCallback(() => {
-    resetViewerTransform();
-    setOpen(false);
-  }, [resetViewerTransform]);
-
-  const clampViewerOffset = (offset: { x: number; y: number }, zoom: number) => {
-    const image = viewerImageRef.current;
-    if (!image) {
-      return offset;
-    }
-
-    const maxX = Math.max(0, (image.offsetWidth * (zoom - 1)) / 2);
-    const maxY = Math.max(0, (image.offsetHeight * (zoom - 1)) / 2);
-    return {
-      x: Math.min(maxX, Math.max(-maxX, offset.x)),
-      y: Math.min(maxY, Math.max(-maxY, offset.y)),
-    };
-  };
-
-  const getViewerPointerPair = () => Array.from(viewerPointersRef.current.values()).slice(0, 2);
-
-  const handleViewerPointerDown = (event: ReactPointerEvent<HTMLElement>) => {
-    event.currentTarget.setPointerCapture(event.pointerId);
-    viewerPointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
-    const pointers = getViewerPointerPair();
-    const currentZoom = viewerZoomRef.current;
-
-    if (pointers.length === 2) {
-      const [first, second] = pointers;
-      viewerDragRef.current = null;
-      viewerPinchRef.current = {
-        distance: Math.hypot(second.x - first.x, second.y - first.y),
-        center: { x: (first.x + second.x) / 2, y: (first.y + second.y) / 2 },
-        zoom: currentZoom,
-        offset: viewerOffsetRef.current,
-      };
-      setIsViewerDragging(true);
-      return;
-    }
-
-    if (currentZoom > 1) {
-      viewerDragRef.current = {
-        pointerId: event.pointerId,
-        origin: { x: event.clientX, y: event.clientY },
-        offset: viewerOffsetRef.current,
-      };
-      setIsViewerDragging(true);
-    }
-  };
-
-  const handleViewerPointerMove = (event: ReactPointerEvent<HTMLElement>) => {
-    if (!viewerPointersRef.current.has(event.pointerId)) {
-      return;
-    }
-
-    viewerPointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
-    const pointers = getViewerPointerPair();
-    const pinch = viewerPinchRef.current;
-
-    if (pointers.length === 2 && pinch) {
-      const [first, second] = pointers;
-      const distance = Math.hypot(second.x - first.x, second.y - first.y);
-      const center = { x: (first.x + second.x) / 2, y: (first.y + second.y) / 2 };
-      const nextZoom = Math.min(4, Math.max(1, pinch.zoom * (distance / Math.max(pinch.distance, 1))));
-      const nextOffset = clampViewerOffset(
-        {
-          x: pinch.offset.x + center.x - pinch.center.x,
-          y: pinch.offset.y + center.y - pinch.center.y,
-        },
-        nextZoom,
-      );
-      viewerZoomRef.current = nextZoom;
-      viewerOffsetRef.current = nextOffset;
-      setViewerZoom(nextZoom);
-      setViewerOffset(nextOffset);
-      return;
-    }
-
-    const drag = viewerDragRef.current;
-    const currentZoom = viewerZoomRef.current;
-    if (drag?.pointerId !== event.pointerId || currentZoom <= 1) {
-      return;
-    }
-
-    const nextOffset = clampViewerOffset({
-      x: drag.offset.x + event.clientX - drag.origin.x,
-      y: drag.offset.y + event.clientY - drag.origin.y,
-    }, currentZoom);
-    viewerOffsetRef.current = nextOffset;
-    setViewerOffset(nextOffset);
-  };
-
-  const handleViewerPointerEnd = (event: ReactPointerEvent<HTMLElement>) => {
-    viewerPointersRef.current.delete(event.pointerId);
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    }
-
-    const [remainingPointer] = viewerPointersRef.current.entries();
-    if (remainingPointer && viewerZoomRef.current > 1) {
-      const [pointerId, origin] = remainingPointer;
-      viewerDragRef.current = {
-        pointerId,
-        origin,
-        offset: viewerOffsetRef.current,
-      };
-      setIsViewerDragging(true);
-    } else {
-      viewerDragRef.current = null;
-      setIsViewerDragging(false);
-    }
-    viewerPinchRef.current = null;
-  };
-
-  useEffect(() => {
-    if (!open || typeof window === "undefined") {
-      return undefined;
-    }
-
-    const originalOverflow = document.body.style.overflow;
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        closeViewer();
-      }
-    };
-
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.body.style.overflow = originalOverflow;
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [open, closeViewer]);
-
-  useEffect(() => {
-    if (!open) {
-      return undefined;
-    }
-
-    const overlay = viewerOverlayRef.current;
-    if (!overlay) {
-      return undefined;
-    }
-
-    const handleNativeViewerWheel = (event: WheelEvent) => {
-      if (!event.ctrlKey && !event.metaKey) {
-        return;
-      }
-
-      event.preventDefault();
-      const nextZoom = Math.min(4, Math.max(1, viewerZoomRef.current * Math.exp(-event.deltaY * 0.002)));
-      viewerZoomRef.current = nextZoom;
-      setViewerZoom(nextZoom);
-      const nextOffset = clampViewerOffset(viewerOffsetRef.current, nextZoom);
-      viewerOffsetRef.current = nextOffset;
-      setViewerOffset(nextOffset);
-    };
-
-    overlay.addEventListener("wheel", handleNativeViewerWheel, { passive: false });
-    return () => overlay.removeEventListener("wheel", handleNativeViewerWheel);
-  }, [open]);
-
   return (
     <>
       <span className="markdown-figure">
         <button
           type="button"
           className="markdown-figure-button"
-          onClick={() => {
-            resetViewerTransform();
-            setOpen(true);
-          }}
+          onClick={() => setOpen(true)}
           aria-label={zoomLabel}
         >
           <img
@@ -769,45 +575,14 @@ function MarkdownImage({
         {caption ? <span className="markdown-figure-caption">{caption}</span> : null}
       </span>
 
-      {open && resolvedSrc && typeof document !== "undefined"
-        ? createPortal(
-            <div
-              ref={viewerOverlayRef}
-              className="markdown-image-lightbox"
-              role="dialog"
-              aria-modal="true"
-              aria-label={zoomLabel}
-              onClick={closeViewer}
-            >
-              <figure
-                className="markdown-image-lightbox-frame"
-                onClick={(event) => event.stopPropagation()}
-              >
-                <div
-                  className="markdown-image-lightbox-viewport"
-                  onPointerDown={handleViewerPointerDown}
-                  onPointerMove={handleViewerPointerMove}
-                  onPointerUp={handleViewerPointerEnd}
-                  onPointerCancel={handleViewerPointerEnd}
-                >
-                  <img
-                    ref={viewerImageRef}
-                    src={resolvedSrc}
-                    alt={alt}
-                    className={`markdown-image-lightbox-image ${viewerZoom > 1 ? "is-zoomed" : ""} ${isViewerDragging ? "is-dragging" : ""}`}
-                    style={{ transform: `translate3d(${viewerOffset.x}px, ${viewerOffset.y}px, 0) scale(${viewerZoom})` }}
-                    draggable={false}
-                    onDragStart={(event) => event.preventDefault()}
-                  />
-                </div>
-                {caption ? (
-                  <figcaption className="markdown-image-lightbox-caption">{caption}</figcaption>
-                ) : null}
-              </figure>
-            </div>,
-            document.body,
-          )
-        : null}
+      {open && resolvedSrc ? (
+        <ImageLightbox
+          src={resolvedSrc}
+          alt={alt}
+          caption={caption}
+          onClose={() => setOpen(false)}
+        />
+      ) : null}
     </>
   );
 }

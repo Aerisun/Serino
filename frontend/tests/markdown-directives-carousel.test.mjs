@@ -167,41 +167,46 @@ test("carousel styles use same-size direct-image thumbnails with accessible inte
   assert.doesNotMatch(css, /\.markdown-grid/);
 });
 
-test("Markdown image viewer is frameless and supports gesture zoom without a close button", () => {
+test("article Markdown images reuse the shared lightbox with the established viewport and gesture behavior", () => {
   const renderer = readSource("frontend/src/components/MarkdownRenderer.tsx");
-  const css = readSource("frontend/src/components/markdown.css");
+  const css = readSource("frontend/src/components/ImageLightbox.css");
+  const lightbox = readSource("frontend/src/components/ImageLightbox.tsx");
 
-  assert.match(renderer, /const viewerOverlayRef = useRef<HTMLDivElement \| null>\(null\)/);
-  assert.match(renderer, /const viewerOffsetRef = useRef\(\{ x: 0, y: 0 \}\)/);
-  assert.match(renderer, /const \[isViewerDragging, setIsViewerDragging\] = useState\(false\)/);
-  assert.match(renderer, /draggable=\{false\}/);
-  assert.match(renderer, /onDragStart=\{\(event\) => event\.preventDefault\(\)\}/);
-  assert.match(renderer, /addEventListener\("wheel", handleNativeViewerWheel, \{ passive: false \}\)/);
-  assert.doesNotMatch(renderer, /onWheel=\{handleViewerWheel\}/);
-  assert.match(renderer, /event\.ctrlKey[\s\S]*event\.metaKey/);
-  assert.match(renderer, /onPointerDown=\{handleViewerPointerDown\}/);
-  assert.match(renderer, /onPointerMove=\{handleViewerPointerMove\}/);
-  assert.match(renderer, /onPointerUp=\{handleViewerPointerEnd\}/);
-  assert.match(renderer, /onClick=\{closeViewer\}/);
-  assert.match(renderer, /className="markdown-image-lightbox-caption"/);
-  assert.doesNotMatch(renderer, /markdown-image-lightbox-close/);
-  assert.doesNotMatch(renderer, /<X className=/);
-  assert.match(css, /\.markdown-image-lightbox\s*\{[^}]*?background:\s*rgb\(15 23 42 \/ 0\.46\);[^}]*?backdrop-filter:\s*blur\(14px\) saturate\(105%\);/);
-  assert.doesNotMatch(css, /\.markdown-image-lightbox\s*\{[^}]*?radial-gradient/);
-  assert.match(css, /--markdown-image-lightbox-top-inset:\s*calc\(1\.5rem \+ env\(safe-area-inset-top\)\);/);
-  assert.match(css, /\.markdown-image-lightbox\s*\{[^}]*?z-index:\s*1200;/);
-  assert.match(css, /padding:\s*var\(--markdown-image-lightbox-top-inset\) 2rem var\(--markdown-image-lightbox-bottom-inset\);/);
-  assert.match(css, /\.markdown-image-lightbox-frame\s*\{[\s\S]*?border:\s*0;[\s\S]*?background:\s*transparent;/);
-  assert.match(renderer, /className="markdown-image-lightbox-viewport"/);
-  assert.match(css, /--markdown-image-lightbox-caption-space:\s*3\.75rem;/);
-  assert.match(css, /\.markdown-image-lightbox-viewport\s*\{[\s\S]*?overflow:\s*hidden;/);
-  assert.match(css, /\.markdown-image-lightbox-viewport\s*\{[^}]*?touch-action:\s*none;/);
-  assert.match(css, /\.markdown-image-lightbox-caption\s*\{[\s\S]*?flex:\s*0 0 auto;/);
-  assert.match(css, /\.markdown-image-lightbox-image\s*\{[\s\S]*?touch-action:\s*none;/);
-  assert.match(css, /\.markdown-image-lightbox-image\s*\{[\s\S]*?border-radius:\s*min\(0\.65rem, 2\.4%\);/);
-  assert.match(css, /\.markdown-image-lightbox-image\.is-zoomed\s*\{[\s\S]*?cursor:\s*grab;/);
-  assert.match(css, /\.markdown-image-lightbox-image\.is-dragging\s*\{[^}]*?transition:\s*none;/);
-  assert.match(css, /\.markdown-image-lightbox-image\s*\{[^}]*?-webkit-user-drag:\s*none;/);
+  assert.match(renderer, /import ImageLightbox from "@\/components\/ImageLightbox"/);
+  assert.match(renderer, /<ImageLightbox[\s\S]*?src=\{resolvedSrc\}[\s\S]*?caption=\{caption\}/);
+  assert.doesNotMatch(renderer, /viewerOverlayRef/);
+  assert.doesNotMatch(renderer, /handleNativeViewerWheel/);
+  assert.doesNotMatch(renderer, /createPortal/);
+  assert.doesNotMatch(renderer, /markdown-image-lightbox/);
+  assert.match(lightbox, /const originalOverflow = document\.body\.style\.overflow/);
+  assert.match(lightbox, /document\.body\.style\.overflow = originalOverflow/);
+  assert.match(lightbox, /addEventListener\("wheel", handleWheel, \{ passive: false \}\)/);
+  assert.match(lightbox, /event\.ctrlKey[\s\S]*event\.metaKey/);
+  assert.match(lightbox, /onPointerDown=\{handlePointerDown\}/);
+  assert.match(lightbox, /onPointerMove=\{handlePointerMove\}/);
+  assert.match(lightbox, /onPointerUp=\{handlePointerEnd\}/);
+  assert.match(lightbox, /onClick=\{onClose\}/);
+  assert.match(css, /\.aerisun-image-lightbox\s*\{[^}]*?background:\s*rgb\(15 23 42 \/ 0\.46\);[^}]*?backdrop-filter:\s*blur\(14px\) saturate\(105%\);/);
+  assert.match(css, /\.aerisun-image-lightbox__frame\s*\{[\s\S]*?max-width:\s*min\(92vw, 1080px\);/);
+  assert.match(css, /\.aerisun-image-lightbox__viewport\s*\{[\s\S]*?max-height:\s*min\([\s\S]*?920px/);
+  assert.match(css, /\.aerisun-image-lightbox__viewport\s*\{[^}]*?touch-action:\s*none;/);
+  assert.match(css, /\.aerisun-image-lightbox__image\s*\{[\s\S]*?max-width:\s*min\(92vw, 1080px\);/);
+  assert.match(css, /\.aerisun-image-lightbox__image\.is-zoomed\s*\{[\s\S]*?cursor:\s*grab;/);
+  assert.match(css, /\.aerisun-image-lightbox__image\.is-dragging\s*\{[^}]*?transition:\s*none;/);
+  assert.match(css, /\.aerisun-image-lightbox__image\s*\{[^}]*?-webkit-user-drag:\s*none;/);
+});
+
+test("shared lightbox batches gesture transforms to animation frames and only promotes zoomed images", () => {
+  const css = readSource("frontend/src/components/ImageLightbox.css");
+  const lightbox = readSource("frontend/src/components/ImageLightbox.tsx");
+  const baseImageRule = css.match(/\.aerisun-image-lightbox__image\s*\{([^}]*)\}/)?.[1] ?? "";
+
+  assert.match(lightbox, /window\.requestAnimationFrame/);
+  assert.match(lightbox, /window\.cancelAnimationFrame/);
+  assert.match(lightbox, /const scheduleTransform/);
+  assert.match(lightbox, /scheduleTransform\(nextZoom, nextOffset\)/);
+  assert.doesNotMatch(baseImageRule, /will-change:/);
+  assert.match(css, /\.aerisun-image-lightbox__image\.is-zoomed\s*\{[^}]*will-change:\s*transform;/);
 });
 
 test("embedded Markdown images use proportionate corners for narrow uploads", () => {
@@ -210,11 +215,23 @@ test("embedded Markdown images use proportionate corners for narrow uploads", ()
   assert.match(css, /\.prose \.markdown-figure-image\s*\{[\s\S]*?border-radius:\s*min\(1\.1rem, 10%\);/);
 });
 
+test("embedded Markdown images keep a readable desktop width instead of filling the article", () => {
+  const css = readSource("frontend/src/components/markdown.css");
+
+  assert.match(
+    css,
+    /\.prose \.markdown-figure\s*\{[\s\S]*?max-width:\s*min\(100%, 48rem\);/,
+  );
+});
+
 test("thoughts and excerpts retain the original attachment-grid Markdown renderer", () => {
   const commentRenderer = readSource("frontend/src/components/CommentMarkdownRenderer.tsx");
   const imageAttachments = readSource("frontend/src/lib/markdown-images.ts");
 
   assert.match(commentRenderer, /remarkPlugins=\{\[remarkGfm\]\}/);
+  assert.match(commentRenderer, /import ImageLightbox from "@\/components\/ImageLightbox"/);
+  assert.match(commentRenderer, /<ImageLightbox/);
+  assert.doesNotMatch(commentRenderer, /aerisun-comment-image-lightbox__close/);
   assert.doesNotMatch(commentRenderer, /remarkDirective/);
   assert.doesNotMatch(commentRenderer, /MarkdownCarousel/);
   assert.doesNotMatch(imageAttachments, /isCarouselDirectiveStart/);
