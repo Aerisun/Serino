@@ -41,6 +41,25 @@ describe("diary access moderation layout", () => {
     expect(source).toContain('className="min-w-[8.5rem] whitespace-nowrap p-4 align-middle"');
   });
 
+  it("shows pending diary requests as resolvable no-access decisions", () => {
+    const source = readSource("../src/pages/moderation/DiaryAccessRequestsPanel.tsx");
+
+    expect(source).toContain('row.status === "pending"');
+    expect(source).toContain('<Badge variant="warning">{t("moderation.diaryAccessPending")}</Badge>');
+    expect(source).toContain('{t("moderation.diaryAccessIgnore")}');
+    expect(source).toContain('updateAccess.mutate({ row, revoke: true })');
+  });
+
+  it("shows people-based all, pending, and authorized summary pills", () => {
+    const source = readSource("../src/pages/moderation/DiaryAccessRequestsPanel.tsx");
+
+    expect(source).toContain("people_total");
+    expect(source).toContain("pending_total");
+    expect(source).toContain("authorized_total");
+    expect(source).toContain('variant="destructive"');
+    expect(source).toContain('variant="success"');
+  });
+
   it("keeps the feedback template dialog focused on editing", () => {
     const source = readSource("../src/pages/moderation/DiaryAccessRequestsPanel.tsx");
 

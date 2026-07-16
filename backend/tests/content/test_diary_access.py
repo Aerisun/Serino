@@ -4,6 +4,7 @@ from datetime import timedelta
 
 from aerisun.core.db import get_session_factory
 from aerisun.core.time import shanghai_now
+from aerisun.domain.diary_access.models import DiaryAccessRequest
 from aerisun.domain.site_auth.models import SiteUser
 from aerisun.domain.site_config.models import SiteProfile
 from aerisun.domain.subscription.models import ContentSubscriber
@@ -170,6 +171,78 @@ def test_diary_access_request_can_be_submitted_approved_and_revoked(client, admi
 
     forbidden_detail = client.get(DIARY_DETAIL_PATH)
     assert forbidden_detail.status_code == 403
+
+
+def test_admin_diary_access_list_uses_each_visitors_latest_request_for_rows_and_summary(client, admin_headers) -> None:
+    now = shanghai_now()
+    with get_session_factory()() as session:
+        session.query(DiaryAccessRequest).delete()
+        visitors = [
+            SiteUser(email="latest-pending@example.com", display_name="Latest pending", avatar_url=""),
+            SiteUser(email="authorized@example.com", display_name="Authorized", avatar_url=""),
+            SiteUser(email="revoked@example.com", display_name="Revoked", avatar_url=""),
+        ]
+        session.add_all(visitors)
+        session.flush()
+        latest_pending, authorized, revoked = visitors
+        session.add_all(
+            [
+                DiaryAccessRequest(
+                    site_user_id=latest_pending.id,
+                    reason="旧授权申请",
+                    status="approved",
+                    granted_at=now - timedelta(days=5),
+                    expires_at=now + timedelta(days=7),
+                    created_at=now - timedelta(days=5),
+                    updated_at=now,
+                ),
+                DiaryAccessRequest(
+                    site_user_id=latest_pending.id,
+                    reason="最新待审申请",
+                    status="pending",
+                    created_at=now - timedelta(days=1),
+                    updated_at=now - timedelta(days=1),
+                ),
+                DiaryAccessRequest(
+                    site_user_id=authorized.id,
+                    reason="已授权申请",
+                    status="approved",
+                    granted_at=now - timedelta(days=2),
+                    expires_at=now + timedelta(days=7),
+                    created_at=now - timedelta(days=2),
+                    updated_at=now - timedelta(days=2),
+                ),
+                DiaryAccessRequest(
+                    site_user_id=revoked.id,
+                    reason="已取消申请",
+                    status="revoked",
+                    revoked_at=now,
+                    created_at=now,
+                    updated_at=now,
+                ),
+            ]
+        )
+        session.commit()
+
+    response = client.get("/api/v1/admin/moderation/diary-access-requests", headers=admin_headers)
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["total"] == 3
+    assert payload["people_total"] == 3
+    assert payload["pending_total"] == 1
+    assert payload["authorized_total"] == 1
+    assert {item["visitor_email"] for item in payload["items"]} == {
+        "latest-pending@example.com",
+        "authorized@example.com",
+        "revoked@example.com",
+    }
+    latest_pending_item = next(
+        item for item in payload["items"] if item["visitor_email"] == "latest-pending@example.com"
+    )
+    assert latest_pending_item["reason"] == "最新待审申请"
+    assert latest_pending_item["status"] == "pending"
+    assert latest_pending_item["has_access"] is False
 
 
 def test_disabling_diary_private_restores_public_detail_access(client) -> None:

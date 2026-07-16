@@ -1259,6 +1259,7 @@ def _comment_admin_read_from_waline(session: Session, record):
         body=record.comment,
         status=record.status,
         feedback_enabled=bool(record.feedback_enabled),
+        is_read=record.admin_read_at is not None,
         deletion_reason=record.deletion_reason,
         created_at=record.inserted_at,
         updated_at=record.updated_at,
@@ -1281,6 +1282,7 @@ def _guestbook_admin_read_from_waline(session: Session, record):
         website=record.link,
         body=record.comment,
         status=record.status,
+        is_read=record.admin_read_at is not None,
         deletion_reason=record.deletion_reason,
         created_at=record.inserted_at,
         updated_at=record.updated_at,
@@ -1349,6 +1351,37 @@ def list_admin_guestbook(
         "page": page,
         "page_size": page_size,
     }
+
+
+def _parse_moderation_record_ids(record_ids: list[str]) -> list[int]:
+    normalized: list[int] = []
+    for record_id in record_ids:
+        try:
+            parsed = int(record_id)
+        except (TypeError, ValueError) as err:
+            raise DomainValidationError("Invalid moderation item ID") from err
+        if parsed <= 0:
+            raise DomainValidationError("Invalid moderation item ID")
+        normalized.append(parsed)
+    return normalized
+
+
+def mark_admin_comments_read(record_ids: list[str]) -> int:
+    from aerisun.domain.waline.service import mark_waline_records_read
+
+    return mark_waline_records_read(
+        _parse_moderation_record_ids(record_ids),
+        guestbook_only=False,
+    )
+
+
+def mark_admin_guestbook_read(record_ids: list[str]) -> int:
+    from aerisun.domain.waline.service import mark_waline_records_read
+
+    return mark_waline_records_read(
+        _parse_moderation_record_ids(record_ids),
+        guestbook_only=True,
+    )
 
 
 def _extract_comment_media_resource_keys(records) -> set[str]:

@@ -6,6 +6,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from pathlib import Path
+from threading import Lock
 
 from aerisun.core.settings import get_settings
 from aerisun.core.time import normalize_shanghai_datetime, shanghai_now
@@ -16,6 +17,8 @@ WALINE_REACTION_COLUMNS = tuple(f"reaction{index}" for index in range(9))
 WALINE_DELETION_REASON_SELF = "self_deleted"
 WALINE_DELETION_REASON_CASCADE = "cascade_deleted"
 WALINE_DELETION_REASONS = {WALINE_DELETION_REASON_SELF, WALINE_DELETION_REASON_CASCADE}
+_waline_schema_signatures: dict[Path, tuple[int, int]] = {}
+_waline_schema_lock = Lock()
 
 
 @dataclass(slots=True)
@@ -41,6 +44,7 @@ class WalineCommentRecord:
     feedback_enabled: bool
     feedback_sent_at: datetime | None
     deletion_reason: str | None
+    admin_read_at: datetime | None
     created_at: datetime
     updated_at: datetime
 
@@ -155,14 +159,23 @@ def _sqlite_table_columns(connection: sqlite3.Connection, table_name: str) -> se
     return {str(row["name"]) for row in rows}
 
 
+def _waline_database_signature(path: Path) -> tuple[int, int]:
+    stat = path.stat()
+    return stat.st_dev, stat.st_ino
+
+
 @contextmanager
 def connect_waline_db(db_path: Path | None = None) -> Iterator[sqlite3.Connection]:
-    path = db_path or get_waline_db_path()
+    path = (db_path or get_waline_db_path()).expanduser().resolve()
     path.parent.mkdir(parents=True, exist_ok=True)
     connection = sqlite3.connect(path)
     connection.row_factory = sqlite3.Row
     connection.execute("PRAGMA foreign_keys=ON;")
-    ensure_waline_schema(connection)
+    with _waline_schema_lock:
+        signature = _waline_database_signature(path)
+        if _waline_schema_signatures.get(path) != signature:
+            ensure_waline_schema(connection)
+            _waline_schema_signatures[path] = signature
     try:
         yield connection
         connection.commit()
@@ -193,6 +206,7 @@ def ensure_waline_schema(connection: sqlite3.Connection) -> None:
             ua TEXT,
             url VARCHAR(255) NOT NULL DEFAULT '',
             deletion_reason VARCHAR(40) DEFAULT NULL,
+            admin_read_at TEXT DEFAULT NULL,
             createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
             updatedAt TEXT DEFAULT CURRENT_TIMESTAMP
         );
@@ -267,7 +281,18 @@ def ensure_waline_schema(connection: sqlite3.Connection) -> None:
         connection.execute("ALTER TABLE wl_comment ADD COLUMN feedback_sent_at TEXT DEFAULT NULL")
     if "deletion_reason" not in comment_columns:
         connection.execute("ALTER TABLE wl_comment ADD COLUMN deletion_reason VARCHAR(40) DEFAULT NULL")
+    if "admin_read_at" not in comment_columns:
+        connection.execute("ALTER TABLE wl_comment ADD COLUMN admin_read_at TEXT DEFAULT NULL")
+        connection.execute(
+            """
+            UPDATE wl_comment
+            SET admin_read_at = COALESCE(NULLIF(createdAt, ''), NULLIF(insertedAt, ''), CURRENT_TIMESTAMP)
+            WHERE admin_read_at IS NULL
+            """
+        )
     connection.execute("CREATE INDEX IF NOT EXISTS idx_wl_comment_site_user_id ON wl_comment (site_user_id)")
+    connection.execute("CREATE INDEX IF NOT EXISTS idx_wl_comment_avatar_key ON wl_comment (avatar_key)")
+    connection.execute("CREATE INDEX IF NOT EXISTS idx_wl_comment_attention ON wl_comment (url, status, admin_read_at)")
 
 
 def _row_to_record(row: sqlite3.Row) -> WalineCommentRecord:
@@ -300,6 +325,11 @@ def _row_to_record(row: sqlite3.Row) -> WalineCommentRecord:
         deletion_reason=(
             str(row["deletion_reason"])
             if "deletion_reason" in columns and row["deletion_reason"] in WALINE_DELETION_REASONS
+            else None
+        ),
+        admin_read_at=(
+            _parse_sql_timestamp(str(row["admin_read_at"]))
+            if "admin_read_at" in columns and row["admin_read_at"]
             else None
         ),
         created_at=_parse_sql_timestamp(row["createdAt"]),
@@ -392,8 +422,13 @@ def list_waline_records(
         if surface and not guestbook_only:
             normalized_surface = surface.strip().strip("/")
             if normalized_surface:
-                where.append("url LIKE ?")
-                params.append(f"/{normalized_surface}/%")
+                surface_path = f"/{normalized_surface}"
+                if normalized_surface == "friends":
+                    where.append("(url = ? OR url LIKE ?)")
+                    params.extend([surface_path, f"{surface_path}/%"])
+                else:
+                    where.append("url LIKE ?")
+                    params.append(f"{surface_path}/%")
 
         query = "SELECT * FROM wl_comment"
         if where:
@@ -435,6 +470,74 @@ def list_guestbook_records(
         path=path,
         sort=sort,
     )
+
+
+def get_waline_moderation_attention_counts(
+    *,
+    db_path: Path | None = None,
+) -> dict[str, dict[str, int]]:
+    with connect_waline_db(db_path) as connection:
+        row = connection.execute(
+            """
+            SELECT
+                COALESCE(SUM(CASE WHEN url != ? AND status = 'waiting' THEN 1 ELSE 0 END), 0)
+                    AS comments_pending,
+                COALESCE(SUM(CASE WHEN url != ? AND (admin_read_at IS NULL OR status = 'waiting') THEN 1 ELSE 0 END), 0)
+                    AS comments_unread,
+                COALESCE(SUM(CASE WHEN url = ? AND status = 'waiting' THEN 1 ELSE 0 END), 0)
+                    AS guestbook_pending,
+                COALESCE(SUM(CASE WHEN url = ? AND (admin_read_at IS NULL OR status = 'waiting') THEN 1 ELSE 0 END), 0)
+                    AS guestbook_unread
+            FROM wl_comment
+            """,
+            (
+                WALINE_GUESTBOOK_PATH,
+                WALINE_GUESTBOOK_PATH,
+                WALINE_GUESTBOOK_PATH,
+                WALINE_GUESTBOOK_PATH,
+            ),
+        ).fetchone()
+
+    return {
+        "comments": {
+            "pending": int(row["comments_pending"] if row else 0),
+            "unread": int(row["comments_unread"] if row else 0),
+        },
+        "guestbook": {
+            "pending": int(row["guestbook_pending"] if row else 0),
+            "unread": int(row["guestbook_unread"] if row else 0),
+        },
+    }
+
+
+def mark_waline_records_read(
+    record_ids: list[int],
+    *,
+    guestbook_only: bool,
+    db_path: Path | None = None,
+) -> int:
+    normalized_ids = sorted({record_id for record_id in record_ids if record_id > 0})
+    if not normalized_ids:
+        return 0
+
+    placeholders = ", ".join("?" for _ in normalized_ids)
+    record_scope = "url = ?" if guestbook_only else "url != ?"
+    with connect_waline_db(db_path) as connection:
+        cursor = connection.execute(
+            f"""
+            UPDATE wl_comment
+            SET admin_read_at = ?
+            WHERE id IN ({placeholders})
+              AND {record_scope}
+              AND admin_read_at IS NULL
+            """,
+            (
+                _to_sql_timestamp(None),
+                *normalized_ids,
+                WALINE_GUESTBOOK_PATH,
+            ),
+        )
+        return cursor.rowcount
 
 
 def list_records_for_url(
@@ -934,6 +1037,62 @@ def _collect_descendant_ids(connection: sqlite3.Connection, root_id: int) -> lis
     return collected
 
 
+def _delete_waline_records_for_site_user(
+    connection: sqlite3.Connection,
+    *,
+    site_user_id: str,
+) -> int:
+    normalized_user_id = str(site_user_id or "").strip()
+    if not normalized_user_id:
+        return 0
+
+    deleted_rows = connection.execute(
+        """
+        DELETE FROM wl_comment
+        WHERE id IN (
+            WITH RECURSIVE comment_tree(id) AS (
+                SELECT id
+                FROM wl_comment
+                WHERE site_user_id = ? OR avatar_key = ?
+                UNION
+                SELECT child.id
+                FROM wl_comment AS child
+                JOIN comment_tree AS parent ON child.pid = parent.id
+            )
+            SELECT id FROM comment_tree
+        )
+        RETURNING id
+        """,
+        (normalized_user_id, f"site-user-{normalized_user_id}"),
+    ).fetchall()
+    return len(deleted_rows)
+
+
+@contextmanager
+def stage_waline_records_deletion_for_site_user(
+    *,
+    site_user_id: str,
+    db_path: Path | None = None,
+) -> Iterator[int]:
+    with connect_waline_db(db_path) as connection:
+        yield _delete_waline_records_for_site_user(
+            connection,
+            site_user_id=site_user_id,
+        )
+
+
+def delete_waline_records_for_site_user(
+    *,
+    site_user_id: str,
+    db_path: Path | None = None,
+) -> int:
+    with stage_waline_records_deletion_for_site_user(
+        site_user_id=site_user_id,
+        db_path=db_path,
+    ) as deleted_count:
+        return deleted_count
+
+
 def list_waline_record_tree(record_id: int, db_path: Path | None = None) -> list[WalineCommentRecord]:
     with connect_waline_db(db_path) as connection:
         root = connection.execute("SELECT * FROM wl_comment WHERE id = ?", (record_id,)).fetchone()
@@ -1036,6 +1195,7 @@ def moderate_waline_record(
             """
             UPDATE wl_comment
             SET status = ?,
+                admin_read_at = COALESCE(admin_read_at, ?),
                 deletion_reason = CASE
                     WHEN deletion_reason IN ('self_deleted', 'cascade_deleted') THEN deletion_reason
                     ELSE NULL
@@ -1043,7 +1203,7 @@ def moderate_waline_record(
                 updatedAt = CURRENT_TIMESTAMP
             WHERE id = ?
             """,
-            (normalized, record_id),
+            (normalized, _to_sql_timestamp(None), record_id),
         )
         connection.commit()
         updated = connection.execute("SELECT * FROM wl_comment WHERE id = ?", (record_id,)).fetchone()

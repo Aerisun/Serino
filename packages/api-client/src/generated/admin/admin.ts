@@ -103,6 +103,7 @@ import type {
   DashboardStatsApiV1AdminSystemDashboardStatsGetParams,
   DeriveAiSchemaRequest,
   DeriveAiSchemaResponse,
+  DiaryAccessRequestAdminList,
   DiaryAccessRequestAdminRead,
   DiaryAccessRequestAdminUpdate,
   EnhancedDashboardStats,
@@ -148,6 +149,9 @@ import type {
   McpAdminConfigRead,
   McpAdminConfigUpdate,
   ModerateAction,
+  ModerationAttentionCounts,
+  ModerationReadResult,
+  ModerationReadUpdate,
   NavItemAdminRead,
   NavItemCreate,
   NavItemUpdate,
@@ -165,7 +169,6 @@ import type {
   PaginatedResponseContentAdminRead,
   PaginatedResponseContentNotificationDeliveryAdminRead,
   PaginatedResponseContentSubscriberAdminRead,
-  PaginatedResponseDiaryAccessRequestAdminRead,
   PaginatedResponseFriendAdminRead,
   PaginatedResponseGuestbookAdminRead,
   PaginatedResponseNavItemAdminRead,
@@ -10271,10 +10274,120 @@ export const useDeleteFriendFeedApiV1AdminSocialFeedsFeedIdDelete = <TError = Er
       return useMutation(getDeleteFriendFeedApiV1AdminSocialFeedsFeedIdDeleteMutationOptions(options), queryClient);
     }
     /**
+ * @summary 获取审核提醒统计
+ */
+export type getAttentionCountsApiV1AdminModerationAttentionCountsGetResponse200 = {
+  data: ModerationAttentionCounts
+  status: 200
+}
+
+export type getAttentionCountsApiV1AdminModerationAttentionCountsGetResponseSuccess = (getAttentionCountsApiV1AdminModerationAttentionCountsGetResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getAttentionCountsApiV1AdminModerationAttentionCountsGetResponse = (getAttentionCountsApiV1AdminModerationAttentionCountsGetResponseSuccess)
+
+export const getGetAttentionCountsApiV1AdminModerationAttentionCountsGetUrl = () => {
+
+
+
+
+  return `/api/v1/admin/moderation/attention-counts`
+}
+
+export const getAttentionCountsApiV1AdminModerationAttentionCountsGet = async ( options?: RequestInit): Promise<getAttentionCountsApiV1AdminModerationAttentionCountsGetResponse> => {
+
+  return customInstance<getAttentionCountsApiV1AdminModerationAttentionCountsGetResponse>(getGetAttentionCountsApiV1AdminModerationAttentionCountsGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAttentionCountsApiV1AdminModerationAttentionCountsGetQueryKey = () => {
+    return [
+    `/api/v1/admin/moderation/attention-counts`
+    ] as const;
+    }
+
+
+export const getGetAttentionCountsApiV1AdminModerationAttentionCountsGetQueryOptions = <TData = Awaited<ReturnType<typeof getAttentionCountsApiV1AdminModerationAttentionCountsGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAttentionCountsApiV1AdminModerationAttentionCountsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAttentionCountsApiV1AdminModerationAttentionCountsGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAttentionCountsApiV1AdminModerationAttentionCountsGet>>> = ({ signal }) => getAttentionCountsApiV1AdminModerationAttentionCountsGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAttentionCountsApiV1AdminModerationAttentionCountsGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetAttentionCountsApiV1AdminModerationAttentionCountsGetQueryResult = NonNullable<Awaited<ReturnType<typeof getAttentionCountsApiV1AdminModerationAttentionCountsGet>>>
+export type GetAttentionCountsApiV1AdminModerationAttentionCountsGetQueryError = ErrorType<unknown>
+
+
+export function useGetAttentionCountsApiV1AdminModerationAttentionCountsGet<TData = Awaited<ReturnType<typeof getAttentionCountsApiV1AdminModerationAttentionCountsGet>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAttentionCountsApiV1AdminModerationAttentionCountsGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAttentionCountsApiV1AdminModerationAttentionCountsGet>>,
+          TError,
+          Awaited<ReturnType<typeof getAttentionCountsApiV1AdminModerationAttentionCountsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAttentionCountsApiV1AdminModerationAttentionCountsGet<TData = Awaited<ReturnType<typeof getAttentionCountsApiV1AdminModerationAttentionCountsGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAttentionCountsApiV1AdminModerationAttentionCountsGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAttentionCountsApiV1AdminModerationAttentionCountsGet>>,
+          TError,
+          Awaited<ReturnType<typeof getAttentionCountsApiV1AdminModerationAttentionCountsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAttentionCountsApiV1AdminModerationAttentionCountsGet<TData = Awaited<ReturnType<typeof getAttentionCountsApiV1AdminModerationAttentionCountsGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAttentionCountsApiV1AdminModerationAttentionCountsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取审核提醒统计
+ */
+
+export function useGetAttentionCountsApiV1AdminModerationAttentionCountsGet<TData = Awaited<ReturnType<typeof getAttentionCountsApiV1AdminModerationAttentionCountsGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAttentionCountsApiV1AdminModerationAttentionCountsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetAttentionCountsApiV1AdminModerationAttentionCountsGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
  * @summary 获取日记查看申请列表
  */
 export type listDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGetResponse200 = {
-  data: PaginatedResponseDiaryAccessRequestAdminRead
+  data: DiaryAccessRequestAdminList
   status: 200
 }
 
@@ -10609,6 +10722,95 @@ export function useListCommentsApiV1AdminModerationCommentsGet<TData = Awaited<R
 
 
 /**
+ * @summary 标记评论已读
+ */
+export type markCommentsReadApiV1AdminModerationCommentsReadPatchResponse200 = {
+  data: ModerationReadResult
+  status: 200
+}
+
+export type markCommentsReadApiV1AdminModerationCommentsReadPatchResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type markCommentsReadApiV1AdminModerationCommentsReadPatchResponseSuccess = (markCommentsReadApiV1AdminModerationCommentsReadPatchResponse200) & {
+  headers: Headers;
+};
+export type markCommentsReadApiV1AdminModerationCommentsReadPatchResponseError = (markCommentsReadApiV1AdminModerationCommentsReadPatchResponse422) & {
+  headers: Headers;
+};
+
+export type markCommentsReadApiV1AdminModerationCommentsReadPatchResponse = (markCommentsReadApiV1AdminModerationCommentsReadPatchResponseSuccess | markCommentsReadApiV1AdminModerationCommentsReadPatchResponseError)
+
+export const getMarkCommentsReadApiV1AdminModerationCommentsReadPatchUrl = () => {
+
+
+
+
+  return `/api/v1/admin/moderation/comments/read`
+}
+
+export const markCommentsReadApiV1AdminModerationCommentsReadPatch = async (moderationReadUpdate: ModerationReadUpdate, options?: RequestInit): Promise<markCommentsReadApiV1AdminModerationCommentsReadPatchResponse> => {
+
+  return customInstance<markCommentsReadApiV1AdminModerationCommentsReadPatchResponse>(getMarkCommentsReadApiV1AdminModerationCommentsReadPatchUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      moderationReadUpdate,)
+  }
+);}
+
+
+
+
+export const getMarkCommentsReadApiV1AdminModerationCommentsReadPatchMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markCommentsReadApiV1AdminModerationCommentsReadPatch>>, TError,{data: BodyType<ModerationReadUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof markCommentsReadApiV1AdminModerationCommentsReadPatch>>, TError,{data: BodyType<ModerationReadUpdate>}, TContext> => {
+
+const mutationKey = ['markCommentsReadApiV1AdminModerationCommentsReadPatch'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof markCommentsReadApiV1AdminModerationCommentsReadPatch>>, {data: BodyType<ModerationReadUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  markCommentsReadApiV1AdminModerationCommentsReadPatch(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MarkCommentsReadApiV1AdminModerationCommentsReadPatchMutationResult = NonNullable<Awaited<ReturnType<typeof markCommentsReadApiV1AdminModerationCommentsReadPatch>>>
+    export type MarkCommentsReadApiV1AdminModerationCommentsReadPatchMutationBody = BodyType<ModerationReadUpdate>
+    export type MarkCommentsReadApiV1AdminModerationCommentsReadPatchMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 标记评论已读
+ */
+export const useMarkCommentsReadApiV1AdminModerationCommentsReadPatch = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markCommentsReadApiV1AdminModerationCommentsReadPatch>>, TError,{data: BodyType<ModerationReadUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof markCommentsReadApiV1AdminModerationCommentsReadPatch>>,
+        TError,
+        {data: BodyType<ModerationReadUpdate>},
+        TContext
+      > => {
+      return useMutation(getMarkCommentsReadApiV1AdminModerationCommentsReadPatchMutationOptions(options), queryClient);
+    }
+    /**
  * @summary 审核评论
  */
 export type moderateCommentEndpointApiV1AdminModerationCommentsCommentIdModeratePostResponse200 = {
@@ -10913,6 +11115,95 @@ export function useListGuestbookApiV1AdminModerationGuestbookGet<TData = Awaited
 
 
 /**
+ * @summary 标记留言已读
+ */
+export type markGuestbookReadApiV1AdminModerationGuestbookReadPatchResponse200 = {
+  data: ModerationReadResult
+  status: 200
+}
+
+export type markGuestbookReadApiV1AdminModerationGuestbookReadPatchResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type markGuestbookReadApiV1AdminModerationGuestbookReadPatchResponseSuccess = (markGuestbookReadApiV1AdminModerationGuestbookReadPatchResponse200) & {
+  headers: Headers;
+};
+export type markGuestbookReadApiV1AdminModerationGuestbookReadPatchResponseError = (markGuestbookReadApiV1AdminModerationGuestbookReadPatchResponse422) & {
+  headers: Headers;
+};
+
+export type markGuestbookReadApiV1AdminModerationGuestbookReadPatchResponse = (markGuestbookReadApiV1AdminModerationGuestbookReadPatchResponseSuccess | markGuestbookReadApiV1AdminModerationGuestbookReadPatchResponseError)
+
+export const getMarkGuestbookReadApiV1AdminModerationGuestbookReadPatchUrl = () => {
+
+
+
+
+  return `/api/v1/admin/moderation/guestbook/read`
+}
+
+export const markGuestbookReadApiV1AdminModerationGuestbookReadPatch = async (moderationReadUpdate: ModerationReadUpdate, options?: RequestInit): Promise<markGuestbookReadApiV1AdminModerationGuestbookReadPatchResponse> => {
+
+  return customInstance<markGuestbookReadApiV1AdminModerationGuestbookReadPatchResponse>(getMarkGuestbookReadApiV1AdminModerationGuestbookReadPatchUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      moderationReadUpdate,)
+  }
+);}
+
+
+
+
+export const getMarkGuestbookReadApiV1AdminModerationGuestbookReadPatchMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markGuestbookReadApiV1AdminModerationGuestbookReadPatch>>, TError,{data: BodyType<ModerationReadUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof markGuestbookReadApiV1AdminModerationGuestbookReadPatch>>, TError,{data: BodyType<ModerationReadUpdate>}, TContext> => {
+
+const mutationKey = ['markGuestbookReadApiV1AdminModerationGuestbookReadPatch'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof markGuestbookReadApiV1AdminModerationGuestbookReadPatch>>, {data: BodyType<ModerationReadUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  markGuestbookReadApiV1AdminModerationGuestbookReadPatch(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MarkGuestbookReadApiV1AdminModerationGuestbookReadPatchMutationResult = NonNullable<Awaited<ReturnType<typeof markGuestbookReadApiV1AdminModerationGuestbookReadPatch>>>
+    export type MarkGuestbookReadApiV1AdminModerationGuestbookReadPatchMutationBody = BodyType<ModerationReadUpdate>
+    export type MarkGuestbookReadApiV1AdminModerationGuestbookReadPatchMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 标记留言已读
+ */
+export const useMarkGuestbookReadApiV1AdminModerationGuestbookReadPatch = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markGuestbookReadApiV1AdminModerationGuestbookReadPatch>>, TError,{data: BodyType<ModerationReadUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof markGuestbookReadApiV1AdminModerationGuestbookReadPatch>>,
+        TError,
+        {data: BodyType<ModerationReadUpdate>},
+        TContext
+      > => {
+      return useMutation(getMarkGuestbookReadApiV1AdminModerationGuestbookReadPatchMutationOptions(options), queryClient);
+    }
+    /**
  * @summary 审核留言
  */
 export type moderateGuestbookEndpointApiV1AdminModerationGuestbookEntryIdModeratePostResponse200 = {
@@ -21043,6 +21334,104 @@ export function useListVisitorUsersApiV1AdminVisitorsUsersGet<TData = Awaited<Re
 
 
 /**
+ * @summary 删除站点访客及关联互动记录
+ */
+export type deleteVisitorUserApiV1AdminVisitorsUsersUserIdDeleteResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deleteVisitorUserApiV1AdminVisitorsUsersUserIdDeleteResponse404 = {
+  data: void
+  status: 404
+}
+
+export type deleteVisitorUserApiV1AdminVisitorsUsersUserIdDeleteResponse409 = {
+  data: void
+  status: 409
+}
+
+export type deleteVisitorUserApiV1AdminVisitorsUsersUserIdDeleteResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type deleteVisitorUserApiV1AdminVisitorsUsersUserIdDeleteResponseSuccess = (deleteVisitorUserApiV1AdminVisitorsUsersUserIdDeleteResponse204) & {
+  headers: Headers;
+};
+export type deleteVisitorUserApiV1AdminVisitorsUsersUserIdDeleteResponseError = (deleteVisitorUserApiV1AdminVisitorsUsersUserIdDeleteResponse404 | deleteVisitorUserApiV1AdminVisitorsUsersUserIdDeleteResponse409 | deleteVisitorUserApiV1AdminVisitorsUsersUserIdDeleteResponse422) & {
+  headers: Headers;
+};
+
+export type deleteVisitorUserApiV1AdminVisitorsUsersUserIdDeleteResponse = (deleteVisitorUserApiV1AdminVisitorsUsersUserIdDeleteResponseSuccess | deleteVisitorUserApiV1AdminVisitorsUsersUserIdDeleteResponseError)
+
+export const getDeleteVisitorUserApiV1AdminVisitorsUsersUserIdDeleteUrl = (userId: string,) => {
+
+
+
+
+  return `/api/v1/admin/visitors/users/${userId}`
+}
+
+export const deleteVisitorUserApiV1AdminVisitorsUsersUserIdDelete = async (userId: string, options?: RequestInit): Promise<deleteVisitorUserApiV1AdminVisitorsUsersUserIdDeleteResponse> => {
+
+  return customInstance<deleteVisitorUserApiV1AdminVisitorsUsersUserIdDeleteResponse>(getDeleteVisitorUserApiV1AdminVisitorsUsersUserIdDeleteUrl(userId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteVisitorUserApiV1AdminVisitorsUsersUserIdDeleteMutationOptions = <TError = ErrorType<void | HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteVisitorUserApiV1AdminVisitorsUsersUserIdDelete>>, TError,{userId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteVisitorUserApiV1AdminVisitorsUsersUserIdDelete>>, TError,{userId: string}, TContext> => {
+
+const mutationKey = ['deleteVisitorUserApiV1AdminVisitorsUsersUserIdDelete'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteVisitorUserApiV1AdminVisitorsUsersUserIdDelete>>, {userId: string}> = (props) => {
+          const {userId} = props ?? {};
+
+          return  deleteVisitorUserApiV1AdminVisitorsUsersUserIdDelete(userId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteVisitorUserApiV1AdminVisitorsUsersUserIdDeleteMutationResult = NonNullable<Awaited<ReturnType<typeof deleteVisitorUserApiV1AdminVisitorsUsersUserIdDelete>>>
+
+    export type DeleteVisitorUserApiV1AdminVisitorsUsersUserIdDeleteMutationError = ErrorType<void | HTTPValidationError>
+
+    /**
+ * @summary 删除站点访客及关联互动记录
+ */
+export const useDeleteVisitorUserApiV1AdminVisitorsUsersUserIdDelete = <TError = ErrorType<void | HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteVisitorUserApiV1AdminVisitorsUsersUserIdDelete>>, TError,{userId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteVisitorUserApiV1AdminVisitorsUsersUserIdDelete>>,
+        TError,
+        {userId: string},
+        TContext
+      > => {
+      return useMutation(getDeleteVisitorUserApiV1AdminVisitorsUsersUserIdDeleteMutationOptions(options), queryClient);
+    }
+    /**
  * @summary 获取管理员前台身份绑定
  */
 export type listAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGetResponse200 = {

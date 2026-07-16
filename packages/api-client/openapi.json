@@ -8886,6 +8886,33 @@
         }
       }
     },
+    "/api/v1/admin/moderation/attention-counts": {
+      "get": {
+        "tags": [
+          "admin",
+          "admin-moderation"
+        ],
+        "summary": "获取审核提醒统计",
+        "operationId": "get_attention_counts_api_v1_admin_moderation_attention_counts_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModerationAttentionCounts"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/v1/admin/moderation/diary-access-requests": {
       "get": {
         "tags": [
@@ -8930,7 +8957,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PaginatedResponse_DiaryAccessRequestAdminRead_"
+                  "$ref": "#/components/schemas/DiaryAccessRequestAdminList"
                 }
               }
             }
@@ -9178,6 +9205,53 @@
             }
           }
         }
+      }
+    },
+    "/api/v1/admin/moderation/comments/read": {
+      "patch": {
+        "tags": [
+          "admin",
+          "admin-moderation"
+        ],
+        "summary": "标记评论已读",
+        "operationId": "mark_comments_read_api_v1_admin_moderation_comments_read_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModerationReadUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModerationReadResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/api/v1/admin/moderation/comments/{comment_id}/moderate": {
@@ -9452,6 +9526,53 @@
             }
           }
         }
+      }
+    },
+    "/api/v1/admin/moderation/guestbook/read": {
+      "patch": {
+        "tags": [
+          "admin",
+          "admin-moderation"
+        ],
+        "summary": "标记留言已读",
+        "operationId": "mark_guestbook_read_api_v1_admin_moderation_guestbook_read_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModerationReadUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModerationReadResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/api/v1/admin/moderation/guestbook/{entry_id}/moderate": {
@@ -14501,6 +14622,53 @@
                 }
               }
             }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/visitors/users/{user_id}": {
+      "delete": {
+        "tags": [
+          "admin",
+          "admin-visitors"
+        ],
+        "summary": "删除站点访客及关联互动记录",
+        "operationId": "delete_visitor_user_api_v1_admin_visitors_users__user_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "访客不存在"
+          },
+          "409": {
+            "description": "访客已绑定管理员身份"
           },
           "422": {
             "description": "Validation Error",
@@ -19768,6 +19936,10 @@
             "title": "Feedback Enabled",
             "description": "Whether reply feedback emails are enabled"
           },
+          "is_read": {
+            "title": "Is Read",
+            "description": "Whether an admin has read this moderation item"
+          },
           "deletion_reason": {
             "title": "Deletion Reason",
             "description": "Reason when a public self-delete rejected this item"
@@ -19789,6 +19961,7 @@
           "author_email",
           "body",
           "status",
+          "is_read",
           "created_at",
           "updated_at"
         ],
@@ -22393,6 +22566,42 @@
         ],
         "title": "DeriveAiSchemaResponse"
       },
+      "DiaryAccessRequestAdminList": {
+        "properties": {
+          "items": {
+            "title": "Items"
+          },
+          "total": {
+            "title": "Total"
+          },
+          "page": {
+            "title": "Page"
+          },
+          "page_size": {
+            "title": "Page Size"
+          },
+          "people_total": {
+            "title": "People Total"
+          },
+          "pending_total": {
+            "title": "Pending Total"
+          },
+          "authorized_total": {
+            "title": "Authorized Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "page_size",
+          "people_total",
+          "pending_total",
+          "authorized_total"
+        ],
+        "title": "DiaryAccessRequestAdminList"
+      },
       "DiaryAccessRequestAdminRead": {
         "properties": {
           "id": {
@@ -23304,6 +23513,10 @@
           "status": {
             "title": "Status"
           },
+          "is_read": {
+            "title": "Is Read",
+            "description": "Whether an admin has read this moderation item"
+          },
           "deletion_reason": {
             "title": "Deletion Reason",
             "description": "Reason when a public self-delete rejected this item"
@@ -23323,6 +23536,7 @@
           "website",
           "body",
           "status",
+          "is_read",
           "created_at",
           "updated_at"
         ],
@@ -23844,6 +24058,106 @@
           "action"
         ],
         "title": "ModerateAction"
+      },
+      "ModerationAttentionBucket": {
+        "properties": {
+          "pending": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Pending"
+          },
+          "unread": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Unread"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pending",
+          "unread"
+        ],
+        "title": "ModerationAttentionBucket"
+      },
+      "ModerationAttentionCounts": {
+        "properties": {
+          "comments": {
+            "$ref": "#/components/schemas/ModerationAttentionBucket"
+          },
+          "guestbook": {
+            "$ref": "#/components/schemas/ModerationAttentionBucket"
+          },
+          "diary_access": {
+            "$ref": "#/components/schemas/ModerationDiaryAttentionBucket"
+          },
+          "pending_total": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Pending Total"
+          },
+          "unread_total": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Unread Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "comments",
+          "guestbook",
+          "diary_access",
+          "pending_total",
+          "unread_total"
+        ],
+        "title": "ModerationAttentionCounts"
+      },
+      "ModerationDiaryAttentionBucket": {
+        "properties": {
+          "pending": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Pending"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pending"
+        ],
+        "title": "ModerationDiaryAttentionBucket"
+      },
+      "ModerationReadResult": {
+        "properties": {
+          "marked": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Marked",
+            "description": "Number of items newly marked as read"
+          }
+        },
+        "type": "object",
+        "required": [
+          "marked"
+        ],
+        "title": "ModerationReadResult"
+      },
+      "ModerationReadUpdate": {
+        "properties": {
+          "ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Ids",
+            "description": "Moderation item IDs to mark as read"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ids"
+        ],
+        "title": "ModerationReadUpdate"
       },
       "MonthlyCount": {
         "properties": {
@@ -25134,34 +25448,6 @@
           "page_size"
         ],
         "title": "PaginatedResponse[ContentSubscriberAdminRead]"
-      },
-      "PaginatedResponse_DiaryAccessRequestAdminRead_": {
-        "properties": {
-          "items": {
-            "title": "Items",
-            "description": "Page of result items"
-          },
-          "total": {
-            "title": "Total",
-            "description": "Total number of items matching the query"
-          },
-          "page": {
-            "title": "Page",
-            "description": "Current page number (1-based)"
-          },
-          "page_size": {
-            "title": "Page Size",
-            "description": "Number of items per page"
-          }
-        },
-        "type": "object",
-        "required": [
-          "items",
-          "total",
-          "page",
-          "page_size"
-        ],
-        "title": "PaginatedResponse[DiaryAccessRequestAdminRead]"
       },
       "PaginatedResponse_FriendAdminRead_": {
         "properties": {

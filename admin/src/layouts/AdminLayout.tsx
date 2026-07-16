@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/auth/useAuth";
 import { useI18n } from "@/i18n";
 import { Button } from "@/components/ui/Button";
+import { ModerationAttentionIndicator } from "@/components/ModerationAttentionIndicator";
 import {
   LayoutDashboard,
   FileText,
@@ -33,7 +34,7 @@ import { useTheme } from "@serino/theme";
 import { cn } from "@/lib/utils";
 import { warmAdminRoute } from "@/lib/adminRouteWarmup";
 import {
-  pendingModerationCountQueryOptions,
+  moderationAttentionCountQueryOptions,
 } from "@/pages/moderation/moderationQueries";
 import { SystemUpdateNotice } from "@/pages/dashboard/SystemUpdateNotice";
 
@@ -110,11 +111,12 @@ export default function AdminLayout() {
   const lastScrollTopRef = useRef(0);
   const scrollFrameRef = useRef<number | null>(null);
 
-  const { data: moderationPending } = useQuery({
-    ...pendingModerationCountQueryOptions(),
+  const { data: moderationAttention } = useQuery({
+    ...moderationAttentionCountQueryOptions(),
     refetchOnWindowFocus: true,
   });
-  const pendingCount = moderationPending?.total ?? 0;
+  const pendingCount = moderationAttention?.pending_total ?? 0;
+  const unreadCount = moderationAttention?.unread_total ?? 0;
 
   const toggleLang = () => setLang(lang === "zh" ? "en" : "zh");
 
@@ -267,15 +269,25 @@ export default function AdminLayout() {
                   )
                 }
               >
-                <item.icon className="h-4 w-4 shrink-0" />
+                <span className="relative inline-flex shrink-0">
+                  <item.icon className="h-4 w-4" />
+                  {item.to === "/moderation" && collapsed ? (
+                    <ModerationAttentionIndicator
+                      pending={pendingCount}
+                      unread={unreadCount}
+                      compact
+                    />
+                  ) : null}
+                </span>
                 {!collapsed && (
                   <span className="flex items-center gap-2">
                     {t(item.labelKey)}
-                    {item.to === "/moderation" && pendingCount > 0 && (
-                      <span className="inline-flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-xs font-medium h-5 min-w-[20px] px-1">
-                        {pendingCount}
-                      </span>
-                    )}
+                    {item.to === "/moderation" ? (
+                      <ModerationAttentionIndicator
+                        pending={pendingCount}
+                        unread={unreadCount}
+                      />
+                    ) : null}
                   </span>
                 )}
               </NavLink>

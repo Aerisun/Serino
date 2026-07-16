@@ -52,6 +52,16 @@ class DiaryAccessRequestAdminRead(ModelBase):
     updated_at: datetime
 
 
+class DiaryAccessRequestAdminList(ModelBase):
+    items: list[DiaryAccessRequestAdminRead]
+    total: int
+    page: int
+    page_size: int
+    people_total: int
+    pending_total: int
+    authorized_total: int
+
+
 class DiaryAccessRequestAdminUpdate(ModelBase):
     grant_access: bool | None = None
     expires_at: datetime | None = None

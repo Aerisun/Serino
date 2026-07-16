@@ -4,10 +4,10 @@ import { useQuery } from "@tanstack/react-query";
 import {
   ArrowUpRight,
   BookOpen,
+  Bell,
   ChevronRight,
   Eye,
   FileText,
-  Flag,
   Image as ImageIcon,
   Lightbulb,
   Link2,
@@ -39,6 +39,7 @@ import {
   DASHBOARD_STATS_STALE_TIME,
   dashboardStatsQueryOptions,
 } from "@/pages/dashboard/dashboardQueries";
+import { moderationAttentionCountQueryOptions } from "@/pages/moderation/moderationQueries";
 
 const CONTENT_TYPE_ROUTES: Record<string, string> = {
   post: "/posts",
@@ -189,6 +190,7 @@ export default function DashboardPage() {
   const navigate = useNavigate();
 
   const { data: dashboardStats, isLoading } = useQuery(dashboardStatsQueryOptions());
+  const { data: moderationAttention } = useQuery(moderationAttentionCountQueryOptions());
   const { data: backupConfigRaw } =
     useGetBackupSyncConfigApiV1AdminSystemBackupSyncConfigGet();
   const stats = dashboardStats as EnhancedDashboardStats | undefined;
@@ -212,7 +214,7 @@ export default function DashboardPage() {
     [stats],
   );
 
-  const pendingModeration = stats?.aux_metrics?.pending_moderation ?? 0;
+  const unreadModeration = moderationAttention?.unread_total ?? 0;
   const totalViews = stats?.traffic?.total_views ?? 0;
   const uniqueVisitors24h = stats?.visitors?.unique_visitors_24h ?? 0;
 
@@ -300,15 +302,15 @@ export default function DashboardPage() {
                 icon={Users}
               />
               <TrafficMetricTile
-                label={t("dashboard.pendingModeration")}
-                value={pendingModeration}
+                label={t("dashboard.unreadModeration")}
+                value={unreadModeration}
                 hint={
-                  pendingModeration > 0
-                    ? t("dashboard.pendingModerationAttention")
-                    : t("dashboard.pendingModerationClear")
+                  unreadModeration > 0
+                    ? t("dashboard.unreadModerationAttention")
+                    : t("dashboard.unreadModerationClear")
                 }
-                icon={Flag}
-                warning={pendingModeration > 0}
+                icon={Bell}
+                warning={unreadModeration > 0}
               />
             </div>
           </section>

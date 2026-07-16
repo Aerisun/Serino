@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String, Text
+from sqlalchemy import DateTime, ForeignKey, Index, String, Text, desc
 from sqlalchemy.orm import Mapped, mapped_column
 
 from aerisun.core.base import Base, TimestampMixin, uuid_str
@@ -10,6 +10,14 @@ from aerisun.core.base import Base, TimestampMixin, uuid_str
 
 class DiaryAccessRequest(Base, TimestampMixin):
     __tablename__ = "diary_access_requests"
+    __table_args__ = (
+        Index(
+            "ix_diary_access_requests_site_user_created_id",
+            "site_user_id",
+            desc("created_at"),
+            desc("id"),
+        ),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
     site_user_id: Mapped[str] = mapped_column(

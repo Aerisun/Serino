@@ -104,6 +104,14 @@ export const enTranslations: TranslationDict = {
     "nav.settings": "Settings",
     "nav.logout": "Logout",
 
+    // visitors
+    "visitors.deleteUser": "Delete user",
+    "visitors.deleteUserTitle": "Delete visitor?",
+    "visitors.deleteUserDescription":
+      "This permanently deletes the visitor, their comments, guestbook entries, and each related reply tree.",
+    "visitors.deleteUserSuccess": "Visitor deleted",
+    "visitors.deleteUserFailed": "Failed to delete visitor",
+
     // settings
     "settings.title": "Settings",
     "settings.description": "Manage account settings",
@@ -505,6 +513,11 @@ export const enTranslations: TranslationDict = {
     "moderation.statRejected": "Rejected",
     "moderation.bulkActions": "Bulk Actions",
     "moderation.selectCurrentPage": "Select Current Page",
+    "moderation.markRead": "Mark as read",
+    "moderation.markReadSuccess": "Marked as read",
+    "moderation.unread": "Unread",
+    "moderation.attentionUnread": "{count} unread",
+    "moderation.attentionPending": "{count} pending",
     "moderation.bulkApprove": "Bulk Approve",
     "moderation.bulkReject": "Bulk Reject",
     "moderation.bulkDelete": "Bulk Delete",
@@ -537,8 +550,10 @@ export const enTranslations: TranslationDict = {
     "moderation.diaryAccessVisitor": "Visitor",
     "moderation.diaryAccessRequestedAt": "Requested At",
     "moderation.diaryAccessPermissionStatus": "Access",
+    "moderation.diaryAccessPending": "Pending",
     "moderation.diaryAccessUnauthorized": "No access",
     "moderation.diaryAccessAuthorized": "Authorized",
+    "moderation.diaryAccessAuthorizedTotal": "Authorized",
     "moderation.diaryAccessReason": "Request Reason",
     "moderation.diaryAccessGrant": "Grant Access",
     "moderation.diaryAccessGrantDescription":
@@ -547,6 +562,7 @@ export const enTranslations: TranslationDict = {
     "moderation.diaryAccessGrantNow": "Grant Access",
     "moderation.diaryAccessExtend": "Extend Access",
     "moderation.diaryAccessRevokeNow": "Stop Access Now",
+    "moderation.diaryAccessIgnore": "Ignore",
     "moderation.diaryAccessStatus": "Request Status",
     "moderation.diaryAccessGrantedAt": "Granted At",
     "moderation.diaryAccessRevokedAt": "Stopped At",
@@ -1222,6 +1238,9 @@ export const enTranslations: TranslationDict = {
     "dashboard.pendingModeration": "Pending moderation",
     "dashboard.pendingModerationAttention": "Handle soon to avoid backlog",
     "dashboard.pendingModerationClear": "No items currently need review",
+    "dashboard.unreadModeration": "Unread items",
+    "dashboard.unreadModerationAttention": "Review soon to avoid missing anything",
+    "dashboard.unreadModerationClear": "No unread items right now",
     "dashboard.trafficEyebrow": "Traffic trend",
     "dashboard.trafficTrendTitle": "Site traffic trend",
     "dashboard.trafficTrendDescription":

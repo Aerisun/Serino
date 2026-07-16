@@ -18,6 +18,8 @@ export interface CommentAdminRead {
   status: unknown;
   /** Whether reply feedback emails are enabled */
   feedback_enabled?: unknown;
+  /** Whether an admin has read this moderation item */
+  is_read: unknown;
   /** Reason when a public self-delete rejected this item */
   deletion_reason?: unknown;
   created_at: unknown;

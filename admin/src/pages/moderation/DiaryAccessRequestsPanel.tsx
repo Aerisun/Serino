@@ -10,7 +10,11 @@ import {
   useGetProfileApiV1AdminSiteConfigProfileGet,
   useUpdateProfileApiV1AdminSiteConfigProfilePut,
 } from "@serino/api-client/admin";
-import type { DiaryAccessRequestAdminRead, SiteProfileAdminRead } from "@serino/api-client/models";
+import type {
+  DiaryAccessRequestAdminList,
+  DiaryAccessRequestAdminRead,
+  SiteProfileAdminRead,
+} from "@serino/api-client/models";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
@@ -30,6 +34,7 @@ import { useI18n } from "@/i18n";
 import { extractApiErrorMessage } from "@/lib/api-error";
 import { formatDate } from "@/lib/utils";
 import { toast } from "sonner";
+import { MODERATION_ATTENTION_COUNT_QUERY_KEY } from "./moderationQueries";
 
 const PAGE_SIZE = 20;
 const DEFAULT_ACCESS_DAYS = 7;
@@ -194,7 +199,11 @@ export function DiaryAccessRequestsPanel() {
     () => (data?.data.items ?? []).map((item) => normalizeRow(item as DiaryAccessRequestAdminRead)),
     [data?.data.items],
   );
-  const total = Number(data?.data.total ?? 0);
+  const summary = data?.data as DiaryAccessRequestAdminList | undefined;
+  const total = Number(summary?.total ?? 0);
+  const peopleTotal = Number(summary?.people_total ?? 0);
+  const pendingTotal = Number(summary?.pending_total ?? 0);
+  const authorizedTotal = Number(summary?.authorized_total ?? 0);
 
   const updateAccess = useMutation({
     mutationFn: ({
@@ -215,9 +224,12 @@ export function DiaryAccessRequestsPanel() {
       });
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: getListDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGetQueryKey(),
-      });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: getListDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGetQueryKey(),
+        }),
+        queryClient.invalidateQueries({ queryKey: MODERATION_ATTENTION_COUNT_QUERY_KEY }),
+      ]);
       toast.success(t("common.operationSuccess"));
     },
     onError: (error) => {
@@ -265,30 +277,79 @@ export function DiaryAccessRequestsPanel() {
     });
   };
 
+  const renderPermissionStatus = (row: DiaryAccessRow) => {
+    if (row.status === "pending") {
+      return (
+        <div className="flex items-center gap-2">
+          <Badge variant="warning">{t("moderation.diaryAccessPending")}</Badge>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-auto px-0 py-0 text-xs font-medium text-destructive underline-offset-4 hover:bg-transparent hover:text-destructive/80 hover:underline"
+            onClick={(event) => {
+              event.stopPropagation();
+              updateAccess.mutate({ row, revoke: true });
+            }}
+            disabled={updateAccess.isPending}
+          >
+            {t("moderation.diaryAccessIgnore")}
+          </Button>
+        </div>
+      );
+    }
+
+    if (row.hasAccess) {
+      return (
+        <Badge variant="success">
+          {t("moderation.diaryAccessAuthorized")}（{formatRemaining(row.remainingSeconds, t)}）
+        </Badge>
+      );
+    }
+
+    return <Badge variant="secondary">{t("moderation.diaryAccessUnauthorized")}</Badge>;
+  };
+
   return (
     <>
       <Card>
         <CardContent className="space-y-5 pt-6">
-          <div>
-            <div className="flex flex-wrap items-center gap-3">
-              <h2 className="text-lg font-semibold tracking-tight">
-                {t("moderation.diaryAccessRequests")}
-              </h2>
-              {mailFeedbackAvailable ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="sm:ml-2"
-                  onClick={openFeedbackTemplateDialog}
-                >
-                  {t("moderation.diaryAccessFeedbackTemplateAction")}
-                </Button>
-              ) : null}
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+            <div>
+              <div className="flex flex-wrap items-center gap-3">
+                <h2 className="text-lg font-semibold tracking-tight">
+                  {t("moderation.diaryAccessRequests")}
+                </h2>
+                {mailFeedbackAvailable ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="sm:ml-2"
+                    onClick={openFeedbackTemplateDialog}
+                  >
+                    {t("moderation.diaryAccessFeedbackTemplateAction")}
+                  </Button>
+                ) : null}
+              </div>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {t("moderation.diaryAccessRequestsDescription")}
+              </p>
             </div>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {t("moderation.diaryAccessRequestsDescription")}
-            </p>
+            <div className="flex max-w-full flex-wrap items-center gap-2 xl:justify-end">
+              <Badge variant="secondary" className="gap-2 px-3.5 py-2 text-sm">
+                <span className="text-muted-foreground">{t("common.all")}</span>
+                <span className="text-base font-semibold tabular-nums">{peopleTotal}</span>
+              </Badge>
+              <Badge variant="destructive" className="gap-2 px-3.5 py-2 text-sm">
+                <span>{t("moderation.statPending")}</span>
+                <span className="text-base font-semibold tabular-nums">{pendingTotal}</span>
+              </Badge>
+              <Badge variant="success" className="gap-2 px-3.5 py-2 text-sm">
+                <span>{t("moderation.diaryAccessAuthorizedTotal")}</span>
+                <span className="text-base font-semibold tabular-nums">{authorizedTotal}</span>
+              </Badge>
+            </div>
           </div>
 
           <DataTable
@@ -311,10 +372,7 @@ export function DiaryAccessRequestsPanel() {
               {
                 header: t("moderation.diaryAccessPermissionStatus"),
                 className: "min-w-[8.5rem] whitespace-nowrap",
-                accessor: (row) =>
-                  row.hasAccess
-                    ? `${t("moderation.diaryAccessAuthorized")}（${formatRemaining(row.remainingSeconds, t)}）`
-                    : t("moderation.diaryAccessUnauthorized"),
+                accessor: renderPermissionStatus,
               },
             ]}
             renderCells={(row) => (
@@ -348,13 +406,7 @@ export function DiaryAccessRequestsPanel() {
                 </td>
                 <td className="p-4 align-middle text-sm text-muted-foreground">{formatDate(row.createdAt)}</td>
                 <td className="min-w-[8.5rem] whitespace-nowrap p-4 align-middle">
-                  {row.hasAccess ? (
-                    <Badge variant="success">
-                      {t("moderation.diaryAccessAuthorized")}（{formatRemaining(row.remainingSeconds, t)}）
-                    </Badge>
-                  ) : (
-                    <Badge variant="secondary">{t("moderation.diaryAccessUnauthorized")}</Badge>
-                  )}
+                  {renderPermissionStatus(row)}
                 </td>
               </>
             )}

@@ -1,7 +1,7 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { ensureAdminClientInitialized } from "@/lib/adminClient";
 import { prefetchDashboardStats } from "@/pages/dashboard/dashboardQueries";
-import { prefetchPendingModerationCount } from "@/pages/moderation/moderationQueries";
+import { prefetchModerationAttentionCount } from "@/pages/moderation/moderationQueries";
 
 type RouteWarmup = {
   key: string;
@@ -18,7 +18,7 @@ const routeWarmups: RouteWarmup[] = [
         import("@/layouts/AdminLayout"),
         import("@/pages/DashboardPage"),
         prefetchDashboardStats(queryClient),
-        prefetchPendingModerationCount(queryClient),
+        prefetchModerationAttentionCount(queryClient),
       ]),
   },
   {
@@ -28,7 +28,7 @@ const routeWarmups: RouteWarmup[] = [
       await ensureAdminClientInitialized();
       return Promise.all([
         import("@/pages/moderation/ModerationPage"),
-        prefetchPendingModerationCount(queryClient),
+        prefetchModerationAttentionCount(queryClient),
       ]);
     },
   },

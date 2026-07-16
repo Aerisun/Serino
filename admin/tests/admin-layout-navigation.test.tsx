@@ -17,9 +17,16 @@ vi.mock("@serino/theme", () => ({
 }));
 
 vi.mock("../src/pages/moderation/moderationQueries", () => ({
-  pendingModerationCountQueryOptions: () => ({
-    queryKey: ["moderation", "pending-count"],
-    queryFn: () => Promise.resolve({ comments: 0, guestbook: 0, total: 0 }),
+  moderationAttentionCountQueryOptions: () => ({
+    queryKey: ["moderation", "attention-counts"],
+    queryFn: () =>
+      Promise.resolve({
+        comments: { pending: 0, unread: 0 },
+        guestbook: { pending: 0, unread: 0 },
+        diary_access: { pending: 0 },
+        pending_total: 0,
+        unread_total: 0,
+      }),
     staleTime: 60_000,
   }),
 }));

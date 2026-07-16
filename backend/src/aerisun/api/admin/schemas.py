@@ -18,6 +18,7 @@ from aerisun.domain.content.schemas import (  # noqa: F401
     TagInfo,
 )
 from aerisun.domain.diary_access.schemas import (  # noqa: F401
+    DiaryAccessRequestAdminList,
     DiaryAccessRequestAdminRead,
     DiaryAccessRequestAdminUpdate,
     DiaryAccessRequestCreate,

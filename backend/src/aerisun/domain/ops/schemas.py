@@ -23,6 +23,7 @@ class CommentAdminRead(ModelBase):
     body: str
     status: str
     feedback_enabled: bool = Field(default=True, description="Whether reply feedback emails are enabled")
+    is_read: bool = Field(description="Whether an admin has read this moderation item")
     deletion_reason: str | None = Field(default=None, description="Reason when a public self-delete rejected this item")
     created_at: datetime
     updated_at: datetime
@@ -36,6 +37,7 @@ class GuestbookAdminRead(ModelBase):
     website: str | None
     body: str
     status: str
+    is_read: bool = Field(description="Whether an admin has read this moderation item")
     deletion_reason: str | None = Field(default=None, description="Reason when a public self-delete rejected this item")
     created_at: datetime
     updated_at: datetime
@@ -44,6 +46,31 @@ class GuestbookAdminRead(ModelBase):
 class ModerateAction(BaseModel):
     action: str  # "approve", "reject", "delete"
     reason: str | None = None
+
+
+class ModerationReadUpdate(BaseModel):
+    ids: list[str] = Field(min_length=1, max_length=100, description="Moderation item IDs to mark as read")
+
+
+class ModerationReadResult(BaseModel):
+    marked: int = Field(ge=0, description="Number of items newly marked as read")
+
+
+class ModerationAttentionBucket(BaseModel):
+    pending: int = Field(ge=0)
+    unread: int = Field(ge=0)
+
+
+class ModerationDiaryAttentionBucket(BaseModel):
+    pending: int = Field(ge=0)
+
+
+class ModerationAttentionCounts(BaseModel):
+    comments: ModerationAttentionBucket
+    guestbook: ModerationAttentionBucket
+    diary_access: ModerationDiaryAttentionBucket
+    pending_total: int = Field(ge=0)
+    unread_total: int = Field(ge=0)
 
 
 # ---------------------------------------------------------------------------

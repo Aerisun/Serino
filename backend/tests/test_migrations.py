@@ -9,7 +9,7 @@ from alembic.script import ScriptDirectory
 from aerisun.core.db import dispose_engine, run_database_migrations
 from aerisun.core.settings import get_settings
 
-CURRENT_SCHEMA_HEAD = "0014_persist_content_view_counts"
+CURRENT_SCHEMA_HEAD = "0015_diary_access_latest_request_index"
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
 
@@ -39,6 +39,24 @@ def _get_columns(path: Path, table: str) -> set[str]:
     try:
         rows = connection.execute(f"PRAGMA table_info({table})").fetchall()
         return {str(row[1]) for row in rows}
+    finally:
+        connection.close()
+
+
+def _get_indexes(path: Path, table: str) -> set[str]:
+    connection = sqlite3.connect(path)
+    try:
+        rows = connection.execute(f"PRAGMA index_list({table})").fetchall()
+        return {str(row[1]) for row in rows}
+    finally:
+        connection.close()
+
+
+def _get_index_column_sort_order(path: Path, index: str) -> dict[str, int]:
+    connection = sqlite3.connect(path)
+    try:
+        rows = connection.execute(f"PRAGMA index_xinfo({index})").fetchall()
+        return {str(row[2]): int(row[3]) for row in rows if int(row[5]) == 1}
     finally:
         connection.close()
 
@@ -75,6 +93,7 @@ def test_active_alembic_history_is_reset_to_single_production_baseline_head() ->
         "0012_backup_retention_days.py",
         "0013_asset_public_slug.py",
         "0014_persist_content_view_counts.py",
+        "0015_diary_access_latest_request_index.py",
     ]
     assert not (BACKEND_ROOT / "alembic" / "legacy_versions").exists()
 
@@ -94,6 +113,15 @@ def test_run_database_migrations_creates_baseline_schema_and_journal(tmp_path, m
     assert "diary_access_requests" in tables
     assert "_aerisun_data_migrations" in tables
     assert "failed_attempts" in _get_columns(db_path, "content_notifications")
+    assert "ix_diary_access_requests_site_user_created_id" in _get_indexes(
+        db_path,
+        "diary_access_requests",
+    )
+    assert _get_index_column_sort_order(db_path, "ix_diary_access_requests_site_user_created_id") == {
+        "site_user_id": 0,
+        "created_at": 1,
+        "id": 1,
+    }
     assert "retention_days" in _get_columns(db_path, "backup_target_configs")
     assert "public_slug" in _get_columns(db_path, "assets")
     assert "page_display_options" not in tables

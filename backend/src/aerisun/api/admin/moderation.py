@@ -3,11 +3,18 @@ from __future__ import annotations
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session
-from aerisun.domain.diary_access.schemas import DiaryAccessRequestAdminRead, DiaryAccessRequestAdminUpdate
+from aerisun.domain.diary_access.models import DiaryAccessRequest
+from aerisun.domain.diary_access.schemas import (
+    DiaryAccessRequestAdminList,
+    DiaryAccessRequestAdminRead,
+    DiaryAccessRequestAdminUpdate,
+)
 from aerisun.domain.diary_access.service import (
+    diary_private_enabled,
     list_diary_access_requests_admin,
     update_diary_access_request_admin,
 )
@@ -15,13 +22,24 @@ from aerisun.domain.engagement.schemas import CommentFeedbackUpdate
 from aerisun.domain.engagement.service import (
     list_admin_comments,
     list_admin_guestbook,
+    mark_admin_comments_read,
+    mark_admin_guestbook_read,
     moderate_comment,
     moderate_guestbook_entry,
     update_admin_comment_feedback,
 )
 from aerisun.domain.exceptions import ResourceNotFound
 from aerisun.domain.iam.models import AdminUser
-from aerisun.domain.ops.schemas import CommentAdminRead, GuestbookAdminRead, ModerateAction
+from aerisun.domain.ops.schemas import (
+    CommentAdminRead,
+    GuestbookAdminRead,
+    ModerateAction,
+    ModerationAttentionCounts,
+    ModerationDiaryAttentionBucket,
+    ModerationReadResult,
+    ModerationReadUpdate,
+)
+from aerisun.domain.waline.service import get_waline_moderation_attention_counts
 
 from .deps import get_current_admin
 from .schemas import PaginatedResponse
@@ -30,8 +48,38 @@ router = APIRouter(prefix="/moderation", tags=["admin-moderation"])
 
 
 @router.get(
+    "/attention-counts",
+    response_model=ModerationAttentionCounts,
+    summary="获取审核提醒统计",
+)
+def get_attention_counts(
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> ModerationAttentionCounts:
+    counts = get_waline_moderation_attention_counts()
+    diary_pending = 0
+    if diary_private_enabled(session):
+        diary_pending = int(
+            session.scalar(
+                select(func.count()).select_from(DiaryAccessRequest).where(DiaryAccessRequest.status == "pending")
+            )
+            or 0
+        )
+
+    comments = counts["comments"]
+    guestbook = counts["guestbook"]
+    return ModerationAttentionCounts(
+        comments=comments,
+        guestbook=guestbook,
+        diary_access=ModerationDiaryAttentionBucket(pending=diary_pending),
+        pending_total=comments["pending"] + guestbook["pending"] + diary_pending,
+        unread_total=comments["unread"] + guestbook["unread"] + diary_pending,
+    )
+
+
+@router.get(
     "/diary-access-requests",
-    response_model=PaginatedResponse[DiaryAccessRequestAdminRead],
+    response_model=DiaryAccessRequestAdminList,
     summary="获取日记查看申请列表",
 )
 def list_diary_access_requests(
@@ -83,6 +131,14 @@ def list_comments(
         email=email_filter,
         sort=sort,
     )
+
+
+@router.patch("/comments/read", response_model=ModerationReadResult, summary="标记评论已读")
+def mark_comments_read(
+    payload: ModerationReadUpdate,
+    _admin: AdminUser = Depends(get_current_admin),
+) -> ModerationReadResult:
+    return ModerationReadResult(marked=mark_admin_comments_read(payload.ids))
 
 
 @router.post("/comments/{comment_id}/moderate", response_model=CommentAdminRead, summary="审核评论")
@@ -140,6 +196,14 @@ def list_guestbook(
         email=email_filter,
         sort=sort,
     )
+
+
+@router.patch("/guestbook/read", response_model=ModerationReadResult, summary="标记留言已读")
+def mark_guestbook_read(
+    payload: ModerationReadUpdate,
+    _admin: AdminUser = Depends(get_current_admin),
+) -> ModerationReadResult:
+    return ModerationReadResult(marked=mark_admin_guestbook_read(payload.ids))
 
 
 @router.post("/guestbook/{entry_id}/moderate", response_model=GuestbookAdminRead, summary="审核留言")

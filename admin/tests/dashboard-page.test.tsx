@@ -10,6 +10,7 @@ import { LanguageProvider } from "../src/i18n";
 const api = vi.hoisted(() => ({
   state: {
     backupEnabled: true,
+    unreadTotal: 0,
     commits: [
       {
         id: "commit-1",
@@ -45,6 +46,13 @@ vi.mock("@serino/api-client/admin", () => ({
 
 vi.mock("@/lib/adminApi", () => ({
   adminApiRequest: (...args: unknown[]) => api.adminApiRequest(...args),
+}));
+
+vi.mock("../src/pages/moderation/moderationQueries", () => ({
+  moderationAttentionCountQueryOptions: () => ({
+    queryKey: ["moderation", "attention-counts"],
+    queryFn: () => Promise.resolve({ unread_total: api.state.unreadTotal }),
+  }),
 }));
 
 function dashboardStats() {
@@ -108,6 +116,7 @@ function renderPage() {
 
 beforeEach(() => {
   api.state.backupEnabled = true;
+  api.state.unreadTotal = 0;
   api.state.commits = [api.state.commits[0]];
   api.adminApiRequest.mockResolvedValue(dashboardStats());
   localStorage.clear();
@@ -119,6 +128,15 @@ afterEach(() => {
 });
 
 describe("DashboardPage backup summary", () => {
+  it("shows unread moderation activity instead of pending-review activity", async () => {
+    api.state.unreadTotal = 3;
+    renderPage();
+
+    expect(await screen.findByText("未读内容")).toBeTruthy();
+    expect(screen.getByText("建议尽快查看，避免遗漏")).toBeTruthy();
+    expect(screen.queryByText("待审核")).toBeNull();
+  });
+
   it("shows the latest backup time when backup sync is enabled", async () => {
     renderPage();
 

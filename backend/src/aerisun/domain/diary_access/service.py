@@ -4,12 +4,13 @@ import logging
 from collections.abc import Iterable
 from datetime import datetime, timedelta
 
-from sqlalchemy import func, select
+from sqlalchemy import and_, case, func, select
 from sqlalchemy.orm import Session
 
 from aerisun.core.time import normalize_shanghai_datetime, shanghai_now
 from aerisun.domain.diary_access.models import DiaryAccessRequest
 from aerisun.domain.diary_access.schemas import (
+    DiaryAccessRequestAdminList,
     DiaryAccessRequestAdminRead,
     DiaryAccessRequestAdminUpdate,
     DiaryAccessRequestCreate,
@@ -236,18 +237,6 @@ def _oauth_providers_by_user_id(session: Session, user_ids: Iterable[str]) -> di
     return result
 
 
-def _active_access_by_user_id(
-    session: Session,
-    user_ids: Iterable[str],
-) -> dict[str, DiaryAccessRequest]:
-    result: dict[str, DiaryAccessRequest] = {}
-    for user_id in user_ids:
-        active = get_active_diary_access_request(session, user_id)
-        if active is not None:
-            result[user_id] = active
-    return result
-
-
 def list_diary_access_requests_admin(
     session: Session,
     *,
@@ -256,25 +245,69 @@ def list_diary_access_requests_admin(
 ) -> dict[str, object]:
     page = max(1, page)
     page_size = max(1, min(page_size, 100))
-    total = session.scalar(select(func.count()).select_from(DiaryAccessRequest)) or 0
+    latest_requests = select(
+        DiaryAccessRequest.id.label("request_id"),
+        func.row_number()
+        .over(
+            partition_by=DiaryAccessRequest.site_user_id,
+            order_by=(
+                DiaryAccessRequest.created_at.desc(),
+                DiaryAccessRequest.id.desc(),
+            ),
+        )
+        .label("row_number"),
+    ).subquery()
+    latest_only = latest_requests.c.row_number == 1
+    now = _now()
+    active_access = and_(
+        DiaryAccessRequest.status == DIARY_ACCESS_STATUS_APPROVED,
+        DiaryAccessRequest.revoked_at.is_(None),
+        DiaryAccessRequest.expires_at.is_not(None),
+        DiaryAccessRequest.expires_at > now,
+    )
+    people_total, pending_total, authorized_total = session.execute(
+        select(
+            func.count(DiaryAccessRequest.id),
+            func.coalesce(
+                func.sum(case((DiaryAccessRequest.status == DIARY_ACCESS_STATUS_PENDING, 1), else_=0)),
+                0,
+            ),
+            func.coalesce(func.sum(case((active_access, 1), else_=0)), 0),
+        )
+        .join(latest_requests, latest_requests.c.request_id == DiaryAccessRequest.id)
+        .where(latest_only)
+    ).one()
     rows = session.execute(
         select(DiaryAccessRequest, SiteUser)
         .join(SiteUser, SiteUser.id == DiaryAccessRequest.site_user_id)
-        .order_by(DiaryAccessRequest.updated_at.desc(), DiaryAccessRequest.created_at.desc())
+        .join(latest_requests, latest_requests.c.request_id == DiaryAccessRequest.id)
+        .where(latest_only)
+        .order_by(
+            DiaryAccessRequest.created_at.desc(),
+            DiaryAccessRequest.id.desc(),
+        )
         .offset((page - 1) * page_size)
         .limit(page_size)
     ).all()
     users = [user for _item, user in rows]
     provider_map = _oauth_providers_by_user_id(session, [user.id for user in users])
-    active_map = _active_access_by_user_id(session, [user.id for user in users])
-    return {
-        "items": [
-            _to_admin_read(item, user, provider_map.get(user.id, []), active_map.get(user.id)) for item, user in rows
+    return DiaryAccessRequestAdminList(
+        items=[
+            _to_admin_read(
+                item,
+                user,
+                provider_map.get(user.id, []),
+                item if _request_has_active_access(item, now=now) else None,
+            )
+            for item, user in rows
         ],
-        "total": total,
-        "page": page,
-        "page_size": page_size,
-    }
+        total=int(people_total),
+        page=page,
+        page_size=page_size,
+        people_total=int(people_total),
+        pending_total=int(pending_total),
+        authorized_total=int(authorized_total),
+    ).model_dump()
 
 
 def update_diary_access_request_admin(

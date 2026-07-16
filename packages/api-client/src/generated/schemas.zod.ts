@@ -3380,6 +3380,42 @@ export const DeleteFriendFeedApiV1AdminSocialFeedsFeedIdDeleteParams = zod.objec
 
 
 /**
+ * @summary 获取审核提醒统计
+ */
+export const getAttentionCountsApiV1AdminModerationAttentionCountsGetResponseCommentsPendingMin = 0;
+
+export const getAttentionCountsApiV1AdminModerationAttentionCountsGetResponseCommentsUnreadMin = 0;
+
+export const getAttentionCountsApiV1AdminModerationAttentionCountsGetResponseGuestbookPendingMin = 0;
+
+export const getAttentionCountsApiV1AdminModerationAttentionCountsGetResponseGuestbookUnreadMin = 0;
+
+export const getAttentionCountsApiV1AdminModerationAttentionCountsGetResponseDiaryAccessPendingMin = 0;
+
+export const getAttentionCountsApiV1AdminModerationAttentionCountsGetResponsePendingTotalMin = 0;
+
+export const getAttentionCountsApiV1AdminModerationAttentionCountsGetResponseUnreadTotalMin = 0;
+
+
+
+export const GetAttentionCountsApiV1AdminModerationAttentionCountsGetResponse = zod.object({
+  "comments": zod.object({
+  "pending": zod.number().min(getAttentionCountsApiV1AdminModerationAttentionCountsGetResponseCommentsPendingMin),
+  "unread": zod.number().min(getAttentionCountsApiV1AdminModerationAttentionCountsGetResponseCommentsUnreadMin)
+}),
+  "guestbook": zod.object({
+  "pending": zod.number().min(getAttentionCountsApiV1AdminModerationAttentionCountsGetResponseGuestbookPendingMin),
+  "unread": zod.number().min(getAttentionCountsApiV1AdminModerationAttentionCountsGetResponseGuestbookUnreadMin)
+}),
+  "diary_access": zod.object({
+  "pending": zod.number().min(getAttentionCountsApiV1AdminModerationAttentionCountsGetResponseDiaryAccessPendingMin)
+}),
+  "pending_total": zod.number().min(getAttentionCountsApiV1AdminModerationAttentionCountsGetResponsePendingTotalMin),
+  "unread_total": zod.number().min(getAttentionCountsApiV1AdminModerationAttentionCountsGetResponseUnreadTotalMin)
+})
+
+
+/**
  * @summary 获取日记查看申请列表
  */
 export const listDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGetQueryPageDefault = 1;
@@ -3395,10 +3431,13 @@ export const ListDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGetQu
 })
 
 export const ListDiaryAccessRequestsApiV1AdminModerationDiaryAccessRequestsGetResponse = zod.object({
-  "items": zod.unknown().describe('Page of result items'),
-  "total": zod.unknown().describe('Total number of items matching the query'),
-  "page": zod.unknown().describe('Current page number (1-based)'),
-  "page_size": zod.unknown().describe('Number of items per page')
+  "items": zod.unknown(),
+  "total": zod.unknown(),
+  "page": zod.unknown(),
+  "page_size": zod.unknown(),
+  "people_total": zod.unknown(),
+  "pending_total": zod.unknown(),
+  "authorized_total": zod.unknown()
 })
 
 
@@ -3468,6 +3507,26 @@ export const ListCommentsApiV1AdminModerationCommentsGetResponse = zod.object({
 
 
 /**
+ * @summary 标记评论已读
+ */
+export const markCommentsReadApiV1AdminModerationCommentsReadPatchBodyIdsMax = 100;
+
+
+
+export const MarkCommentsReadApiV1AdminModerationCommentsReadPatchBody = zod.object({
+  "ids": zod.array(zod.string()).min(1).max(markCommentsReadApiV1AdminModerationCommentsReadPatchBodyIdsMax).describe('Moderation item IDs to mark as read')
+})
+
+export const markCommentsReadApiV1AdminModerationCommentsReadPatchResponseMarkedMin = 0;
+
+
+
+export const MarkCommentsReadApiV1AdminModerationCommentsReadPatchResponse = zod.object({
+  "marked": zod.number().min(markCommentsReadApiV1AdminModerationCommentsReadPatchResponseMarkedMin).describe('Number of items newly marked as read')
+})
+
+
+/**
  * @summary 审核评论
  */
 export const ModerateCommentEndpointApiV1AdminModerationCommentsCommentIdModeratePostParams = zod.object({
@@ -3490,6 +3549,7 @@ export const ModerateCommentEndpointApiV1AdminModerationCommentsCommentIdModerat
   "body": zod.unknown(),
   "status": zod.unknown(),
   "feedback_enabled": zod.unknown().optional().describe('Whether reply feedback emails are enabled'),
+  "is_read": zod.unknown().describe('Whether an admin has read this moderation item'),
   "deletion_reason": zod.unknown().optional().describe('Reason when a public self-delete rejected this item'),
   "created_at": zod.unknown(),
   "updated_at": zod.unknown()
@@ -3518,6 +3578,7 @@ export const UpdateCommentFeedbackEndpointApiV1AdminModerationCommentsCommentIdF
   "body": zod.unknown(),
   "status": zod.unknown(),
   "feedback_enabled": zod.unknown().optional().describe('Whether reply feedback emails are enabled'),
+  "is_read": zod.unknown().describe('Whether an admin has read this moderation item'),
   "deletion_reason": zod.unknown().optional().describe('Reason when a public self-delete rejected this item'),
   "created_at": zod.unknown(),
   "updated_at": zod.unknown()
@@ -3554,6 +3615,26 @@ export const ListGuestbookApiV1AdminModerationGuestbookGetResponse = zod.object(
 
 
 /**
+ * @summary 标记留言已读
+ */
+export const markGuestbookReadApiV1AdminModerationGuestbookReadPatchBodyIdsMax = 100;
+
+
+
+export const MarkGuestbookReadApiV1AdminModerationGuestbookReadPatchBody = zod.object({
+  "ids": zod.array(zod.string()).min(1).max(markGuestbookReadApiV1AdminModerationGuestbookReadPatchBodyIdsMax).describe('Moderation item IDs to mark as read')
+})
+
+export const markGuestbookReadApiV1AdminModerationGuestbookReadPatchResponseMarkedMin = 0;
+
+
+
+export const MarkGuestbookReadApiV1AdminModerationGuestbookReadPatchResponse = zod.object({
+  "marked": zod.number().min(markGuestbookReadApiV1AdminModerationGuestbookReadPatchResponseMarkedMin).describe('Number of items newly marked as read')
+})
+
+
+/**
  * @summary 审核留言
  */
 export const ModerateGuestbookEndpointApiV1AdminModerationGuestbookEntryIdModeratePostParams = zod.object({
@@ -3573,6 +3654,7 @@ export const ModerateGuestbookEndpointApiV1AdminModerationGuestbookEntryIdModera
   "website": zod.unknown(),
   "body": zod.unknown(),
   "status": zod.unknown(),
+  "is_read": zod.unknown().describe('Whether an admin has read this moderation item'),
   "deletion_reason": zod.unknown().optional().describe('Reason when a public self-delete rejected this item'),
   "created_at": zod.unknown(),
   "updated_at": zod.unknown()
@@ -6916,6 +6998,14 @@ export const ListVisitorUsersApiV1AdminVisitorsUsersGetResponse = zod.object({
   "total": zod.unknown().describe('Total number of items matching the query'),
   "page": zod.unknown().describe('Current page number (1-based)'),
   "page_size": zod.unknown().describe('Number of items per page')
+})
+
+
+/**
+ * @summary 删除站点访客及关联互动记录
+ */
+export const DeleteVisitorUserApiV1AdminVisitorsUsersUserIdDeleteParams = zod.object({
+  "user_id": zod.string()
 })
 
 

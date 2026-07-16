@@ -2,14 +2,17 @@ from __future__ import annotations
 
 import sqlite3
 from datetime import timedelta
+from pathlib import Path
 
 import bcrypt
 
 from aerisun.core.db import get_session_factory
 from aerisun.core.settings import get_settings
 from aerisun.core.time import shanghai_now
+from aerisun.domain.diary_access.models import DiaryAccessRequest
 from aerisun.domain.iam.models import AdminSession, AdminUser
 from aerisun.domain.media.models import Asset
+from aerisun.domain.site_auth.models import SiteUser
 from aerisun.domain.waline.service import connect_waline_db
 
 
@@ -82,6 +85,345 @@ def _seed_waline_comment(
         ),
     )
     return int(cursor.lastrowid)
+
+
+def test_waline_schema_marks_existing_records_as_read_on_upgrade(tmp_path: Path) -> None:
+    legacy_db = tmp_path / "legacy-waline.db"
+    with sqlite3.connect(legacy_db) as connection:
+        connection.execute(
+            """
+            CREATE TABLE wl_comment (
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                user_id INTEGER DEFAULT NULL,
+                comment TEXT,
+                insertedAt TEXT NOT NULL,
+                ip VARCHAR(100) DEFAULT '',
+                link VARCHAR(255) DEFAULT NULL,
+                mail VARCHAR(255) DEFAULT NULL,
+                nick VARCHAR(255) DEFAULT NULL,
+                pid INTEGER DEFAULT NULL,
+                rid INTEGER DEFAULT NULL,
+                sticky NUMERIC DEFAULT NULL,
+                status VARCHAR(50) NOT NULL DEFAULT '',
+                "like" INTEGER DEFAULT NULL,
+                ua TEXT,
+                url VARCHAR(255) NOT NULL DEFAULT '',
+                createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+                updatedAt TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO wl_comment (
+                comment, insertedAt, status, url, createdAt, updatedAt
+            ) VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (
+                "已有评论",
+                "2026-03-21 09:00:00",
+                "approved",
+                "/posts/legacy",
+                "2026-03-21 09:00:00",
+                "2026-03-21 09:00:00",
+            ),
+        )
+        connection.execute(
+            """
+            INSERT INTO wl_comment (
+                comment, insertedAt, status, url, createdAt, updatedAt
+            ) VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (
+                "没有创建时间的已有评论",
+                "2026-03-21 09:30:00",
+                "approved",
+                "/posts/legacy-without-created-at",
+                None,
+                "2026-03-21 09:30:00",
+            ),
+        )
+
+    with connect_waline_db(legacy_db) as connection:
+        rows = connection.execute("SELECT admin_read_at FROM wl_comment ORDER BY id").fetchall()
+
+    assert [row["admin_read_at"] for row in rows] == [
+        "2026-03-21 09:00:00",
+        "2026-03-21 09:30:00",
+    ]
+
+
+def test_waline_schema_provisions_moderation_and_visitor_lookup_indexes(tmp_path: Path) -> None:
+    with connect_waline_db(tmp_path / "waline.db") as connection:
+        indexes = {str(row["name"]) for row in connection.execute("PRAGMA index_list(wl_comment)").fetchall()}
+
+    assert "idx_wl_comment_attention" in indexes
+    assert "idx_wl_comment_avatar_key" in indexes
+
+
+def test_waline_connections_reuse_the_verified_schema_for_the_same_database(tmp_path: Path, monkeypatch) -> None:
+    from aerisun.domain.waline import service as waline_service
+
+    original_ensure = waline_service.ensure_waline_schema
+    ensure_calls = 0
+
+    def track_ensure(connection: sqlite3.Connection) -> None:
+        nonlocal ensure_calls
+        ensure_calls += 1
+        original_ensure(connection)
+
+    monkeypatch.setattr(waline_service, "ensure_waline_schema", track_ensure)
+    db_path = tmp_path / "cached-schema-waline.db"
+
+    with waline_service.connect_waline_db(db_path):
+        pass
+    with waline_service.connect_waline_db(db_path):
+        pass
+
+    assert ensure_calls == 1
+
+
+def test_admin_moderation_tracks_shared_read_state_and_attention_counts(client) -> None:
+    token = _create_admin_token("waline-read-state-admin")
+    headers = {"Authorization": f"Bearer {token}"}
+    settings = get_settings()
+
+    with connect_waline_db(settings.waline_db_path) as connection:
+        connection.execute("DELETE FROM wl_comment")
+        comment_id = _seed_waline_comment(
+            connection,
+            url="/friends",
+            nick="Friend applicant",
+            comment="可以交换友链吗？",
+            status="waiting",
+            created_at="2026-03-21 11:00:00",
+        )
+        guestbook_id = _seed_waline_comment(
+            connection,
+            url="/guestbook",
+            nick="Guest visitor",
+            comment="来留言。",
+            status="waiting",
+            created_at="2026-03-21 11:05:00",
+        )
+
+    session_factory = get_session_factory()
+    with session_factory() as session:
+        session.query(DiaryAccessRequest).delete()
+        visitor = SiteUser(
+            email="attention-counts@example.com",
+            display_name="Attention visitor",
+            avatar_url="",
+        )
+        session.add(visitor)
+        session.flush()
+        diary_request = DiaryAccessRequest(
+            site_user_id=visitor.id,
+            reason="申请查看私密日记",
+            status="pending",
+        )
+        session.add(diary_request)
+        session.flush()
+        diary_request_id = diary_request.id
+        session.commit()
+
+    comments = client.get("/api/v1/admin/moderation/comments", headers=headers)
+    assert comments.status_code == 200
+    assert comments.json()["items"][0]["is_read"] is False
+
+    attention = client.get("/api/v1/admin/moderation/attention-counts", headers=headers)
+    assert attention.status_code == 200
+    assert attention.json() == {
+        "comments": {"pending": 1, "unread": 1},
+        "guestbook": {"pending": 1, "unread": 1},
+        "diary_access": {"pending": 1},
+        "pending_total": 3,
+        "unread_total": 3,
+    }
+
+    comment_read = client.patch(
+        "/api/v1/admin/moderation/comments/read",
+        headers=headers,
+        json={"ids": [str(comment_id)]},
+    )
+    assert comment_read.status_code == 200
+    assert comment_read.json() == {"marked": 1}
+
+    repeat_comment_read = client.patch(
+        "/api/v1/admin/moderation/comments/read",
+        headers=headers,
+        json={"ids": [str(comment_id)]},
+    )
+    assert repeat_comment_read.status_code == 200
+    assert repeat_comment_read.json() == {"marked": 0}
+
+    refreshed_comments = client.get("/api/v1/admin/moderation/comments", headers=headers)
+    assert refreshed_comments.status_code == 200
+    assert refreshed_comments.json()["items"][0]["is_read"] is True
+
+    guestbook_read = client.patch(
+        "/api/v1/admin/moderation/guestbook/read",
+        headers=headers,
+        json={"ids": [str(guestbook_id)]},
+    )
+    assert guestbook_read.status_code == 200
+    assert guestbook_read.json() == {"marked": 1}
+
+    refreshed_attention = client.get("/api/v1/admin/moderation/attention-counts", headers=headers)
+    assert refreshed_attention.status_code == 200
+    assert refreshed_attention.json()["comments"]["unread"] == 1
+    assert refreshed_attention.json()["guestbook"]["unread"] == 1
+    assert refreshed_attention.json()["pending_total"] == 3
+    assert refreshed_attention.json()["unread_total"] == 3
+
+    diary_review = client.patch(
+        f"/api/v1/admin/moderation/diary-access-requests/{diary_request_id}",
+        headers=headers,
+        json={"grant_access": False},
+    )
+    assert diary_review.status_code == 200
+    assert diary_review.json()["status"] == "revoked"
+
+    reviewed_attention = client.get("/api/v1/admin/moderation/attention-counts", headers=headers)
+    assert reviewed_attention.status_code == 200
+    assert reviewed_attention.json()["diary_access"] == {"pending": 0}
+    assert reviewed_attention.json()["unread_total"] == 2
+
+
+def test_admin_moderation_filters_friend_comments_by_their_exact_path(client) -> None:
+    token = _create_admin_token("waline-friends-filter-admin")
+    settings = get_settings()
+
+    with connect_waline_db(settings.waline_db_path) as connection:
+        connection.execute("DELETE FROM wl_comment")
+        _seed_waline_comment(
+            connection,
+            url="/friends",
+            nick="Friend applicant",
+            comment="希望交换友链。",
+            status="waiting",
+            created_at="2026-03-21 11:10:00",
+        )
+
+    response = client.get(
+        "/api/v1/admin/moderation/comments?surface=friends",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["total"] == 1
+    assert response.json()["items"][0]["content_type"] == "friends"
+
+
+def test_pending_diary_access_request_counts_as_unread_until_approved(client) -> None:
+    token = _create_admin_token("diary-access-approval-marks-read-admin")
+    headers = {"Authorization": f"Bearer {token}"}
+    settings = get_settings()
+
+    with connect_waline_db(settings.waline_db_path) as connection:
+        connection.execute("DELETE FROM wl_comment")
+
+    session_factory = get_session_factory()
+    with session_factory() as session:
+        session.query(DiaryAccessRequest).delete()
+        visitor = SiteUser(
+            email="diary-approval-attention@example.com",
+            display_name="Diary approval visitor",
+            avatar_url="",
+        )
+        session.add(visitor)
+        session.flush()
+        diary_request = DiaryAccessRequest(
+            site_user_id=visitor.id,
+            reason="申请查看私密日记",
+            status="pending",
+        )
+        session.add(diary_request)
+        session.flush()
+        diary_request_id = diary_request.id
+        session.commit()
+
+    before = client.get("/api/v1/admin/moderation/attention-counts", headers=headers)
+    assert before.status_code == 200
+    assert before.json()["diary_access"] == {"pending": 1}
+    assert before.json()["unread_total"] == 1
+
+    response = client.patch(
+        f"/api/v1/admin/moderation/diary-access-requests/{diary_request_id}",
+        headers=headers,
+        json={"grant_access": True},
+    )
+    assert response.status_code == 200
+    assert response.json()["status"] == "approved"
+
+    after = client.get("/api/v1/admin/moderation/attention-counts", headers=headers)
+    assert after.status_code == 200
+    assert after.json()["diary_access"] == {"pending": 0}
+    assert after.json()["unread_total"] == 0
+
+
+def test_moderating_an_unread_comment_marks_it_read(client) -> None:
+    token = _create_admin_token("waline-moderation-marks-read-admin")
+    headers = {"Authorization": f"Bearer {token}"}
+    settings = get_settings()
+
+    with connect_waline_db(settings.waline_db_path) as connection:
+        connection.execute("DELETE FROM wl_comment")
+        comment_id = _seed_waline_comment(
+            connection,
+            url="/posts/moderation-read-state",
+            nick="Pending reader",
+            comment="请审核这条评论。",
+            status="waiting",
+            created_at="2026-03-21 11:20:00",
+        )
+
+    before = client.get("/api/v1/admin/moderation/attention-counts", headers=headers)
+    assert before.status_code == 200
+    assert before.json()["comments"] == {"pending": 1, "unread": 1}
+
+    response = client.post(
+        f"/api/v1/admin/moderation/comments/{comment_id}/moderate",
+        headers=headers,
+        json={"action": "approve"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["is_read"] is True
+
+    after = client.get("/api/v1/admin/moderation/attention-counts", headers=headers)
+    assert after.status_code == 200
+    assert after.json()["comments"] == {"pending": 0, "unread": 0}
+
+
+def test_moderating_an_unread_guestbook_entry_marks_it_read(client) -> None:
+    token = _create_admin_token("waline-guestbook-moderation-marks-read-admin")
+    headers = {"Authorization": f"Bearer {token}"}
+    settings = get_settings()
+
+    with connect_waline_db(settings.waline_db_path) as connection:
+        connection.execute("DELETE FROM wl_comment")
+        entry_id = _seed_waline_comment(
+            connection,
+            url="/guestbook",
+            nick="Pending guestbook reader",
+            comment="请审核这条留言。",
+            status="waiting",
+            created_at="2026-03-21 11:25:00",
+        )
+
+    response = client.post(
+        f"/api/v1/admin/moderation/guestbook/{entry_id}/moderate",
+        headers=headers,
+        json={"action": "reject"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["is_read"] is True
+
+    attention = client.get("/api/v1/admin/moderation/attention-counts", headers=headers)
+    assert attention.status_code == 200
+    assert attention.json()["guestbook"] == {"pending": 0, "unread": 0}
 
 
 def test_admin_moderation_uses_waline_storage(client) -> None:

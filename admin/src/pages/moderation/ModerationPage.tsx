@@ -6,6 +6,8 @@ import type { Components } from "react-markdown";
 import {
   listCommentsApiV1AdminModerationCommentsGet,
   listGuestbookApiV1AdminModerationGuestbookGet,
+  markCommentsReadApiV1AdminModerationCommentsReadPatch,
+  markGuestbookReadApiV1AdminModerationGuestbookReadPatch,
   moderateCommentEndpointApiV1AdminModerationCommentsCommentIdModeratePost as moderateCommentApiV1AdminModerationCommentsCommentIdModeratePost,
   moderateGuestbookEndpointApiV1AdminModerationGuestbookEntryIdModeratePost as moderateGuestbookApiV1AdminModerationGuestbookEntryIdModeratePost,
   updateCommentFeedbackEndpointApiV1AdminModerationCommentsCommentIdFeedbackPatch as updateCommentFeedbackApiV1AdminModerationCommentsCommentIdFeedbackPatch,
@@ -70,8 +72,12 @@ import {
 import { useI18n } from "@/i18n";
 import { extractApiErrorMessage } from "@/lib/api-error";
 import { toast } from "sonner";
-import { MODERATION_PENDING_COUNT_QUERY_KEY } from "./moderationQueries";
+import {
+  MODERATION_ATTENTION_COUNT_QUERY_KEY,
+  moderationAttentionCountQueryOptions,
+} from "./moderationQueries";
 import { DiaryAccessRequestsPanel } from "./DiaryAccessRequestsPanel";
+import { ModerationAttentionIndicator } from "@/components/ModerationAttentionIndicator";
 
 import { PAGE_KEY_LABELS, optionLabel } from "@/pages/site-config/constants";
 
@@ -308,6 +314,7 @@ const COMMENT_SURFACE_OPTIONS = [
   "diary",
   "thoughts",
   "excerpts",
+  "friends",
 ] as const;
 const GUESTBOOK_SURFACE_OPTIONS = ["", "guestbook"] as const;
 const STATUS_OPTIONS = ["", "pending", "approved", "rejected"] as const;
@@ -516,6 +523,10 @@ function normalizeModerationStatus(status: string) {
   return status;
 }
 
+function isUnreadModerationRecord(item: ModerationRecord) {
+  return !item.is_read || normalizeModerationStatus(item.status) === "pending";
+}
+
 function isCommentModerationRecord(item: ModerationRecord): item is CommentAdminRead {
   return "content_type" in item;
 }
@@ -694,12 +705,11 @@ function ModerationStats({
 }) {
   const { t } = useI18n();
   const counts = useMemo(() => {
-    const summary = { pending: 0, approved: 0, rejected: 0 };
+    const summary = { pending: 0, unread: 0 };
     for (const item of items) {
       const status = normalizeModerationStatus(item.status);
+      if (isUnreadModerationRecord(item)) summary.unread += 1;
       if (status === "pending") summary.pending += 1;
-      if (status === "approved") summary.approved += 1;
-      if (status === "rejected") summary.rejected += 1;
     }
     return summary;
   }, [items]);
@@ -711,19 +721,14 @@ function ModerationStats({
       className: "border-border/35 bg-background/70 text-foreground",
     },
     {
+      label: t("moderation.unread"),
+      value: counts.unread,
+      className: "border-amber-500/25 bg-amber-500/[0.12] text-amber-700 dark:text-amber-200",
+    },
+    {
       label: t("moderation.statPending"),
       value: counts.pending,
-      className: "border-amber-500/18 bg-amber-500/[0.08] text-amber-700 dark:text-amber-200",
-    },
-    {
-      label: t("moderation.statApproved"),
-      value: counts.approved,
-      className: "border-emerald-500/18 bg-emerald-500/[0.08] text-emerald-700 dark:text-emerald-200",
-    },
-    {
-      label: t("moderation.statRejected"),
-      value: counts.rejected,
-      className: "border-rose-500/18 bg-rose-500/[0.08] text-rose-700 dark:text-rose-200",
+      className: "border-rose-500/25 bg-rose-500/[0.12] text-rose-700 dark:text-rose-200",
     },
   ];
 
@@ -1013,9 +1018,9 @@ function FiltersBar({
 
 function ModerationQueue({
   kind,
-  _description,
   loadItems,
   moderateItem,
+  markReadItems,
   queryKeyFn,
 }: {
   kind: ModerationKind;
@@ -1026,6 +1031,7 @@ function ModerationQueue({
     id: string,
     payload: ModerateAction,
   ) => Promise<{ data?: ModerationRecord }>;
+  markReadItems: (ids: string[]) => Promise<unknown>;
   queryKeyFn: (params?: ModerationListParams) => readonly unknown[];
 }) {
   const { t, lang } = useI18n();
@@ -1058,6 +1064,13 @@ function ModerationQueue({
     queryFn: () => loadItems(params),
   });
   const data = raw?.data;
+  const items = data?.items ?? EMPTY_MODERATION_ITEMS;
+  const selectedUnreadIds = useMemo(() => {
+    const selectedIdSet = new Set(selectedIds);
+    return items
+      .filter((item) => selectedIdSet.has(item.id) && !item.is_read)
+      .map((item) => item.id);
+  }, [items, selectedIds]);
   const { data: subscriptionRaw } =
     useGetContentSubscriptionConfigApiV1AdminSubscriptionsConfigGet({
       query: {
@@ -1079,9 +1092,24 @@ function ModerationQueue({
     }) => moderateItem(id, { action, reason: reason || null }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeyFn() });
-      queryClient.invalidateQueries({ queryKey: MODERATION_PENDING_COUNT_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: MODERATION_ATTENTION_COUNT_QUERY_KEY });
       setDeleteTargetId(null);
       toast.success(t("common.operationSuccess"));
+    },
+    onError: (error: unknown) => {
+      toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
+    },
+  });
+
+  const markRead = useMutation({
+    mutationFn: () => markReadItems(selectedUnreadIds),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeyFn() }),
+        queryClient.invalidateQueries({ queryKey: MODERATION_ATTENTION_COUNT_QUERY_KEY }),
+      ]);
+      setSelectedIds([]);
+      toast.success(t("moderation.markReadSuccess"));
     },
     onError: (error: unknown) => {
       toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
@@ -1102,7 +1130,6 @@ function ModerationQueue({
     },
   });
 
-  const items = data?.items ?? EMPTY_MODERATION_ITEMS;
   const total = data?.total ?? 0;
   const titleMap = useContentTitles(items);
   const selectedItem = items.find((item) => item.id === activeId) ?? null;
@@ -1149,10 +1176,6 @@ function ModerationQueue({
     });
   };
 
-  const selectCurrentPage = () => {
-    setSelectedIds(items.map((item) => item.id));
-  };
-
   const runBulkAction = async (action: ModerateAction["action"]) => {
     if (!selectedIds.length || bulkPending) return;
     setBulkPending(true);
@@ -1163,7 +1186,7 @@ function ModerationQueue({
         await moderateItem(id, { action, reason: null });
       }
       await queryClient.invalidateQueries({ queryKey: queryKeyFn() });
-      await queryClient.invalidateQueries({ queryKey: MODERATION_PENDING_COUNT_QUERY_KEY });
+      await queryClient.invalidateQueries({ queryKey: MODERATION_ATTENTION_COUNT_QUERY_KEY });
       setSelectedIds([]);
     } finally {
       setBulkPending(false);
@@ -1215,19 +1238,17 @@ function ModerationQueue({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="rounded-xl border-border/45 bg-background/50"
-                  onClick={selectCurrentPage}
+                  className={cn(
+                    "rounded-xl transition-colors",
+                    selectedUnreadIds.length
+                      ? "border-amber-400 bg-amber-400 text-amber-950 hover:bg-amber-300 dark:border-amber-300 dark:bg-amber-300 dark:text-amber-950"
+                      : "border-border/45 bg-background/50",
+                  )}
+                  onClick={() => markRead.mutate()}
+                  disabled={markRead.isPending || !selectedUnreadIds.length}
                 >
-                  {t("moderation.selectCurrentPage")}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="rounded-xl"
-                  onClick={() => setSelectedIds([])}
-                  disabled={!selectedIds.length}
-                >
-                  {t("common.clear")}
+                  <Check className="mr-1 h-3.5 w-3.5" />
+                  {t("moderation.markRead")}
                 </Button>
                 <Button
                   size="sm"
@@ -1272,7 +1293,7 @@ function ModerationQueue({
                 {
                   header: t("common.author"),
                   accessor: (row) => (
-                    <span className="whitespace-nowrap font-medium">
+                    <span className="inline-flex items-center gap-2 whitespace-nowrap font-medium">
                       {getModerationAuthor(row, t("moderation.guest"))}
                     </span>
                   ),
@@ -1349,6 +1370,11 @@ function ModerationQueue({
                 setActiveId(null);
               }}
               isLoading={isLoading}
+              getRowClassName={(row) =>
+                isUnreadModerationRecord(row)
+                  ? "bg-amber-400/[0.10] hover:!bg-amber-400/[0.14] [&>td:first-child]:border-l-2 [&>td:first-child]:border-amber-400/80"
+                  : undefined
+              }
               onRowClick={(row) =>
                 setActiveId((prev) => (prev === row.id ? null : row.id))
               }
@@ -1357,7 +1383,14 @@ function ModerationQueue({
         </div>
 
         <div className="xl:sticky xl:top-6">
-          <Card className="overflow-hidden rounded-3xl border border-border/35 bg-gradient-to-b from-background via-background to-muted/20 shadow-[0_22px_54px_-40px_rgba(15,23,42,0.6)] backdrop-blur-sm">
+          <Card
+            className={cn(
+              "overflow-hidden rounded-3xl border bg-gradient-to-b from-background via-background to-muted/20 shadow-[0_22px_54px_-40px_rgba(15,23,42,0.6)] backdrop-blur-sm",
+              selectedItem && isUnreadModerationRecord(selectedItem)
+                ? "border-amber-400/70"
+                : "border-border/35",
+            )}
+          >
             <CardContent className="space-y-4 pt-5">
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -1384,6 +1417,9 @@ function ModerationQueue({
                       {getModerationAuthor(selectedItem, t("moderation.guest"))}
                     </span>
                     <ModerationStatusBadge item={selectedItem} t={t} />
+                    {isUnreadModerationRecord(selectedItem) ? (
+                      <Badge variant="warning">{t("moderation.unread")}</Badge>
+                    ) : null}
                     <Badge variant="outline">
                       {getModerationSource(selectedItem, lang)}
                     </Badge>
@@ -1506,6 +1542,9 @@ function ModerationQueue({
 export default function ModerationPage() {
   const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<ModerationKind>("comments");
+  const { data: moderationAttention } = useQuery({
+    ...moderationAttentionCountQueryOptions(),
+  });
   const { data: profileRaw } = useGetProfileApiV1AdminSiteConfigProfileGet();
   const profile = profileRaw?.data as SiteProfileAdminRead | undefined;
   const featureFlags = profile?.feature_flags;
@@ -1529,10 +1568,39 @@ export default function ModerationPage() {
   };
 
   const tabItems = [
-    { value: "comments", label: t("moderation.comments") },
-    { value: "guestbook", label: t("moderation.guestbook") },
+    {
+      value: "comments",
+      label: t("moderation.comments"),
+      badge: (
+        <ModerationAttentionIndicator
+          pending={moderationAttention?.comments.pending ?? 0}
+          unread={moderationAttention?.comments.unread ?? 0}
+        />
+      ),
+    },
+    {
+      value: "guestbook",
+      label: t("moderation.guestbook"),
+      badge: (
+        <ModerationAttentionIndicator
+          pending={moderationAttention?.guestbook.pending ?? 0}
+          unread={moderationAttention?.guestbook.unread ?? 0}
+        />
+      ),
+    },
     ...(diaryPrivateEnabled
-      ? [{ value: "diary-access", label: t("moderation.diaryAccessRequests") }]
+      ? [
+          {
+            value: "diary-access",
+            label: t("moderation.diaryAccessRequests"),
+            badge: (
+              <ModerationAttentionIndicator
+                pending={moderationAttention?.diary_access.pending ?? 0}
+                unread={0}
+              />
+            ),
+          },
+        ]
       : []),
   ];
 
@@ -1577,6 +1645,9 @@ export default function ModerationPage() {
               data?: CommentAdminRead;
             }>
           }
+          markReadItems={(selectedIds) =>
+            markCommentsReadApiV1AdminModerationCommentsReadPatch({ ids: selectedIds })
+          }
           queryKeyFn={(params?) => getListCommentsApiV1AdminModerationCommentsGetQueryKey(params)}
         />
       </TabsContent>
@@ -1592,6 +1663,9 @@ export default function ModerationPage() {
             moderateGuestbookApiV1AdminModerationGuestbookEntryIdModeratePost(id, payload) as Promise<{
               data?: GuestbookAdminRead;
             }>
+          }
+          markReadItems={(selectedIds) =>
+            markGuestbookReadApiV1AdminModerationGuestbookReadPatch({ ids: selectedIds })
           }
           queryKeyFn={(params?) => getListGuestbookApiV1AdminModerationGuestbookGetQueryKey(params)}
         />
