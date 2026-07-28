@@ -22,6 +22,7 @@ const statusVariantMap: Record<string, string> = {
   cancelled: "secondary",
   restoring: "warning",
   public: "success",
+  publicNoRss: "success",
   private: "info",
   unlisted: "outline",
 };

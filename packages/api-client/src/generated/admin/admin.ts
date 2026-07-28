@@ -174,6 +174,7 @@ import type {
   PaginatedResponseNavItemAdminRead,
   PaginatedResponsePageCopyAdminRead,
   PaginatedResponsePoemAdminRead,
+  PaginatedResponsePostContentAdminRead,
   PaginatedResponseResumeBasicsAdminRead,
   PaginatedResponseSiteUserAdminRead,
   PaginatedResponseSocialLinkAdminRead,
@@ -185,6 +186,9 @@ import type {
   PoemGenerationRequest,
   PoemGenerationResponse,
   PoemUpdate,
+  PostContentAdminRead,
+  PostContentCreate,
+  PostContentUpdate,
   PostWebhookTestApiV1AdminAutomationWebhooksTestPost200,
   PostWebhookTestApiV1AdminAutomationWebhooksTestPostParams,
   ResumeBasicsAdminRead,
@@ -1181,7 +1185,7 @@ export const useRevokeSessionApiV1AdminAuthSessionsSessionIdDelete = <TError = E
  * @summary 获取admin-posts列表
  */
 export type listPostsResponse200 = {
-  data: PaginatedResponseContentAdminRead
+  data: PaginatedResponsePostContentAdminRead
   status: 200
 }
 
@@ -1305,7 +1309,7 @@ export function useListPosts<TData = Awaited<ReturnType<typeof listPosts>>, TErr
  * @summary 创建admin-posts
  */
 export type createPostsResponse201 = {
-  data: ContentAdminRead
+  data: PostContentAdminRead
   status: 201
 }
 
@@ -1331,7 +1335,7 @@ export const getCreatePostsUrl = () => {
   return `/api/v1/admin/posts/`
 }
 
-export const createPosts = async (contentCreate: ContentCreate, options?: RequestInit): Promise<createPostsResponse> => {
+export const createPosts = async (postContentCreate: PostContentCreate, options?: RequestInit): Promise<createPostsResponse> => {
 
   return customInstance<createPostsResponse>(getCreatePostsUrl(),
   {
@@ -1339,7 +1343,7 @@ export const createPosts = async (contentCreate: ContentCreate, options?: Reques
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
-      contentCreate,)
+      postContentCreate,)
   }
 );}
 
@@ -1347,8 +1351,8 @@ export const createPosts = async (contentCreate: ContentCreate, options?: Reques
 
 
 export const getCreatePostsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPosts>>, TError,{data: BodyType<ContentCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof createPosts>>, TError,{data: BodyType<ContentCreate>}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPosts>>, TError,{data: BodyType<PostContentCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof createPosts>>, TError,{data: BodyType<PostContentCreate>}, TContext> => {
 
 const mutationKey = ['createPosts'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -1360,7 +1364,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createPosts>>, {data: BodyType<ContentCreate>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createPosts>>, {data: BodyType<PostContentCreate>}> = (props) => {
           const {data} = props ?? {};
 
           return  createPosts(data,requestOptions)
@@ -1374,18 +1378,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type CreatePostsMutationResult = NonNullable<Awaited<ReturnType<typeof createPosts>>>
-    export type CreatePostsMutationBody = BodyType<ContentCreate>
+    export type CreatePostsMutationBody = BodyType<PostContentCreate>
     export type CreatePostsMutationError = ErrorType<HTTPValidationError>
 
     /**
  * @summary 创建admin-posts
  */
 export const useCreatePosts = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPosts>>, TError,{data: BodyType<ContentCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPosts>>, TError,{data: BodyType<PostContentCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof createPosts>>,
         TError,
-        {data: BodyType<ContentCreate>},
+        {data: BodyType<PostContentCreate>},
         TContext
       > => {
       return useMutation(getCreatePostsMutationOptions(options), queryClient);
@@ -1394,7 +1398,7 @@ export const useCreatePosts = <TError = ErrorType<HTTPValidationError>,
  * @summary 获取单条admin-posts
  */
 export type getPostsResponse200 = {
-  data: ContentAdminRead
+  data: PostContentAdminRead
   status: 200
 }
 
@@ -1511,7 +1515,7 @@ export function useGetPosts<TData = Awaited<ReturnType<typeof getPosts>>, TError
  * @summary 更新admin-posts
  */
 export type updatePostsResponse200 = {
-  data: ContentAdminRead
+  data: PostContentAdminRead
   status: 200
 }
 
@@ -1538,7 +1542,7 @@ export const getUpdatePostsUrl = (itemId: string,) => {
 }
 
 export const updatePosts = async (itemId: string,
-    contentUpdate: ContentUpdate, options?: RequestInit): Promise<updatePostsResponse> => {
+    postContentUpdate: PostContentUpdate, options?: RequestInit): Promise<updatePostsResponse> => {
 
   return customInstance<updatePostsResponse>(getUpdatePostsUrl(itemId),
   {
@@ -1546,7 +1550,7 @@ export const updatePosts = async (itemId: string,
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
-      contentUpdate,)
+      postContentUpdate,)
   }
 );}
 
@@ -1554,8 +1558,8 @@ export const updatePosts = async (itemId: string,
 
 
 export const getUpdatePostsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePosts>>, TError,{itemId: string;data: BodyType<ContentUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof updatePosts>>, TError,{itemId: string;data: BodyType<ContentUpdate>}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePosts>>, TError,{itemId: string;data: BodyType<PostContentUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof updatePosts>>, TError,{itemId: string;data: BodyType<PostContentUpdate>}, TContext> => {
 
 const mutationKey = ['updatePosts'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -1567,7 +1571,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updatePosts>>, {itemId: string;data: BodyType<ContentUpdate>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updatePosts>>, {itemId: string;data: BodyType<PostContentUpdate>}> = (props) => {
           const {itemId,data} = props ?? {};
 
           return  updatePosts(itemId,data,requestOptions)
@@ -1581,18 +1585,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type UpdatePostsMutationResult = NonNullable<Awaited<ReturnType<typeof updatePosts>>>
-    export type UpdatePostsMutationBody = BodyType<ContentUpdate>
+    export type UpdatePostsMutationBody = BodyType<PostContentUpdate>
     export type UpdatePostsMutationError = ErrorType<HTTPValidationError>
 
     /**
  * @summary 更新admin-posts
  */
 export const useUpdatePosts = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePosts>>, TError,{itemId: string;data: BodyType<ContentUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePosts>>, TError,{itemId: string;data: BodyType<PostContentUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof updatePosts>>,
         TError,
-        {itemId: string;data: BodyType<ContentUpdate>},
+        {itemId: string;data: BodyType<PostContentUpdate>},
         TContext
       > => {
       return useMutation(getUpdatePostsMutationOptions(options), queryClient);

@@ -116,6 +116,24 @@ class ContentAdminRead(ModelBase):
     pin_order: int = Field(default=0, description="Sort order among pinned items")
 
 
+class PostContentCreate(ContentCreate):
+    exclude_from_rss: bool = Field(
+        default=False,
+        description="Whether this public post is excluded from RSS",
+    )
+
+
+class PostContentUpdate(ContentUpdate):
+    exclude_from_rss: bool | None = Field(
+        default=None,
+        description="Whether this public post is excluded from RSS",
+    )
+
+
+class PostContentAdminRead(ContentAdminRead):
+    exclude_from_rss: bool = Field(description="Whether this public post is excluded from RSS")
+
+
 class ContentTitleSuggestionRead(BaseModel):
     title: str = Field(description="Suggested default title")
     sequence: int = Field(description="Suggested sequence number for the day")

@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import pytest
 
+from aerisun.core.db import get_session_factory
+from aerisun.domain.content.import_export_service import export_content_json, import_content_json
 from aerisun.domain.crud import service as crud_service
 
 # Base URL for all admin content endpoints.
@@ -50,6 +52,10 @@ class TestContentCRUDLifecycle:
         assert data["tags"] == expected_tags
         assert "status" not in data
         assert data["visibility"] == "private"
+        if content_type == "posts":
+            assert data["exclude_from_rss"] is False
+        else:
+            assert "exclude_from_rss" not in data
         assert "id" in data
         assert "created_at" in data
 
@@ -110,6 +116,60 @@ class TestContentCRUDLifecycle:
         assert resp.json()["title"] == "Updated Title"
         # slug should remain unchanged
         assert resp.json()["slug"] == payload["slug"]
+
+    def test_post_rss_exclusion_can_be_updated(self, client, admin_headers, content_type):
+        if content_type != "posts":
+            pytest.skip("post-specific RSS exclusion")
+
+        payload = _make_payload(content_type, "-rss-excluded")
+        created = client.post(f"{BASE}/{content_type}/", json=payload, headers=admin_headers)
+        assert created.status_code == 201
+
+        response = client.put(
+            f"{BASE}/{content_type}/{created.json()['id']}",
+            json={"exclude_from_rss": True},
+            headers=admin_headers,
+        )
+
+        assert response.status_code == 200
+        assert response.json()["exclude_from_rss"] is True
+
+    def test_post_json_export_and_import_preserve_rss_exclusion(self, client, admin_headers, content_type):
+        if content_type != "posts":
+            pytest.skip("post-specific RSS exclusion")
+
+        payload = _make_payload(content_type, "-rss-export")
+        payload["exclude_from_rss"] = True
+        created = client.post(f"{BASE}/{content_type}/", json=payload, headers=admin_headers)
+        assert created.status_code == 201
+
+        with get_session_factory()() as session:
+            exported_items = export_content_json(session, "posts")
+        exported_post = next(item for item in exported_items if item["slug"] == payload["slug"])
+        assert exported_post["exclude_from_rss"] is True
+
+        assert (
+            client.put(
+                f"{BASE}/{content_type}/{created.json()['id']}",
+                json={"exclude_from_rss": False},
+                headers=admin_headers,
+            ).status_code
+            == 200
+        )
+        with get_session_factory()() as session:
+            import_result = import_content_json(
+                session,
+                "posts",
+                [{"slug": payload["slug"], "exclude_from_rss": True}],
+            )
+        assert import_result.errors == []
+
+        restored = client.get(
+            f"{BASE}/{content_type}/{created.json()['id']}",
+            headers=admin_headers,
+        )
+        assert restored.status_code == 200
+        assert restored.json()["exclude_from_rss"] is True
 
     def test_update_does_not_change_historical_view_count(self, client, admin_headers, content_type):
         payload = _make_payload(content_type, "-view-count")

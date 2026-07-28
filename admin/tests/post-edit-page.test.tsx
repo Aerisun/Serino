@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import PostEditPage from "../src/pages/posts/PostEditPage";
 import { LanguageProvider } from "../src/i18n";
@@ -21,6 +21,7 @@ const api = vi.hoisted(() => ({
       body: "Current body",
       tags: ["design"],
       visibility: "private",
+      exclude_from_rss: false,
       published_at: "2026-07-01T10:00:00+08:00",
       updated_at: "2026-07-01T10:00:00+08:00",
       category: "Notes",
@@ -91,10 +92,23 @@ function renderPostEditPage() {
   );
 }
 
+beforeEach(() => {
+  Object.defineProperty(window, "matchMedia", {
+    writable: true,
+    value: vi.fn().mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    })),
+  });
+});
+
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
   localStorage.clear();
+  api.postResponse.data.exclude_from_rss = false;
 });
 
 describe("PostEditPage", () => {
@@ -180,6 +194,48 @@ describe("PostEditPage", () => {
           title: "Current Title",
         }),
       });
+    });
+  });
+
+  it("lets editors exclude a post from RSS and saves the switch state", async () => {
+    const user = userEvent.setup();
+    api.updatePost.mockResolvedValue({ data: { id: "post-1" } });
+    renderPostEditPage();
+
+    const rssSwitch = screen.getByRole("switch", { name: "不展示 RSS" });
+    expect(rssSwitch.getAttribute("aria-checked")).toBe("false");
+    expect(rssSwitch.closest("[data-rss-exclusion-control]")?.className).toContain("max-md:basis-full");
+
+    const rssControl = rssSwitch.closest("[data-rss-exclusion-control]");
+    expect(within(rssControl!).getByText("不展示 RSS")).toBeTruthy();
+    await user.click(within(rssControl!).getByRole("button", { name: "查看字段说明" }));
+    expect((await screen.findByRole("dialog")).textContent).toContain(
+      "公开文章仍可在网站中访问，但不会出现在 RSS 订阅中。",
+    );
+
+    const publishTimeInput = document.querySelector("[data-publish-time-input]");
+    expect(rssControl?.compareDocumentPosition(publishTimeInput!)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+
+    await user.click(rssSwitch);
+    await user.click(screen.getByRole("button", { name: "保存私密" }));
+
+    await waitFor(() => {
+      expect(api.updatePost).toHaveBeenCalledWith({
+        itemId: "post-1",
+        data: expect.objectContaining({ exclude_from_rss: true }),
+      });
+    });
+  });
+
+  it("restores the saved RSS exclusion switch state", async () => {
+    api.postResponse.data.exclude_from_rss = true;
+    renderPostEditPage();
+
+    await waitFor(() => {
+      expect(screen.getByRole("switch", { name: "不展示 RSS" }).getAttribute("aria-checked"))
+        .toBe("true");
     });
   });
 });

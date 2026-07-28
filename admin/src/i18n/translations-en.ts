@@ -1124,6 +1124,7 @@ export const enTranslations: TranslationDict = {
     "status.cancelled": "Cancelled",
     "status.restoring": "Restoring",
     "status.public": "Public",
+    "status.publicNoRss": "Public (not in RSS)",
     "status.private": "Private",
     "status.unlisted": "Unlisted",
 

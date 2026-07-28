@@ -3446,7 +3446,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PaginatedResponse_ContentAdminRead_"
+                  "$ref": "#/components/schemas/PaginatedResponse_PostContentAdminRead_"
                 }
               }
             }
@@ -3480,7 +3480,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ContentCreate"
+                "$ref": "#/components/schemas/PostContentCreate"
               }
             }
           }
@@ -3491,7 +3491,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ContentAdminRead"
+                  "$ref": "#/components/schemas/PostContentAdminRead"
                 }
               }
             }
@@ -3539,7 +3539,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ContentAdminRead"
+                  "$ref": "#/components/schemas/PostContentAdminRead"
                 }
               }
             }
@@ -3584,7 +3584,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ContentUpdate"
+                "$ref": "#/components/schemas/PostContentUpdate"
               }
             }
           }
@@ -3595,7 +3595,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ContentAdminRead"
+                  "$ref": "#/components/schemas/PostContentAdminRead"
                 }
               }
             }
@@ -25589,6 +25589,34 @@
         ],
         "title": "PaginatedResponse[PoemAdminRead]"
       },
+      "PaginatedResponse_PostContentAdminRead_": {
+        "properties": {
+          "items": {
+            "title": "Items",
+            "description": "Page of result items"
+          },
+          "total": {
+            "title": "Total",
+            "description": "Total number of items matching the query"
+          },
+          "page": {
+            "title": "Page",
+            "description": "Current page number (1-based)"
+          },
+          "page_size": {
+            "title": "Page Size",
+            "description": "Number of items per page"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "page_size"
+        ],
+        "title": "PaginatedResponse[PostContentAdminRead]"
+      },
       "PaginatedResponse_ResumeBasicsAdminRead_": {
         "properties": {
           "items": {
@@ -25967,6 +25995,494 @@
         },
         "type": "object",
         "title": "PoemUpdate"
+      },
+      "PostContentAdminRead": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "description": "Unique content identifier"
+          },
+          "slug": {
+            "title": "Slug",
+            "description": "URL-friendly unique identifier"
+          },
+          "title": {
+            "title": "Title",
+            "description": "Display title"
+          },
+          "summary": {
+            "title": "Summary",
+            "description": "Brief summary or excerpt"
+          },
+          "body": {
+            "title": "Body",
+            "description": "Full content body in Markdown"
+          },
+          "tags": {
+            "title": "Tags",
+            "description": "List of tag names"
+          },
+          "visibility": {
+            "title": "Visibility",
+            "description": "Visibility level"
+          },
+          "published_at": {
+            "title": "Published At",
+            "description": "Publication timestamp"
+          },
+          "created_at": {
+            "title": "Created At",
+            "description": "Creation timestamp"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "description": "Last update timestamp"
+          },
+          "category": {
+            "title": "Category",
+            "description": "Content category"
+          },
+          "mood": {
+            "title": "Mood",
+            "description": "Author mood (diary-specific)"
+          },
+          "weather": {
+            "title": "Weather",
+            "description": "Weather description (diary-specific)"
+          },
+          "poem": {
+            "title": "Poem",
+            "description": "Associated poem text"
+          },
+          "author_name": {
+            "title": "Author Name",
+            "description": "Original author name"
+          },
+          "source": {
+            "title": "Source",
+            "description": "Source URL or reference"
+          },
+          "view_count": {
+            "title": "View Count",
+            "description": "Total page views"
+          },
+          "is_pinned": {
+            "title": "Is Pinned",
+            "description": "Whether pinned to top"
+          },
+          "pin_order": {
+            "title": "Pin Order",
+            "description": "Sort order among pinned items"
+          },
+          "exclude_from_rss": {
+            "title": "Exclude From Rss",
+            "description": "Whether this public post is excluded from RSS"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "slug",
+          "title",
+          "summary",
+          "body",
+          "tags",
+          "visibility",
+          "published_at",
+          "created_at",
+          "updated_at",
+          "exclude_from_rss"
+        ],
+        "title": "PostContentAdminRead"
+      },
+      "PostContentCreate": {
+        "properties": {
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug",
+            "description": "URL-friendly unique identifier"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "description": "Display title"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary",
+            "description": "Brief summary or excerpt"
+          },
+          "body": {
+            "type": "string",
+            "title": "Body",
+            "description": "Full content body in Markdown"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags",
+            "description": "List of tag names"
+          },
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "public",
+              "private"
+            ],
+            "title": "Visibility",
+            "description": "Visibility level: public or private",
+            "default": "private"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At",
+            "description": "Publication timestamp"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category",
+            "description": "Content category name"
+          },
+          "mood": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mood",
+            "description": "Author mood (diary-specific)"
+          },
+          "weather": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weather",
+            "description": "Weather description (diary-specific)"
+          },
+          "poem": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Poem",
+            "description": "Associated poem text"
+          },
+          "author_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Author Name",
+            "description": "Original author name (for excerpts)"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source",
+            "description": "Source URL or reference (for excerpts)"
+          },
+          "view_count": {
+            "type": "integer",
+            "title": "View Count",
+            "description": "Manual view count override",
+            "default": 0
+          },
+          "is_pinned": {
+            "type": "boolean",
+            "title": "Is Pinned",
+            "description": "Whether pinned to top",
+            "default": false
+          },
+          "pin_order": {
+            "type": "integer",
+            "title": "Pin Order",
+            "description": "Sort order among pinned items",
+            "default": 0
+          },
+          "exclude_from_rss": {
+            "type": "boolean",
+            "title": "Exclude From Rss",
+            "description": "Whether this public post is excluded from RSS",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "body"
+        ],
+        "title": "PostContentCreate"
+      },
+      "PostContentUpdate": {
+        "properties": {
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug",
+            "description": "URL-friendly unique identifier"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title",
+            "description": "Display title"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary",
+            "description": "Brief summary or excerpt"
+          },
+          "body": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Body",
+            "description": "Full content body in Markdown"
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags",
+            "description": "List of tag names"
+          },
+          "visibility": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "public",
+                  "private"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Visibility",
+            "description": "Visibility level"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At",
+            "description": "Publication timestamp"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category",
+            "description": "Content category name"
+          },
+          "mood": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mood",
+            "description": "Author mood (diary-specific)"
+          },
+          "weather": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weather",
+            "description": "Weather description (diary-specific)"
+          },
+          "poem": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Poem",
+            "description": "Associated poem text"
+          },
+          "author_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Author Name",
+            "description": "Original author name"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source",
+            "description": "Source URL or reference"
+          },
+          "view_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "View Count",
+            "description": "Manual view count override"
+          },
+          "is_pinned": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Pinned",
+            "description": "Whether pinned to top"
+          },
+          "pin_order": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pin Order",
+            "description": "Sort order among pinned items"
+          },
+          "exclude_from_rss": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exclude From Rss",
+            "description": "Whether this public post is excluded from RSS"
+          }
+        },
+        "type": "object",
+        "title": "PostContentUpdate"
       },
       "ReactionCreate": {
         "properties": {

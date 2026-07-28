@@ -4,11 +4,25 @@ import {
   useBulkVisibilityPosts,
   getListPostsQueryKey,
 } from "@serino/api-client/admin";
+import type { ContentAdminRead } from "@serino/api-client/models";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatDate } from "@/lib/utils";
 import { useI18n } from "@/i18n";
 import ContentListPage from "@/pages/common/ContentListPage";
 import type { ContentListConfig } from "@/pages/common/types";
+
+function postVisibilityBadge(row: ContentAdminRead) {
+  const visibility = String(row.visibility || "");
+  const excludeFromRss = Boolean(
+    (row as { exclude_from_rss?: unknown }).exclude_from_rss,
+  );
+
+  return (
+    <StatusBadge
+      status={visibility === "public" && excludeFromRss ? "publicNoRss" : visibility}
+    />
+  );
+}
 
 function usePostListConfig(): ContentListConfig {
   const { t } = useI18n();
@@ -23,7 +37,8 @@ function usePostListConfig(): ContentListConfig {
       { header: t("posts.postTitle"), accessor: "title" },
       {
         header: t("posts.visibility"),
-        accessor: (row) => <StatusBadge status={String(row.visibility || "")} />,
+        accessor: postVisibilityBadge,
+        className: "text-center",
       },
       {
         header: t("posts.publishedAt"),
@@ -38,6 +53,7 @@ function usePostListConfig(): ContentListConfig {
     useBulkDelete: useBulkDeletePosts as ContentListConfig["useBulkDelete"],
     useBulkVisibility: useBulkVisibilityPosts as ContentListConfig["useBulkVisibility"],
     getQueryKey: getListPostsQueryKey,
+    renderMobileVisibility: postVisibilityBadge,
   };
 }
 

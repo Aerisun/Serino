@@ -22,7 +22,8 @@
       "source": null,
       "view_count": 3140,
       "is_pinned": false,
-      "pin_order": 0
+      "pin_order": 0,
+      "exclude_from_rss": false
     },
     {
       "id": "43456252-b7b7-55bc-b8bd-93e52a86b029",
@@ -46,7 +47,8 @@
       "source": null,
       "view_count": 625,
       "is_pinned": false,
-      "pin_order": 0
+      "pin_order": 0,
+      "exclude_from_rss": false
     },
     {
       "id": "0e2b14c2-63ff-53dc-9bba-52ebb0c02d25",
@@ -70,7 +72,8 @@
       "source": null,
       "view_count": 4210,
       "is_pinned": false,
-      "pin_order": 0
+      "pin_order": 0,
+      "exclude_from_rss": false
     },
     {
       "id": "1b88b7db-7176-5528-a3d2-0f596b0d76d2",
@@ -94,7 +97,8 @@
       "source": null,
       "view_count": 1873,
       "is_pinned": false,
-      "pin_order": 0
+      "pin_order": 0,
+      "exclude_from_rss": false
     },
     {
       "id": "a940a9fb-b1c3-52e0-87ce-3caf1ec7ba33",
@@ -118,7 +122,8 @@
       "source": null,
       "view_count": 2156,
       "is_pinned": false,
-      "pin_order": 0
+      "pin_order": 0,
+      "exclude_from_rss": false
     },
     {
       "id": "2777b7f6-c059-5c52-bc27-a91876310988",
@@ -142,7 +147,8 @@
       "source": null,
       "view_count": 892,
       "is_pinned": false,
-      "pin_order": 0
+      "pin_order": 0,
+      "exclude_from_rss": false
     },
     {
       "id": "4dbcde23-ee45-5a77-960a-9a5750063a98",
@@ -167,7 +173,8 @@
       "source": null,
       "view_count": 3082,
       "is_pinned": false,
-      "pin_order": 0
+      "pin_order": 0,
+      "exclude_from_rss": false
     },
     {
       "id": "9310bb7a-a4ab-55ff-92dd-77f82bdf1b32",
@@ -191,7 +198,8 @@
       "source": null,
       "view_count": 1247,
       "is_pinned": false,
-      "pin_order": 0
+      "pin_order": 0,
+      "exclude_from_rss": false
     }
   ],
   "total": 8,

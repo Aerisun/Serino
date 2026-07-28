@@ -18,7 +18,14 @@ def _build_admin_router() -> APIRouter:
     from .object_storage import router as object_storage_router
     from .proxy_config import router as proxy_config_router
     from .resume import router as resume_router
-    from .schemas import ContentAdminRead, ContentCreate, ContentUpdate
+    from .schemas import (
+        ContentAdminRead,
+        ContentCreate,
+        ContentUpdate,
+        PostContentAdminRead,
+        PostContentCreate,
+        PostContentUpdate,
+    )
     from .site_config import router as site_config_router
     from .social import router as social_router
     from .subscriptions import router as subscriptions_router
@@ -29,19 +36,19 @@ def _build_admin_router() -> APIRouter:
     admin_router = APIRouter(prefix="/api/v1/admin", tags=["admin"])
     admin_router.include_router(auth_router)
 
-    for model, prefix in [
-        (PostEntry, "/posts"),
-        (DiaryEntry, "/diary"),
-        (ThoughtEntry, "/thoughts"),
-        (ExcerptEntry, "/excerpts"),
+    for model, prefix, create_schema, update_schema, read_schema in [
+        (PostEntry, "/posts", PostContentCreate, PostContentUpdate, PostContentAdminRead),
+        (DiaryEntry, "/diary", ContentCreate, ContentUpdate, ContentAdminRead),
+        (ThoughtEntry, "/thoughts", ContentCreate, ContentUpdate, ContentAdminRead),
+        (ExcerptEntry, "/excerpts", ContentCreate, ContentUpdate, ContentAdminRead),
     ]:
         content_type = prefix.strip("/")
         admin_router.include_router(
             build_crud_router(
                 model,
-                create_schema=ContentCreate,
-                update_schema=ContentUpdate,
-                read_schema=ContentAdminRead,
+                create_schema=create_schema,
+                update_schema=update_schema,
+                read_schema=read_schema,
                 prefix=prefix,
                 tag=f"admin-{prefix.strip('/')}",
                 prepare_create_data=lambda session, data, *, content_type=content_type: normalize_content_create_state(

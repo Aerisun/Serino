@@ -1187,6 +1187,7 @@ export const createPostsBodyVisibilityDefault = `private`;
 export const createPostsBodyViewCountDefault = 0;
 export const createPostsBodyIsPinnedDefault = false;
 export const createPostsBodyPinOrderDefault = 0;
+export const createPostsBodyExcludeFromRssDefault = false;
 
 export const CreatePostsBody = zod.object({
   "slug": zod.union([zod.string(),zod.null()]).optional().describe('URL-friendly unique identifier'),
@@ -1204,7 +1205,8 @@ export const CreatePostsBody = zod.object({
   "source": zod.union([zod.string(),zod.null()]).optional().describe('Source URL or reference (for excerpts)'),
   "view_count": zod.number().default(createPostsBodyViewCountDefault).describe('Manual view count override'),
   "is_pinned": zod.boolean().default(createPostsBodyIsPinnedDefault).describe('Whether pinned to top'),
-  "pin_order": zod.number().default(createPostsBodyPinOrderDefault).describe('Sort order among pinned items')
+  "pin_order": zod.number().default(createPostsBodyPinOrderDefault).describe('Sort order among pinned items'),
+  "exclude_from_rss": zod.boolean().default(createPostsBodyExcludeFromRssDefault).describe('Whether this public post is excluded from RSS')
 })
 
 
@@ -1234,7 +1236,8 @@ export const GetPostsResponse = zod.object({
   "source": zod.unknown().optional().describe('Source URL or reference'),
   "view_count": zod.unknown().optional().describe('Total page views'),
   "is_pinned": zod.unknown().optional().describe('Whether pinned to top'),
-  "pin_order": zod.unknown().optional().describe('Sort order among pinned items')
+  "pin_order": zod.unknown().optional().describe('Sort order among pinned items'),
+  "exclude_from_rss": zod.unknown().describe('Whether this public post is excluded from RSS')
 })
 
 
@@ -1261,7 +1264,8 @@ export const UpdatePostsBody = zod.object({
   "source": zod.union([zod.string(),zod.null()]).optional().describe('Source URL or reference'),
   "view_count": zod.union([zod.number(),zod.null()]).optional().describe('Manual view count override'),
   "is_pinned": zod.union([zod.boolean(),zod.null()]).optional().describe('Whether pinned to top'),
-  "pin_order": zod.union([zod.number(),zod.null()]).optional().describe('Sort order among pinned items')
+  "pin_order": zod.union([zod.number(),zod.null()]).optional().describe('Sort order among pinned items'),
+  "exclude_from_rss": zod.union([zod.boolean(),zod.null()]).optional().describe('Whether this public post is excluded from RSS')
 })
 
 export const UpdatePostsResponse = zod.object({
@@ -1283,7 +1287,8 @@ export const UpdatePostsResponse = zod.object({
   "source": zod.unknown().optional().describe('Source URL or reference'),
   "view_count": zod.unknown().optional().describe('Total page views'),
   "is_pinned": zod.unknown().optional().describe('Whether pinned to top'),
-  "pin_order": zod.unknown().optional().describe('Sort order among pinned items')
+  "pin_order": zod.unknown().optional().describe('Sort order among pinned items'),
+  "exclude_from_rss": zod.unknown().describe('Whether this public post is excluded from RSS')
 })
 
 

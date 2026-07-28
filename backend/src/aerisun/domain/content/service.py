@@ -767,6 +767,7 @@ def _list_summary_entries(
     offset: int = 0,
     *,
     include_private: bool = False,
+    exclude_from_rss: bool = False,
 ) -> ContentSummaryCollectionRead:
     items, total = repo.find_published(
         session,
@@ -775,6 +776,7 @@ def _list_summary_entries(
         offset=offset,
         include_private=include_private,
         load_body=False,
+        exclude_from_rss=exclude_from_rss,
     )
     slugs = [item.slug for item in items]
     item_ids = [item.id for item in items]
@@ -821,6 +823,21 @@ def list_public_posts(
     include_private: bool = False,
 ) -> ContentSummaryCollectionRead:
     return _list_summary_entries(session, PostEntry, "posts", limit, offset, include_private=include_private)
+
+
+def list_rss_posts(
+    session: Session,
+    limit: int = 20,
+    offset: int = 0,
+) -> ContentSummaryCollectionRead:
+    return _list_summary_entries(
+        session,
+        PostEntry,
+        "posts",
+        limit,
+        offset,
+        exclude_from_rss=True,
+    )
 
 
 def get_public_post(session: Session, slug: str, *, include_private: bool = False) -> ContentEntryRead:

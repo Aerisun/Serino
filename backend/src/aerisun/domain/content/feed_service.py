@@ -12,8 +12,8 @@ from aerisun.domain.content.schemas import ContentCollectionRead, ContentSummary
 from aerisun.domain.content.service import (
     list_public_diary_entries,
     list_public_excerpts,
-    list_public_posts,
     list_public_thoughts,
+    list_rss_posts,
 )
 from aerisun.domain.diary_access.service import diary_private_enabled
 from aerisun.domain.exceptions import ValidationError
@@ -39,7 +39,7 @@ _FEED_DEFINITIONS: dict[str, FeedDefinition] = {
         feed_path="/feeds/posts.xml",
         channel_path="/posts",
         item_path_template="/posts/{slug}",
-        list_items=list_public_posts,
+        list_items=list_rss_posts,
         limit=20,
     ),
     "diary": FeedDefinition(

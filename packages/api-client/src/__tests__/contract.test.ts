@@ -79,6 +79,14 @@ describe("API Contract Validation", () => {
     });
   }
 
+  it("preserves the RSS exclusion flag in the admin post fixture", () => {
+    const data = loadFixture("admin_posts_list.json") as {
+      items: Array<{ exclude_from_rss?: unknown }>;
+    };
+
+    expect(data.items.some((post) => typeof post.exclude_from_rss === "boolean")).toBe(true);
+  });
+
   // Warn about fixtures without schemas
   for (const file of available) {
     if (!fixtureSchemaMap[file]) {

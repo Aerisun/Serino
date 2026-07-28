@@ -4,6 +4,7 @@ import pytest
 
 from aerisun.core.db import get_session_factory
 from aerisun.core.settings import get_settings
+from aerisun.domain.content.feed_service import build_posts_rss_xml
 from aerisun.domain.diary_access.service import DIARY_PRIVATE_FEATURE_FLAG
 from aerisun.domain.site_config.models import SiteProfile
 
@@ -91,3 +92,37 @@ def test_feed_only_includes_public_content(client, admin_headers, content_type: 
     assert response.status_code == 200
     assert public_payload["slug"] in response.text
     assert private_payload["slug"] not in response.text
+
+
+def test_posts_feed_excludes_public_posts_marked_for_rss_exclusion(client, admin_headers) -> None:
+    hidden_payload = _make_payload("posts", "-hidden-from-rss")
+    hidden_payload["exclude_from_rss"] = True
+    visible_payload = _make_payload("posts", "-visible-in-rss")
+
+    hidden_response = client.post(f"{ADMIN_BASE}/posts/", json=hidden_payload, headers=admin_headers)
+    visible_response = client.post(f"{ADMIN_BASE}/posts/", json=visible_payload, headers=admin_headers)
+
+    assert hidden_response.status_code == 201
+    assert visible_response.status_code == 201
+
+    response = client.get("/feeds/posts.xml")
+
+    assert visible_payload["slug"] in response.text
+    assert hidden_payload["slug"] not in response.text
+
+
+def test_posts_feed_backfills_limit_after_excluding_newer_posts(client, admin_headers) -> None:
+    visible_payload = _make_payload("posts", "-older-visible")
+    visible_payload["published_at"] = "2099-01-01T00:00:00+08:00"
+    hidden_payload = _make_payload("posts", "-newer-hidden")
+    hidden_payload["published_at"] = "2099-01-02T00:00:00+08:00"
+    hidden_payload["exclude_from_rss"] = True
+
+    assert client.post(f"{ADMIN_BASE}/posts/", json=visible_payload, headers=admin_headers).status_code == 201
+    assert client.post(f"{ADMIN_BASE}/posts/", json=hidden_payload, headers=admin_headers).status_code == 201
+
+    with get_session_factory()() as session:
+        response = build_posts_rss_xml(session, "https://example.com", limit=1)
+
+    assert visible_payload["slug"] in response
+    assert hidden_payload["slug"] not in response

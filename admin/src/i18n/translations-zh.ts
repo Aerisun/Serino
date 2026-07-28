@@ -1093,6 +1093,7 @@ export const zhTranslations: TranslationDict = {
   "status.cancelled": "已跳过",
   "status.restoring": "恢复中",
   "status.public": "公开",
+  "status.publicNoRss": "公开 (不RSS)",
   "status.private": "私密",
   "status.unlisted": "不列出",
 

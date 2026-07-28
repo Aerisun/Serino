@@ -24,12 +24,20 @@ CONTENT_MODELS: dict[str, type] = {
 }
 
 
-def _public_filter(model: type[ContentModel], *, include_private: bool = False) -> Select:
+def _public_filter(
+    model: type[ContentModel],
+    *,
+    include_private: bool = False,
+    exclude_from_rss: bool = False,
+) -> Select:
     """Base query for public content, with optional owner-only private items."""
     visibility_filter = model.visibility == "public"
     if include_private:
         visibility_filter = or_(visibility_filter, model.visibility == "private")
-    return select(model).where(visibility_filter).order_by(desc(model.published_at), desc(model.created_at))
+    query = select(model).where(visibility_filter)
+    if exclude_from_rss and hasattr(model, "exclude_from_rss"):
+        query = query.where(model.exclude_from_rss.is_(False))
+    return query.order_by(desc(model.published_at), desc(model.created_at))
 
 
 def _summary_load_attributes(model: type[ContentModel]) -> list:
@@ -62,9 +70,14 @@ def find_published(
     offset: int = 0,
     include_private: bool = False,
     load_body: bool = True,
+    exclude_from_rss: bool = False,
 ) -> tuple[list, int]:
     """Paginated query for public content. Returns (items, total)."""
-    base = _public_filter(model, include_private=include_private)
+    base = _public_filter(
+        model,
+        include_private=include_private,
+        exclude_from_rss=exclude_from_rss,
+    )
     total = session.scalar(select(func.count()).select_from(base.subquery())) or 0
     if not load_body:
         base = base.options(load_only(*_summary_load_attributes(model)))

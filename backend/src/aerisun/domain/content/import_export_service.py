@@ -7,7 +7,7 @@ import zipfile
 from sqlalchemy.orm import Session
 
 from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
-from aerisun.domain.content.schemas import ContentAdminRead, ImportResult
+from aerisun.domain.content.schemas import ContentAdminRead, ImportResult, PostContentAdminRead
 from aerisun.domain.exceptions import ValidationError as DomainValidationError
 
 _CONTENT_MODELS = {
@@ -36,6 +36,12 @@ _ALLOWED_FIELDS = {
     "pin_order",
 }
 
+_POST_ALLOWED_FIELDS = _ALLOWED_FIELDS | {"exclude_from_rss"}
+
+
+def _content_read_schema(content_type: str):
+    return PostContentAdminRead if content_type == "posts" else ContentAdminRead
+
 
 def export_content_json(session: Session, content_type: str) -> list[dict]:
     """Export content as list of dicts. Raises ValueError for invalid type."""
@@ -43,7 +49,8 @@ def export_content_json(session: Session, content_type: str) -> list[dict]:
     if not model:
         raise DomainValidationError(f"Invalid content_type: {content_type}")
     items = session.query(model).order_by(model.created_at.desc()).all()
-    return [ContentAdminRead.model_validate(item).model_dump(mode="json") for item in items]
+    read_schema = _content_read_schema(content_type)
+    return [read_schema.model_validate(item).model_dump(mode="json") for item in items]
 
 
 def export_content_markdown_zip(session: Session, content_type: str) -> bytes:
@@ -55,10 +62,13 @@ def export_content_markdown_zip(session: Session, content_type: str) -> bytes:
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
         for item in items:
+            rss_exclusion = (
+                f"exclude_from_rss: {str(bool(item.exclude_from_rss)).lower()}\n" if content_type == "posts" else ""
+            )
             front = (
                 f"---\ntitle: {item.title}\nslug: {item.slug}\n"
                 f"visibility: {item.visibility}\ntags: {json.dumps(item.tags or [])}\n"
-                f"created_at: {item.created_at.isoformat() if item.created_at else ''}\n---\n\n"
+                f"{rss_exclusion}created_at: {item.created_at.isoformat() if item.created_at else ''}\n---\n\n"
             )
             content = front + (item.body or "")
             zf.writestr(f"{item.slug}.md", content)
@@ -80,7 +90,8 @@ def import_content_json(session: Session, content_type: str, data: list[dict]) -
             continue
 
         existing = session.query(model).filter(model.slug == slug).first()
-        filtered = {k: v for k, v in entry.items() if k in _ALLOWED_FIELDS}
+        allowed_fields = _POST_ALLOWED_FIELDS if content_type == "posts" else _ALLOWED_FIELDS
+        filtered = {k: v for k, v in entry.items() if k in allowed_fields}
         legacy_status = entry.get("status")
         if "visibility" not in filtered and legacy_status in {"published", "draft", "archived"}:
             filtered["visibility"] = "public" if legacy_status == "published" else "private"

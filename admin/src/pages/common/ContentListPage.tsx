@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { type ReactNode, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -64,6 +64,7 @@ interface MobileContentListProps {
   onSelectionChange: (ids: Set<string>) => void;
   onPageChange: (page: number) => void;
   onRowClick: (row: ContentAdminRead) => void;
+  renderMobileVisibility?: (row: ContentAdminRead) => ReactNode;
 }
 
 function MobileContentList({
@@ -77,6 +78,7 @@ function MobileContentList({
   onSelectionChange,
   onPageChange,
   onRowClick,
+  renderMobileVisibility,
 }: MobileContentListProps) {
   const { t } = useI18n();
   const totalPages = Math.ceil(total / pageSize);
@@ -130,6 +132,8 @@ function MobileContentList({
           const summary = contentSummary(row, title);
           const passage = getBodySnippet(contentText(row.body), title);
           const visibility = contentText(row.visibility);
+          const visibilityBadge = renderMobileVisibility?.(row) ??
+            (visibility ? <StatusBadge status={visibility} /> : null);
           const publishedAt = formatDate(
             contentText(row.published_at) || contentText(row.updated_at),
           );
@@ -183,7 +187,7 @@ function MobileContentList({
                   ) : null}
 
                   <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                    {visibility ? <StatusBadge status={visibility} /> : null}
+                    {visibilityBadge}
                     <span className="flex min-w-0 items-center gap-1.5">
                       <Clock3 className="h-3.5 w-3.5 shrink-0" />
                       <span className="truncate">{publishedAt}</span>
@@ -478,6 +482,7 @@ export default function ContentListPage({ config }: ContentListPageProps) {
         onPageChange={handlePageChange}
         isLoading={isLoading}
         onRowClick={(row) => navigate(config.editPath(contentId(row)))}
+        renderMobileVisibility={config.renderMobileVisibility}
         selectedIds={selectedIds}
         onSelectionChange={setSelectedIds}
       />

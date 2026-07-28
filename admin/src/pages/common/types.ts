@@ -40,6 +40,7 @@ export interface ContentListConfig {
   useBulkDelete: UseBulkMutationHook;
   useBulkVisibility: UseBulkMutationHook;
   getQueryKey: GetQueryKeyFn;
+  renderMobileVisibility?: (row: ContentAdminRead) => ReactNode;
   sortOptions?: SortOption[];
   visibilityTabs?: string[];
 }
