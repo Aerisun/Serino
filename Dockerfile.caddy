@@ -39,6 +39,6 @@ COPY Caddyfile /etc/caddy/Caddyfile
 COPY --from=web-build /app/frontend/dist /tmp/frontend-dist
 COPY --from=web-build /app/admin/dist /tmp/admin-dist
 
-RUN mkdir -p "$(dirname "${AERISUN_FRONTEND_DIST_DIR}")" "$(dirname "${AERISUN_ADMIN_DIST_DIR}")" \
+RUN mkdir -p /etc/caddy/routes.d "$(dirname "${AERISUN_FRONTEND_DIST_DIR}")" "$(dirname "${AERISUN_ADMIN_DIST_DIR}")" \
   && mv /tmp/frontend-dist "${AERISUN_FRONTEND_DIST_DIR}" \
   && mv /tmp/admin-dist "${AERISUN_ADMIN_DIST_DIR}"

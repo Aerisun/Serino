@@ -133,6 +133,33 @@ printf 'ok\\n'
     assert completed.stdout.strip() == "ok"
 
 
+def test_uninstall_warning_lists_real_public_routes() -> None:
+    completed = run_project_bash(
+        """
+source installer/uninstall.sh
+
+AERISUN_SITE_URL='https://example.com'
+
+list_caddy_routes() {
+  printf '/files\\thttp://127.0.0.1:9000\\n'
+  printf '/monitor\\thttp://127.0.0.1:3000\\n'
+}
+
+print_caddy_route_uninstall_warning
+"""
+    )
+
+    assert completed.stderr == (
+        "检测到有其他服务正在使用 Serino 的 Caddy 进行转发：\n"
+        "\n"
+        "- https://example.com/files → http://127.0.0.1:9000\n"
+        "- https://example.com/monitor → http://127.0.0.1:3000\n"
+        "\n"
+        "继续卸载将一并删除 Serino 的 Caddy，上述地址将立即停止访问。\n"
+        "请记录这些转发规则，并在卸载 Serino 后重新配置相关转发！\n"
+    )
+
+
 def test_install_script_supports_stdin_bootstrap_execution(tmp_path: Path) -> None:
     bootstrap_root = tmp_path / "bootstrap"
     bundle_file = write_minimal_bootstrap_bundle(bootstrap_root)
@@ -991,6 +1018,28 @@ repair_upgrade_preflight_layout
     ]
 
 
+def test_upgrade_validates_routes_with_target_release_rules(tmp_path: Path) -> None:
+    routes_lib = tmp_path / "installer/lib/routes.sh"
+    routes_lib.parent.mkdir(parents=True)
+    routes_lib.write_text(
+        """
+validate_registered_caddy_routes() {
+  printf 'target-routes-validated\\n'
+}
+""",
+        encoding="utf-8",
+    )
+
+    completed = run_project_bash(
+        f"""
+source installer/upgrade.sh
+validate_target_registered_caddy_routes '{tmp_path}'
+"""
+    )
+
+    assert completed.stdout.strip() == "target-routes-validated"
+
+
 def test_full_upgrade_repairs_preflight_layout_before_doctor() -> None:
     completed = run_project_bash(
         """
@@ -1122,6 +1171,7 @@ load_release_manifest() {
 }
 download_release_asset() { record "download_release_asset:$1"; }
 tar() { record "tar:$*"; }
+validate_target_registered_caddy_routes() { :; }
 date() { printf '20260408112233'; }
 seed_persistent_uptime_marker() { :; }
     stop_serino_service() { record stop_serino_service; }
@@ -1220,6 +1270,7 @@ load_release_manifest() {
 }
 download_release_asset() { record "download_release_asset:$1"; }
 tar() { record "tar:$*"; }
+validate_target_registered_caddy_routes() { :; }
 date() { printf '20260408112233'; }
 seed_persistent_uptime_marker() { :; }
 stop_serino_service() { record stop_serino_service; }
@@ -1302,6 +1353,7 @@ load_release_manifest() {
 }
 download_release_asset() { record "download_release_asset:$1"; }
 tar() { record "tar:$*"; }
+validate_target_registered_caddy_routes() { :; }
 date() { printf '20260408112233'; }
 seed_persistent_uptime_marker() { :; }
 stop_serino_service() { :; }

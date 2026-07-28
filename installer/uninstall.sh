@@ -8,6 +8,8 @@ source "${SCRIPT_DIR}/lib/common.sh"
 source "${SCRIPT_DIR}/lib/env.sh"
 # shellcheck disable=SC1091
 source "${SCRIPT_DIR}/lib/docker.sh"
+# shellcheck disable=SC1091
+source "${SCRIPT_DIR}/lib/routes.sh"
 
 print_last_diagnostics() {
   if [[ -f "${AERISUN_INSTALLER_DEST}/doctor.sh" ]]; then
@@ -16,6 +18,24 @@ print_last_diagnostics() {
       log_warn "上面的诊断失败项不会阻止彻底卸载。"
     fi
   fi
+}
+
+print_caddy_route_uninstall_warning() {
+  local route_path=""
+  local upstream=""
+  local routes=""
+  local site_url="${AERISUN_SITE_URL:-}"
+
+  routes="$(list_caddy_routes)"
+  [[ -n "${routes}" ]] || return 0
+
+  printf '检测到有其他服务正在使用 Serino 的 Caddy 进行转发：\n\n' >&2
+  while IFS=$'\t' read -r route_path upstream; do
+    [[ -n "${route_path}" ]] || continue
+    printf -- '- %s%s → %s\n' "${site_url%/}" "${route_path}" "${upstream}" >&2
+  done <<<"${routes}"
+  printf '\n继续卸载将一并删除 Serino 的 Caddy，上述地址将立即停止访问。\n' >&2
+  printf '请记录这些转发规则，并在卸载 Serino 后重新配置相关转发！\n' >&2
 }
 
 confirm_uninstall() {
@@ -50,12 +70,13 @@ EOF
 main() {
   require_supported_linux
   require_root_or_sudo
-  confirm_uninstall "${1:-}"
 
   if path_is_file "${AERISUN_ENV_FILE}"; then
     load_env_file "${AERISUN_ENV_FILE}"
   fi
 
+  print_caddy_route_uninstall_warning
+  confirm_uninstall "${1:-}"
   print_last_diagnostics
   stop_and_remove_serino_units
   teardown_release_stack

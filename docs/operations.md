@@ -17,6 +17,7 @@
 - 程序目录：`/opt/serino`
 - 配置目录：`/etc/serino`
 - 环境文件：`/etc/serino/serino.env`
+- 本机 Caddy 扩展路由：`/etc/serino/routes.d`
 - 数据目录：`/var/lib/serino`
 - 日志目录：`/var/log/serino`
 - 备份目录：`/var/backups/serino`
@@ -59,18 +60,20 @@
 
 升级路径由 `sercli upgrade vX.Y.Z` 触发，顺序是：
 
-1. 备份当前安装和整个 `/var/lib/serino`
-2. 停服务
-3. 安装新版本 payload
-4. 拉取新镜像
-5. 执行 `schema migration`
-6. 执行 `blocking data migrations`
-7. 启动服务并等待 `readyz`
-8. 调度 `background data migrations`
+1. 下载升级包，并检查已有本机扩展路由是否与新版本固定路由冲突
+2. 备份当前安装和整个 `/var/lib/serino`
+3. 停服务
+4. 安装新版本 payload
+5. 拉取新镜像
+6. 执行 `schema migration`
+7. 执行 `blocking data migrations`
+8. 启动服务并等待 `readyz`
+9. 调度 `background data migrations`
 
 几个关键约束：
 
 - 升级失败时，阻塞式阶段会回滚到升级前备份
+- 本机扩展路由不会被升级覆盖；如果与新版本固定路由冲突，升级会在改动服务前中止
 - 不依赖应用启动时补跑 migration
 - 生产不再依赖 `AERISUN_SEED_REFERENCE_DATA` / `AERISUN_DATA_BACKFILL_ENABLED` 这类软开关保证正确性
 
@@ -177,6 +180,25 @@ sercli migrate status
 
 生产上建议始终显式指定版本号，不建议裸跑 `sercli upgrade` 去追踪渠道最新。
 如果升级窗口比默认就绪等待更长，可以显式传入 `sercli upgrade --ready-timeout 300 vX.Y.Z`。
+
+### 复用主域名转发其他本机服务
+
+Serino 只接管自己的固定页面和接口。需要把同一主域名下的其他路径交给本机服务时，使用：
+
+```bash
+sercli route add /files http://127.0.0.1:9000
+sercli route add /monitor http://127.0.0.1:3000
+sercli route list
+sercli route remove /files
+```
+
+转发会保留原路径。例如访问 `/files/download/report.pdf` 时，目标服务收到的仍是
+`/files/download/report.pdf`。Serino 固定路由优先，未注册的路径直接返回 404；路由添加、删除后
+Caddy 会先校验再重新加载，请求过程中不会查询数据库或配置文件。
+
+这些规则只属于当前机器，保存在 `/etc/serino/routes.d`，普通升级会原样保留并重新加载，不会进入
+Serino 的数据备份、远端同步、恢复或迁移。彻底卸载仍会删除 Caddy 和这些规则；如果存在规则，
+卸载器会在确认前列出真实访问地址及目标服务，提醒先记录并在卸载后重新配置。
 
 ## 后台自更新签名
 

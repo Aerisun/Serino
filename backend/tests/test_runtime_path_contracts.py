@@ -865,6 +865,35 @@ cmd_uninstall --force
     ]
 
 
+def test_sercli_route_commands_use_the_maintenance_lock():
+    output = (
+        run_installer_bash(
+            """
+source installer/bin/sercli
+
+run_with_maintenance_lock() {
+  local action="$1"
+  local command_path="$2"
+  shift 2
+  printf 'lock:%s:%s:%s\\n' "${action}" "$(basename "${command_path}")" "$*"
+}
+
+cmd_route add /files http://127.0.0.1:9000
+cmd_route list
+cmd_route remove /files
+"""
+        )
+        .strip()
+        .splitlines()
+    )
+
+    assert output == [
+        "lock:route:route.sh:add /files http://127.0.0.1:9000",
+        "lock:route:route.sh:list",
+        "lock:route:route.sh:remove /files",
+    ]
+
+
 def test_sercli_updater_status_reads_persistent_status(tmp_path: Path):
     status_dir = tmp_path / "data" / "update"
     status_dir.mkdir(parents=True)
@@ -1633,18 +1662,16 @@ def test_deploy_contract_reuses_shared_env_keys():
     assert "no-new-privileges" not in compose_text
     assert "no-new-privileges" not in release_compose_text
     assert "AERISUN_FRONTEND_INDEX_URL: ${AERISUN_FRONTEND_INDEX_URL:-http://caddy:8081/index.html}" in compose_text
-    assert (
-        "AERISUN_FRONTEND_INDEX_URL: ${AERISUN_FRONTEND_INDEX_URL:-http://caddy:8081/index.html}"
-        in release_compose_text
-    )
+    assert "AERISUN_FRONTEND_INDEX_URL: http://127.0.0.1:8081/index.html" in release_compose_text
     assert '- "127.0.0.1:${AERISUN_PORT:-8000}:${AERISUN_PORT:-8000}"' in compose_text
-    assert "{$AERISUN_PORT:8000}" in caddy_text
+    assert "{$AERISUN_API_UPSTREAM:api:8000}" in caddy_text
+    assert "{$AERISUN_WALINE_UPSTREAM:waline:8360}" in caddy_text
     assert "{$AERISUN_API_BASE_PATH:/api}" in caddy_text
     assert "{$AERISUN_ADMIN_BASE_PATH:/admin/}" in caddy_text
     assert "{$AERISUN_WALINE_BASE_PATH:/waline}" in caddy_text
     assert "{$AERISUN_FRONTEND_DIST_DIR:/srv/aerisun/frontend}" in caddy_text
     assert "{$AERISUN_ADMIN_DIST_DIR:/srv/aerisun/admin}" in caddy_text
-    assert "http://:8081" in caddy_text
+    assert "http://127.0.0.1:8081" in caddy_text
     assert "handle /bootstrap.js" in caddy_text
     assert "@seoHtml" in caddy_text
     assert "path / /resume" in caddy_text
@@ -1740,6 +1767,229 @@ def test_production_defaults_do_not_track_dev_only_upstreams():
     assert "AERISUN_DATA_BACKFILL_ENABLED" not in production_local_example_text
 
 
+def test_caddy_routes_serino_before_local_extensions_and_returns_real_404():
+    caddy_text = read_project_file("Caddyfile")
+    release_compose_text = read_project_file("docker-compose.release.yml")
+    web_dockerfile_text = read_project_file("Dockerfile.caddy")
+
+    assert "route {" in caddy_text
+    assert "import routes.d/*.caddy" in caddy_text
+    assert "respond 404" in caddy_text
+    assert caddy_text.count("try_files {path} /index.html") == 1
+    assert "try_files /index.html" in caddy_text
+    assert "@frontendSpa" in caddy_text
+    assert "redir /admin /admin/ 308" in caddy_text
+    assert "path /assets/* /fonts/* /index.html /registerSW.js /sw.js" in caddy_text
+    assert (
+        "path / /posts /posts/* /friends /thoughts /diary /diary/* /excerpts /resume /guestbook /calendar /preview"
+        in caddy_text
+    )
+    assert caddy_text.index("@apiRoutes") < caddy_text.index("import routes.d/*.caddy")
+    assert caddy_text.index("import routes.d/*.caddy") < caddy_text.index("respond 404")
+
+    assert "${SERINO_CADDY_ROUTES_DIR:-/etc/serino/routes.d}:/etc/caddy/routes.d:ro" in release_compose_text
+    api_block = release_compose_text.split("  api:\n", 1)[1].split("\n  waline:\n", 1)[0]
+    caddy_block = release_compose_text.split("  caddy:\n", 1)[1]
+    assert "    network_mode: host" in api_block
+    assert "      AERISUN_HOST: 127.0.0.1" in api_block
+    assert "${AERISUN_HOST" not in api_block
+    assert "    ports:" not in api_block
+    assert "    network_mode: host" in caddy_block
+    assert "    ports:" not in caddy_block
+    assert "      AERISUN_HTTP_PORT: ${AERISUN_HTTP_PORT:-80}" in caddy_block
+    assert "      AERISUN_HTTPS_PORT: ${AERISUN_HTTPS_PORT:-443}" in caddy_block
+    assert "      AERISUN_API_UPSTREAM: 127.0.0.1:${AERISUN_PORT:-8000}" in caddy_block
+    assert "      AERISUN_WALINE_UPSTREAM: 127.0.0.1:${WALINE_PORT:-8360}" in caddy_block
+    assert "mkdir -p /etc/caddy/routes.d" in web_dockerfile_text
+
+
+def test_local_caddy_route_library_validates_and_renders_routes(tmp_path: Path):
+    routes_lib = PROJECT_ROOT / "installer/lib/routes.sh"
+    assert routes_lib.exists()
+
+    routes_dir = tmp_path / "routes"
+    routes_dir.mkdir()
+    output = (
+        run_installer_bash(
+            f"""
+source installer/lib/common.sh
+source installer/lib/routes.sh
+
+SERINO_CADDY_ROUTES_DIR='{routes_dir}'
+AERISUN_API_BASE_PATH='/api'
+AERISUN_ADMIN_BASE_PATH='/admin/'
+AERISUN_WALINE_BASE_PATH='/waline'
+
+printf 'path=%s\\n' "$(normalize_caddy_route_path '/files/')"
+printf 'upstream=%s\\n' "$(normalize_caddy_route_upstream 'http://127.0.0.1:9000')"
+if caddy_route_conflicts_with_serino '/api/v1'; then
+  printf 'reserved=/api/v1\\n'
+fi
+if ! caddy_route_conflicts_with_serino '/postscript'; then
+  printf 'available=/postscript\\n'
+fi
+
+render_caddy_route_config '/files' 'http://127.0.0.1:9000'
+"""
+        )
+        .strip()
+        .splitlines()
+    )
+
+    assert output[:4] == [
+        "path=/files",
+        "upstream=http://127.0.0.1:9000",
+        "reserved=/api/v1",
+        "available=/postscript",
+    ]
+    rendered = "\n".join(output[4:])
+    assert "# serino-route-path: /files" in rendered
+    assert "# serino-route-upstream: http://127.0.0.1:9000" in rendered
+    assert "path /files /files/*" in rendered
+    assert "reverse_proxy http://127.0.0.1:9000" in rendered
+    assert "strip_prefix" not in rendered
+
+
+def test_local_caddy_route_library_rejects_unsafe_inputs(tmp_path: Path):
+    routes_lib = PROJECT_ROOT / "installer/lib/routes.sh"
+    assert routes_lib.exists()
+
+    result = run_installer_bash_result(
+        f"""
+source installer/lib/common.sh
+source installer/lib/routes.sh
+
+SERINO_CADDY_ROUTES_DIR='{tmp_path}/routes'
+
+for path in '/' 'relative' '/with space' '/files?download=1' '/files#top' '/files/*' '/files/../admin'; do
+  if normalize_caddy_route_path "${{path}}" >/dev/null 2>&1; then
+    printf 'accepted-path:%s\\n' "${{path}}"
+  fi
+done
+
+for upstream in 'ftp://127.0.0.1:9000' 'http://user:pass@127.0.0.1:9000' \
+  'http://127.0.0.1:9000/base' 'http://127.0.0.1:9000?x=1'; do
+  if normalize_caddy_route_upstream "${{upstream}}" >/dev/null 2>&1; then
+    printf 'accepted-upstream:%s\\n' "${{upstream}}"
+  fi
+done
+"""
+    )
+
+    assert result.returncode == 0
+    assert result.stdout == ""
+
+
+def test_route_command_adds_lists_and_removes_local_route(tmp_path: Path):
+    routes_script = PROJECT_ROOT / "installer/route.sh"
+    assert routes_script.exists()
+
+    routes_dir = tmp_path / "routes"
+    output = (
+        run_installer_bash(
+            f"""
+source installer/route.sh
+
+SERINO_CADDY_ROUTES_DIR='{routes_dir}'
+AERISUN_SITE_URL='https://example.com'
+
+run_as_root() {{
+  if [[ "$1" == "install" ]]; then
+    shift
+    local -a args=()
+    while [[ "$#" -gt 0 ]]; do
+      case "$1" in
+        -o|-g)
+          shift 2
+          ;;
+        *)
+          args+=("$1")
+          shift
+          ;;
+      esac
+    done
+    command install "${{args[@]}}"
+    return
+  fi
+  "$@"
+}}
+validate_caddy_route_configuration() {{
+  printf 'validate\\n'
+}}
+reload_caddy_route_configuration_if_running() {{
+  printf 'reload\\n'
+}}
+
+cmd_route_add /files http://127.0.0.1:9000
+cmd_route_list
+cmd_route_remove /files
+cmd_route_list
+"""
+        )
+        .strip()
+        .splitlines()
+    )
+
+    assert output == [
+        "validate",
+        "reload",
+        "- https://example.com/files → http://127.0.0.1:9000",
+        "validate",
+        "reload",
+        "未配置其他服务转发。",
+    ]
+    assert not list(routes_dir.glob("route-*.caddy"))
+
+
+def test_route_command_rejects_reserved_and_duplicate_paths(tmp_path: Path):
+    routes_script = PROJECT_ROOT / "installer/route.sh"
+    assert routes_script.exists()
+
+    result = run_installer_bash_result(
+        f"""
+source installer/route.sh
+
+SERINO_CADDY_ROUTES_DIR='{tmp_path}/routes'
+AERISUN_SITE_URL='https://example.com'
+
+run_as_root() {{
+  if [[ "$1" == "install" ]]; then
+    shift
+    local -a args=()
+    while [[ "$#" -gt 0 ]]; do
+      case "$1" in
+        -o|-g)
+          shift 2
+          ;;
+        *)
+          args+=("$1")
+          shift
+          ;;
+      esac
+    done
+    command install "${{args[@]}}"
+    return
+  fi
+  "$@"
+}}
+validate_caddy_route_configuration() {{
+  :
+}}
+reload_caddy_route_configuration_if_running() {{
+  :
+}}
+
+( cmd_route_add /api http://127.0.0.1:9000 ) || printf 'reserved\\n'
+cmd_route_add /files http://127.0.0.1:9000
+( cmd_route_add /files http://127.0.0.1:9001 ) || printf 'duplicate\\n'
+( cmd_route_add /files/private http://127.0.0.1:9002 ) || printf 'overlap\\n'
+"""
+    )
+
+    assert result.returncode == 0
+    assert result.stdout.strip().splitlines() == ["reserved", "duplicate", "overlap"]
+
+
 def test_installer_runtime_paths_follow_serino_system_layout():
     common_text = read_project_file("installer/lib/common.sh")
     compose_text = read_project_file("docker-compose.release.yml")
@@ -1775,6 +2025,7 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     waline_dockerfile_text = read_project_file("Dockerfile.waline")
 
     assert 'SERINO_CONFIG_ROOT="${SERINO_CONFIG_ROOT:-/etc/serino}"' in common_text
+    assert 'SERINO_CADDY_ROUTES_DIR="${SERINO_CADDY_ROUTES_DIR:-${SERINO_CONFIG_ROOT}/routes.d}"' in common_text
     assert 'SERINO_LOG_ROOT="${SERINO_LOG_ROOT:-/var/log/serino}"' in common_text
     assert 'SERINO_SERVICE_USER="${SERINO_SERVICE_USER:-serino}"' in common_text
     assert 'AERISUN_APP_ROOT="${AERISUN_APP_ROOT:-/opt/serino}"' in common_text
@@ -1871,10 +2122,14 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     assert "sercli start [--no-wait]" in sercli_text
     assert "sercli stop" in sercli_text
     assert "sercli updater run|check|status [--json]" in sercli_text
+    assert "sercli route add <path> <upstream>" in sercli_text
+    assert "sercli route list" in sercli_text
+    assert "sercli route remove <path>" in sercli_text
     assert 'source "${INSTALLER_ROOT}/updater.sh"' in sercli_text
     assert 'exec bash "${INSTALLER_ROOT}/doctor.sh" "$@"' in sercli_text
     assert 'run_with_maintenance_lock "upgrade" "${INSTALLER_ROOT}/upgrade.sh" "$@"' in sercli_text
     assert 'run_with_maintenance_lock "uninstall" "${INSTALLER_ROOT}/uninstall.sh" "$@"' in sercli_text
+    assert 'run_with_maintenance_lock "route" "${INSTALLER_ROOT}/route.sh" "$@"' in sercli_text
     assert 'main "${SERCLI_MAIN_ARGS[@]}"' in sercli_text
     assert "cmd_migrate() {" in sercli_text
     assert "cmd_ps() {" in sercli_text
@@ -1895,6 +2150,18 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     assert 'backend_url="$(resolve_backend_healthcheck_url)"' in doctor_text
     assert 'log_info "卸载前状态摘要（仅供参考，不影响继续卸载）："' in uninstall_text
     assert 'log_warn "上面的诊断失败项不会阻止彻底卸载。"' in uninstall_text
+    assert "print_caddy_route_uninstall_warning" in uninstall_text
+    assert "validate_registered_caddy_routes" in upgrade_text
+    upgrade_main_text = upgrade_text.split("main() {", 1)[1]
+    assert upgrade_main_text.index('validate_target_registered_caddy_routes "${bundle_dir}"') < upgrade_main_text.index(
+        'backup_dir="$('
+    )
+    assert upgrade_text.index("install_release_payload") < upgrade_text.index("validate_registered_caddy_routes")
+    assert (
+        "SERINO_CADDY_ROUTES_DIR"
+        not in upgrade_text.split("backup_current_installation() {", 1)[1].split("\n}\n", 1)[0]
+    )
+    assert '"${AERISUN_INSTALLER_DEST}/route.sh"' in common_text
     assert 'local channel="${AERISUN_INSTALL_CHANNEL:-stable}"' in install_text
     assert "validate_release_compose_configuration" in install_text
     assert "if ! compose pull; then" in install_text

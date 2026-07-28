@@ -28,6 +28,11 @@ sercli 命令
   sercli updater run|check|status [--json]                  后台更新执行器
   sercli uninstall [--force]                                彻底卸载当前安装
 
+转发
+  sercli route add <path> <upstream>                        添加主域名路径转发
+  sercli route list                                         查看其他服务转发
+  sercli route remove <path>                                删除主域名路径转发
+
 观测
   sercli migrate status [--json]                            查看 schema / baseline / 数据迁移状态
   sercli ps [compose-ps-args...]                            查看运行中的容器
@@ -52,7 +57,7 @@ EOF
 
 sercli_command_requires_root() {
   case "${1:-help}" in
-    status|migrate|ps|logs|start|stop|restart|wait|upgrade|updater|uninstall|doctor)
+    status|migrate|ps|logs|start|stop|restart|wait|upgrade|updater|uninstall|doctor|route)
       return 0
       ;;
     *)
@@ -534,6 +539,10 @@ cmd_uninstall() {
   run_with_maintenance_lock "uninstall" "${INSTALLER_ROOT}/uninstall.sh" "$@"
 }
 
+cmd_route() {
+  run_with_maintenance_lock "route" "${INSTALLER_ROOT}/route.sh" "$@"
+}
+
 cmd_doctor() {
   exec bash "${INSTALLER_ROOT}/doctor.sh" "$@"
 }
@@ -581,6 +590,9 @@ main() {
       ;;
     uninstall)
       cmd_uninstall "$@"
+      ;;
+    route)
+      cmd_route "$@"
       ;;
     doctor)
       cmd_doctor "$@"

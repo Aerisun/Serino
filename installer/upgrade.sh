@@ -10,6 +10,8 @@ source "${SCRIPT_DIR}/lib/download.sh"
 source "${SCRIPT_DIR}/lib/env.sh"
 # shellcheck disable=SC1091
 source "${SCRIPT_DIR}/lib/docker.sh"
+# shellcheck disable=SC1091
+source "${SCRIPT_DIR}/lib/routes.sh"
 
 UPTIME_STARTED_AT_FILENAME=".serino-uptime-started-at"
 UPGRADE_ROLLBACK_STAGE=""
@@ -26,6 +28,8 @@ reload_installer_libraries() {
   source "${SCRIPT_DIR}/lib/env.sh"
   # shellcheck disable=SC1091
   source "${SCRIPT_DIR}/lib/docker.sh"
+  # shellcheck disable=SC1091
+  source "${SCRIPT_DIR}/lib/routes.sh"
 }
 
 backup_current_installation() {
@@ -102,6 +106,18 @@ run_upgrade_preflight() {
 repair_upgrade_preflight_layout() {
   ensure_update_runtime_layout
   install_systemd_units "${AERISUN_TEMPLATE_ROOT}"
+}
+
+validate_target_registered_caddy_routes() {
+  local bundle_dir="$1"
+  local target_routes_lib="${bundle_dir}/installer/lib/routes.sh"
+
+  path_is_file "${target_routes_lib}" || die "升级包缺少本机 Caddy 路由兼容性检查。"
+  (
+    # shellcheck disable=SC1090
+    source "${target_routes_lib}"
+    validate_registered_caddy_routes
+  )
 }
 
 current_api_started_at_epoch() {
@@ -235,6 +251,7 @@ main() {
   bundle_file="${bundle_dir}/${AERISUN_INSTALL_BUNDLE_NAME}"
   download_release_asset "${version}" "${AERISUN_INSTALL_BUNDLE_NAME}" "${bundle_file}"
   tar -xzf "${bundle_file}" -C "${bundle_dir}"
+  validate_target_registered_caddy_routes "${bundle_dir}"
 
   backup_dir="$(make_root_temp_dir_in_dir "${AERISUN_BACKUP_ROOT}" "upgrade-$(date +%Y%m%d%H%M%S).XXXXXX")"
   UPGRADE_ROLLBACK_BACKUP_DIR="${backup_dir}"
@@ -252,6 +269,7 @@ main() {
     )" &&
     install_release_payload "${bundle_dir}" &&
     reload_installer_libraries &&
+    validate_registered_caddy_routes &&
     set_env_value "${AERISUN_ENV_FILE}" "AERISUN_IMAGE_REGISTRY" "${active_registry}" &&
     set_env_value "${AERISUN_ENV_FILE}" "AERISUN_IMAGE_TAG" "${target_image_tag}" &&
     set_env_value "${AERISUN_ENV_FILE}" "AERISUN_RELEASE_VERSION" "${target_image_tag}" &&

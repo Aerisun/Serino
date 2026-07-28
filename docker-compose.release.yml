@@ -1,11 +1,12 @@
 services:
   api:
     image: ${AERISUN_IMAGE_REGISTRY:-crpi-hwvtw8db2uk7bil0.cn-beijing.personal.cr.aliyuncs.com/serino}/${AERISUN_API_IMAGE_NAME:-serino-api}:${AERISUN_IMAGE_TAG:-latest}
+    network_mode: host
     user: "${SERINO_RUNTIME_UID:-1001}:${SERINO_RUNTIME_GID:-1001}"
     environment:
       HOME: /srv/aerisun/store
       AERISUN_ENVIRONMENT: ${AERISUN_ENVIRONMENT:-production}
-      AERISUN_HOST: ${AERISUN_HOST:-0.0.0.0}
+      AERISUN_HOST: 127.0.0.1
       AERISUN_PORT: ${AERISUN_PORT:-8000}
       AERISUN_STORE_DIR: ${AERISUN_STORE_DIR:-/srv/aerisun/store}
       AERISUN_DATA_DIR: ${AERISUN_DATA_DIR:-/srv/aerisun/store}
@@ -19,7 +20,7 @@ services:
       AERISUN_ADMIN_BASE_PATH: ${AERISUN_ADMIN_BASE_PATH:-/admin/}
       AERISUN_WALINE_BASE_PATH: ${AERISUN_WALINE_BASE_PATH:-/waline}
       AERISUN_HEALTHCHECK_PATH: ${AERISUN_HEALTHCHECK_PATH:-/api/v1/site/readyz}
-      AERISUN_FRONTEND_INDEX_URL: ${AERISUN_FRONTEND_INDEX_URL:-http://caddy:8081/index.html}
+      AERISUN_FRONTEND_INDEX_URL: http://127.0.0.1:8081/index.html
       AERISUN_SITE_URL: ${AERISUN_SITE_URL}
       AERISUN_WALINE_SERVER_URL: ${AERISUN_WALINE_SERVER_URL}
       AERISUN_RELEASE_VERSION: ${AERISUN_RELEASE_VERSION:-}
@@ -37,10 +38,6 @@ services:
       WALINE_JWT_TOKEN: ${WALINE_JWT_TOKEN}
     volumes:
       - ${AERISUN_STORE_BIND_DIR:-/var/lib/serino}:/srv/aerisun/store
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    ports:
-      - "127.0.0.1:${AERISUN_PORT:-8000}:${AERISUN_PORT:-8000}"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:${AERISUN_PORT:-8000}${AERISUN_HEALTHCHECK_PATH:-/api/v1/site/readyz}"]
       interval: 15s
@@ -92,15 +89,18 @@ services:
 
   caddy:
     image: ${AERISUN_IMAGE_REGISTRY:-crpi-hwvtw8db2uk7bil0.cn-beijing.personal.cr.aliyuncs.com/serino}/${AERISUN_WEB_IMAGE_NAME:-serino-web}:${AERISUN_IMAGE_TAG:-latest}
-    ports:
-      - "${AERISUN_HTTP_PORT:-80}:80"
-      - "${AERISUN_HTTPS_PORT:-443}:443"
+    network_mode: host
     volumes:
       - caddy_data:/data
       - caddy_config:/config
+      - ${SERINO_CADDY_ROUTES_DIR:-/etc/serino/routes.d}:/etc/caddy/routes.d:ro
     environment:
       AERISUN_DOMAIN: ${AERISUN_DOMAIN:-localhost}
+      AERISUN_HTTP_PORT: ${AERISUN_HTTP_PORT:-80}
+      AERISUN_HTTPS_PORT: ${AERISUN_HTTPS_PORT:-443}
       AERISUN_PORT: ${AERISUN_PORT:-8000}
+      AERISUN_API_UPSTREAM: 127.0.0.1:${AERISUN_PORT:-8000}
+      AERISUN_WALINE_UPSTREAM: 127.0.0.1:${WALINE_PORT:-8360}
       AERISUN_API_BASE_PATH: ${AERISUN_API_BASE_PATH:-/api}
       AERISUN_ADMIN_BASE_PATH: ${AERISUN_ADMIN_BASE_PATH:-/admin/}
       AERISUN_WALINE_BASE_PATH: ${AERISUN_WALINE_BASE_PATH:-/waline}

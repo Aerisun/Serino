@@ -10,6 +10,7 @@ AERISUN_COMPOSE_FILE="${AERISUN_COMPOSE_FILE:-${AERISUN_APP_ROOT}/docker-compose
 AERISUN_RENDERED_COMPOSE_FILE="${AERISUN_RENDERED_COMPOSE_FILE:-${AERISUN_APP_ROOT}/docker-compose.runtime.yml}"
 AERISUN_BIN_ROOT="${AERISUN_BIN_ROOT:-${AERISUN_APP_ROOT}/bin}"
 SERINO_CONFIG_ROOT="${SERINO_CONFIG_ROOT:-/etc/serino}"
+SERINO_CADDY_ROUTES_DIR="${SERINO_CADDY_ROUTES_DIR:-${SERINO_CONFIG_ROOT}/routes.d}"
 SERINO_LOG_ROOT="${SERINO_LOG_ROOT:-/var/log/serino}"
 SERINO_SERVICE_USER="${SERINO_SERVICE_USER:-serino}"
 SERINO_SERVICE_GROUP="${SERINO_SERVICE_GROUP:-serino}"
@@ -563,6 +564,7 @@ ensure_system_layout() {
 
   run_as_root install -d -o root -g root -m 0755 "${AERISUN_APP_ROOT}"
   run_as_root install -d -o root -g "${SERINO_SERVICE_GROUP}" -m 0750 "${SERINO_CONFIG_ROOT}"
+  run_as_root install -d -o root -g root -m 0755 "${SERINO_CADDY_ROUTES_DIR}"
   run_as_root install -d -o "${SERINO_SERVICE_USER}" -g "${SERINO_SERVICE_GROUP}" -m 0750 "${AERISUN_DATA_DIR}"
   run_as_root install -d -o root -g root -m 0755 "${SERINO_LOG_ROOT}"
   run_as_root install -d -o root -g root -m 0700 "${AERISUN_BACKUP_ROOT}"
@@ -725,6 +727,7 @@ install_release_payload() {
   run_as_root chmod 0755 \
     "${AERISUN_INSTALLER_DEST}/install.sh" \
     "${AERISUN_INSTALLER_DEST}/doctor.sh" \
+    "${AERISUN_INSTALLER_DEST}/route.sh" \
     "${AERISUN_INSTALLER_DEST}/uninstall.sh" \
     "${AERISUN_INSTALLER_DEST}/upgrade.sh" \
     "${AERISUN_INSTALLER_DEST}/bin/sercli"
