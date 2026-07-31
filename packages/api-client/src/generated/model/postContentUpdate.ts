@@ -40,4 +40,6 @@ export interface PostContentUpdate {
   pin_order?: number | null;
   /** Whether this public post is excluded from RSS */
   exclude_from_rss?: boolean | null;
+  /** Whether viewing this public post requires approval */
+  requires_approval?: boolean | null;
 }

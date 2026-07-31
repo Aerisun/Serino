@@ -69,6 +69,7 @@ class ModerationAttentionCounts(BaseModel):
     comments: ModerationAttentionBucket
     guestbook: ModerationAttentionBucket
     diary_access: ModerationDiaryAttentionBucket
+    post_access: ModerationDiaryAttentionBucket
     pending_total: int = Field(ge=0)
     unread_total: int = Field(ge=0)
 

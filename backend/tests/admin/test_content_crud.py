@@ -54,8 +54,10 @@ class TestContentCRUDLifecycle:
         assert data["visibility"] == "private"
         if content_type == "posts":
             assert data["exclude_from_rss"] is False
+            assert data["requires_approval"] is False
         else:
             assert "exclude_from_rss" not in data
+            assert "requires_approval" not in data
         assert "id" in data
         assert "created_at" in data
 
@@ -134,12 +136,30 @@ class TestContentCRUDLifecycle:
         assert response.status_code == 200
         assert response.json()["exclude_from_rss"] is True
 
-    def test_post_json_export_and_import_preserve_rss_exclusion(self, client, admin_headers, content_type):
+    def test_post_approval_requirement_can_be_updated(self, client, admin_headers, content_type):
+        if content_type != "posts":
+            pytest.skip("post-specific approval requirement")
+
+        payload = _make_payload(content_type, "-approval-required")
+        created = client.post(f"{BASE}/{content_type}/", json=payload, headers=admin_headers)
+        assert created.status_code == 201
+
+        response = client.put(
+            f"{BASE}/{content_type}/{created.json()['id']}",
+            json={"requires_approval": True},
+            headers=admin_headers,
+        )
+
+        assert response.status_code == 200
+        assert response.json()["requires_approval"] is True
+
+    def test_post_json_export_and_import_preserve_post_specific_settings(self, client, admin_headers, content_type):
         if content_type != "posts":
             pytest.skip("post-specific RSS exclusion")
 
         payload = _make_payload(content_type, "-rss-export")
         payload["exclude_from_rss"] = True
+        payload["requires_approval"] = True
         created = client.post(f"{BASE}/{content_type}/", json=payload, headers=admin_headers)
         assert created.status_code == 201
 
@@ -147,6 +167,7 @@ class TestContentCRUDLifecycle:
             exported_items = export_content_json(session, "posts")
         exported_post = next(item for item in exported_items if item["slug"] == payload["slug"])
         assert exported_post["exclude_from_rss"] is True
+        assert exported_post["requires_approval"] is True
 
         assert (
             client.put(
@@ -160,7 +181,7 @@ class TestContentCRUDLifecycle:
             import_result = import_content_json(
                 session,
                 "posts",
-                [{"slug": payload["slug"], "exclude_from_rss": True}],
+                [{"slug": payload["slug"], "exclude_from_rss": True, "requires_approval": True}],
             )
         assert import_result.errors == []
 
@@ -170,6 +191,7 @@ class TestContentCRUDLifecycle:
         )
         assert restored.status_code == 200
         assert restored.json()["exclude_from_rss"] is True
+        assert restored.json()["requires_approval"] is True
 
     def test_update_does_not_change_historical_view_count(self, client, admin_headers, content_type):
         payload = _make_payload(content_type, "-view-count")

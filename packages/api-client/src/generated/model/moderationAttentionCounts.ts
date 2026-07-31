@@ -11,6 +11,7 @@ export interface ModerationAttentionCounts {
   comments: ModerationAttentionBucket;
   guestbook: ModerationAttentionBucket;
   diary_access: ModerationDiaryAttentionBucket;
+  post_access: ModerationDiaryAttentionBucket;
   /** @minimum 0 */
   pending_total: number;
   /** @minimum 0 */

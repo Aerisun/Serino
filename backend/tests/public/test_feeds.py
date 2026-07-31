@@ -126,3 +126,26 @@ def test_posts_feed_backfills_limit_after_excluding_newer_posts(client, admin_he
 
     assert visible_payload["slug"] in response
     assert hidden_payload["slug"] not in response
+
+
+def test_posts_rss_limits_generated_summary_to_thirty_characters_without_changing_post_list(
+    client,
+    admin_headers,
+) -> None:
+    body = "abcdefghijklmnopqrstuvwxyz0123456789"
+    payload = _make_payload("posts", "-short-rss-summary")
+    payload["body"] = body
+
+    created = client.post(f"{ADMIN_BASE}/posts/", json=payload, headers=admin_headers)
+    assert created.status_code == 201
+
+    feed_response = client.get("/feeds/posts.xml")
+    list_response = client.get("/api/v1/site/posts")
+
+    assert feed_response.status_code == 200
+    assert "abcdefghijklmnopqrstuvwxyz012…" in feed_response.text
+    assert body not in feed_response.text
+
+    assert list_response.status_code == 200
+    entry = next(item for item in list_response.json()["items"] if item["slug"] == payload["slug"])
+    assert entry["summary"] == body

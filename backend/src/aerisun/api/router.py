@@ -9,6 +9,7 @@ from .avatars import router as avatars_router
 from .backup_setup import router as backup_setup_router
 from .diary_access import router as diary_access_router
 from .mcp import router as mcp_router
+from .post_access import router as post_access_router
 from .site import public_router as public_site_router
 from .site import router as site_router
 from .site_auth_api import router as site_auth_router
@@ -21,6 +22,7 @@ api_router.include_router(public_site_router)
 api_router.include_router(avatars_router)
 api_router.include_router(site_router)
 api_router.include_router(diary_access_router)
+api_router.include_router(post_access_router)
 api_router.include_router(site_auth_router)
 api_router.include_router(site_interactions_router)
 api_router.include_router(site_search_router)

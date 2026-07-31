@@ -9,7 +9,7 @@ from alembic.script import ScriptDirectory
 from aerisun.core.db import dispose_engine, run_database_migrations
 from aerisun.core.settings import get_settings
 
-CURRENT_SCHEMA_HEAD = "0016_post_rss_exclusion"
+CURRENT_SCHEMA_HEAD = "0018_post_access_requests"
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
 
@@ -95,6 +95,8 @@ def test_active_alembic_history_is_reset_to_single_production_baseline_head() ->
         "0014_persist_content_view_counts.py",
         "0015_diary_access_latest_request_index.py",
         "0016_post_rss_exclusion.py",
+        "0017_post_requires_approval.py",
+        "0018_post_access_requests.py",
     ]
     assert not (BACKEND_ROOT / "alembic" / "legacy_versions").exists()
 
@@ -126,6 +128,8 @@ def test_run_database_migrations_creates_baseline_schema_and_journal(tmp_path, m
     assert "retention_days" in _get_columns(db_path, "backup_target_configs")
     assert "public_slug" in _get_columns(db_path, "assets")
     assert "exclude_from_rss" in _get_columns(db_path, "posts")
+    assert "requires_approval" in _get_columns(db_path, "posts")
+    assert "post_access_requests" in tables
     assert "exclude_from_rss" not in _get_columns(db_path, "diary_entries")
     assert "page_display_options" not in tables
     assert "admin_email_password_hash" not in _get_columns(db_path, "site_auth_config")

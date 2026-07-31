@@ -36,7 +36,7 @@ _ALLOWED_FIELDS = {
     "pin_order",
 }
 
-_POST_ALLOWED_FIELDS = _ALLOWED_FIELDS | {"exclude_from_rss"}
+_POST_ALLOWED_FIELDS = _ALLOWED_FIELDS | {"exclude_from_rss", "requires_approval"}
 
 
 def _content_read_schema(content_type: str):
@@ -65,10 +65,13 @@ def export_content_markdown_zip(session: Session, content_type: str) -> bytes:
             rss_exclusion = (
                 f"exclude_from_rss: {str(bool(item.exclude_from_rss)).lower()}\n" if content_type == "posts" else ""
             )
+            approval_requirement = (
+                f"requires_approval: {str(bool(item.requires_approval)).lower()}\n" if content_type == "posts" else ""
+            )
             front = (
                 f"---\ntitle: {item.title}\nslug: {item.slug}\n"
                 f"visibility: {item.visibility}\ntags: {json.dumps(item.tags or [])}\n"
-                f"{rss_exclusion}created_at: {item.created_at.isoformat() if item.created_at else ''}\n---\n\n"
+                f"{rss_exclusion}{approval_requirement}created_at: {item.created_at.isoformat() if item.created_at else ''}\n---\n\n"
             )
             content = front + (item.body or "")
             zf.writestr(f"{item.slug}.md", content)

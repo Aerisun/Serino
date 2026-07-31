@@ -19,6 +19,7 @@ class PostEntry(ContentMixin, Base, TimestampMixin):
     __tablename__ = "posts"
 
     exclude_from_rss: Mapped[bool] = mapped_column(nullable=False, default=False)
+    requires_approval: Mapped[bool] = mapped_column(nullable=False, default=False)
     view_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
 

@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 import aerisun.domain.automation.models
 import aerisun.domain.diary_access.models
+import aerisun.domain.post_access.models
 import aerisun.domain.subscription.models  # noqa: F401
 from aerisun.core.data_migrations.state import clear_migration_journal
 from aerisun.core.seed_steps.common import is_empty

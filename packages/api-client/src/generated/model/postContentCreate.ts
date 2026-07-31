@@ -41,4 +41,6 @@ export interface PostContentCreate {
   pin_order?: number;
   /** Whether this public post is excluded from RSS */
   exclude_from_rss?: boolean;
+  /** Whether viewing this public post requires approval */
+  requires_approval?: boolean;
 }

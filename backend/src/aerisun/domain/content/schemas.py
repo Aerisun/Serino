@@ -121,6 +121,10 @@ class PostContentCreate(ContentCreate):
         default=False,
         description="Whether this public post is excluded from RSS",
     )
+    requires_approval: bool = Field(
+        default=False,
+        description="Whether viewing this public post requires approval",
+    )
 
 
 class PostContentUpdate(ContentUpdate):
@@ -128,10 +132,15 @@ class PostContentUpdate(ContentUpdate):
         default=None,
         description="Whether this public post is excluded from RSS",
     )
+    requires_approval: bool | None = Field(
+        default=None,
+        description="Whether viewing this public post requires approval",
+    )
 
 
 class PostContentAdminRead(ContentAdminRead):
     exclude_from_rss: bool = Field(description="Whether this public post is excluded from RSS")
+    requires_approval: bool = Field(description="Whether viewing this public post requires approval")
 
 
 class ContentTitleSuggestionRead(BaseModel):

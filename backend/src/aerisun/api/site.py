@@ -38,6 +38,7 @@ from aerisun.domain.content.service import (
     list_public_thoughts,
 )
 from aerisun.domain.diary_access.service import require_diary_detail_access
+from aerisun.domain.post_access.service import require_post_detail_access
 from aerisun.domain.site_auth.models import SiteUser, SiteUserSession
 from aerisun.domain.site_auth.service import is_site_user_admin
 from aerisun.domain.site_config.schemas import (
@@ -366,13 +367,27 @@ def read_post(
     current_user: SiteUser | None = Depends(get_current_site_user_optional),
     current_site_session: SiteUserSession | None = Depends(get_current_site_session_optional),
 ) -> ContentEntryRead | Response:
+    include_private = _can_view_private_content(session, current_user, current_site_session)
+    # Article approval only applies to public posts. Keep the existing admin preview
+    # path for private entries intact instead of trying to resolve it as public first.
+    protected = (
+        False if include_private else require_post_detail_access(session, slug, current_user, current_site_session)
+    )
     payload = get_public_post(
         session,
         slug,
-        include_private=_can_view_private_content(session, current_user, current_site_session),
+        include_private=include_private,
     )
     if request is None:
         return payload
+    if protected:
+        response = _build_conditional_json_response(
+            request,
+            payload=payload,
+            cache_control="private, no-store",
+        )
+        response.headers["Vary"] = "Cookie"
+        return response
     return _build_conditional_json_response(request, payload=payload)
 
 

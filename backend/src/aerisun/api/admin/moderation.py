@@ -39,6 +39,17 @@ from aerisun.domain.ops.schemas import (
     ModerationReadResult,
     ModerationReadUpdate,
 )
+from aerisun.domain.post_access.models import PostAccessRequest
+from aerisun.domain.post_access.schemas import (
+    PostAccessRequestAdminList,
+    PostAccessRequestAdminRead,
+    PostAccessRequestAdminUpdate,
+)
+from aerisun.domain.post_access.service import (
+    list_post_access_requests_admin,
+    post_access_approval_enabled,
+    update_post_access_request_admin,
+)
 from aerisun.domain.waline.service import get_waline_moderation_attention_counts
 
 from .deps import get_current_admin
@@ -66,14 +77,24 @@ def get_attention_counts(
             or 0
         )
 
+    post_pending = 0
+    if post_access_approval_enabled(session):
+        post_pending = int(
+            session.scalar(
+                select(func.count()).select_from(PostAccessRequest).where(PostAccessRequest.status == "pending")
+            )
+            or 0
+        )
+
     comments = counts["comments"]
     guestbook = counts["guestbook"]
     return ModerationAttentionCounts(
         comments=comments,
         guestbook=guestbook,
         diary_access=ModerationDiaryAttentionBucket(pending=diary_pending),
-        pending_total=comments["pending"] + guestbook["pending"] + diary_pending,
-        unread_total=comments["unread"] + guestbook["unread"] + diary_pending,
+        post_access=ModerationDiaryAttentionBucket(pending=post_pending),
+        pending_total=comments["pending"] + guestbook["pending"] + diary_pending + post_pending,
+        unread_total=comments["unread"] + guestbook["unread"] + diary_pending + post_pending,
     )
 
 
@@ -103,6 +124,34 @@ def update_diary_access_request(
     session: Session = Depends(get_session),
 ) -> DiaryAccessRequestAdminRead:
     return update_diary_access_request_admin(session, request_id, payload, admin)
+
+
+@router.get(
+    "/post-access-requests",
+    response_model=PostAccessRequestAdminList,
+    summary="获取文章查看申请列表",
+)
+def list_post_access_requests(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> dict[str, object]:
+    return list_post_access_requests_admin(session, page=page, page_size=page_size)
+
+
+@router.patch(
+    "/post-access-requests/{request_id}",
+    response_model=PostAccessRequestAdminRead,
+    summary="审核文章查看申请",
+)
+def update_post_access_request(
+    request_id: str,
+    payload: PostAccessRequestAdminUpdate,
+    admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> PostAccessRequestAdminRead:
+    return update_post_access_request_admin(session, request_id, payload, admin)
 
 
 @router.get("/comments", response_model=PaginatedResponse[CommentAdminRead], summary="获取评论审核列表")

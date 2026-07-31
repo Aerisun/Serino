@@ -44,6 +44,10 @@ import type {
   HealthRead,
   LinkPreviewRead,
   PageCollectionRead,
+  PostAccessGrantedListRead,
+  PostAccessRequestCreate,
+  PostAccessRequestRead,
+  PostAccessStateRead,
   ReadActivityHeatmapApiV1SiteActivityHeatmapGetParams,
   ReadCalendarApiV1SiteCalendarGetParams,
   ReadDiaryApiV1SiteDiaryGetParams,
@@ -3229,6 +3233,330 @@ export const useCreateDiaryAccessRequestApiV1SiteDiaryAccessRequestsPost = <TErr
         TContext
       > => {
       return useMutation(getCreateDiaryAccessRequestApiV1SiteDiaryAccessRequestsPostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 获取当前访客有效文章权限
+ */
+export type listMyPostAccessApiV1SitePostAccessMeGetResponse200 = {
+  data: PostAccessGrantedListRead
+  status: 200
+}
+
+export type listMyPostAccessApiV1SitePostAccessMeGetResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type listMyPostAccessApiV1SitePostAccessMeGetResponseSuccess = (listMyPostAccessApiV1SitePostAccessMeGetResponse200) & {
+  headers: Headers;
+};
+export type listMyPostAccessApiV1SitePostAccessMeGetResponseError = (listMyPostAccessApiV1SitePostAccessMeGetResponse422) & {
+  headers: Headers;
+};
+
+export type listMyPostAccessApiV1SitePostAccessMeGetResponse = (listMyPostAccessApiV1SitePostAccessMeGetResponseSuccess | listMyPostAccessApiV1SitePostAccessMeGetResponseError)
+
+export const getListMyPostAccessApiV1SitePostAccessMeGetUrl = () => {
+
+
+
+
+  return `/api/v1/site/post-access/me`
+}
+
+export const listMyPostAccessApiV1SitePostAccessMeGet = async ( options?: RequestInit): Promise<listMyPostAccessApiV1SitePostAccessMeGetResponse> => {
+
+  return customInstance<listMyPostAccessApiV1SitePostAccessMeGetResponse>(getListMyPostAccessApiV1SitePostAccessMeGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMyPostAccessApiV1SitePostAccessMeGetQueryKey = () => {
+    return [
+    `/api/v1/site/post-access/me`
+    ] as const;
+    }
+
+
+export const getListMyPostAccessApiV1SitePostAccessMeGetQueryOptions = <TData = Awaited<ReturnType<typeof listMyPostAccessApiV1SitePostAccessMeGet>>, TError = ErrorType<HTTPValidationError>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMyPostAccessApiV1SitePostAccessMeGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMyPostAccessApiV1SitePostAccessMeGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMyPostAccessApiV1SitePostAccessMeGet>>> = ({ signal }) => listMyPostAccessApiV1SitePostAccessMeGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMyPostAccessApiV1SitePostAccessMeGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListMyPostAccessApiV1SitePostAccessMeGetQueryResult = NonNullable<Awaited<ReturnType<typeof listMyPostAccessApiV1SitePostAccessMeGet>>>
+export type ListMyPostAccessApiV1SitePostAccessMeGetQueryError = ErrorType<HTTPValidationError>
+
+
+export function useListMyPostAccessApiV1SitePostAccessMeGet<TData = Awaited<ReturnType<typeof listMyPostAccessApiV1SitePostAccessMeGet>>, TError = ErrorType<HTTPValidationError>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMyPostAccessApiV1SitePostAccessMeGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listMyPostAccessApiV1SitePostAccessMeGet>>,
+          TError,
+          Awaited<ReturnType<typeof listMyPostAccessApiV1SitePostAccessMeGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListMyPostAccessApiV1SitePostAccessMeGet<TData = Awaited<ReturnType<typeof listMyPostAccessApiV1SitePostAccessMeGet>>, TError = ErrorType<HTTPValidationError>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMyPostAccessApiV1SitePostAccessMeGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listMyPostAccessApiV1SitePostAccessMeGet>>,
+          TError,
+          Awaited<ReturnType<typeof listMyPostAccessApiV1SitePostAccessMeGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListMyPostAccessApiV1SitePostAccessMeGet<TData = Awaited<ReturnType<typeof listMyPostAccessApiV1SitePostAccessMeGet>>, TError = ErrorType<HTTPValidationError>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMyPostAccessApiV1SitePostAccessMeGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取当前访客有效文章权限
+ */
+
+export function useListMyPostAccessApiV1SitePostAccessMeGet<TData = Awaited<ReturnType<typeof listMyPostAccessApiV1SitePostAccessMeGet>>, TError = ErrorType<HTTPValidationError>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMyPostAccessApiV1SitePostAccessMeGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListMyPostAccessApiV1SitePostAccessMeGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 获取当前访客文章查看权限
+ */
+export type readMyPostAccessApiV1SitePostAccessSlugMeGetResponse200 = {
+  data: PostAccessStateRead
+  status: 200
+}
+
+export type readMyPostAccessApiV1SitePostAccessSlugMeGetResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type readMyPostAccessApiV1SitePostAccessSlugMeGetResponseSuccess = (readMyPostAccessApiV1SitePostAccessSlugMeGetResponse200) & {
+  headers: Headers;
+};
+export type readMyPostAccessApiV1SitePostAccessSlugMeGetResponseError = (readMyPostAccessApiV1SitePostAccessSlugMeGetResponse422) & {
+  headers: Headers;
+};
+
+export type readMyPostAccessApiV1SitePostAccessSlugMeGetResponse = (readMyPostAccessApiV1SitePostAccessSlugMeGetResponseSuccess | readMyPostAccessApiV1SitePostAccessSlugMeGetResponseError)
+
+export const getReadMyPostAccessApiV1SitePostAccessSlugMeGetUrl = (slug: string,) => {
+
+
+
+
+  return `/api/v1/site/post-access/${slug}/me`
+}
+
+export const readMyPostAccessApiV1SitePostAccessSlugMeGet = async (slug: string, options?: RequestInit): Promise<readMyPostAccessApiV1SitePostAccessSlugMeGetResponse> => {
+
+  return customInstance<readMyPostAccessApiV1SitePostAccessSlugMeGetResponse>(getReadMyPostAccessApiV1SitePostAccessSlugMeGetUrl(slug),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getReadMyPostAccessApiV1SitePostAccessSlugMeGetQueryKey = (slug: string,) => {
+    return [
+    `/api/v1/site/post-access/${slug}/me`
+    ] as const;
+    }
+
+
+export const getReadMyPostAccessApiV1SitePostAccessSlugMeGetQueryOptions = <TData = Awaited<ReturnType<typeof readMyPostAccessApiV1SitePostAccessSlugMeGet>>, TError = ErrorType<HTTPValidationError>>(slug: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readMyPostAccessApiV1SitePostAccessSlugMeGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getReadMyPostAccessApiV1SitePostAccessSlugMeGetQueryKey(slug);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof readMyPostAccessApiV1SitePostAccessSlugMeGet>>> = ({ signal }) => readMyPostAccessApiV1SitePostAccessSlugMeGet(slug, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(slug), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof readMyPostAccessApiV1SitePostAccessSlugMeGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ReadMyPostAccessApiV1SitePostAccessSlugMeGetQueryResult = NonNullable<Awaited<ReturnType<typeof readMyPostAccessApiV1SitePostAccessSlugMeGet>>>
+export type ReadMyPostAccessApiV1SitePostAccessSlugMeGetQueryError = ErrorType<HTTPValidationError>
+
+
+export function useReadMyPostAccessApiV1SitePostAccessSlugMeGet<TData = Awaited<ReturnType<typeof readMyPostAccessApiV1SitePostAccessSlugMeGet>>, TError = ErrorType<HTTPValidationError>>(
+ slug: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof readMyPostAccessApiV1SitePostAccessSlugMeGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof readMyPostAccessApiV1SitePostAccessSlugMeGet>>,
+          TError,
+          Awaited<ReturnType<typeof readMyPostAccessApiV1SitePostAccessSlugMeGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useReadMyPostAccessApiV1SitePostAccessSlugMeGet<TData = Awaited<ReturnType<typeof readMyPostAccessApiV1SitePostAccessSlugMeGet>>, TError = ErrorType<HTTPValidationError>>(
+ slug: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readMyPostAccessApiV1SitePostAccessSlugMeGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof readMyPostAccessApiV1SitePostAccessSlugMeGet>>,
+          TError,
+          Awaited<ReturnType<typeof readMyPostAccessApiV1SitePostAccessSlugMeGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useReadMyPostAccessApiV1SitePostAccessSlugMeGet<TData = Awaited<ReturnType<typeof readMyPostAccessApiV1SitePostAccessSlugMeGet>>, TError = ErrorType<HTTPValidationError>>(
+ slug: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readMyPostAccessApiV1SitePostAccessSlugMeGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取当前访客文章查看权限
+ */
+
+export function useReadMyPostAccessApiV1SitePostAccessSlugMeGet<TData = Awaited<ReturnType<typeof readMyPostAccessApiV1SitePostAccessSlugMeGet>>, TError = ErrorType<HTTPValidationError>>(
+ slug: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readMyPostAccessApiV1SitePostAccessSlugMeGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getReadMyPostAccessApiV1SitePostAccessSlugMeGetQueryOptions(slug,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 提交文章查看申请
+ */
+export type createPostAccessRequestApiV1SitePostAccessSlugRequestsPostResponse201 = {
+  data: PostAccessRequestRead
+  status: 201
+}
+
+export type createPostAccessRequestApiV1SitePostAccessSlugRequestsPostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type createPostAccessRequestApiV1SitePostAccessSlugRequestsPostResponseSuccess = (createPostAccessRequestApiV1SitePostAccessSlugRequestsPostResponse201) & {
+  headers: Headers;
+};
+export type createPostAccessRequestApiV1SitePostAccessSlugRequestsPostResponseError = (createPostAccessRequestApiV1SitePostAccessSlugRequestsPostResponse422) & {
+  headers: Headers;
+};
+
+export type createPostAccessRequestApiV1SitePostAccessSlugRequestsPostResponse = (createPostAccessRequestApiV1SitePostAccessSlugRequestsPostResponseSuccess | createPostAccessRequestApiV1SitePostAccessSlugRequestsPostResponseError)
+
+export const getCreatePostAccessRequestApiV1SitePostAccessSlugRequestsPostUrl = (slug: string,) => {
+
+
+
+
+  return `/api/v1/site/post-access/${slug}/requests`
+}
+
+export const createPostAccessRequestApiV1SitePostAccessSlugRequestsPost = async (slug: string,
+    postAccessRequestCreate: PostAccessRequestCreate, options?: RequestInit): Promise<createPostAccessRequestApiV1SitePostAccessSlugRequestsPostResponse> => {
+
+  return customInstance<createPostAccessRequestApiV1SitePostAccessSlugRequestsPostResponse>(getCreatePostAccessRequestApiV1SitePostAccessSlugRequestsPostUrl(slug),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      postAccessRequestCreate,)
+  }
+);}
+
+
+
+
+export const getCreatePostAccessRequestApiV1SitePostAccessSlugRequestsPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPostAccessRequestApiV1SitePostAccessSlugRequestsPost>>, TError,{slug: string;data: BodyType<PostAccessRequestCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof createPostAccessRequestApiV1SitePostAccessSlugRequestsPost>>, TError,{slug: string;data: BodyType<PostAccessRequestCreate>}, TContext> => {
+
+const mutationKey = ['createPostAccessRequestApiV1SitePostAccessSlugRequestsPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createPostAccessRequestApiV1SitePostAccessSlugRequestsPost>>, {slug: string;data: BodyType<PostAccessRequestCreate>}> = (props) => {
+          const {slug,data} = props ?? {};
+
+          return  createPostAccessRequestApiV1SitePostAccessSlugRequestsPost(slug,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreatePostAccessRequestApiV1SitePostAccessSlugRequestsPostMutationResult = NonNullable<Awaited<ReturnType<typeof createPostAccessRequestApiV1SitePostAccessSlugRequestsPost>>>
+    export type CreatePostAccessRequestApiV1SitePostAccessSlugRequestsPostMutationBody = BodyType<PostAccessRequestCreate>
+    export type CreatePostAccessRequestApiV1SitePostAccessSlugRequestsPostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 提交文章查看申请
+ */
+export const useCreatePostAccessRequestApiV1SitePostAccessSlugRequestsPost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPostAccessRequestApiV1SitePostAccessSlugRequestsPost>>, TError,{slug: string;data: BodyType<PostAccessRequestCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createPostAccessRequestApiV1SitePostAccessSlugRequestsPost>>,
+        TError,
+        {slug: string;data: BodyType<PostAccessRequestCreate>},
+        TContext
+      > => {
+      return useMutation(getCreatePostAccessRequestApiV1SitePostAccessSlugRequestsPostMutationOptions(options), queryClient);
     }
     /**
  * @summary Search Content

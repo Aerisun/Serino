@@ -70,9 +70,19 @@ DEFAULT_COMMENT_FEEDBACK_BODY_TEMPLATE = (
     "查看回复：{comment_url}"
 )
 DIARY_ACCESS_FEEDBACK_TEMPLATE_FLAG = "diary_access_feedback_template"
+POST_ACCESS_FEEDBACK_TEMPLATE_FLAG = "post_access_feedback_template"
 DEFAULT_DIARY_ACCESS_FEEDBACK_TEMPLATE = (
     "你好，{visitor_name}：\n\n"
     "站长已处理你的日记查看申请。\n"
+    "审核结果：{decision}\n"
+    "权限到期时间：{expires_at}\n"
+    "\n"
+    "站点地址：{site_url}"
+)
+DEFAULT_POST_ACCESS_FEEDBACK_TEMPLATE = (
+    "你好，{visitor_name}：\n\n"
+    "站长已处理你的文章查看申请。\n"
+    "文章：{post_title}\n"
     "审核结果：{decision}\n"
     "权限到期时间：{expires_at}\n"
     "\n"
@@ -110,6 +120,7 @@ DIARY_ACCESS_FEEDBACK_TEMPLATE_ALLOWED_KEYS = {
     "requested_at",
     "reviewed_at",
 }
+POST_ACCESS_FEEDBACK_TEMPLATE_ALLOWED_KEYS = DIARY_ACCESS_FEEDBACK_TEMPLATE_ALLOWED_KEYS | {"post_title"}
 
 DEFAULT_ALLOWED_CONTENT_TYPES = ["posts", "diary", "thoughts", "excerpts"]
 
@@ -1307,6 +1318,68 @@ def send_diary_access_feedback_notification(session: Session, *, request, user: 
         _send_email(config=config, message=message)
     except Exception:
         logger.warning("Diary access feedback email failed for request %s", request.id, exc_info=True)
+        return False
+    return True
+
+
+def _post_access_feedback_template(session: Session) -> str:
+    site = site_config_repo.find_site_profile(session)
+    flags = site.feature_flags if site is not None and isinstance(site.feature_flags, dict) else {}
+    template = flags.get(POST_ACCESS_FEEDBACK_TEMPLATE_FLAG)
+    if isinstance(template, str) and template.strip():
+        return template.strip()
+    return DEFAULT_POST_ACCESS_FEEDBACK_TEMPLATE
+
+
+def send_post_access_feedback_notification(session: Session, *, request, user: SiteUser, post: PostEntry) -> bool:
+    config = get_subscription_config_orm(session)
+    if not config.smtp_test_passed or not _smtp_ready(config):
+        return False
+    try:
+        recipient = _normalize_email(user.email)
+    except ValidationError:
+        return False
+
+    settings = get_settings()
+    site = site_config_repo.find_site_profile(session)
+    site_name = (
+        (site.title if site is not None else "").strip() or (site.name if site is not None else "").strip() or "Aerisun"
+    )
+    access_granted = request.status == "approved" and request.revoked_at is None
+    decision = "已授予权限" if access_granted else "已停止权限" if request.revoked_at is not None else "暂未授予权限"
+    context = {
+        "site_name": site_name,
+        "site_url": (settings.site_url or "https://example.com").rstrip("/"),
+        "visitor_name": (user.display_name or user.email or "访客").strip(),
+        "visitor_email": recipient,
+        "post_title": post.title,
+        "decision": decision,
+        "expires_at": _format_diary_access_feedback_time(request.expires_at) if access_granted else "未授予权限",
+        "reason": request.reason or "",
+        "requested_at": _format_diary_access_feedback_time(request.created_at),
+        "reviewed_at": _format_diary_access_feedback_time(request.reviewed_at),
+    }
+    msg = EmailMessage()
+    from_name = config.smtp_from_name.strip() or site_name
+    try:
+        template = _validate_template(
+            _post_access_feedback_template(session),
+            field_name="文章查看申请反馈模板",
+            allowed_keys=POST_ACCESS_FEEDBACK_TEMPLATE_ALLOWED_KEYS,
+        )
+    except ValidationError:
+        logger.warning("Invalid post access feedback template; falling back to default", exc_info=True)
+        template = DEFAULT_POST_ACCESS_FEEDBACK_TEMPLATE
+    msg["Subject"] = f"[{site_name}] 文章查看申请反馈"
+    msg["From"] = f"{from_name} <{config.smtp_from_email}>"
+    msg["To"] = recipient
+    if config.smtp_reply_to.strip():
+        msg["Reply-To"] = config.smtp_reply_to.strip()
+    msg.set_content(_render_template(template, context))
+    try:
+        _send_email(config=config, message=msg)
+    except Exception:
+        logger.warning("Post access feedback email failed for request %s", request.id, exc_info=True)
         return False
     return True
 

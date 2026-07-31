@@ -140,6 +140,7 @@ import type {
   ListNavItemsParams,
   ListPageCopyParams,
   ListPoemsParams,
+  ListPostAccessRequestsApiV1AdminModerationPostAccessRequestsGetParams,
   ListPostsParams,
   ListSocialLinksParams,
   ListThoughtsParams,
@@ -186,6 +187,9 @@ import type {
   PoemGenerationRequest,
   PoemGenerationResponse,
   PoemUpdate,
+  PostAccessRequestAdminList,
+  PostAccessRequestAdminRead,
+  PostAccessRequestAdminUpdate,
   PostContentAdminRead,
   PostContentCreate,
   PostContentUpdate,
@@ -10600,6 +10604,220 @@ export const useUpdateDiaryAccessRequestApiV1AdminModerationDiaryAccessRequestsR
         TContext
       > => {
       return useMutation(getUpdateDiaryAccessRequestApiV1AdminModerationDiaryAccessRequestsRequestIdPatchMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 获取文章查看申请列表
+ */
+export type listPostAccessRequestsApiV1AdminModerationPostAccessRequestsGetResponse200 = {
+  data: PostAccessRequestAdminList
+  status: 200
+}
+
+export type listPostAccessRequestsApiV1AdminModerationPostAccessRequestsGetResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type listPostAccessRequestsApiV1AdminModerationPostAccessRequestsGetResponseSuccess = (listPostAccessRequestsApiV1AdminModerationPostAccessRequestsGetResponse200) & {
+  headers: Headers;
+};
+export type listPostAccessRequestsApiV1AdminModerationPostAccessRequestsGetResponseError = (listPostAccessRequestsApiV1AdminModerationPostAccessRequestsGetResponse422) & {
+  headers: Headers;
+};
+
+export type listPostAccessRequestsApiV1AdminModerationPostAccessRequestsGetResponse = (listPostAccessRequestsApiV1AdminModerationPostAccessRequestsGetResponseSuccess | listPostAccessRequestsApiV1AdminModerationPostAccessRequestsGetResponseError)
+
+export const getListPostAccessRequestsApiV1AdminModerationPostAccessRequestsGetUrl = (params?: ListPostAccessRequestsApiV1AdminModerationPostAccessRequestsGetParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/admin/moderation/post-access-requests?${stringifiedParams}` : `/api/v1/admin/moderation/post-access-requests`
+}
+
+export const listPostAccessRequestsApiV1AdminModerationPostAccessRequestsGet = async (params?: ListPostAccessRequestsApiV1AdminModerationPostAccessRequestsGetParams, options?: RequestInit): Promise<listPostAccessRequestsApiV1AdminModerationPostAccessRequestsGetResponse> => {
+
+  return customInstance<listPostAccessRequestsApiV1AdminModerationPostAccessRequestsGetResponse>(getListPostAccessRequestsApiV1AdminModerationPostAccessRequestsGetUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPostAccessRequestsApiV1AdminModerationPostAccessRequestsGetQueryKey = (params?: ListPostAccessRequestsApiV1AdminModerationPostAccessRequestsGetParams,) => {
+    return [
+    `/api/v1/admin/moderation/post-access-requests`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListPostAccessRequestsApiV1AdminModerationPostAccessRequestsGetQueryOptions = <TData = Awaited<ReturnType<typeof listPostAccessRequestsApiV1AdminModerationPostAccessRequestsGet>>, TError = ErrorType<HTTPValidationError>>(params?: ListPostAccessRequestsApiV1AdminModerationPostAccessRequestsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPostAccessRequestsApiV1AdminModerationPostAccessRequestsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPostAccessRequestsApiV1AdminModerationPostAccessRequestsGetQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPostAccessRequestsApiV1AdminModerationPostAccessRequestsGet>>> = ({ signal }) => listPostAccessRequestsApiV1AdminModerationPostAccessRequestsGet(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPostAccessRequestsApiV1AdminModerationPostAccessRequestsGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListPostAccessRequestsApiV1AdminModerationPostAccessRequestsGetQueryResult = NonNullable<Awaited<ReturnType<typeof listPostAccessRequestsApiV1AdminModerationPostAccessRequestsGet>>>
+export type ListPostAccessRequestsApiV1AdminModerationPostAccessRequestsGetQueryError = ErrorType<HTTPValidationError>
+
+
+export function useListPostAccessRequestsApiV1AdminModerationPostAccessRequestsGet<TData = Awaited<ReturnType<typeof listPostAccessRequestsApiV1AdminModerationPostAccessRequestsGet>>, TError = ErrorType<HTTPValidationError>>(
+ params: undefined |  ListPostAccessRequestsApiV1AdminModerationPostAccessRequestsGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPostAccessRequestsApiV1AdminModerationPostAccessRequestsGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listPostAccessRequestsApiV1AdminModerationPostAccessRequestsGet>>,
+          TError,
+          Awaited<ReturnType<typeof listPostAccessRequestsApiV1AdminModerationPostAccessRequestsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListPostAccessRequestsApiV1AdminModerationPostAccessRequestsGet<TData = Awaited<ReturnType<typeof listPostAccessRequestsApiV1AdminModerationPostAccessRequestsGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: ListPostAccessRequestsApiV1AdminModerationPostAccessRequestsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPostAccessRequestsApiV1AdminModerationPostAccessRequestsGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listPostAccessRequestsApiV1AdminModerationPostAccessRequestsGet>>,
+          TError,
+          Awaited<ReturnType<typeof listPostAccessRequestsApiV1AdminModerationPostAccessRequestsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListPostAccessRequestsApiV1AdminModerationPostAccessRequestsGet<TData = Awaited<ReturnType<typeof listPostAccessRequestsApiV1AdminModerationPostAccessRequestsGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: ListPostAccessRequestsApiV1AdminModerationPostAccessRequestsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPostAccessRequestsApiV1AdminModerationPostAccessRequestsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取文章查看申请列表
+ */
+
+export function useListPostAccessRequestsApiV1AdminModerationPostAccessRequestsGet<TData = Awaited<ReturnType<typeof listPostAccessRequestsApiV1AdminModerationPostAccessRequestsGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: ListPostAccessRequestsApiV1AdminModerationPostAccessRequestsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPostAccessRequestsApiV1AdminModerationPostAccessRequestsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListPostAccessRequestsApiV1AdminModerationPostAccessRequestsGetQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 审核文章查看申请
+ */
+export type updatePostAccessRequestApiV1AdminModerationPostAccessRequestsRequestIdPatchResponse200 = {
+  data: PostAccessRequestAdminRead
+  status: 200
+}
+
+export type updatePostAccessRequestApiV1AdminModerationPostAccessRequestsRequestIdPatchResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type updatePostAccessRequestApiV1AdminModerationPostAccessRequestsRequestIdPatchResponseSuccess = (updatePostAccessRequestApiV1AdminModerationPostAccessRequestsRequestIdPatchResponse200) & {
+  headers: Headers;
+};
+export type updatePostAccessRequestApiV1AdminModerationPostAccessRequestsRequestIdPatchResponseError = (updatePostAccessRequestApiV1AdminModerationPostAccessRequestsRequestIdPatchResponse422) & {
+  headers: Headers;
+};
+
+export type updatePostAccessRequestApiV1AdminModerationPostAccessRequestsRequestIdPatchResponse = (updatePostAccessRequestApiV1AdminModerationPostAccessRequestsRequestIdPatchResponseSuccess | updatePostAccessRequestApiV1AdminModerationPostAccessRequestsRequestIdPatchResponseError)
+
+export const getUpdatePostAccessRequestApiV1AdminModerationPostAccessRequestsRequestIdPatchUrl = (requestId: string,) => {
+
+
+
+
+  return `/api/v1/admin/moderation/post-access-requests/${requestId}`
+}
+
+export const updatePostAccessRequestApiV1AdminModerationPostAccessRequestsRequestIdPatch = async (requestId: string,
+    postAccessRequestAdminUpdate: PostAccessRequestAdminUpdate, options?: RequestInit): Promise<updatePostAccessRequestApiV1AdminModerationPostAccessRequestsRequestIdPatchResponse> => {
+
+  return customInstance<updatePostAccessRequestApiV1AdminModerationPostAccessRequestsRequestIdPatchResponse>(getUpdatePostAccessRequestApiV1AdminModerationPostAccessRequestsRequestIdPatchUrl(requestId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      postAccessRequestAdminUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdatePostAccessRequestApiV1AdminModerationPostAccessRequestsRequestIdPatchMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePostAccessRequestApiV1AdminModerationPostAccessRequestsRequestIdPatch>>, TError,{requestId: string;data: BodyType<PostAccessRequestAdminUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof updatePostAccessRequestApiV1AdminModerationPostAccessRequestsRequestIdPatch>>, TError,{requestId: string;data: BodyType<PostAccessRequestAdminUpdate>}, TContext> => {
+
+const mutationKey = ['updatePostAccessRequestApiV1AdminModerationPostAccessRequestsRequestIdPatch'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updatePostAccessRequestApiV1AdminModerationPostAccessRequestsRequestIdPatch>>, {requestId: string;data: BodyType<PostAccessRequestAdminUpdate>}> = (props) => {
+          const {requestId,data} = props ?? {};
+
+          return  updatePostAccessRequestApiV1AdminModerationPostAccessRequestsRequestIdPatch(requestId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdatePostAccessRequestApiV1AdminModerationPostAccessRequestsRequestIdPatchMutationResult = NonNullable<Awaited<ReturnType<typeof updatePostAccessRequestApiV1AdminModerationPostAccessRequestsRequestIdPatch>>>
+    export type UpdatePostAccessRequestApiV1AdminModerationPostAccessRequestsRequestIdPatchMutationBody = BodyType<PostAccessRequestAdminUpdate>
+    export type UpdatePostAccessRequestApiV1AdminModerationPostAccessRequestsRequestIdPatchMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 审核文章查看申请
+ */
+export const useUpdatePostAccessRequestApiV1AdminModerationPostAccessRequestsRequestIdPatch = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePostAccessRequestApiV1AdminModerationPostAccessRequestsRequestIdPatch>>, TError,{requestId: string;data: BodyType<PostAccessRequestAdminUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updatePostAccessRequestApiV1AdminModerationPostAccessRequestsRequestIdPatch>>,
+        TError,
+        {requestId: string;data: BodyType<PostAccessRequestAdminUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdatePostAccessRequestApiV1AdminModerationPostAccessRequestsRequestIdPatchMutationOptions(options), queryClient);
     }
     /**
  * @summary 获取评论审核列表

@@ -237,6 +237,7 @@ def test_admin_moderation_tracks_shared_read_state_and_attention_counts(client) 
         "comments": {"pending": 1, "unread": 1},
         "guestbook": {"pending": 1, "unread": 1},
         "diary_access": {"pending": 1},
+        "post_access": {"pending": 0},
         "pending_total": 3,
         "unread_total": 3,
     }

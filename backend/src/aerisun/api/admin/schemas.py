@@ -62,6 +62,14 @@ from aerisun.domain.ops.schemas import (  # noqa: F401
     RecentContentItem,
     SystemInfo,
 )
+from aerisun.domain.post_access.schemas import (  # noqa: F401
+    PostAccessRequestAdminList,
+    PostAccessRequestAdminRead,
+    PostAccessRequestAdminUpdate,
+    PostAccessRequestCreate,
+    PostAccessRequestRead,
+    PostAccessStateRead,
+)
 from aerisun.domain.site_config.schemas import (  # noqa: F401
     CommunityConfigAdminRead,
     CommunityConfigUpdate,

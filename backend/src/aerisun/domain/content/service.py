@@ -654,6 +654,7 @@ def _content_summary_payload(
     *,
     include_read_time: bool,
     summary_fallback_body: str | None = None,
+    summary_fallback_max_length: int = 500,
     read_time_body_length: int | None = None,
 ) -> dict:
     published_reference = item.published_at or item.created_at
@@ -670,7 +671,10 @@ def _content_summary_payload(
 
     summary = item.summary
     if not (summary or "").strip() and summary_fallback_body:
-        summary = _summary_fallback_from_body(summary_fallback_body)
+        summary = _summary_fallback_from_body(
+            summary_fallback_body,
+            max_length=summary_fallback_max_length,
+        )
 
     return {
         "slug": item.slug,
@@ -709,6 +713,7 @@ def _to_summary_entry(
     engagement_stats: dict[str, dict[str, int | None]],
     *,
     summary_fallback_body: str | None = None,
+    summary_fallback_max_length: int = 500,
     read_time_body_length: int | None = None,
 ) -> ContentSummaryRead:
     return ContentSummaryRead(
@@ -718,6 +723,7 @@ def _to_summary_entry(
             engagement_stats,
             include_read_time=False,
             summary_fallback_body=summary_fallback_body,
+            summary_fallback_max_length=summary_fallback_max_length,
             read_time_body_length=read_time_body_length,
         ),
     )
@@ -768,6 +774,7 @@ def _list_summary_entries(
     *,
     include_private: bool = False,
     exclude_from_rss: bool = False,
+    summary_fallback_max_length: int = 500,
 ) -> ContentSummaryCollectionRead:
     items, total = repo.find_published(
         session,
@@ -791,6 +798,7 @@ def _list_summary_entries(
                 content_type,
                 engagement_stats,
                 summary_fallback_body=summary_fallback_bodies.get(row.id),
+                summary_fallback_max_length=summary_fallback_max_length,
                 read_time_body_length=body_lengths.get(row.id),
             )
             for row in items
@@ -837,6 +845,7 @@ def list_rss_posts(
         limit,
         offset,
         exclude_from_rss=True,
+        summary_fallback_max_length=30,
     )
 
 

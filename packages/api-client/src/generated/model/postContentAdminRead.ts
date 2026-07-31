@@ -46,4 +46,6 @@ export interface PostContentAdminRead {
   pin_order?: unknown;
   /** Whether this public post is excluded from RSS */
   exclude_from_rss: unknown;
+  /** Whether viewing this public post requires approval */
+  requires_approval: unknown;
 }

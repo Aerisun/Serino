@@ -449,6 +449,51 @@ export const CreateDiaryAccessRequestApiV1SiteDiaryAccessRequestsPostBody = zod.
 
 
 /**
+ * @summary 获取当前访客有效文章权限
+ */
+export const ListMyPostAccessApiV1SitePostAccessMeGetResponse = zod.object({
+  "items": zod.unknown()
+})
+
+
+/**
+ * @summary 获取当前访客文章查看权限
+ */
+export const ReadMyPostAccessApiV1SitePostAccessSlugMeGetParams = zod.object({
+  "slug": zod.string()
+})
+
+export const ReadMyPostAccessApiV1SitePostAccessSlugMeGetResponse = zod.object({
+  "authenticated": zod.unknown(),
+  "approval_enabled": zod.unknown(),
+  "requires_approval": zod.unknown(),
+  "has_access": zod.unknown(),
+  "owner_name": zod.unknown(),
+  "post_title": zod.unknown(),
+  "mail_feedback_available": zod.unknown().optional(),
+  "access_expires_at": zod.unknown().optional(),
+  "remaining_seconds": zod.unknown().optional(),
+  "pending_request_id": zod.unknown().optional()
+})
+
+
+/**
+ * @summary 提交文章查看申请
+ */
+export const CreatePostAccessRequestApiV1SitePostAccessSlugRequestsPostParams = zod.object({
+  "slug": zod.string()
+})
+
+export const createPostAccessRequestApiV1SitePostAccessSlugRequestsPostBodyReasonMax = 1000;
+
+
+
+export const CreatePostAccessRequestApiV1SitePostAccessSlugRequestsPostBody = zod.object({
+  "reason": zod.string().min(1).max(createPostAccessRequestApiV1SitePostAccessSlugRequestsPostBodyReasonMax)
+})
+
+
+/**
  * @summary 获取当前站点用户状态
  */
 export const readSiteAuthStateApiV1SiteAuthMeGetResponseEmailLoginEnabledDefault = true;
@@ -1188,6 +1233,7 @@ export const createPostsBodyViewCountDefault = 0;
 export const createPostsBodyIsPinnedDefault = false;
 export const createPostsBodyPinOrderDefault = 0;
 export const createPostsBodyExcludeFromRssDefault = false;
+export const createPostsBodyRequiresApprovalDefault = false;
 
 export const CreatePostsBody = zod.object({
   "slug": zod.union([zod.string(),zod.null()]).optional().describe('URL-friendly unique identifier'),
@@ -1206,7 +1252,8 @@ export const CreatePostsBody = zod.object({
   "view_count": zod.number().default(createPostsBodyViewCountDefault).describe('Manual view count override'),
   "is_pinned": zod.boolean().default(createPostsBodyIsPinnedDefault).describe('Whether pinned to top'),
   "pin_order": zod.number().default(createPostsBodyPinOrderDefault).describe('Sort order among pinned items'),
-  "exclude_from_rss": zod.boolean().default(createPostsBodyExcludeFromRssDefault).describe('Whether this public post is excluded from RSS')
+  "exclude_from_rss": zod.boolean().default(createPostsBodyExcludeFromRssDefault).describe('Whether this public post is excluded from RSS'),
+  "requires_approval": zod.boolean().default(createPostsBodyRequiresApprovalDefault).describe('Whether viewing this public post requires approval')
 })
 
 
@@ -1237,7 +1284,8 @@ export const GetPostsResponse = zod.object({
   "view_count": zod.unknown().optional().describe('Total page views'),
   "is_pinned": zod.unknown().optional().describe('Whether pinned to top'),
   "pin_order": zod.unknown().optional().describe('Sort order among pinned items'),
-  "exclude_from_rss": zod.unknown().describe('Whether this public post is excluded from RSS')
+  "exclude_from_rss": zod.unknown().describe('Whether this public post is excluded from RSS'),
+  "requires_approval": zod.unknown().describe('Whether viewing this public post requires approval')
 })
 
 
@@ -1265,7 +1313,8 @@ export const UpdatePostsBody = zod.object({
   "view_count": zod.union([zod.number(),zod.null()]).optional().describe('Manual view count override'),
   "is_pinned": zod.union([zod.boolean(),zod.null()]).optional().describe('Whether pinned to top'),
   "pin_order": zod.union([zod.number(),zod.null()]).optional().describe('Sort order among pinned items'),
-  "exclude_from_rss": zod.union([zod.boolean(),zod.null()]).optional().describe('Whether this public post is excluded from RSS')
+  "exclude_from_rss": zod.union([zod.boolean(),zod.null()]).optional().describe('Whether this public post is excluded from RSS'),
+  "requires_approval": zod.union([zod.boolean(),zod.null()]).optional().describe('Whether viewing this public post requires approval')
 })
 
 export const UpdatePostsResponse = zod.object({
@@ -1288,7 +1337,8 @@ export const UpdatePostsResponse = zod.object({
   "view_count": zod.unknown().optional().describe('Total page views'),
   "is_pinned": zod.unknown().optional().describe('Whether pinned to top'),
   "pin_order": zod.unknown().optional().describe('Sort order among pinned items'),
-  "exclude_from_rss": zod.unknown().describe('Whether this public post is excluded from RSS')
+  "exclude_from_rss": zod.unknown().describe('Whether this public post is excluded from RSS'),
+  "requires_approval": zod.unknown().describe('Whether viewing this public post requires approval')
 })
 
 
@@ -3397,6 +3447,8 @@ export const getAttentionCountsApiV1AdminModerationAttentionCountsGetResponseGue
 
 export const getAttentionCountsApiV1AdminModerationAttentionCountsGetResponseDiaryAccessPendingMin = 0;
 
+export const getAttentionCountsApiV1AdminModerationAttentionCountsGetResponsePostAccessPendingMin = 0;
+
 export const getAttentionCountsApiV1AdminModerationAttentionCountsGetResponsePendingTotalMin = 0;
 
 export const getAttentionCountsApiV1AdminModerationAttentionCountsGetResponseUnreadTotalMin = 0;
@@ -3414,6 +3466,9 @@ export const GetAttentionCountsApiV1AdminModerationAttentionCountsGetResponse = 
 }),
   "diary_access": zod.object({
   "pending": zod.number().min(getAttentionCountsApiV1AdminModerationAttentionCountsGetResponseDiaryAccessPendingMin)
+}),
+  "post_access": zod.object({
+  "pending": zod.number().min(getAttentionCountsApiV1AdminModerationAttentionCountsGetResponsePostAccessPendingMin)
 }),
   "pending_total": zod.number().min(getAttentionCountsApiV1AdminModerationAttentionCountsGetResponsePendingTotalMin),
   "unread_total": zod.number().min(getAttentionCountsApiV1AdminModerationAttentionCountsGetResponseUnreadTotalMin)
@@ -3463,6 +3518,70 @@ export const UpdateDiaryAccessRequestApiV1AdminModerationDiaryAccessRequestsRequ
 
 export const UpdateDiaryAccessRequestApiV1AdminModerationDiaryAccessRequestsRequestIdPatchResponse = zod.object({
   "id": zod.unknown(),
+  "site_user_id": zod.unknown(),
+  "visitor_email": zod.unknown(),
+  "visitor_display_name": zod.unknown(),
+  "visitor_avatar_url": zod.unknown(),
+  "visitor_auth_provider": zod.unknown(),
+  "visitor_oauth_providers": zod.unknown(),
+  "reason": zod.unknown(),
+  "status": zod.unknown(),
+  "has_access": zod.unknown(),
+  "access_granted_at": zod.unknown().optional(),
+  "access_expires_at": zod.unknown().optional(),
+  "access_revoked_at": zod.unknown().optional(),
+  "remaining_seconds": zod.unknown().optional(),
+  "created_at": zod.unknown(),
+  "updated_at": zod.unknown()
+})
+
+
+/**
+ * @summary 获取文章查看申请列表
+ */
+export const listPostAccessRequestsApiV1AdminModerationPostAccessRequestsGetQueryPageDefault = 1;
+
+export const listPostAccessRequestsApiV1AdminModerationPostAccessRequestsGetQueryPageSizeDefault = 20;
+export const listPostAccessRequestsApiV1AdminModerationPostAccessRequestsGetQueryPageSizeMax = 100;
+
+
+
+export const ListPostAccessRequestsApiV1AdminModerationPostAccessRequestsGetQueryParams = zod.object({
+  "page": zod.number().min(1).default(listPostAccessRequestsApiV1AdminModerationPostAccessRequestsGetQueryPageDefault),
+  "page_size": zod.number().min(1).max(listPostAccessRequestsApiV1AdminModerationPostAccessRequestsGetQueryPageSizeMax).default(listPostAccessRequestsApiV1AdminModerationPostAccessRequestsGetQueryPageSizeDefault)
+})
+
+export const ListPostAccessRequestsApiV1AdminModerationPostAccessRequestsGetResponse = zod.object({
+  "items": zod.unknown(),
+  "total": zod.unknown(),
+  "page": zod.unknown(),
+  "page_size": zod.unknown(),
+  "people_total": zod.unknown(),
+  "pending_total": zod.unknown(),
+  "authorized_total": zod.unknown()
+})
+
+
+/**
+ * @summary 审核文章查看申请
+ */
+export const UpdatePostAccessRequestApiV1AdminModerationPostAccessRequestsRequestIdPatchParams = zod.object({
+  "request_id": zod.string()
+})
+
+export const updatePostAccessRequestApiV1AdminModerationPostAccessRequestsRequestIdPatchBodyRevokeAccessDefault = false;
+
+export const UpdatePostAccessRequestApiV1AdminModerationPostAccessRequestsRequestIdPatchBody = zod.object({
+  "grant_access": zod.union([zod.boolean(),zod.null()]).optional(),
+  "expires_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "revoke_access": zod.boolean().default(updatePostAccessRequestApiV1AdminModerationPostAccessRequestsRequestIdPatchBodyRevokeAccessDefault)
+})
+
+export const UpdatePostAccessRequestApiV1AdminModerationPostAccessRequestsRequestIdPatchResponse = zod.object({
+  "id": zod.unknown(),
+  "post_id": zod.unknown(),
+  "post_slug": zod.unknown(),
+  "post_title": zod.unknown(),
   "site_user_id": zod.unknown(),
   "visitor_email": zod.unknown(),
   "visitor_display_name": zod.unknown(),
