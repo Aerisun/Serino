@@ -18,6 +18,10 @@ describe("feature toggles layout", () => {
     expect(source).toContain('key: "diary"');
     expect(source).toContain('key: "thoughts"');
     expect(source).toContain('key: "excerpts"');
+    expect(source).toContain('t("siteConfig.featurePostAccessApproval")');
+    expect(source).toContain('t("siteConfig.featurePostAccessApprovalHelp")');
+    expect(source).toContain('post_access_approval_enabled');
+    expect(source).toContain("<LabelWithHelp");
   });
 
   it("keeps every personalization control in the final collapsed section", () => {

@@ -24,7 +24,12 @@ import { useI18n } from "@/i18n";
 import { extractApiErrorMessage } from "@/lib/api-error";
 import { cn } from "@/lib/utils";
 
-const FEATURE_FLAGS = ["toc", "reading_progress", "diary_private_enabled"] as const;
+const FEATURE_FLAGS = [
+  "toc",
+  "reading_progress",
+  "diary_private_enabled",
+  "post_access_approval_enabled",
+] as const;
 const OWNER_COMMENT_ACTIVITY_CONTENT_TYPES_FLAG =
   "recent_activity_owner_comment_content_types";
 const OWNER_COMMENT_ACTIVITY_CONTENT_TYPE_OPTIONS = [
@@ -287,6 +292,18 @@ export function FeatureTogglesSection() {
       key: "reading_progress",
       label: t("siteConfig.featureReadingProgress"),
       desc: t("siteConfig.featureReadingProgressDesc"),
+    },
+    {
+      key: "post_access_approval_enabled",
+      label: (
+        <LabelWithHelp
+          className="gap-1.5"
+          label={t("siteConfig.featurePostAccessApproval")}
+          title={t("siteConfig.featurePostAccessApproval")}
+          description={t("siteConfig.featurePostAccessApprovalHelp")}
+        />
+      ),
+      desc: t("siteConfig.featurePostAccessApprovalDesc"),
     },
   ] as const;
 

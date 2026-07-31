@@ -3,6 +3,7 @@ import {
   useCreatePosts,
   useUpdatePosts,
   useDeletePosts,
+  useGetProfileApiV1AdminSiteConfigProfileGet,
   getListPostsQueryKey,
   getGetPostsQueryKey,
 } from "@serino/api-client/admin";
@@ -32,11 +33,12 @@ const editorConfig = {
   defaultForm: {
     slug: "", title: "", summary: "", body: "", tags: [],
     visibility: "private", published_at: null,
-    category: "", exclude_from_rss: false,
+    category: "", exclude_from_rss: false, requires_approval: false,
   },
   serverToForm: buildServerToForm((item) => ({
     category: item.category || "",
     exclude_from_rss: Boolean(item.exclude_from_rss),
+    requires_approval: Boolean(item.requires_approval),
   })),
   i18nKeys: {
     newTitle: "posts.newPost",
@@ -48,7 +50,13 @@ const editorConfig = {
 export default function PostEditPage() {
   const editor = useContentEditor(editorConfig);
   const { form, setField, isSaving, isPublishedAtManual, setIsPublishedAtManual, isNew, t } = editor;
+  const { data: profileRaw } = useGetProfileApiV1AdminSiteConfigProfileGet();
   const excludeFromRss = Boolean((form as { exclude_from_rss?: boolean }).exclude_from_rss);
+  const requiresApproval = Boolean((form as { requires_approval?: boolean }).requires_approval);
+  const featureFlags = (profileRaw?.data as { feature_flags?: Record<string, unknown> } | undefined)
+    ?.feature_flags;
+  const postApprovalEnabled = featureFlags?.post_access_approval_enabled !== false;
+  const showPublicPostSettings = form.visibility === "public";
 
   return (
     <div>
@@ -132,13 +140,29 @@ export default function PostEditPage() {
             isCustom={isPublishedAtManual}
             onCustomChange={setIsPublishedAtManual}
             label={t("posts.publishedAt")}
-            rssExclusion={{
-              checked: excludeFromRss,
-              onCheckedChange: (checked) => setField("exclude_from_rss", checked),
-              label: "不展示 RSS",
-              ariaLabel: "不展示 RSS",
-              helpDescription: "开启后，公开文章仍可在网站中访问，但不会出现在 RSS 订阅中。",
-            }}
+            rssExclusion={
+              showPublicPostSettings
+                ? {
+                    checked: excludeFromRss,
+                    onCheckedChange: (checked) => setField("exclude_from_rss", checked),
+                    label: "不展示 RSS",
+                    ariaLabel: "不展示 RSS",
+                    helpDescription: "开启后，公开文章仍可在网站中访问，但不会出现在 RSS 订阅中。",
+                  }
+                : undefined
+            }
+            approvalRequirement={
+              showPublicPostSettings && postApprovalEnabled
+                ? {
+                    checked: requiresApproval,
+                    onCheckedChange: (checked) => setField("requires_approval", checked),
+                    label: "查看需要审批",
+                    ariaLabel: "查看需要审批",
+                    helpDescription:
+                      "开启后，访客需先登录并提交申请，经审核通过后才能查看这篇公开文章的完整内容。",
+                  }
+                : undefined
+            }
             deleteButton={
               !isNew && (
                 <Button

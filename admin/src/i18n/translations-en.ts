@@ -545,6 +545,8 @@ export const enTranslations: TranslationDict = {
     "moderation.commentFeedbackDisabled": "Reply email reminders disabled",
     "moderation.commentFeedbackSaved": "Comment feedback setting saved",
     "moderation.diaryAccessRequests": "Diary Access Requests",
+    "moderation.postAccessRequests": "Article Access Requests",
+    "moderation.postAccessArticle": "Article",
     "moderation.diaryAccessRequestsDescription":
       "Review time-limited visitor access requests for all diary details.",
     "moderation.diaryAccessVisitor": "Visitor",
@@ -1125,6 +1127,8 @@ export const enTranslations: TranslationDict = {
     "status.restoring": "Restoring",
     "status.public": "Public",
     "status.publicNoRss": "Public (not in RSS)",
+    "status.approval": "Approval required",
+    "status.approvalNoRss": "Approval required (not in RSS)",
     "status.private": "Private",
     "status.unlisted": "Unlisted",
 
@@ -1428,6 +1432,11 @@ export const enTranslations: TranslationDict = {
     "siteConfig.featureReadingProgress": "Reading Progress",
     "siteConfig.featureReadingProgressDesc":
       "Show reading progress bar at the top of articles",
+    "siteConfig.featurePostAccessApproval": "Allow Per-Post Viewing Approval",
+    "siteConfig.featurePostAccessApprovalDesc":
+      "When disabled, every public post detail page returns to normal public access.",
+    "siteConfig.featurePostAccessApprovalHelp":
+      "When enabled, each public post can be configured to require approval before its details are viewed.",
     "siteConfig.featureDiaryPrivate": "Private Diary Details",
     "siteConfig.featureDiaryPrivateDesc":
       "When enabled, visitors can see the diary list, but opening details requires login and approval.",

@@ -22,12 +22,14 @@ const api = vi.hoisted(() => ({
       tags: ["design"],
       visibility: "private",
       exclude_from_rss: false,
+      requires_approval: false,
       published_at: "2026-07-01T10:00:00+08:00",
       updated_at: "2026-07-01T10:00:00+08:00",
       category: "Notes",
     },
   },
   systemInfoResponse: { site_url: "https://example.test" },
+  profileResponse: { data: { feature_flags: { post_access_approval_enabled: true } } },
 }));
 
 vi.mock("@serino/api-client/admin", () => ({
@@ -46,6 +48,9 @@ vi.mock("@serino/api-client/admin", () => ({
   getDefaultContentTitle: vi.fn(),
   useSystemInfoApiV1AdminSystemInfoGet: () => ({
     data: api.systemInfoResponse,
+  }),
+  useGetProfileApiV1AdminSiteConfigProfileGet: () => ({
+    data: api.profileResponse,
   }),
   useGetPosts: () => ({
     data: api.postResponse,
@@ -109,6 +114,9 @@ afterEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
   api.postResponse.data.exclude_from_rss = false;
+  api.postResponse.data.requires_approval = false;
+  api.postResponse.data.visibility = "private";
+  api.profileResponse.data.feature_flags.post_access_approval_enabled = true;
 });
 
 describe("PostEditPage", () => {
@@ -197,13 +205,16 @@ describe("PostEditPage", () => {
     });
   });
 
-  it("lets editors exclude a post from RSS and saves the switch state", async () => {
+  it("shows public-only post settings in the requested order and saves their switch states", async () => {
     const user = userEvent.setup();
     api.updatePost.mockResolvedValue({ data: { id: "post-1" } });
+    api.postResponse.data.visibility = "public";
     renderPostEditPage();
 
     const rssSwitch = screen.getByRole("switch", { name: "不展示 RSS" });
+    const approvalSwitch = screen.getByRole("switch", { name: "查看需要审批" });
     expect(rssSwitch.getAttribute("aria-checked")).toBe("false");
+    expect(approvalSwitch.getAttribute("aria-checked")).toBe("false");
     expect(rssSwitch.closest("[data-rss-exclusion-control]")?.className).toContain("max-md:basis-full");
 
     const rssControl = rssSwitch.closest("[data-rss-exclusion-control]");
@@ -217,25 +228,55 @@ describe("PostEditPage", () => {
     expect(rssControl?.compareDocumentPosition(publishTimeInput!)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING,
     );
+    const approvalControl = approvalSwitch.closest("[data-post-approval-control]");
+    expect(rssControl?.compareDocumentPosition(approvalControl!)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    expect(approvalControl?.compareDocumentPosition(publishTimeInput!)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
 
     await user.click(rssSwitch);
-    await user.click(screen.getByRole("button", { name: "保存私密" }));
+    await user.click(approvalSwitch);
+    await user.click(screen.getByRole("button", { name: "发布" }));
 
     await waitFor(() => {
       expect(api.updatePost).toHaveBeenCalledWith({
         itemId: "post-1",
-        data: expect.objectContaining({ exclude_from_rss: true }),
+        data: expect.objectContaining({ exclude_from_rss: true, requires_approval: true }),
       });
     });
   });
 
-  it("restores the saved RSS exclusion switch state", async () => {
+  it("restores the saved public-only post setting switch states", async () => {
     api.postResponse.data.exclude_from_rss = true;
+    api.postResponse.data.requires_approval = true;
+    api.postResponse.data.visibility = "public";
     renderPostEditPage();
 
     await waitFor(() => {
       expect(screen.getByRole("switch", { name: "不展示 RSS" }).getAttribute("aria-checked"))
         .toBe("true");
+      expect(screen.getByRole("switch", { name: "查看需要审批" }).getAttribute("aria-checked"))
+        .toBe("true");
+    });
+  });
+
+  it("keeps RSS available but hides the per-article approval switch when the global feature is disabled", async () => {
+    api.postResponse.data.visibility = "public";
+    api.profileResponse.data.feature_flags.post_access_approval_enabled = false;
+    renderPostEditPage();
+
+    expect(await screen.findByRole("switch", { name: "不展示 RSS" })).toBeTruthy();
+    expect(screen.queryByRole("switch", { name: "查看需要审批" })).toBeNull();
+  });
+
+  it("hides RSS and approval switches while the post is private", async () => {
+    renderPostEditPage();
+
+    await waitFor(() => {
+      expect(screen.queryByRole("switch", { name: "不展示 RSS" })).toBeNull();
+      expect(screen.queryByRole("switch", { name: "查看需要审批" })).toBeNull();
     });
   });
 });

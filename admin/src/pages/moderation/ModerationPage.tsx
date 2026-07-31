@@ -77,12 +77,13 @@ import {
   moderationAttentionCountQueryOptions,
 } from "./moderationQueries";
 import { DiaryAccessRequestsPanel } from "./DiaryAccessRequestsPanel";
+import { PostAccessRequestsPanel } from "./PostAccessRequestsPanel";
 import { ModerationAttentionIndicator } from "@/components/ModerationAttentionIndicator";
 
 import { PAGE_KEY_LABELS, optionLabel } from "@/pages/site-config/constants";
 
 type ModerationRecord = CommentAdminRead | GuestbookAdminRead;
-type ModerationKind = "comments" | "guestbook" | "diary-access";
+type ModerationKind = "comments" | "guestbook" | "diary-access" | "post-access";
 type ModerationListParams = ListCommentsApiV1AdminModerationCommentsGetParams & ListGuestbookApiV1AdminModerationGuestbookGetParams;
 type ModerationAuthProvider = "email" | "google" | "github";
 
@@ -1554,16 +1555,26 @@ export default function ModerationPage() {
     "diary_private_enabled" in featureFlags
       ? Boolean((featureFlags as Record<string, unknown>).diary_private_enabled)
       : true;
+  const postAccessApprovalEnabled =
+    typeof featureFlags === "object" &&
+    featureFlags !== null &&
+    "post_access_approval_enabled" in featureFlags
+      ? Boolean((featureFlags as Record<string, unknown>).post_access_approval_enabled)
+      : true;
 
   useEffect(() => {
-    if (!diaryPrivateEnabled && activeTab === "diary-access") {
+    if (
+      (!diaryPrivateEnabled && activeTab === "diary-access") ||
+      (!postAccessApprovalEnabled && activeTab === "post-access")
+    ) {
       setActiveTab("comments");
     }
-  }, [activeTab, diaryPrivateEnabled]);
+  }, [activeTab, diaryPrivateEnabled, postAccessApprovalEnabled]);
 
   const normalizeTab = (value: string): ModerationKind => {
     if (value === "guestbook") return "guestbook";
     if (value === "diary-access" && diaryPrivateEnabled) return "diary-access";
+    if (value === "post-access" && postAccessApprovalEnabled) return "post-access";
     return "comments";
   };
 
@@ -1596,6 +1607,20 @@ export default function ModerationPage() {
             badge: (
               <ModerationAttentionIndicator
                 pending={moderationAttention?.diary_access.pending ?? 0}
+                unread={0}
+              />
+            ),
+          },
+        ]
+      : []),
+    ...(postAccessApprovalEnabled
+      ? [
+          {
+            value: "post-access",
+            label: t("moderation.postAccessRequests"),
+            badge: (
+              <ModerationAttentionIndicator
+                pending={moderationAttention?.post_access.pending ?? 0}
                 unread={0}
               />
             ),
@@ -1674,6 +1699,13 @@ export default function ModerationPage() {
         <TabsContent value="diary-access">
           <div className="pt-6">
             <DiaryAccessRequestsPanel />
+          </div>
+        </TabsContent>
+      ) : null}
+      {postAccessApprovalEnabled ? (
+        <TabsContent value="post-access">
+          <div className="pt-6">
+            <PostAccessRequestsPanel />
           </div>
         </TabsContent>
       ) : null}

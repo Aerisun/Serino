@@ -16,12 +16,19 @@ function postVisibilityBadge(row: ContentAdminRead) {
   const excludeFromRss = Boolean(
     (row as { exclude_from_rss?: unknown }).exclude_from_rss,
   );
-
-  return (
-    <StatusBadge
-      status={visibility === "public" && excludeFromRss ? "publicNoRss" : visibility}
-    />
+  const requiresApproval = Boolean(
+    (row as { requires_approval?: unknown }).requires_approval,
   );
+  const status =
+    visibility === "public" && requiresApproval
+      ? excludeFromRss
+        ? "approvalNoRss"
+        : "approval"
+      : visibility === "public" && excludeFromRss
+        ? "publicNoRss"
+        : visibility;
+
+  return <StatusBadge status={status} />;
 }
 
 function usePostListConfig(): ContentListConfig {

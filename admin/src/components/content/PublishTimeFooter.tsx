@@ -30,6 +30,14 @@ interface PublishTimeFooterProps {
     ariaLabel: string;
     helpDescription: ReactNode;
   };
+  /** 仅在公开文章且总开关开启时显示于 RSS 与时间自定义之间的审批开关 */
+  approvalRequirement?: {
+    checked: boolean;
+    onCheckedChange: (checked: boolean) => void;
+    label: string;
+    ariaLabel: string;
+    helpDescription: ReactNode;
+  };
   className?: string;
 }
 
@@ -97,6 +105,7 @@ export function PublishTimeFooter({
   isCustom = false,
   onCustomChange,
   rssExclusion,
+  approvalRequirement,
   className,
 }: PublishTimeFooterProps) {
   const [inputValue, setInputValue] = useState(isoToDatetimeLocal(value));
@@ -158,7 +167,7 @@ export function PublishTimeFooter({
 
   return (
     <div className={cn("space-y-2", className)}>
-      <div className="flex min-w-0 flex-wrap items-center gap-y-2">
+      <div className="flex min-w-0 flex-wrap items-center gap-x-8 gap-y-2">
         {rssExclusion ? (
           <div
             data-rss-exclusion-control
@@ -178,11 +187,30 @@ export function PublishTimeFooter({
           </div>
         ) : null}
 
+        {approvalRequirement ? (
+          <div
+            data-post-approval-control
+            className="order-1 flex shrink-0 items-center gap-2 max-md:order-2 max-md:basis-full"
+          >
+            <LabelWithHelp
+              label={approvalRequirement.label}
+              title={approvalRequirement.label}
+              description={approvalRequirement.helpDescription}
+              className="gap-1.5 whitespace-nowrap [&>label]:tracking-tight [&>label]:text-foreground/92"
+            />
+            <InlineToggle
+              checked={approvalRequirement.checked}
+              onCheckedChange={approvalRequirement.onCheckedChange}
+              ariaLabel={approvalRequirement.ariaLabel}
+            />
+          </div>
+        ) : null}
+
         {/* 标签和切换开关 */}
         <div
           className={cn(
             "order-2 flex shrink-0 items-center gap-3 max-md:order-1",
-            rssExclusion && "ml-12 max-md:ml-0",
+            (rssExclusion || approvalRequirement) && "ml-4 max-md:ml-0",
           )}
         >
           <LabelWithHelp

@@ -23,6 +23,8 @@ const statusVariantMap: Record<string, string> = {
   restoring: "warning",
   public: "success",
   publicNoRss: "success",
+  approval: "approval",
+  approvalNoRss: "approval",
   private: "info",
   unlisted: "outline",
 };

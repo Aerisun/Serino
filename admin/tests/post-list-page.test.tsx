@@ -24,6 +24,34 @@ const api = vi.hoisted(() => ({
           created_at: "2026-07-28T10:00:00+08:00",
           updated_at: "2026-07-28T10:00:00+08:00",
         },
+        {
+          id: "post-approval",
+          slug: "post-approval",
+          title: "需要审批的公开文章",
+          summary: "",
+          body: "文章正文",
+          tags: [],
+          visibility: "public",
+          exclude_from_rss: false,
+          requires_approval: true,
+          published_at: "2026-07-29T10:00:00+08:00",
+          created_at: "2026-07-29T10:00:00+08:00",
+          updated_at: "2026-07-29T10:00:00+08:00",
+        },
+        {
+          id: "post-approval-no-rss",
+          slug: "post-approval-no-rss",
+          title: "需要审批且不展示 RSS 的公开文章",
+          summary: "",
+          body: "文章正文",
+          tags: [],
+          visibility: "public",
+          exclude_from_rss: true,
+          requires_approval: true,
+          published_at: "2026-07-30T10:00:00+08:00",
+          created_at: "2026-07-30T10:00:00+08:00",
+          updated_at: "2026-07-30T10:00:00+08:00",
+        },
       ],
       total: 1,
       page_size: 20,
@@ -69,7 +97,7 @@ afterEach(() => {
 });
 
 describe("PostListPage", () => {
-  it("marks RSS-excluded public posts in both desktop table and mobile cards", () => {
+  it("shows approval states in the visibility column and keeps RSS state distinguishable", () => {
     renderPostListPage();
 
     expect(screen.getAllByText("公开 (不RSS)")).toHaveLength(2);
@@ -79,5 +107,12 @@ describe("PostListPage", () => {
     const desktopBadge = badges.find((badge) => badge.closest("td"));
     expect(desktopBadge).toBeDefined();
     expect(desktopBadge?.closest("td")?.className).toContain("text-center");
+    expect(screen.getAllByText("审批")).toHaveLength(2);
+    const approvalBadges = [
+      ...screen.getAllByText("审批"),
+      ...screen.getAllByText("审批 (不RSS)"),
+    ];
+    expect(approvalBadges).toHaveLength(4);
+    expect(approvalBadges.every((badge) => badge.className.includes("bg-violet-100"))).toBe(true);
   });
 });

@@ -528,6 +528,8 @@ export const zhTranslations: TranslationDict = {
   "moderation.commentFeedbackDisabled": "已关闭回复邮件提醒",
   "moderation.commentFeedbackSaved": "评论反馈设置已保存",
   "moderation.diaryAccessRequests": "日记查看申请",
+  "moderation.postAccessRequests": "文章查看申请",
+  "moderation.postAccessArticle": "文章",
   "moderation.diaryAccessRequestsDescription":
     "",
   "moderation.diaryAccessVisitor": "访客",
@@ -1094,6 +1096,8 @@ export const zhTranslations: TranslationDict = {
   "status.restoring": "恢复中",
   "status.public": "公开",
   "status.publicNoRss": "公开 (不RSS)",
+  "status.approval": "审批",
+  "status.approvalNoRss": "审批 (不RSS)",
   "status.private": "私密",
   "status.unlisted": "不列出",
 
@@ -1404,6 +1408,9 @@ export const zhTranslations: TranslationDict = {
   "siteConfig.featureTocDesc": "在文章详情页显示标题目录导航",
   "siteConfig.featureReadingProgress": "阅读进度条",
   "siteConfig.featureReadingProgressDesc": "在文章页面顶部显示阅读进度",
+  "siteConfig.featurePostAccessApproval": "允许文章配置查看审批",
+  "siteConfig.featurePostAccessApprovalDesc": "关闭后，所有公开文章详情都会恢复为无需申请的访问方式。",
+  "siteConfig.featurePostAccessApprovalHelp": "开启后，可为公开文章单独设置“查看需要审批”。",
   "siteConfig.featureDiaryPrivate": "日记内容不公开",
   "siteConfig.featureDiaryPrivateDesc":
     "开启后，普通访客只能看日记列表，查看详情需要登录并获得站长授权。",
