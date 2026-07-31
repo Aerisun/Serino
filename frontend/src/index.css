@@ -948,6 +948,43 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+
+  .aerisun-detail-scrollbar::-webkit-scrollbar {
+    width: 0.32rem;
+  }
+
+  .aerisun-detail-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+    margin-block: 0.75rem;
+  }
+
+  .aerisun-detail-scrollbar::-webkit-scrollbar-button {
+    display: none;
+  }
+
+  .aerisun-detail-scrollbar::-webkit-scrollbar-thumb {
+    border: 0.08rem solid transparent;
+    border-radius: 999px;
+    background: rgb(var(--shiro-border-strong-rgb) / 0.32);
+    background-clip: padding-box;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .aerisun-detail-scrollbar:hover::-webkit-scrollbar-thumb {
+      background-color: rgb(var(--shiro-border-strong-rgb) / 0.46);
+    }
+  }
+
+  @media (hover: none), (pointer: coarse) {
+    .aerisun-detail-scrollbar {
+      scrollbar-width: none;
+    }
+
+    .aerisun-detail-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
 }
 
 .content-detail-markdown.prose :where(strong, b) {

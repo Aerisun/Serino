@@ -146,7 +146,7 @@ export const communityInputClass =
   "shiro-focus-ring w-full rounded-2xl border border-[rgb(var(--shiro-border-rgb)/0.28)] bg-background/[0.82] px-4 py-3 text-sm text-foreground outline-none transition dark:border-[rgb(var(--shiro-border-rgb)/0.32)] dark:bg-card/[0.9]";
 
 export const communityTextareaClass =
-  "aerisun-community-textarea shiro-focus-ring min-h-[160px] w-full rounded-[1.4rem] border border-[rgb(var(--shiro-border-rgb)/0.28)] bg-background/[0.82] px-4 py-4 text-sm leading-7 text-foreground outline-none transition dark:border-[rgb(var(--shiro-border-rgb)/0.32)] dark:bg-card/[0.9]";
+  "aerisun-community-textarea aerisun-detail-scrollbar shiro-focus-ring min-h-[160px] w-full rounded-[1.4rem] border border-[rgb(var(--shiro-border-rgb)/0.28)] bg-background/[0.82] px-4 py-4 text-sm leading-7 text-foreground outline-none transition dark:border-[rgb(var(--shiro-border-rgb)/0.32)] dark:bg-card/[0.9]";
 
 export const communityChipClass =
   "inline-flex items-center gap-1.5 rounded-full border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.76] px-3 py-2 text-xs text-foreground/58 transition hover:border-[rgb(var(--shiro-accent-rgb)/0.22)] hover:text-[rgb(var(--shiro-accent-rgb)/0.82)] dark:bg-card/[0.8]";

@@ -160,6 +160,70 @@ html.dark .aerisun-waline-host .wl-reaction img {
   color: hsl(var(--foreground));
 }
 
+.aerisun-community-surface--modal {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  gap: 0;
+}
+
+.aerisun-community-surface--modal .aerisun-community-surface__list {
+  min-height: 0;
+  flex: 1 1 auto;
+  max-height: min(52vh, 28rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 1rem;
+  padding-right: 1.5rem;
+  padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+  scroll-padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+}
+
+.aerisun-community-surface--modal .aerisun-community-surface__composer {
+  flex: 0 0 auto;
+  margin: 1rem 1rem 0;
+}
+
+.aerisun-community-surface--modal .aerisun-community-surface__composer + .aerisun-community-surface__list {
+  padding-top: 2.25rem;
+}
+
+.aerisun-community-surface--modal .aerisun-comment-thread:last-child {
+  padding-bottom: 1.5rem;
+}
+
+@media (max-width: 639px) {
+  .aerisun-community-surface--modal .aerisun-community-surface__list {
+    padding-right: 1.25rem;
+  }
+
+  .aerisun-community-surface--modal .aerisun-community-surface__composer {
+    margin-top: 0.5rem;
+  }
+
+  .aerisun-community-surface--modal .aerisun-community-surface__composer--open {
+    max-height: min(58dvh, 26rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 1rem;
+  }
+
+  .aerisun-community-surface--modal .aerisun-community-surface__composer--open .aerisun-community-textarea {
+    min-height: 8.5rem;
+  }
+
+  .aerisun-community-surface--modal .aerisun-community-surface__list:has(.aerisun-waline-empty) {
+    max-height: none;
+    overflow-y: visible;
+    padding-bottom: 0.75rem;
+  }
+
+  .aerisun-community-surface--modal .aerisun-waline-empty {
+    min-height: 8rem;
+    padding: 1rem;
+  }
+}
+
 .aerisun-comment-list {
   position: relative;
 }
@@ -457,6 +521,10 @@ html.dark .aerisun-waline-host .wl-reaction img {
 
 .aerisun-community-textarea {
   resize: vertical;
+}
+
+.aerisun-comment-form-motion:focus-within {
+  overflow: visible !important;
 }
 
 .aerisun-comment-preview.prose {

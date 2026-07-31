@@ -15,7 +15,9 @@ import {
   X,
 } from "@/components/icons/AppIcon";
 import {
+  getListMyPostAccessApiV1SitePostAccessMeGetQueryKey,
   getReadMyDiaryAccessApiV1SiteDiaryAccessMeGetQueryKey,
+  listMyPostAccessApiV1SitePostAccessMeGet,
   readMyDiaryAccessApiV1SiteDiaryAccessMeGet,
 } from "@serino/api-client/site";
 import { transition } from "@/config";
@@ -57,7 +59,7 @@ const buildAdminConsoleEntryHref = () => {
   return target.toString();
 };
 
-const formatDiaryAccessRemaining = (
+const formatAccessRemaining = (
   seconds: number,
   t: (key: string, values?: Record<string, string | number>) => string,
 ) => {
@@ -74,6 +76,29 @@ const formatDiaryAccessRemaining = (
     return t("navbar.diaryAccessRemainingHours", { hours, minutes });
   }
   return t("navbar.diaryAccessRemainingMinutes", { minutes });
+};
+
+type PostAccessItem = {
+  slug: string;
+  title: string;
+  remainingSeconds: number;
+};
+
+const getPostAccessItems = (items: unknown): PostAccessItem[] => {
+  if (!Array.isArray(items)) {
+    return [];
+  }
+
+  return items.flatMap((item) => {
+    if (!item || typeof item !== "object") {
+      return [];
+    }
+    const { slug, title, remaining_seconds: remainingSeconds } = item as Record<string, unknown>;
+    if (typeof slug !== "string" || typeof title !== "string" || typeof remainingSeconds !== "number") {
+      return [];
+    }
+    return [{ slug, title, remainingSeconds }];
+  });
 };
 
 const NavDropdown = ({
@@ -310,6 +335,7 @@ const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileExpanded, setMobileExpanded] = useState<string | null>(null);
   const [authMenuOpen, setAuthMenuOpen] = useState(false);
+  const [postAccessDialogOpen, setPostAccessDialogOpen] = useState(false);
   const lastScrollY = useRef(0);
   const authMenuRef = useRef<HTMLDivElement | null>(null);
   const prefersReducedMotion = useReducedMotionPreference();
@@ -323,8 +349,15 @@ const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
   const diaryAccessState = diaryAccessResponse?.data;
   const diaryAccessRemaining =
     diaryAccessState?.has_access && typeof diaryAccessState.remaining_seconds === "number"
-      ? formatDiaryAccessRemaining(diaryAccessState.remaining_seconds, t)
+      ? formatAccessRemaining(diaryAccessState.remaining_seconds, t)
       : null;
+  const { data: postAccessResponse } = useQuery({
+    queryKey: getListMyPostAccessApiV1SitePostAccessMeGetQueryKey(),
+    queryFn: listMyPostAccessApiV1SitePostAccessMeGet,
+    enabled: Boolean(user && authMenuOpen),
+    staleTime: 30_000,
+  });
+  const postAccessItems = getPostAccessItems(postAccessResponse?.data?.items);
   const adminConsoleEntryHref =
     typeof window !== "undefined"
       ? buildAdminConsoleEntryHref()
@@ -423,6 +456,12 @@ const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [authMenuOpen]);
+
+  useEffect(() => {
+    if (!user) {
+      setPostAccessDialogOpen(false);
+    }
+  }, [user]);
 
   const goTo = (path: string) => {
     setMobileOpen(false);
@@ -563,6 +602,77 @@ const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
         )
       : null;
 
+  const postAccessDialog =
+    typeof document !== "undefined"
+      ? createPortal(
+          <AnimatePresence>
+            {postAccessDialogOpen ? (
+              <motion.div
+                className="fixed inset-0 z-[1250] flex items-start justify-center overflow-y-auto px-4 pb-10 pt-[calc(env(safe-area-inset-top)+5rem)] sm:pt-[12vh]"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={transition({ duration: 0.18, reducedMotion: prefersReducedMotion })}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="post-access-dialog-title"
+              >
+                <button
+                  type="button"
+                  className="fixed inset-0 bg-background/70 backdrop-blur-sm"
+                  onClick={() => setPostAccessDialogOpen(false)}
+                  aria-label={t("common.close")}
+                />
+                <motion.div
+                  initial={{ opacity: 0, y: -18, scale: 0.97 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -18, scale: 0.97 }}
+                  transition={transition({ duration: 0.22, reducedMotion: prefersReducedMotion })}
+                  className="relative z-10 w-full max-w-lg overflow-hidden rounded-[26px] border border-[rgb(var(--shiro-border-rgb)/0.24)] liquid-glass shadow-[0_24px_70px_rgba(15,23,42,0.18)]"
+                >
+                  <div className="flex items-center justify-between border-b border-[rgb(var(--shiro-divider-rgb)/0.22)] px-5 py-4">
+                    <h2 id="post-access-dialog-title" className="text-base font-heading leading-6 text-foreground/86">
+                      {t("navbar.postAccessDialogTitle")}
+                    </h2>
+                    <button
+                      type="button"
+                      onClick={() => setPostAccessDialogOpen(false)}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-full text-foreground/35 transition hover:bg-foreground/[0.06] hover:text-foreground/70"
+                      aria-label={t("common.close")}
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <div className="max-h-[60vh] overflow-y-auto overscroll-contain px-5 py-4">
+                    <div className="grid gap-2">
+                      {postAccessItems.map((item) => (
+                        <a
+                          key={item.slug}
+                          href={`/posts/${encodeURIComponent(item.slug)}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="group flex min-w-0 items-start gap-4 rounded-2xl border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-[rgb(var(--shiro-panel-rgb)/0.24)] px-4 py-3 transition hover:border-[rgb(var(--shiro-accent-rgb)/0.32)] hover:bg-[rgb(var(--shiro-panel-rgb)/0.4)]"
+                        >
+                          <span className="min-w-0 flex-1 text-sm font-medium text-foreground/84 transition [overflow-wrap:anywhere] group-hover:text-[rgb(var(--shiro-accent-rgb)/0.9)]">
+                            {item.title}
+                          </span>
+                          <span className="shrink-0 text-xs text-foreground/48">
+                            {t("navbar.diaryAccessRemaining", {
+                              time: formatAccessRemaining(item.remainingSeconds, t),
+                            })}
+                          </span>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                </motion.div>
+              </motion.div>
+            ) : null}
+          </AnimatePresence>,
+          document.body,
+        )
+      : null;
+
   return (
     <motion.nav
       className="fixed top-4 left-0 right-0 z-[999] px-4 sm:px-6 lg:px-16"
@@ -621,6 +731,19 @@ const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
                             <div className="font-semibold text-foreground/90">{t("navbar.diaryAccessPermission")}</div>
                             <div className="truncate">{t("navbar.diaryAccessRemaining", { time: diaryAccessRemaining })}</div>
                           </div>
+                        ) : null}
+                        {postAccessItems.length > 0 ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPostAccessDialogOpen(true);
+                              setAuthMenuOpen(false);
+                            }}
+                            className="mx-1 mb-1 w-[calc(100%-0.5rem)] rounded-[1rem] border border-[rgb(var(--shiro-accent-rgb)/0.32)] bg-[linear-gradient(135deg,rgb(var(--shiro-accent-rgb)/0.18),rgb(255_255_255/0.08))] px-3 py-2 text-left text-[0.72rem] leading-5 text-foreground/78 shadow-[inset_0_1px_0_rgb(255_255_255/0.18),0_12px_30px_rgb(var(--shiro-accent-rgb)/0.12)] transition hover:border-[rgb(var(--shiro-accent-rgb)/0.48)] hover:bg-[linear-gradient(135deg,rgb(var(--shiro-accent-rgb)/0.24),rgb(255_255_255/0.12))]"
+                          >
+                            <div className="font-semibold text-foreground/90">{t("navbar.postAccessPermission")}</div>
+                            <div className="truncate">{t("navbar.postAccessSummary", { count: postAccessItems.length })}</div>
+                          </button>
                         ) : null}
                         <button
                           type="button"
@@ -775,6 +898,7 @@ const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
         </div>
       </div>
       {mobileMenu}
+      {postAccessDialog}
     </motion.nav>
   );
 };

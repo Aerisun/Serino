@@ -1,6 +1,9 @@
 import { useState, type ComponentPropsWithoutRef, type CSSProperties } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
+import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import "katex/dist/katex.min.css";
 import ImageLightbox from "@/components/ImageLightbox";
 import { extractMarkdownImageAttachments } from "@/lib/markdown-images";
 import "./CommentMarkdownRenderer.css";
@@ -97,7 +100,7 @@ export default function CommentMarkdownRenderer({
   return (
     <>
       <div
-        className={`prose prose-sm dark:prose-invert max-w-none font-body ${className}`}
+        className={`aerisun-comment-markdown prose prose-sm dark:prose-invert max-w-none font-body ${className}`}
         style={style}
       >
         {images.length > 0 ? (
@@ -122,7 +125,8 @@ export default function CommentMarkdownRenderer({
         ) : null}
         {text ? (
           <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
+            remarkPlugins={[remarkGfm, remarkMath]}
+            rehypePlugins={[rehypeKatex]}
             components={buildComponents(imageSourceMap, openImage)}
           >
             {text}

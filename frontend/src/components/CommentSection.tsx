@@ -17,6 +17,7 @@ interface CommentSectionProps {
   contentType?: CommentSurface;
   contentSlug?: string;
   expandable?: boolean;
+  layout?: "default" | "modal";
 }
 
 interface CommentContext {
@@ -68,6 +69,7 @@ const CommentSection = ({
   contentType,
   contentSlug,
   expandable,
+  layout = "default",
 }: CommentSectionProps) => {
   const { t } = useFrontendI18n();
   const prefersReducedMotion = useReducedMotionPreference();
@@ -138,6 +140,8 @@ const CommentSection = ({
         <WalineSurface
           surface={contentContext.contentType}
           slug={contentContext.contentType === "guestbook" ? undefined : contentContext.slug}
+          layout={layout}
+          className={layout === "modal" ? "min-h-0 flex-1" : undefined}
           onVisibleCountChange={setCommentCount}
         />
       </Suspense>
@@ -152,7 +156,7 @@ const CommentSection = ({
   if (!isCollapsible) {
     return (
       <motion.div
-        className="mt-12"
+        className={layout === "modal" ? "flex min-h-0 flex-1 flex-col" : "mt-12"}
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={transition({ duration: 0.5, delay: 0.2, reducedMotion: prefersReducedMotion })}

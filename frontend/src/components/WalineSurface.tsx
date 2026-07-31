@@ -1,5 +1,6 @@
 import { startTransition, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { PencilLine, Sparkles } from "lucide-react";
+import { motion } from "motion/react";
 import {
   createCommentApiV1SiteInteractionsCommentsContentTypeSlugPost,
   createGuestbookApiV1SiteInteractionsGuestbookPost,
@@ -25,6 +26,7 @@ import {
   readCachedGuestbookPage,
 } from "@/lib/community-cache";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
+import { transition } from "@/config";
 import { prepareImageUploadFile } from "@serino/utils/image-upload";
 import WalineCommentForm from "./WalineCommentForm";
 import WalineCommentList from "./WalineCommentList";
@@ -121,6 +123,7 @@ export interface WalineSurfaceProps {
   surface: CommunitySurface;
   slug?: string;
   className?: string;
+  layout?: "default" | "modal";
   communityConfig?: CommunityConfig | null;
   onVisibleCountChange?: (count: number) => void;
 }
@@ -129,6 +132,7 @@ const WalineSurface = ({
   surface,
   slug,
   className,
+  layout = "default",
   communityConfig,
   onVisibleCountChange,
 }: WalineSurfaceProps) => {
@@ -893,17 +897,26 @@ const WalineSurface = ({
     });
   }, []);
 
-  return (
-    <section className={`aerisun-community-surface space-y-5 ${className ?? ""}`.trim()}>
-      <div className={`${communityPanelClass} ${composerOpen ? "" : "py-4"}`.trim()}>
+  const handleReply = useCallback((target: ReplyTarget) => {
+    setReplyTarget(target);
+    setComposerOpen(true);
+  }, []);
+
+  const isModalLayout = layout === "modal";
+  const isComposerPinned = composerOpen;
+  const shouldShowCommentList = !isModalLayout || !composerOpen;
+  const composer = (
+    <div className={`${communityPanelClass} aerisun-community-surface__composer scrollbar-hide ${isComposerPinned ? "aerisun-community-surface__composer--open" : "aerisun-community-surface__composer--collapsed py-4"}`.trim()}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="inline-flex items-center gap-2 text-[0.72rem] font-medium uppercase tracking-[0.22em] text-foreground/42">
             <Sparkles className="h-3.5 w-3.5" />
             {isGuestbook ? t("waline.surface.sectionGuestbook") : t("waline.surface.sectionComments")}
           </div>
-          <button
+          <motion.button
             type="button"
             onClick={() => setComposerOpen((current) => !current)}
+            whileTap={prefersReducedMotion ? undefined : { scale: 0.98 }}
+            transition={transition({ duration: 0.16, reducedMotion: prefersReducedMotion })}
             className="inline-flex items-center gap-2 rounded-full border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.76] px-4 py-1.5 text-sm font-medium text-foreground/60 transition hover:border-[rgb(var(--shiro-accent-rgb)/0.22)] hover:text-[rgb(var(--shiro-accent-rgb)/0.82)] dark:bg-card/[0.82]"
           >
             <PencilLine className="h-4 w-4" />
@@ -914,10 +927,10 @@ const WalineSurface = ({
                 : isGuestbook
                   ? t("waline.surface.writeGuestbook")
                   : t("waline.surface.writeComment")}
-          </button>
+          </motion.button>
         </div>
 
-        <div className={composerOpen ? "mt-4 space-y-3" : "mt-0"}>
+        <div className={isComposerPinned ? "mt-4 space-y-3" : "mt-0"}>
           <WalineCommentForm
             authLoading={authLoading}
             authSession={authSession}
@@ -933,7 +946,7 @@ const WalineSurface = ({
             feedbackEnabled={feedbackEnabled}
             commentFeedbackAvailable={commentFeedbackAvailable}
             onFeedbackEnabledChange={setFeedbackEnabled}
-            composerOpen={composerOpen}
+            composerOpen={isComposerPinned}
             isGuestbook={isGuestbook}
             replyTarget={replyTarget}
             onClearReply={() => setReplyTarget(null)}
@@ -969,8 +982,10 @@ const WalineSurface = ({
             guestbookSubmittingLabel={guestbookSubmittingLabel}
           />
         </div>
-      </div>
-
+    </div>
+  );
+  const commentList = (
+    <div className="aerisun-community-surface__list scrollbar-hide">
       <WalineCommentList
         isGuestbook={isGuestbook}
         loadingConfig={loadingConfig}
@@ -984,7 +999,7 @@ const WalineSurface = ({
         hasMoreEntries={hasMoreEntries}
         busyItemIds={busyItemIds}
         commentFeedbackAvailable={commentFeedbackAvailable}
-        onReply={setReplyTarget}
+        onReply={handleReply}
         onDeleteComment={(commentId) => void handleDeleteComment(commentId)}
         onDeleteGuestbookEntry={(entryId) => void handleDeleteGuestbookEntry(entryId)}
         onFeedbackChange={(commentId, enabled) => void handleFeedbackChange(commentId, enabled)}
@@ -994,6 +1009,13 @@ const WalineSurface = ({
         guestbookRetryLabel={guestbookRetryLabel}
         guestbookEmptyMessage={guestbookEmptyMessage}
       />
+    </div>
+  );
+
+  return (
+    <section className={`aerisun-community-surface ${isModalLayout ? "aerisun-community-surface--modal" : "space-y-5"} ${className ?? ""}`.trim()}>
+      {composer}
+      {shouldShowCommentList ? commentList : null}
     </section>
   );
 };

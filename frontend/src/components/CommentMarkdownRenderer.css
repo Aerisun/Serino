@@ -31,3 +31,19 @@
 .aerisun-comment-image-button:hover img {
   transform: scale(1.035);
 }
+
+.aerisun-comment-markdown pre:has(> code.math-display) {
+  margin: 1rem 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.aerisun-comment-markdown .katex-display {
+  margin: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.75rem 0.25rem;
+  text-align: center;
+}

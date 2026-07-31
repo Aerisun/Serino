@@ -3,8 +3,11 @@ import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { Lock, Send, X } from "lucide-react";
 import {
+  createPostAccessRequestApiV1SitePostAccessSlugRequestsPost,
   createDiaryAccessRequestApiV1SiteDiaryAccessRequestsPost,
+  getReadMyPostAccessApiV1SitePostAccessSlugMeGetQueryKey,
   getReadMyDiaryAccessApiV1SiteDiaryAccessMeGetQueryKey,
+  readMyPostAccessApiV1SitePostAccessSlugMeGet,
   readMyDiaryAccessApiV1SiteDiaryAccessMeGet,
 } from "@serino/api-client/site";
 import { normalizeErrorMessage } from "@serino/api-client";
@@ -24,6 +27,17 @@ interface ToastState {
 
 interface UseDiaryAccessPromptOptions {
   diaryPrivateEnabled?: boolean;
+  postApprovalEnabled?: boolean;
+  postSlug?: string;
+}
+
+interface AccessState {
+  authenticated: boolean;
+  has_access: boolean;
+  owner_name?: string;
+  mail_feedback_available?: boolean;
+  diary_private_enabled?: boolean;
+  requires_approval?: boolean;
 }
 
 const ACTION_TOAST_DURATION_MS = 2000;
@@ -77,6 +91,14 @@ export function useDiaryAccessPrompt(options: UseDiaryAccessPromptOptions = {}) 
   const [mailFeedbackAvailable, setMailFeedbackAvailable] = useState(false);
   const toastTimerRef = useRef<number | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const isPostAccess = Boolean(options.postSlug);
+  const featureEnabled = isPostAccess
+    ? options.postApprovalEnabled !== false
+    : options.diaryPrivateEnabled !== false;
+  const accessKey = useCallback(
+    (key: string) => `${isPostAccess ? "postAccess" : "diaryAccess"}.${key}`,
+    [isPostAccess],
+  );
 
   useEffect(() => {
     return () => {
@@ -105,46 +127,60 @@ export function useDiaryAccessPrompt(options: UseDiaryAccessPromptOptions = {}) 
     }, actionLabel ? ACTION_TOAST_DURATION_MS : PASSIVE_TOAST_DURATION_MS);
   }, []);
 
-  const refreshDiaryAccessState = useCallback(async () => {
+  const refreshDiaryAccessState = useCallback(async (): Promise<{ data: AccessState }> => {
+    if (isPostAccess && options.postSlug) {
+      const response = await readMyPostAccessApiV1SitePostAccessSlugMeGet(options.postSlug);
+      queryClient.setQueryData(
+        getReadMyPostAccessApiV1SitePostAccessSlugMeGetQueryKey(options.postSlug),
+        response,
+      );
+      const data = response.data as unknown as AccessState;
+      setMailFeedbackAvailable(Boolean(data.mail_feedback_available));
+      return { data };
+    }
     const response = await readMyDiaryAccessApiV1SiteDiaryAccessMeGet();
     queryClient.setQueryData(getReadMyDiaryAccessApiV1SiteDiaryAccessMeGetQueryKey(), response);
-    setMailFeedbackAvailable(Boolean(response.data.mail_feedback_available));
-    return response;
-  }, [queryClient]);
+    const data = response.data as unknown as AccessState;
+    setMailFeedbackAvailable(Boolean(data.mail_feedback_available));
+    return { data };
+  }, [isPostAccess, options.postSlug, queryClient]);
 
   useEffect(() => {
-    if (!requestOpen || options.diaryPrivateEnabled === false) {
+    if (!requestOpen || !featureEnabled) {
       return;
     }
     void refreshDiaryAccessState().catch(() => {
       setMailFeedbackAvailable(false);
     });
-  }, [options.diaryPrivateEnabled, refreshDiaryAccessState, requestOpen]);
+  }, [featureEnabled, refreshDiaryAccessState, requestOpen]);
 
   const showLoginRequired = useCallback(() => {
-    pushToast("error", t("diaryAccess.loginRequired"), t("navbar.login"), "login");
-  }, [pushToast, t]);
+    pushToast("error", t(accessKey("loginRequired")), t("navbar.login"), "login");
+  }, [accessKey, pushToast, t]);
 
   const showNoAccess = useCallback(
     (ownerName?: string) => {
       pushToast(
         "error",
-        t("diaryAccess.noPermission", { username: ownerName || t("diaryAccess.defaultOwner") }),
-        t("diaryAccess.apply"),
+        t(accessKey("noPermission"), { username: ownerName || t(accessKey("defaultOwner")) }),
+        t(accessKey("apply")),
         "request",
       );
     },
-    [pushToast, t],
+    [accessKey, pushToast, t],
   );
 
   const ensureDiaryAccess = useCallback(async () => {
-    if (options.diaryPrivateEnabled === false) {
+    if (!featureEnabled) {
       return true;
     }
     try {
       const response = await refreshDiaryAccessState();
       const state = response.data;
-      if (!state.diary_private_enabled || state.has_access) {
+      const requiresApproval = isPostAccess
+        ? Boolean(state.requires_approval)
+        : Boolean(state.diary_private_enabled);
+      if (!requiresApproval || state.has_access) {
         return true;
       }
       if (!state.authenticated) {
@@ -154,10 +190,10 @@ export function useDiaryAccessPrompt(options: UseDiaryAccessPromptOptions = {}) 
       showNoAccess(state.owner_name);
       return false;
     } catch {
-      pushToast("error", t("diaryAccess.checkFailed"));
+      pushToast("error", t(accessKey("checkFailed")));
       return false;
     }
-  }, [options.diaryPrivateEnabled, pushToast, refreshDiaryAccessState, showLoginRequired, showNoAccess, t]);
+  }, [accessKey, featureEnabled, isPostAccess, pushToast, refreshDiaryAccessState, showLoginRequired, showNoAccess, t]);
 
   const showBlockedFromError = useCallback(
     (status: number | undefined, detail?: string) => {
@@ -166,10 +202,10 @@ export function useDiaryAccessPrompt(options: UseDiaryAccessPromptOptions = {}) 
         return;
       }
       if (status === 403) {
-        pushToast("error", detail || t("diaryAccess.noPermission", { username: t("diaryAccess.defaultOwner") }), t("diaryAccess.apply"), "request");
+        pushToast("error", detail || t(accessKey("noPermission"), { username: t(accessKey("defaultOwner")) }), t(accessKey("apply")), "request");
       }
     },
-    [pushToast, showLoginRequired, t],
+    [accessKey, pushToast, showLoginRequired, t],
   );
 
   const closeRequest = useCallback(() => {
@@ -185,27 +221,35 @@ export function useDiaryAccessPrompt(options: UseDiaryAccessPromptOptions = {}) 
   const submitRequest = useCallback(async () => {
     const normalizedReason = reason.trim();
     if (!normalizedReason) {
-      setFeedback({ kind: "error", message: t("diaryAccess.reasonRequired") });
+      setFeedback({ kind: "error", message: t(accessKey("reasonRequired")) });
       return;
     }
     setSubmitting(true);
     setFeedback(null);
     try {
-      await createDiaryAccessRequestApiV1SiteDiaryAccessRequestsPost({ reason: normalizedReason });
+      if (isPostAccess && options.postSlug) {
+        await createPostAccessRequestApiV1SitePostAccessSlugRequestsPost(options.postSlug, {
+          reason: normalizedReason,
+        });
+      } else {
+        await createDiaryAccessRequestApiV1SiteDiaryAccessRequestsPost({ reason: normalizedReason });
+      }
       await queryClient.invalidateQueries({
-        queryKey: getReadMyDiaryAccessApiV1SiteDiaryAccessMeGetQueryKey(),
+        queryKey: isPostAccess && options.postSlug
+          ? getReadMyPostAccessApiV1SitePostAccessSlugMeGetQueryKey(options.postSlug)
+          : getReadMyDiaryAccessApiV1SiteDiaryAccessMeGetQueryKey(),
       });
       setReason("");
       setRequestOpen(false);
-      pushToast("success", t("diaryAccess.requestSubmitted"));
+      pushToast("success", t(accessKey("requestSubmitted")));
     } catch (error) {
-      const message = getDiaryAccessErrorMessage(error) || t("diaryAccess.requestFailed");
+      const message = getDiaryAccessErrorMessage(error) || t(accessKey("requestFailed"));
       setFeedback({ kind: "error", message });
       pushToast("error", message);
     } finally {
       setSubmitting(false);
     }
-  }, [pushToast, queryClient, reason, t]);
+  }, [accessKey, isPostAccess, options.postSlug, pushToast, queryClient, reason, t]);
 
   const promptNode: ReactNode =
     typeof document !== "undefined"
@@ -270,14 +314,14 @@ export function useDiaryAccessPrompt(options: UseDiaryAccessPromptOptions = {}) 
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -18, scale: 0.97 }}
                     transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-                    className="relative z-10 w-full max-w-lg overflow-hidden rounded-[26px] border border-[rgb(var(--shiro-border-rgb)/0.24)] liquid-glass shadow-[0_24px_70px_rgba(15,23,42,0.18)]"
+                    className={`relative z-10 w-full max-w-lg overflow-hidden rounded-[26px] border liquid-glass shadow-[0_24px_70px_rgba(15,23,42,0.18)] ${isPostAccess ? "border-sky-400/42 shadow-[0_24px_70px_rgba(14,165,233,0.2)]" : "border-[rgb(var(--shiro-border-rgb)/0.24)]"}`}
                   >
                     <div className="flex items-center justify-between border-b border-[rgb(var(--shiro-divider-rgb)/0.22)] px-5 py-4">
                       <div>
                         <h2 className="text-base font-heading leading-6 text-foreground/86">
                           {mailFeedbackAvailable
-                            ? t("diaryAccess.requestTitleWithMailFeedback")
-                            : t("diaryAccess.requestTitle")}
+                            ? t(accessKey("requestTitleWithMailFeedback"))
+                            : t(accessKey("requestTitle"))}
                         </h2>
                       </div>
                       <button
@@ -290,17 +334,17 @@ export function useDiaryAccessPrompt(options: UseDiaryAccessPromptOptions = {}) 
                       </button>
                     </div>
                     <div className="px-5 py-5">
-                      <label className="text-xs font-body text-foreground/48" htmlFor="diary-access-reason">
-                        {t("diaryAccess.reasonLabel")}
+                      <label className="text-xs font-body text-foreground/48" htmlFor={isPostAccess ? "post-access-reason" : "diary-access-reason"}>
+                        {t(accessKey("reasonLabel"))}
                       </label>
                       <textarea
-                        id="diary-access-reason"
+                        id={isPostAccess ? "post-access-reason" : "diary-access-reason"}
                         ref={textareaRef}
                         value={reason}
                         maxLength={1000}
                         onChange={(event) => setReason(event.target.value)}
-                        placeholder={t("diaryAccess.reasonPlaceholder")}
-                        className="mt-2 min-h-36 w-full resize-none rounded-2xl border border-[rgb(var(--shiro-border-rgb)/0.18)] bg-foreground/[0.03] px-4 py-3 text-sm leading-6 text-foreground outline-none transition placeholder:text-foreground/25 focus:border-[rgb(var(--shiro-border-rgb)/0.34)] focus:bg-[rgb(var(--shiro-panel-rgb)/0.34)]"
+                        placeholder={t(accessKey("reasonPlaceholder"))}
+                        className={`mt-2 min-h-36 w-full resize-none rounded-2xl border bg-foreground/[0.03] px-4 py-3 text-sm leading-6 text-foreground outline-none transition placeholder:text-foreground/25 focus:bg-[rgb(var(--shiro-panel-rgb)/0.34)] ${isPostAccess ? "border-sky-400/24 focus:border-sky-400/60" : "border-[rgb(var(--shiro-border-rgb)/0.18)] focus:border-[rgb(var(--shiro-border-rgb)/0.34)]"}`}
                       />
                       <div className="mt-2 flex items-center justify-between gap-3">
                         <p className={`text-xs ${feedback?.kind === "error" ? "text-rose-500/82" : "text-emerald-500/82"}`}>
@@ -314,16 +358,16 @@ export function useDiaryAccessPrompt(options: UseDiaryAccessPromptOptions = {}) 
                           onClick={closeRequest}
                           className="rounded-full px-4 py-2 text-sm text-foreground/45 transition hover:bg-foreground/[0.05] hover:text-foreground/72"
                         >
-                          {t("diaryAccess.cancel")}
+                          {t(accessKey("cancel"))}
                         </button>
                         <button
                           type="button"
                           disabled={submitting}
                           onClick={submitRequest}
-                          className="inline-flex items-center gap-2 rounded-full border border-[rgb(var(--shiro-border-rgb)/0.22)] bg-[rgb(var(--shiro-accent-rgb)/0.12)] px-4 py-2 text-sm text-[rgb(var(--shiro-accent-rgb)/0.9)] transition hover:border-[rgb(var(--shiro-border-rgb)/0.36)] hover:bg-[rgb(var(--shiro-accent-rgb)/0.18)] disabled:cursor-not-allowed disabled:opacity-55"
+                          className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm transition disabled:cursor-not-allowed disabled:opacity-55 ${isPostAccess ? "border-sky-400/36 bg-sky-500/14 text-sky-700 hover:border-sky-400/58 hover:bg-sky-500/22 dark:text-sky-100" : "border-[rgb(var(--shiro-border-rgb)/0.22)] bg-[rgb(var(--shiro-accent-rgb)/0.12)] text-[rgb(var(--shiro-accent-rgb)/0.9)] hover:border-[rgb(var(--shiro-border-rgb)/0.36)] hover:bg-[rgb(var(--shiro-accent-rgb)/0.18)]"}`}
                         >
                           <Send className="h-4 w-4" />
-                          {submitting ? t("diaryAccess.submitting") : t("diaryAccess.submit")}
+                          {submitting ? t(accessKey("submitting")) : t(accessKey("submit"))}
                         </button>
                       </div>
                     </div>

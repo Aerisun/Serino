@@ -16,7 +16,8 @@ test("diary login-required prompt is a red warning with a centered login action"
   assert.match(translations, /"diaryAccess\.loginRequired":\s*"请先登录，检查权限以查看日记"/);
   assert.match(prompt, /ACTION_TOAST_DURATION_MS = 2000/);
   assert.match(prompt, /actionLabel \? ACTION_TOAST_DURATION_MS : PASSIVE_TOAST_DURATION_MS/);
-  assert.match(prompt, /pushToast\(\s*"error",\s*t\("diaryAccess\.loginRequired"\),\s*t\("navbar\.login"\),\s*"login"\s*\)/);
+  assert.match(prompt, /isPostAccess \? "postAccess" : "diaryAccess"/);
+  assert.match(prompt, /pushToast\(\s*"error",\s*t\(accessKey\("loginRequired"\)\),\s*t\("navbar\.login"\),\s*"login"\s*\)/);
   assert.match(prompt, /toast\.actionType === "login"/);
   assert.match(prompt, /className=\{`mx-auto mt-2 flex items-center/);
 });

@@ -1,4 +1,4 @@
-import { Suspense, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useDeferredValue, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { BookOpen, MessageCircle, Search, X } from "lucide-react";
 import { useLocation } from "react-router-dom";
@@ -6,9 +6,10 @@ import ArchiveBadge from "@/components/ArchiveBadge";
 import CommentMarkdownRenderer from "@/components/CommentMarkdownRenderer";
 import PageShell from "@/components/PageShell";
 import PreviewModeBadge from "@/components/PreviewModeBadge";
-import { staggerItem } from "@/config";
+import { staggerItem, transition } from "@/config";
 import { usePageConfig } from "@/contexts/runtime-config";
 import { useFrontendI18n } from "@/i18n";
+import { useReducedMotionPreference } from "@/lib/useReducedMotion";
 import { formatPublishedDate } from "@/lib/api/utils";
 import { stripMarkdownImages } from "@/lib/markdown-images";
 import { clampPageSize } from "@/lib/page-size";
@@ -100,6 +101,7 @@ const Excerpts = () => {
     new URLSearchParams(location.search).get("previewStorageKey") || "";
   const pages = usePageConfig();
   const config = pages.excerpts as unknown as ExcerptsPageConfig;
+  const prefersReducedMotion = useReducedMotionPreference();
   const errorTitle = config.errorTitle ?? t("excerpts.errorTitle");
   const retryLabel = config.retryLabel ?? t("common.retry");
   const loadMoreLabel = config.loadMoreLabel ?? t("excerpts.loadingMore");
@@ -192,6 +194,7 @@ const Excerpts = () => {
     () => displayItems.find((excerpt) => excerpt.id === selectedId) ?? null,
     [displayItems, selectedId],
   );
+  const excerptDialogHeightClass = "max-h-full sm:max-h-[min(88vh,calc(100dvh-6.5rem),54rem)]";
   const formatSourceLine = (excerpt: Excerpt) =>
     [excerpt.source, excerpt.author].filter(Boolean).join(" · ");
   const excerptCjkFontFamily =
@@ -394,7 +397,8 @@ const Excerpts = () => {
       <AnimatePresence>
         {selected && (
           <motion.div
-            className="fixed inset-0 z-[90] flex items-center justify-center px-6"
+            layoutRoot
+            className="fixed inset-0 z-[90] flex items-start justify-center px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-[max(5rem,calc(env(safe-area-inset-top)+4rem))] sm:px-6 sm:pb-6 sm:pt-20"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -406,7 +410,8 @@ const Excerpts = () => {
             />
 
             <motion.div
-              className="relative flex max-h-[min(88vh,46rem)] w-full max-w-lg flex-col overflow-hidden rounded-3xl p-6 liquid-glass transition-[background-color,border-color,box-shadow] sm:p-8"
+              layoutScroll
+              className={`aerisun-excerpt-dialog scrollbar-hide relative flex min-h-0 w-full max-w-[52rem] flex-col overflow-x-hidden overflow-y-auto overscroll-y-contain rounded-[1.65rem] p-5 liquid-glass transition-[background-color,border-color,box-shadow] sm:rounded-3xl sm:p-8 ${excerptDialogHeightClass}`}
               initial={{ scale: 0.95, opacity: 0, y: 16 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 16 }}
@@ -421,7 +426,7 @@ const Excerpts = () => {
                 <X className="h-4 w-4" />
               </button>
 
-              <div className="shrink-0">
+              <div className="shrink-0 pr-10">
                 <div className="mb-4 flex flex-wrap items-center gap-2">
                   {selected.isArchived ? <ArchiveBadge /> : null}
                   <BookOpen className="h-4 w-4 text-foreground/25 transition-colors" />
@@ -448,60 +453,84 @@ const Excerpts = () => {
                 <div className="my-5 border-t border-foreground/[0.06] transition-colors" />
               </div>
 
-              <div className="min-h-0 overflow-y-auto pr-1 scrollbar-hide overscroll-y-contain touch-pan-y [-webkit-overflow-scrolling:touch]">
-                <CommentMarkdownRenderer
-                  content={selected.content}
-                  className="content-detail-markdown aerisun-excerpt-markdown indent-[2em] text-[0.935rem] leading-8 text-foreground/90 transition-colors [overflow-wrap:anywhere] [word-break:break-word] whitespace-pre-wrap [&>p:first-child]:mt-0 [&>p:last-child]:mb-0"
-                  style={{ fontFamily: getExcerptFontFamily(stripMarkdownImages(selected.content)) }}
-                />
-                {selected.category ? (
-                  <div className="mt-6 text-[11px] font-body text-foreground/25 transition-colors">
-                    {selected.category}
-                  </div>
-                ) : null}
-
-                <div className="mt-6 border-t border-foreground/[0.06] pt-4">
-                  <button
-                    type="button"
-                    onMouseEnter={() => void CommentSection.preload()}
-                    onFocus={() => void CommentSection.preload()}
-                    onTouchStart={() => void CommentSection.preload()}
-                    onClick={() => setShowModalComments((v) => !v)}
-                    className={`flex items-center gap-2 text-xs font-body transition-colors ${
-                      showModalComments
-                        ? "text-[rgb(var(--shiro-accent-rgb)/0.78)]"
-                        : "text-foreground/30 hover:text-[rgb(var(--shiro-accent-rgb)/0.62)]"
-                    }`}
-                  >
-                    <MessageCircle
-                      className={`h-3.5 w-3.5 ${showModalComments ? "fill-[rgb(var(--shiro-panel-rgb)/0.34)]" : ""}`}
-                    />
-                    {showModalComments
-                      ? commentsCloseLabel
-                      : `${commentsOpenLabel} · ${selected.comments}`}
-                  </button>
-
-                  <AnimatePresence>
-                    {showModalComments && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-                        className="mt-3 overflow-hidden"
-                      >
-                        <Suspense fallback={null}>
-                          <CommentSection
-                            contentType="excerpts"
-                            contentSlug={selected.id}
-                            expandable={false}
-                          />
-                        </Suspense>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+              <div className="relative flex min-h-0 flex-1 flex-col">
+                <div className={`aerisun-excerpt-reader aerisun-detail-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-y-contain pr-2 touch-pan-y [-webkit-overflow-scrolling:touch] ${showModalComments ? "max-h-[min(8vh,5.5rem)] sm:max-h-[min(18vh,10.5rem)]" : ""}`}>
+                  <CommentMarkdownRenderer
+                    content={selected.content}
+                            className="content-detail-markdown aerisun-excerpt-markdown indent-[2em] text-[1.04rem] leading-8 text-foreground/90 transition-colors [overflow-wrap:anywhere] [word-break:break-word] [&>p:first-child]:mt-0 [&>p:last-child]:mb-0"
+                        style={{
+                          fontFamily: getExcerptFontFamily(stripMarkdownImages(selected.content)),
+                          "--detail-reading-font": getExcerptFontFamily(stripMarkdownImages(selected.content)),
+                        } as CSSProperties}
+                  />
+                  {selected.category ? (
+                    <div className="mt-6 text-[11px] font-body text-foreground/25 transition-colors">
+                      {selected.category}
+                    </div>
+                  ) : null}
                 </div>
+
               </div>
+
+              <motion.div
+                layout="position"
+                transition={transition({ duration: 0.26, reducedMotion: prefersReducedMotion })}
+                className="mt-4 shrink-0 border-t border-foreground/[0.06] pt-3"
+              >
+                <motion.button
+                  type="button"
+                  aria-controls={`excerpt-comments-${selected.id}`}
+                  aria-expanded={showModalComments}
+                  onMouseEnter={() => void CommentSection.preload()}
+                  onFocus={() => void CommentSection.preload()}
+                  onTouchStart={() => void CommentSection.preload()}
+                  onClick={() => setShowModalComments((v) => !v)}
+                  whileTap={prefersReducedMotion ? undefined : { scale: 0.98 }}
+                  transition={transition({ duration: 0.16, reducedMotion: prefersReducedMotion })}
+                  className={`flex items-center gap-2 text-[13px] font-body transition-colors sm:py-1 sm:text-sm ${
+                    showModalComments
+                      ? "text-[rgb(var(--shiro-accent-rgb)/0.78)]"
+                      : "text-foreground/30 hover:text-[rgb(var(--shiro-accent-rgb)/0.62)]"
+                  }`}
+                >
+                  <MessageCircle
+                    className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${showModalComments ? "fill-[rgb(var(--shiro-panel-rgb)/0.34)]" : ""}`}
+                  />
+                  {showModalComments
+                    ? commentsCloseLabel
+                    : `${commentsOpenLabel} · ${selected.comments}`}
+                </motion.button>
+              </motion.div>
+
+              <AnimatePresence initial={false}>
+                {showModalComments && (
+                  <motion.div
+                    id={`excerpt-comments-${selected.id}`}
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1, y: 0 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={transition({ duration: 0.28, reducedMotion: prefersReducedMotion })}
+                    className="aerisun-excerpt-comment-drawer mt-1 flex min-h-0 flex-col sm:mt-3"
+                  >
+                    <Suspense fallback={null}>
+                      <motion.div
+                        initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: prefersReducedMotion ? 0 : 6 }}
+                        transition={transition({ duration: 0.2, reducedMotion: prefersReducedMotion })}
+                        className="aerisun-excerpt-comment-drawer__content"
+                      >
+                        <CommentSection
+                          contentType="excerpts"
+                          contentSlug={selected.id}
+                          expandable={false}
+                          layout="modal"
+                        />
+                      </motion.div>
+                    </Suspense>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
           </motion.div>
         )}

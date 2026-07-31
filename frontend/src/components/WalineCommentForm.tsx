@@ -205,11 +205,11 @@ const WalineCommentForm = ({
       {composerOpen ? (
         <motion.div
           key="composer-open"
-          initial={{ height: 0, opacity: 0 }}
-          animate={{ height: "auto", opacity: 1 }}
-          exit={{ height: 0, opacity: 0 }}
-          transition={transition({ duration: 0.3, reducedMotion: prefersReducedMotion })}
-          className={emojiPickerOpen || avatarPickerOpen ? "overflow-visible" : "overflow-hidden"}
+          initial={{ height: 0, opacity: 0, y: prefersReducedMotion ? 0 : 6 }}
+          animate={{ height: "auto", opacity: 1, y: 0 }}
+          exit={{ height: 0, opacity: 0, y: prefersReducedMotion ? 0 : 6 }}
+          transition={transition({ duration: 0.26, reducedMotion: prefersReducedMotion })}
+          className={emojiPickerOpen || avatarPickerOpen ? "aerisun-comment-form-motion overflow-visible" : "aerisun-comment-form-motion overflow-hidden"}
         >
           <div ref={avatarPickerRef} className="space-y-4">
             {/* Auth status section */}
@@ -444,6 +444,7 @@ const WalineCommentForm = ({
                       value={draft.body}
                       onChange={(event) => onFieldChange("body", event.target.value)}
                       placeholder={isGuestbook ? guestbookBodyPlaceholder : t("waline.form.commentPlaceholder")}
+                      wrap="soft"
                       className={communityTextareaClass}
                     />
                   )}

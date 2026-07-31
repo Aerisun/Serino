@@ -13,6 +13,10 @@ import JsonLd from "@/components/JsonLd";
 import PreviewModeBadge from "@/components/PreviewModeBadge";
 import LazyOnVisible from "@/components/LazyOnVisible";
 import ArticleEnhancements from "@/components/ArticleEnhancements";
+import {
+  getDiaryAccessErrorStatus,
+  useDiaryAccessPrompt,
+} from "@/components/DiaryAccessPrompt";
 import { useFeatureFlags } from "@/contexts/runtime-config";
 import { usePageConfig } from "@/contexts/runtime-config";
 import { useFrontendI18n, type FrontendLang } from "@/i18n";
@@ -190,8 +194,13 @@ const PostDetail = () => {
   const retryLabel = postsConfig.retryLabel ?? t("common.retry");
   const articleRef = useRef<HTMLElement>(null);
   const previewStorageKey = searchParams.get("previewStorageKey") || "";
+  const postApprovalEnabled = featureFlags.post_access_approval_enabled !== false;
 
   const slug = id ? decodeURIComponent(id) : "";
+  const { promptNode, openLoginDialog, openRequestDialog } = useDiaryAccessPrompt({
+    postApprovalEnabled,
+    postSlug: slug,
+  });
   const { data: previewData, isLoading: isPreviewLoading } =
     usePreviewChannel(previewStorageKey);
   const { data: response, isLoading, isError, error, refetch } = useReadPostApiV1SitePostsSlugGet(slug, {
@@ -199,6 +208,13 @@ const PostDetail = () => {
       enabled: !!id,
       staleTime: 60_000,
       gcTime: 20 * 60_000,
+      retry: (failureCount, requestError) => {
+        const statusCode = getDiaryAccessErrorStatus(requestError);
+        if (statusCode === 401 || statusCode === 403 || statusCode === 404) {
+          return false;
+        }
+        return failureCount < 2;
+      },
     },
   });
 
@@ -210,19 +226,25 @@ const PostDetail = () => {
     previewPost ??
     (response?.data ? buildRemotePost(response.data, fallbackCategoryLabel) : null);
   const is404 = isError && error != null && typeof error === "object" && "response" in error && (error as { response?: { status?: number } }).response?.status === 404;
-  const status: "loading" | "ready" | "empty" | "error" = previewPost
+  const accessErrorStatus = getDiaryAccessErrorStatus(error);
+  const accessBlocked = isError && (accessErrorStatus === 401 || accessErrorStatus === 403);
+  const status: "loading" | "ready" | "empty" | "error" | "blocked" = previewPost
     ? "ready"
     : isLoading
       ? "loading"
+      : accessBlocked
+        ? "blocked"
       : isError
         ? is404 ? "empty" : "error"
         : post ? "ready" : "empty";
-  const pageStatus: "loading" | "ready" | "empty" | "error" =
+  const pageStatus: "loading" | "ready" | "empty" | "error" | "blocked" =
     isPreviewLoading && !previewPost ? "loading" : status;
   const errorMessage = isError
-    ? is404
-      ? detailMissingDescription
-      : error instanceof Error ? error.message : errorTitle
+    ? accessBlocked
+      ? t("postAccess.privateDescription")
+      : is404
+        ? detailMissingDescription
+        : error instanceof Error ? error.message : errorTitle
     : !id ? t("postDetail.missingId") : "";
   const showArticleEnhancements = Boolean(post) && featureFlags.toc;
   const wordCount = useEstimatedWordCount(post?.content ?? "", lang, t("common.words"));
@@ -241,9 +263,10 @@ const PostDetail = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      {promptNode}
       <PageMeta
         title={post?.title ?? (status === "error" ? errorTitle : detailMissingTitle)}
-        description={post?.content.slice(0, 150) ?? (errorMessage || detailMissingDescription)}
+        description={post?.content.slice(0, 150) ?? (pageStatus === "blocked" ? t("postAccess.privateDescription") : errorMessage || detailMissingDescription)}
       />
       {post && (
         <JsonLd
@@ -307,6 +330,33 @@ const PostDetail = () => {
               ))}
             </motion.article>
           </>
+        ) : pageStatus === "blocked" ? (
+          <motion.div
+            className="liquid-glass mx-auto max-w-xl rounded-[2rem] border border-sky-400/28 px-6 py-8 text-center shadow-[0_18px_60px_rgba(14,165,233,0.14)] backdrop-blur-xl"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <p className="text-base font-heading text-foreground/78">
+              {accessErrorStatus === 401
+                ? t("postAccess.loginTitle")
+                : t("postAccess.privateTitle")}
+            </p>
+            {accessErrorStatus !== 401 ? (
+              <p className="mt-3 text-sm font-body leading-7 text-foreground/48">
+                {t("postAccess.privateDescription")}
+              </p>
+            ) : null}
+            <div className="mt-6 flex items-center justify-center">
+              <button
+                type="button"
+                onClick={accessErrorStatus === 401 ? openLoginDialog : openRequestDialog}
+                className="inline-flex items-center justify-center rounded-full border border-sky-400/36 bg-sky-500/14 px-5 py-2 text-sm font-semibold text-sky-700 shadow-[0_10px_28px_rgba(14,165,233,0.14)] transition hover:border-sky-400/58 hover:bg-sky-500/22 dark:text-sky-100"
+              >
+                {accessErrorStatus === 401 ? t("navbar.login") : t("postAccess.apply")}
+              </button>
+            </div>
+          </motion.div>
         ) : post ? (
           <>
             <motion.div
