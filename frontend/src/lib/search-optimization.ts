@@ -26,6 +26,7 @@ interface SearchMetadataSite {
   bio: string;
   role: string;
   ogImage: string;
+  shareImage?: string;
 }
 
 interface BuildSearchMetadataInput {
@@ -195,7 +196,7 @@ export function buildSearchMetadata({
         ? `${bilingualName} Resume${siteTitle && siteTitle !== author ? ` · ${siteTitle}` : ""}`
         : title;
   const description = baseDescription;
-  const rawImage = pageImage || site.ogImage;
+  const rawImage = pageImage || site.shareImage || site.ogImage;
   const fallbackBaseUrl =
     origin || (typeof window !== "undefined" ? window.location.origin : "");
   const canonicalUrl = resolvePublicUrl({

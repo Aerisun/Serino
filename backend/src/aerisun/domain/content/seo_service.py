@@ -459,7 +459,11 @@ def _read_public_identity(session: Session, site_url: str) -> dict[str, object]:
         *[_clean_llms_text(link.href, max_length=500) for link in social_links],
     ]
     image = ""
-    if profile and profile.og_image:
+    if resume and resume.profile_image_url:
+        image = _public_link(base_url, resume.profile_image_url)
+    elif profile and profile.hero_image_url:
+        image = _public_link(base_url, profile.hero_image_url)
+    elif profile and profile.og_image:
         image = _public_link(base_url, profile.og_image)
 
     return {

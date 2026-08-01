@@ -28,7 +28,7 @@ const JsonLd = ({ title, description, slug, type, publishedAt, modifiedAt, tags 
       publishedAt,
       modifiedAt,
       tags,
-      image: site.ogImage,
+      image: site.shareImage || site.ogImage,
       origin: window.location.origin,
       canonicalBaseUrl: site.searchOptimization.canonicalUrl,
       siteName: site.name || site.title,

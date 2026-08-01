@@ -126,6 +126,7 @@ export interface RuntimeConfigSnapshot {
     bio: string;
     role: string;
     ogImage: string;
+    shareImage: string;
     siteIconUrl: string;
     heroImageUrl: string;
     heroPosterUrl: string;
@@ -228,6 +229,7 @@ const normalizeSocialHref = (href: string, iconKey: string): string => {
 // ---------------------------------------------------------------------------
 const normalizeSiteConfig = (
   payload: BackendSiteResponse,
+  resumeProfileImageUrl: string,
 ): RuntimeConfigSnapshot["site"] => {
   const featureFlags = {
     toc: true,
@@ -271,6 +273,7 @@ const normalizeSiteConfig = (
     bio: payload.site.bio,
     role: payload.site.role,
     ogImage: payload.site.og_image,
+    shareImage: resumeProfileImageUrl.trim() || payload.site.hero_image_url || payload.site.og_image,
     siteIconUrl: payload.site.site_icon_url ?? "",
     heroImageUrl: payload.site.hero_image_url,
     heroPosterUrl: payload.site.hero_poster_url,
@@ -403,7 +406,7 @@ const normalizeRuntimeConfigSnapshot = (
     source,
     revision: meta?.revision,
     generatedAt: meta?.generatedAt,
-    site: normalizeSiteConfig(payload.site),
+    site: normalizeSiteConfig(payload.site, payload.resume.profile_image_url),
     pages: normalizedPages,
   };
 };

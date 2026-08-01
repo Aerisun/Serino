@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_ROBOTS_DIRECTIVE,
@@ -13,11 +14,42 @@ const baseSite = {
   role: "Independent developer",
   ogImage: "https://example.com/og.png",
 };
+const runtimeConfigSource = fs.readFileSync(
+  new URL("../src/lib/runtime-config/index.ts", import.meta.url),
+  "utf-8",
+);
 
 const jsonLdGraph = (metadata: ReturnType<typeof buildSearchMetadata>) =>
   metadata.siteJsonLd["@graph"] as Array<Record<string, unknown>>;
 
 describe("search optimization metadata", () => {
+  it("derives the site share image from resume, hero, then homepage static media", () => {
+    expect(runtimeConfigSource).toContain(
+      "shareImage: resumeProfileImageUrl.trim() || payload.site.hero_image_url || payload.site.og_image",
+    );
+  });
+
+  it("prefers the resume image for rich-link previews without changing page overrides", () => {
+    const site = {
+      ...baseSite,
+      shareImage: "https://example.com/resume.webp",
+    };
+    const metadata = buildSearchMetadata({
+      site,
+      searchOptimization: normalizeSearchOptimization({}),
+      pathname: "/",
+    });
+    const pageMetadata = buildSearchMetadata({
+      site,
+      searchOptimization: normalizeSearchOptimization({}),
+      pageImage: "https://example.com/article.webp",
+      pathname: "/posts/example",
+    });
+
+    expect(metadata.image).toBe("https://example.com/resume.webp");
+    expect(pageMetadata.image).toBe("https://example.com/article.webp");
+  });
+
   it("normalizes stored feature flag values for SEO and GEO", () => {
     const config = normalizeSearchOptimization({
       meta_title: "  Rowan - Frontend and AI Automation  ",

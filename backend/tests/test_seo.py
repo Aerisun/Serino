@@ -228,7 +228,7 @@ def test_home_seo_html_exposes_public_profile_in_app_shell(client):
     assert "This is the personal website, blog, and public work archive for Felix (Aerisun)." not in r.text
 
 
-def test_identity_fallback_and_image_match_the_public_site_profile(client):
+def test_identity_name_uses_site_profile_and_image_uses_resume_profile(client):
     factory = get_session_factory()
     with factory() as session:
         profile = session.query(SiteProfile).one()
@@ -248,7 +248,32 @@ def test_identity_fallback_and_image_match_the_public_site_profile(client):
     person = next(item for item in graph if item.get("@type") == "Person")
 
     assert person["name"] == "Public Brand"
-    assert person["image"] == "http://localhost:8080/media/public-brand.webp"
+    assert person["image"] == "http://localhost:8080/media/resume-only.webp"
+    assert '<meta property="og:image" content="http://localhost:8080/media/resume-only.webp">' in response.text
+
+
+def test_identity_image_falls_back_to_hero_then_homepage_static_image(client):
+    factory = get_session_factory()
+    with factory() as session:
+        profile = session.query(SiteProfile).one()
+        profile.hero_image_url = "/media/hero.webp"
+        profile.og_image = "/media/homepage-static.webp"
+        resume = session.query(ResumeBasics).one()
+        resume.profile_image_url = ""
+        session.commit()
+
+    hero_response = client.get("/")
+    assert '<meta property="og:image" content="http://localhost:8080/media/hero.webp">' in hero_response.text
+
+    with factory() as session:
+        profile = session.query(SiteProfile).one()
+        profile.hero_image_url = ""
+        session.commit()
+
+    static_response = client.get("/")
+    assert (
+        '<meta property="og:image" content="http://localhost:8080/media/homepage-static.webp">' in static_response.text
+    )
 
 
 def test_home_seo_html_falls_back_to_homepage_name_when_bilingual_identity_is_incomplete(client):
