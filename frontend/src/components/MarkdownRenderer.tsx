@@ -37,6 +37,7 @@ import rehypeSlug from "rehype-slug";
 import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import type { Components } from "react-markdown";
 import type { Options as RehypeHighlightOptions } from "rehype-highlight";
+import { isSquareImage } from "@serino/utils/image-dimensions";
 import { getFrontendLang } from "@/i18n";
 import { frontendTranslations } from "@/i18n/translations";
 import {
@@ -398,6 +399,7 @@ function MarkdownTabPane({ title: _title, children }: { title: string; children:
 function MarkdownRichLinkCard({ href }: { href: string }) {
   const [preview, setPreview] = useState<LinkPreviewPayload | null>(null);
   const [imageState, setImageState] = useState<"primary" | "fallback" | "hidden">("primary");
+  const [thumbnailCropImageUrl, setThumbnailCropImageUrl] = useState<string | null>(null);
   const parsedUrl = useMemo(() => {
     try {
       return new URL(href);
@@ -456,6 +458,7 @@ function MarkdownRichLinkCard({ href }: { href: string }) {
   const cardMeta = preview?.description
     ? normalizeRichLinkDescription(preview.description, cardTitle, fallbackMeta)
     : fallbackMeta;
+  const hasCompactMeta = cardMeta === fallbackMeta;
   const primaryImageUrl = preview?.image_url ? buildPreviewImageUrl(preview.image_url) : null;
   const fallbackImageUrl = deriveFallbackImageUrl(preview, href);
   const imageUrl =
@@ -464,6 +467,7 @@ function MarkdownRichLinkCard({ href }: { href: string }) {
       : imageState === "fallback"
         ? fallbackImageUrl
         : null;
+  const isNonSquareImage = thumbnailCropImageUrl === imageUrl;
   const iconUrl = preview?.icon_url || null;
   const isGithubProfile = preview?.card_type === "github_profile";
   const showExternalLink = !isGithubProfile;
@@ -482,16 +486,20 @@ function MarkdownRichLinkCard({ href }: { href: string }) {
       href={cardHref}
       target="_blank"
       rel="noopener noreferrer"
-      className={`markdown-link-card${imageUrl ? " has-media" : ""}${mediaModeClass}${isGithubProfile ? " is-github-profile" : ""}`}
+      className={`markdown-link-card${imageUrl ? " has-media" : ""}${mediaModeClass}${isGithubProfile ? " is-github-profile" : ""}${hasCompactMeta ? " has-compact-meta" : ""}`}
     >
       {imageUrl ? (
         <span className="markdown-link-card-media">
           <img
             src={imageUrl}
             alt={cardTitle}
-            className="markdown-link-card-image"
+            className={`markdown-link-card-image${isNonSquareImage ? " is-thumbnail-crop" : ""}`}
             loading="lazy"
             referrerPolicy="no-referrer"
+            onLoad={(event) => {
+              const image = event.currentTarget;
+              setThumbnailCropImageUrl(isSquareImage(image.naturalWidth, image.naturalHeight) ? null : imageUrl);
+            }}
             onError={() => {
               if (imageState === "primary" && fallbackImageUrl) {
                 setImageState("fallback");
@@ -503,22 +511,24 @@ function MarkdownRichLinkCard({ href }: { href: string }) {
         </span>
       ) : null}
 
-      <span className="markdown-link-card-badge">
-        {iconUrl ? (
-          <img
-            src={iconUrl}
-            alt=""
-            className="markdown-link-card-favicon"
-            loading="lazy"
-            referrerPolicy="no-referrer"
-          />
-        ) : (
-          <Link2 className="h-3.5 w-3.5" />
-        )}
-        <span>{badgeLabel}</span>
+      <span className="markdown-link-card-content">
+        <span className="markdown-link-card-badge">
+          {iconUrl ? (
+            <img
+              src={iconUrl}
+              alt=""
+              className="markdown-link-card-favicon"
+              loading="lazy"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <Link2 className="h-3.5 w-3.5" />
+          )}
+          <span>{badgeLabel}</span>
+        </span>
+        <span className="markdown-link-card-title">{cardTitle}</span>
+        <span className="markdown-link-card-meta">{cardMeta}</span>
       </span>
-      <span className="markdown-link-card-title">{cardTitle}</span>
-      <span className="markdown-link-card-meta">{cardMeta}</span>
       {showExternalLink ? (
         <span className="markdown-link-card-arrow">
           <ExternalLink className="h-4 w-4" />

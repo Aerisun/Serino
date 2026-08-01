@@ -15,3 +15,4 @@ export {
   type UploadImageMode,
 } from "./image-upload";
 export { createI18nRuntime } from "./i18n";
+export { isSquareImage } from "./image-dimensions";

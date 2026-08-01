@@ -13,6 +13,7 @@ import { ExternalLink, Link2 } from "lucide-react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkDirective from "remark-directive";
 import remarkGfm from "remark-gfm";
+import { isSquareImage } from "@serino/utils/image-dimensions";
 import { buildPreviewImageUrl, fetchLinkPreview, type LinkPreviewPayload } from "@/lib/link-preview";
 import { remarkAdminMarkdownDirectives } from "@/components/markdown-directives";
 
@@ -162,6 +163,7 @@ const deriveFallbackImageUrl = (preview: LinkPreviewPayload | null, href: string
 function MarkdownRichLinkCard({ href }: { href: string }) {
   const [preview, setPreview] = useState<LinkPreviewPayload | null>(null);
   const [imageState, setImageState] = useState<"primary" | "fallback" | "hidden">("primary");
+  const [thumbnailCropImageUrl, setThumbnailCropImageUrl] = useState<string | null>(null);
   const parsedUrl = useMemo(() => {
     try {
       return new URL(href);
@@ -220,6 +222,7 @@ function MarkdownRichLinkCard({ href }: { href: string }) {
   const cardMeta = preview?.description
     ? normalizeRichLinkDescription(preview.description, cardTitle, fallbackMeta)
     : fallbackMeta;
+  const hasCompactMeta = cardMeta === fallbackMeta;
   const primaryImageUrl = preview?.image_url ? buildPreviewImageUrl(preview.image_url) : null;
   const fallbackImageUrl = deriveFallbackImageUrl(preview, href);
   const imageUrl =
@@ -228,14 +231,11 @@ function MarkdownRichLinkCard({ href }: { href: string }) {
       : imageState === "fallback"
         ? fallbackImageUrl
         : null;
+  const isNonSquareImage = thumbnailCropImageUrl === imageUrl;
   const iconUrl = preview?.icon_url || null;
   const isGithubProfile = preview?.card_type === "github_profile";
   const showExternalLink = !isGithubProfile;
-  const imageMode =
-    preview?.image_mode === "thumbnail" || isGithubProfile
-      ? "thumbnail"
-      : "cover";
-  const hasThumbnailImage = Boolean(imageUrl && imageMode === "thumbnail");
+  const hasMediaImage = Boolean(imageUrl);
 
   return (
     <a
@@ -243,34 +243,24 @@ function MarkdownRichLinkCard({ href }: { href: string }) {
       target="_blank"
       rel="noopener noreferrer"
       className={[
-        "group overflow-hidden rounded-2xl border border-border/70 bg-background/95 no-underline shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md",
-        hasThumbnailImage
-          ? isGithubProfile
-            ? "grid grid-cols-[minmax(0,1fr)_4rem] items-center gap-x-3 p-4 sm:grid-cols-[minmax(0,1fr)_5rem]"
-            : "grid grid-cols-[minmax(0,1fr)_4rem_auto] items-center gap-x-3 p-4"
+        "group relative overflow-hidden rounded-2xl border border-border/70 bg-background/95 no-underline shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md",
+        hasMediaImage
+          ? "grid grid-cols-[4rem_minmax(0,1fr)] items-center gap-x-3 p-4 sm:grid-cols-[5rem_minmax(0,1fr)]"
           : "block",
       ].join(" ")}
     >
       {imageUrl ? (
-        <span
-          className={
-            hasThumbnailImage
-              ? isGithubProfile
-                ? "col-start-2 row-start-1 h-16 w-16 self-center overflow-hidden rounded-xl border border-border/60 bg-muted/40 sm:h-20 sm:w-20"
-                : "col-start-2 row-start-1 h-16 w-16 self-center overflow-hidden rounded-xl border border-border/60 bg-muted/40"
-              : "block aspect-[1.9/1] overflow-hidden border-b border-border/60 bg-muted/40"
-          }
-        >
+        <span className="col-start-1 row-start-1 h-16 w-16 self-center overflow-hidden rounded-xl border border-border/60 bg-muted/40 sm:h-20 sm:w-20">
           <img
             src={imageUrl}
             alt={cardTitle}
-            className={
-              hasThumbnailImage
-                ? "m-0 h-full w-full max-w-none origin-[50%_46%] scale-[1.22] border-0 object-cover shadow-none transition duration-300 group-hover:scale-[1.27]"
-                : "m-0 h-full w-full max-w-none border-0 object-cover shadow-none transition duration-300 group-hover:scale-[1.02]"
-            }
+            className={`m-0 h-full w-full max-w-none border-0 shadow-none ${isNonSquareImage ? "object-cover" : "object-contain"}`}
             loading="lazy"
             referrerPolicy="no-referrer"
+            onLoad={(event) => {
+              const image = event.currentTarget;
+              setThumbnailCropImageUrl(isSquareImage(image.naturalWidth, image.naturalHeight) ? null : imageUrl);
+            }}
             onError={() => {
               if (imageState === "primary" && fallbackImageUrl) {
                 setImageState("fallback");
@@ -282,8 +272,8 @@ function MarkdownRichLinkCard({ href }: { href: string }) {
         </span>
       ) : null}
 
-      <span className={hasThumbnailImage ? "col-start-1 row-start-1 min-w-0 self-center" : "flex items-start gap-3 p-4"}>
-        {!hasThumbnailImage ? (
+      <span className={hasMediaImage ? "col-start-2 row-start-1 min-w-0 self-center pr-7" : "flex items-start gap-3 p-4 pr-10"}>
+        {!hasMediaImage ? (
           <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border/70 bg-muted/60 text-muted-foreground">
             {iconUrl ? (
               <img
@@ -299,27 +289,22 @@ function MarkdownRichLinkCard({ href }: { href: string }) {
           </span>
         ) : null}
 
-        <span className={hasThumbnailImage ? "block min-w-0" : "min-w-0 flex-1"}>
-          <span className="mb-1.5 block truncate text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+        <span className={hasMediaImage ? "block min-w-0" : "min-w-0 flex-1"}>
+          <span className={`${hasCompactMeta ? "mb-2 leading-tight" : "mb-1.5"} block truncate text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground`}>
             {badgeLabel}
           </span>
           <span className="line-clamp-2 block text-sm font-semibold leading-6 text-foreground">
             {cardTitle}
           </span>
-          <span className="mt-1.5 line-clamp-2 block text-sm leading-6 text-muted-foreground">
+          <span className="mt-1.5 line-clamp-3 block text-sm leading-6 text-muted-foreground sm:line-clamp-2">
             {cardMeta}
           </span>
         </span>
 
-        {!hasThumbnailImage && showExternalLink ? (
-          <span className="mt-0.5 inline-flex shrink-0 text-muted-foreground transition group-hover:text-foreground">
-            <ExternalLink className="h-4 w-4" />
-          </span>
-        ) : null}
       </span>
 
-      {hasThumbnailImage && showExternalLink ? (
-        <span className="col-start-3 row-start-1 inline-flex shrink-0 self-center text-muted-foreground transition group-hover:text-foreground">
+      {showExternalLink ? (
+        <span className="absolute bottom-3.5 right-3.5 inline-flex shrink-0 text-muted-foreground transition group-hover:text-foreground">
           <ExternalLink className="h-4 w-4" />
         </span>
       ) : null}
