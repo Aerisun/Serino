@@ -27,6 +27,15 @@ describe("profile search optimization controls", () => {
     expect(profileTab).toContain("LabelWithHelp");
   });
 
+  it("describes the legacy OG image field only as a homepage fallback", () => {
+    expect(profileTab).toContain('label: "首页静态兜底图"');
+    expect(profileTab).toContain('label: "Homepage Static Fallback"');
+    expect(profileTab).not.toContain("富链接和分享预览");
+    expect(profileTab).not.toContain("Rich-link and share previews");
+    expect(profileTab).not.toContain('label: "分享图 / 首页背景兜底图"');
+    expect(profileTab).not.toContain('label: "Share Image / Background Fallback"');
+  });
+
   it("requires a real name before saving search optimization data", () => {
     expect(profileTab).toContain("isSearchOptimizationValid");
     expect(profileTab).toContain("search_english_name");
