@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import time
 import xml.etree.ElementTree as ET
+from datetime import timedelta
 
 from aerisun.core.db import get_session_factory
+from aerisun.domain.content.seo_service import _CACHE_TTL, _sitemap_cache
 from aerisun.domain.diary_access.service import DIARY_PRIVATE_FEATURE_FLAG
-from aerisun.domain.site_config.models import SiteProfile
+from aerisun.domain.site_config.models import ResumeBasics, SiteProfile
 
 
 def _set_diary_private_enabled(enabled: bool) -> None:
@@ -48,3 +51,50 @@ def test_sitemap_contains_published_posts(client):
     # 列表 URL 格式: http://localhost:5173/posts (无尾部斜杠和 slug)
     post_detail_urls = [u for u in urls if "/posts/" in u and not u.endswith("/posts/")]
     assert len(post_detail_urls) >= 1  # 至少有种子数据的文章
+
+
+def test_sitemap_identity_pages_use_real_lastmod_and_bypass_stale_cache(client):
+    _sitemap_cache.clear()
+    with get_session_factory()() as session:
+        profile = session.query(SiteProfile).one()
+        resume = session.query(ResumeBasics).one()
+        expected_home_lastmod = profile.updated_at.strftime("%Y-%m-%d")
+        expected_resume_lastmod = resume.updated_at.strftime("%Y-%m-%d")
+
+    first = client.get("/api/v1/site/sitemap.xml")
+    assert first.status_code == 200
+    root = ET.fromstring(first.text)
+    ns = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+    entries = {
+        url.find("sm:loc", ns).text: url.find("sm:lastmod", ns).text if url.find("sm:lastmod", ns) is not None else None
+        for url in root.findall("sm:url", ns)
+    }
+    assert entries["http://localhost:8080/"] == expected_home_lastmod
+    assert entries["http://localhost:8080/resume"] == expected_resume_lastmod
+
+    with get_session_factory()() as session:
+        profile = session.query(SiteProfile).one()
+        profile.updated_at = profile.updated_at + timedelta(days=1)
+        expected_updated_lastmod = profile.updated_at.strftime("%Y-%m-%d")
+        session.commit()
+
+    second = client.get("/api/v1/site/sitemap.xml")
+    second_root = ET.fromstring(second.text)
+    second_entries = {
+        url.find("sm:loc", ns).text: url.find("sm:lastmod", ns).text if url.find("sm:lastmod", ns) is not None else None
+        for url in second_root.findall("sm:url", ns)
+    }
+    assert second_entries["http://localhost:8080/"] == expected_updated_lastmod
+
+
+def test_sitemap_prunes_expired_revision_cache_entries(client):
+    now = time.monotonic()
+    _sitemap_cache.clear()
+    _sitemap_cache["expired-revision"] = (now - _CACHE_TTL - 1, "expired")
+    _sitemap_cache["fresh-revision"] = (now, "fresh")
+
+    response = client.get("/api/v1/site/sitemap.xml")
+
+    assert response.status_code == 200
+    assert "expired-revision" not in _sitemap_cache
+    assert "fresh-revision" in _sitemap_cache

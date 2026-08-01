@@ -5,77 +5,135 @@ import re
 import time
 from datetime import datetime
 from html import escape
+from threading import Lock
+from urllib.parse import urlsplit
 from xml.etree.ElementTree import Element, SubElement, tostring
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
-from aerisun.domain.diary_access.service import diary_private_enabled
+from aerisun.domain.diary_access.service import DIARY_PRIVATE_FEATURE_FLAG
 from aerisun.domain.engagement.service import list_public_guestbook_entries
 from aerisun.domain.exceptions import ResourceNotFound
+from aerisun.domain.post_access.service import POST_ACCESS_APPROVAL_FEATURE_FLAG
+from aerisun.domain.site_config.identity import build_site_brand_title
 from aerisun.domain.site_config.models import PageCopy, ResumeBasics, SiteProfile, SocialLink
 from aerisun.domain.social.models import Friend, FriendFeedItem, FriendFeedSource
 
 _sitemap_cache: dict[str, tuple[float, str]] = {}
+_sitemap_cache_lock = Lock()
 _CACHE_TTL = 3600  # 1 hour
+_MAX_SITEMAP_CACHE_ENTRIES = 32
+
+
+def _sitemap_lastmod(value: object) -> str:
+    if not value:
+        return ""
+    timestamp = value if isinstance(value, datetime) else datetime.fromisoformat(str(value))
+    return timestamp.strftime("%Y-%m-%d")
+
+
+def _crawler_public_conditions(model: type, *, hide_protected_posts: bool) -> list[object]:
+    conditions: list[object] = [model.visibility == "public"]
+    if model is PostEntry and hide_protected_posts:
+        conditions.append(PostEntry.requires_approval.is_(False))
+    return conditions
 
 
 def build_sitemap_xml(session: Session, site_url: str) -> str:
     """Build sitemap XML string. Uses module-level caching with 1-hour TTL."""
     now = time.monotonic()
-    include_diary = not diary_private_enabled(session)
-    cache_key = f"sitemap:{site_url.rstrip('/')}:{int(include_diary)}"
-    cached = _sitemap_cache.get(cache_key)
-    if cached and (now - cached[0]) < _CACHE_TTL:
-        return cached[1]
-
-    base_url = site_url.rstrip("/")
-    urlset = Element("urlset")
-    urlset.set("xmlns", "http://www.sitemaps.org/schemas/sitemap/0.9")
-
-    static_pages = [
-        ("/", "daily", "1.0"),
-        ("/posts", "daily", "0.9"),
-        ("/thoughts", "weekly", "0.7"),
-        ("/excerpts", "weekly", "0.7"),
-        ("/friends", "weekly", "0.6"),
-        ("/guestbook", "weekly", "0.5"),
-        ("/resume", "monthly", "0.6"),
-    ]
-    if include_diary:
-        static_pages.insert(2, ("/diary", "daily", "0.8"))
-
-    for path, changefreq, priority in static_pages:
-        url_el = SubElement(urlset, "url")
-        SubElement(url_el, "loc").text = f"{base_url}{path}"
-        SubElement(url_el, "changefreq").text = changefreq
-        SubElement(url_el, "priority").text = priority
-
+    profile = session.scalars(select(SiteProfile).order_by(SiteProfile.created_at.asc())).first()
+    resume = session.scalars(select(ResumeBasics).order_by(ResumeBasics.created_at.asc())).first()
+    feature_flags = profile.feature_flags if profile is not None and isinstance(profile.feature_flags, dict) else {}
+    include_diary = not bool(feature_flags.get(DIARY_PRIVATE_FEATURE_FLAG, True))
+    hide_protected_posts = bool(feature_flags.get(POST_ACCESS_APPROVAL_FEATURE_FLAG, True))
+    base_url = _canonical_base_url(site_url, _read_search_optimization(profile))
     content_types = [
         (PostEntry, "posts", "weekly", "0.8"),
     ]
     if include_diary:
         content_types.append((DiaryEntry, "diary", "monthly", "0.6"))
 
+    content_revisions: list[str] = []
+    for model, *_ in content_types:
+        count, latest_update = session.execute(
+            select(func.count(model.id), func.max(model.updated_at)).where(
+                *_crawler_public_conditions(model, hide_protected_posts=hide_protected_posts)
+            )
+        ).one()
+        revision = latest_update.isoformat() if isinstance(latest_update, datetime) else str(latest_update or "")
+        content_revisions.append(f"{model.__tablename__}:{count}:{revision}")
+
+    profile_revision = profile.updated_at.isoformat() if profile else ""
+    resume_revision = resume.updated_at.isoformat() if resume else ""
+    cache_key = ":".join(
+        [
+            "sitemap",
+            base_url,
+            str(int(include_diary)),
+            profile_revision,
+            resume_revision,
+            *content_revisions,
+        ]
+    )
+    with _sitemap_cache_lock:
+        expired_cache_keys = [
+            key for key, (created_at, _) in _sitemap_cache.items() if (now - created_at) >= _CACHE_TTL
+        ]
+        for expired_cache_key in expired_cache_keys:
+            _sitemap_cache.pop(expired_cache_key, None)
+        cached = _sitemap_cache.get(cache_key)
+        if cached and (now - cached[0]) < _CACHE_TTL:
+            return cached[1]
+
+    urlset = Element("urlset")
+    urlset.set("xmlns", "http://www.sitemaps.org/schemas/sitemap/0.9")
+
+    static_pages = [
+        ("/", "daily", "1.0", profile.updated_at if profile else None),
+        ("/posts", "daily", "0.9", None),
+        ("/thoughts", "weekly", "0.7", None),
+        ("/excerpts", "weekly", "0.7", None),
+        ("/friends", "weekly", "0.6", None),
+        ("/guestbook", "weekly", "0.5", None),
+        ("/resume", "monthly", "0.6", resume.updated_at if resume else None),
+    ]
+    if include_diary:
+        static_pages.insert(2, ("/diary", "daily", "0.8", None))
+
+    for path, changefreq, priority, updated_at in static_pages:
+        url_el = SubElement(urlset, "url")
+        SubElement(url_el, "loc").text = f"{base_url}{path}"
+        lastmod = _sitemap_lastmod(updated_at)
+        if lastmod:
+            SubElement(url_el, "lastmod").text = lastmod
+        SubElement(url_el, "changefreq").text = changefreq
+        SubElement(url_el, "priority").text = priority
+
     for model, prefix, changefreq, priority in content_types:
         rows = session.execute(
             select(model.slug, model.updated_at).where(
-                model.visibility == "public",
+                *_crawler_public_conditions(model, hide_protected_posts=hide_protected_posts),
             )
         ).all()
         for slug, updated_at in rows:
             url_el = SubElement(urlset, "url")
             SubElement(url_el, "loc").text = f"{base_url}/{prefix}/{slug}"
-            if updated_at:
-                lastmod = updated_at if isinstance(updated_at, datetime) else datetime.fromisoformat(str(updated_at))
-                SubElement(url_el, "lastmod").text = lastmod.strftime("%Y-%m-%d")
+            lastmod = _sitemap_lastmod(updated_at)
+            if lastmod:
+                SubElement(url_el, "lastmod").text = lastmod
             SubElement(url_el, "changefreq").text = changefreq
             SubElement(url_el, "priority").text = priority
 
     xml_bytes = tostring(urlset, encoding="unicode", xml_declaration=False)
     xml = '<?xml version="1.0" encoding="UTF-8"?>\n' + xml_bytes
-    _sitemap_cache[cache_key] = (now, xml)
+    with _sitemap_cache_lock:
+        _sitemap_cache[cache_key] = (now, xml)
+        while len(_sitemap_cache) > _MAX_SITEMAP_CACHE_ENTRIES:
+            oldest_key = min(_sitemap_cache, key=lambda key: _sitemap_cache[key][0])
+            _sitemap_cache.pop(oldest_key, None)
     return xml
 
 
@@ -108,8 +166,6 @@ def build_robots_txt(
     if diary_private:
         protected_paths.extend(
             [
-                "Disallow: /diary",
-                "Disallow: /diary/",
                 f"Disallow: {api_path}v1/site/diary",
                 f"Disallow: {api_path}v1/site/diary/",
             ]
@@ -162,6 +218,11 @@ def _clean_llms_text(value: object, *, max_length: int = 280) -> str:
     if len(text) <= max_length:
         return text
     return f"{text[: max_length - 1].rstrip()}…"
+
+
+def _configured_meta_description(search_config: dict[str, object]) -> str:
+    value = search_config.get("meta_description")
+    return value.strip() if isinstance(value, str) else ""
 
 
 def _markdown_label(value: object, fallback: str) -> str:
@@ -239,41 +300,83 @@ def _has_cjk(value: str) -> bool:
     return bool(re.search(r"[\u3400-\u9fff]", value))
 
 
-def _identity_label(real_name: str, nickname: str) -> str:
+def _unique_text(values: list[str]) -> list[str]:
+    seen: set[str] = set()
+    result: list[str] = []
+    for value in values:
+        normalized = _clean_llms_text(value, max_length=120)
+        if normalized and normalized not in seen:
+            seen.add(normalized)
+            result.append(normalized)
+    return result
+
+
+def _identity_aliases(real_name: str, english_name: str, nickname: str) -> list[str]:
     real = _clean_llms_text(real_name, max_length=120)
-    alias = _clean_llms_text(nickname, max_length=120)
-    if not real or not alias or real == alias:
+    return [value for value in _unique_text([english_name, nickname]) if value != real]
+
+
+def _bilingual_name(real_name: str, english_name: str) -> str:
+    return " - ".join(_unique_text([real_name, english_name]))
+
+
+def _identity_label(real_name: str, aliases: list[str]) -> str:
+    real = _clean_llms_text(real_name, max_length=120)
+    normalized_aliases = [value for value in _unique_text(aliases) if value != real]
+    if not real or not normalized_aliases:
         return real
     if _has_cjk(real):
-        return f"{real}（{alias}）"
-    return f"{real} ({alias})"
+        return f"{real}（{'，'.join(normalized_aliases)}）"
+    return f"{real} ({', '.join(normalized_aliases)})"
 
 
-def _strengthen_identity_description(description: str, *, real_name: str, nickname: str, max_length: int) -> str:
-    text = _clean_llms_text(description, max_length=max_length)
-    label = _identity_label(real_name, nickname)
-    if not label or label == real_name:
-        return text
-    if real_name in text and nickname in text:
-        return text
-    separator = "。" if _has_cjk(real_name) else "."
-    strengthened = f"{label}{separator} {text}" if text else label
-    return _clean_llms_text(strengthened, max_length=max_length)
-
-
-def _identity_bridge_sentence(real_name: str, nickname: str) -> str:
+def _identity_bridge_sentence(real_name: str, english_name: str, nickname: str) -> str:
     real = _clean_llms_text(real_name, max_length=120)
+    english = _clean_llms_text(english_name, max_length=120)
     alias = _clean_llms_text(nickname, max_length=120)
     if not real or not alias or real == alias:
         return ""
     if _has_cjk(real):
-        return f"{alias} 是 {real} 的个人网站、博客和公开作品入口。"
+        bilingual_name = f"{real}（{english}）" if english and english != real else real
+        return f"{alias} 是 {bilingual_name} 的个人网站、博客和公开作品入口。"
     return f"This is the personal website, blog, and public work archive for {real} ({alias})."
 
 
+def _normalize_public_base_url(value: object) -> str:
+    candidate = str(value or "").strip()
+    if not candidate or any(character.isspace() for character in candidate) or "\\" in candidate:
+        return ""
+    try:
+        parsed = urlsplit(candidate)
+        scheme = parsed.scheme.lower()
+        if scheme not in {"http", "https"} or not parsed.hostname:
+            return ""
+        if parsed.username or parsed.password:
+            return ""
+        if parsed.path not in {"", "/"} or parsed.query or parsed.fragment:
+            return ""
+        port = parsed.port
+        hostname = parsed.hostname.rstrip(".").lower()
+        if not hostname:
+            return ""
+        try:
+            normalized_hostname = hostname.encode("idna").decode("ascii")
+        except UnicodeError:
+            return ""
+    except (UnicodeError, ValueError):
+        return ""
+    host = f"[{normalized_hostname}]" if ":" in normalized_hostname else normalized_hostname
+    if port is not None and not ((scheme == "http" and port == 80) or (scheme == "https" and port == 443)):
+        host = f"{host}:{port}"
+    return f"{scheme}://{host}"
+
+
 def _canonical_base_url(site_url: str, search_config: dict[str, object]) -> str:
-    canonical_url = _clean_llms_text(search_config.get("canonical_url"), max_length=500)
-    return (canonical_url or site_url or "https://example.com").rstrip("/")
+    return (
+        _normalize_public_base_url(search_config.get("canonical_url"))
+        or _normalize_public_base_url(site_url)
+        or "https://example.com"
+    )
 
 
 def _read_search_optimization(profile: SiteProfile | None) -> dict[str, object]:
@@ -281,6 +384,11 @@ def _read_search_optimization(profile: SiteProfile | None) -> dict[str, object]:
         return {}
     raw = profile.feature_flags.get("search_optimization")
     return raw if isinstance(raw, dict) else {}
+
+
+def resolve_public_base_url(session: Session, site_url: str) -> str:
+    profile = session.scalars(select(SiteProfile).order_by(SiteProfile.created_at.asc())).first()
+    return _canonical_base_url(site_url, _read_search_optimization(profile))
 
 
 def _read_text_list(value: object) -> list[str]:
@@ -295,7 +403,10 @@ def _unique_links(base_url: str, values: list[str]) -> list[str]:
     seen: set[str] = set()
     links: list[str] = []
     for value in values:
-        link = _public_link(base_url, value)
+        normalized = value.strip()
+        if not normalized.startswith(("http://", "https://")):
+            continue
+        link = _public_link(base_url, normalized)
         if link and link not in seen:
             links.append(link)
             seen.add(link)
@@ -309,56 +420,46 @@ def _read_public_identity(session: Session, site_url: str) -> dict[str, object]:
         select(SocialLink).order_by(SocialLink.order_index.asc(), SocialLink.created_at.asc()).limit(12)
     ).all()
     search_config = _read_search_optimization(profile)
+    feature_flags = profile.feature_flags if profile is not None and isinstance(profile.feature_flags, dict) else {}
     base_url = _canonical_base_url(site_url, search_config)
+    configured_real_name = _clean_llms_text(search_config.get("real_name"), max_length=120)
     real_name = (
-        _clean_llms_text(search_config.get("real_name"), max_length=120)
-        or _clean_llms_text(resume.title if resume else "", max_length=120)
+        configured_real_name
         or _clean_llms_text(profile.name if profile else "", max_length=120)
+        or _clean_llms_text(resume.title if resume else "", max_length=120)
         or "Site owner"
     )
+    english_name = _clean_llms_text(search_config.get("english_name"), max_length=120)
     search_title = _clean_llms_text(search_config.get("meta_title"), max_length=160)
-    site_title = (
-        _clean_llms_text(profile.title if profile else "", max_length=160)
-        or _clean_llms_text(profile.name if profile else "", max_length=160)
-        or search_title
+    site_name = (
+        _clean_llms_text(profile.name if profile else "", max_length=160)
+        or _clean_llms_text(profile.title if profile else "", max_length=160)
         or real_name
     )
-    nickname = (
-        site_title if site_title != real_name else _clean_llms_text(profile.name if profile else "", max_length=120)
-    )
+    site_title = build_site_brand_title(site_name, configured_real_name, english_name)
+    nickname = site_name if site_name != real_name else ""
+    alternate_names = _identity_aliases(real_name, english_name, nickname)
+    keywords = _unique_text([real_name, english_name, nickname, *_read_text_list(search_config.get("keywords"))])
+    display_name = _bilingual_name(real_name, english_name) or real_name
     identity_summary = (
         _clean_llms_text(search_config.get("llm_summary"), max_length=420)
-        or _clean_llms_text(search_config.get("meta_description"), max_length=420)
+        or _configured_meta_description(search_config)
         or _clean_llms_text(profile.bio if profile else "", max_length=420)
         or _plain_text(resume.summary if resume else "", max_length=420)
         or f"Public personal website and blog for {real_name}."
     )
-    identity_summary = _strengthen_identity_description(
-        identity_summary,
-        real_name=real_name,
-        nickname=nickname,
-        max_length=420,
-    )
     search_description = (
-        _clean_llms_text(search_config.get("meta_description"), max_length=280)
+        _configured_meta_description(search_config)
         or _clean_llms_text(profile.bio if profile else "", max_length=280)
         or _plain_text(resume.summary if resume else "", max_length=280)
         or identity_summary
-    )
-    search_description = _strengthen_identity_description(
-        search_description,
-        real_name=real_name,
-        nickname=nickname,
-        max_length=280,
     )
     same_as_values = [
         *_read_text_list(search_config.get("same_as")),
         *[_clean_llms_text(link.href, max_length=500) for link in social_links],
     ]
     image = ""
-    if resume and resume.profile_image_url:
-        image = _public_link(base_url, resume.profile_image_url)
-    elif profile and profile.og_image:
+    if profile and profile.og_image:
         image = _public_link(base_url, profile.og_image)
 
     return {
@@ -368,17 +469,23 @@ def _read_public_identity(session: Session, site_url: str) -> dict[str, object]:
         "social_links": social_links,
         "search_config": search_config,
         "real_name": real_name,
+        "english_name": english_name,
+        "display_name": display_name,
+        "site_name": site_name,
         "site_title": site_title,
         "search_title": search_title,
         "nickname": nickname,
-        "identity_label": _identity_label(real_name, nickname),
-        "identity_bridge_sentence": _identity_bridge_sentence(real_name, nickname),
+        "alternate_names": alternate_names,
+        "identity_label": _identity_label(real_name, alternate_names),
+        "identity_bridge_sentence": _identity_bridge_sentence(real_name, english_name, nickname),
         "search_description": search_description,
         "identity_summary": identity_summary,
         "expertise": _read_text_list(search_config.get("expertise")),
-        "keywords": _read_text_list(search_config.get("keywords")),
+        "keywords": keywords,
         "same_as": _unique_links(base_url, same_as_values),
         "image": image,
+        "diary_private": bool(feature_flags.get(DIARY_PRIVATE_FEATURE_FLAG, True)),
+        "post_approval_enabled": bool(feature_flags.get(POST_ACCESS_APPROVAL_FEATURE_FLAG, True)),
     }
 
 
@@ -428,10 +535,12 @@ def _render_ai_navigation_instructions(base_url: str, *, include_diary: bool = T
     )
 
 
-def _render_posts_list(session: Session, base_url: str) -> str:
+def _render_posts_list(session: Session, base_url: str, *, hide_protected_posts: bool) -> str:
     posts = session.scalars(
         select(PostEntry)
-        .where(PostEntry.visibility == "public")
+        .where(
+            *_crawler_public_conditions(PostEntry, hide_protected_posts=hide_protected_posts),
+        )
         .order_by(PostEntry.is_pinned.desc(), PostEntry.pin_order.asc(), PostEntry.updated_at.desc())
         .limit(8)
     ).all()
@@ -602,13 +711,20 @@ def _content_page_copy(session: Session, config: dict[str, object]) -> tuple[str
     return title, description
 
 
-def _content_entries(session: Session, config: dict[str, object]) -> list[object]:
+def _content_entries(
+    session: Session,
+    config: dict[str, object],
+    *,
+    hide_protected_posts: bool,
+) -> list[object]:
     model = config["model"]
     limit = int(config["limit"])
     return list(
         session.scalars(
             select(model)
-            .where(model.visibility == "public")
+            .where(
+                *_crawler_public_conditions(model, hide_protected_posts=hide_protected_posts),
+            )
             .order_by(
                 model.is_pinned.desc(),
                 model.pin_order.asc(),
@@ -619,9 +735,22 @@ def _content_entries(session: Session, config: dict[str, object]) -> list[object
     )
 
 
-def _content_entry(session: Session, config: dict[str, object], slug: str) -> object:
+def _content_entry(
+    session: Session,
+    config: dict[str, object],
+    slug: str,
+    *,
+    hide_protected_posts: bool,
+) -> object:
     model = config["model"]
-    item = session.scalar(select(model).where(model.visibility == "public", model.slug == slug).limit(1))
+    item = session.scalar(
+        select(model)
+        .where(
+            *_crawler_public_conditions(model, hide_protected_posts=hide_protected_posts),
+            model.slug == slug,
+        )
+        .limit(1)
+    )
     if item is None:
         raise ResourceNotFound(f"content item '{slug}' is not available")
     return item
@@ -667,7 +796,6 @@ def _render_content_entry_html(
                 "</section>",
             ]
         )
-
     return "\n".join(
         [
             f'<article id="{_html_attr(slug)}">',
@@ -682,7 +810,7 @@ def _render_content_entry_html(
 
 
 def _content_list_json_ld(
-    entries: list[object], *, base_url: str, config: dict[str, object]
+    entries: list[object], *, base_url: str, config: dict[str, object], author_name: str
 ) -> list[dict[str, object]]:
     items = []
     for index, item in enumerate(entries, start=1):
@@ -703,6 +831,12 @@ def _content_list_json_ld(
                         "description": _content_entry_summary(item),
                         "datePublished": published_at.isoformat() if published_at else "",
                         "dateModified": updated_at.isoformat() if updated_at else "",
+                        "author": {
+                            "@type": "Person",
+                            "@id": f"{base_url}/#person",
+                            "name": author_name,
+                            "url": _internal_url(base_url, "/resume"),
+                        },
                         "keywords": getattr(item, "tags", []),
                     }
                 ),
@@ -720,15 +854,16 @@ def build_content_collection_seo_html(
 ) -> str:
     """Build crawler-readable HTML for public content collection pages."""
     config = _content_config(content_type)
-    diary_private = content_type == "diary" and diary_private_enabled(session)
     identity = _read_public_identity(session, site_url)
+    diary_private = content_type == "diary" and bool(identity["diary_private"])
+    hide_protected_posts = bool(identity["post_approval_enabled"])
     base_url = str(identity["base_url"])
-    site_title = str(identity["site_title"])
+    site_name = str(identity["site_name"])
     real_name = str(identity["real_name"])
     page_title, page_description = _content_page_copy(session, config)
     canonical_path = str(config["path"])
     canonical_url = _internal_url(base_url, canonical_path)
-    entries = [] if diary_private else _content_entries(session, config)
+    entries = [] if diary_private else _content_entries(session, config, hide_protected_posts=hide_protected_posts)
     include_body = bool(config["include_body_in_collection"])
     entries_html = (
         "<p>Diary details are private and are not available to crawlers.</p>"
@@ -761,29 +896,38 @@ def build_content_collection_seo_html(
         )
     )
 
-    json_ld = _compact_json_ld(
-        {
-            "@context": "https://schema.org",
-            "@graph": [
-                {
-                    "@type": "CollectionPage",
-                    "@id": f"{canonical_url}#page",
-                    "url": canonical_url,
-                    "name": page_title,
-                    "description": page_description,
-                    "isPartOf": {"@id": f"{base_url}/#website"},
-                    "publisher": {"@id": f"{base_url}/#person"},
-                    "mainEntity": {"@id": f"{canonical_url}#items"},
-                },
-                {
-                    "@type": "ItemList",
-                    "@id": f"{canonical_url}#items",
-                    "name": page_title,
-                    "numberOfItems": len(entries),
-                    "itemListElement": _content_list_json_ld(entries, base_url=base_url, config=config),
-                },
-            ],
-        }
+    json_ld = (
+        None
+        if diary_private
+        else _compact_json_ld(
+            {
+                "@context": "https://schema.org",
+                "@graph": [
+                    {
+                        "@type": "CollectionPage",
+                        "@id": f"{canonical_url}#page",
+                        "url": canonical_url,
+                        "name": page_title,
+                        "description": page_description,
+                        "isPartOf": {"@id": f"{base_url}/#website"},
+                        "publisher": {"@id": f"{base_url}/#person"},
+                        "mainEntity": {"@id": f"{canonical_url}#items"},
+                    },
+                    {
+                        "@type": "ItemList",
+                        "@id": f"{canonical_url}#items",
+                        "name": page_title,
+                        "numberOfItems": len(entries),
+                        "itemListElement": _content_list_json_ld(
+                            entries,
+                            base_url=base_url,
+                            config=config,
+                            author_name=real_name,
+                        ),
+                    },
+                ],
+            }
+        )
     )
 
     body_html = "\n".join(
@@ -798,10 +942,10 @@ def build_content_collection_seo_html(
     )
 
     return _build_html_document(
-        title=f"{page_title} · {site_title}" if site_title else page_title,
+        title=f"{page_title} · {site_name}" if site_name else page_title,
         description=page_description,
         canonical_url=canonical_url,
-        site_name=site_title,
+        site_name=site_name,
         body_html=body_html,
         json_ld=json_ld,
         image=str(identity["image"]),
@@ -810,6 +954,9 @@ def build_content_collection_seo_html(
         app_shell_html=app_shell_html,
         shell_key=content_type,
         alternate_links=alternate_links,
+        robots="noindex,follow"
+        if diary_private
+        else "index,follow,max-snippet:-1,max-image-preview:large,max-video-preview:-1",
     )
 
 
@@ -827,9 +974,9 @@ def build_content_detail_seo_html(
     config = _content_config(content_type)
     identity = _read_public_identity(session, site_url)
     base_url = str(identity["base_url"])
-    site_title = str(identity["site_title"])
+    site_name = str(identity["site_name"])
     real_name = str(identity["real_name"])
-    if content_type == "diary" and diary_private_enabled(session):
+    if content_type == "diary" and bool(identity["diary_private"]):
         canonical_url = _internal_url(base_url, "/diary")
         title = "Diary"
         description = "Diary details are private."
@@ -842,25 +989,33 @@ def build_content_detail_seo_html(
             ]
         )
         return _build_html_document(
-            title=f"{title} · {site_title}" if site_title else title,
+            title=f"{title} · {site_name}" if site_name else title,
             description=description,
             canonical_url=canonical_url,
-            site_name=site_title,
+            site_name=site_name,
             body_html=body_html,
             json_ld=None,
             image=str(identity["image"]),
             author=real_name,
             app_shell_html=app_shell_html,
             shell_key=str(config["detail_shell_key"]),
+            robots="noindex,follow",
         )
 
-    item = _content_entry(session, config, slug)
+    item = _content_entry(
+        session,
+        config,
+        slug,
+        hide_protected_posts=bool(identity["post_approval_enabled"]),
+    )
     title = _content_entry_title(item)
     description = _content_entry_summary(item)
     canonical_url = _content_entry_url(base_url, config, slug)
     published_at = _content_entry_timestamp(item, "published_at") or _content_entry_timestamp(item, "created_at")
     updated_at = _content_entry_timestamp(item, "updated_at")
     tags = getattr(item, "tags", []) if isinstance(getattr(item, "tags", []), list) else []
+    identity_keywords = identity["keywords"] if isinstance(identity["keywords"], list) else []
+    meta_keywords = _unique_text([*[str(value) for value in identity_keywords], *[str(tag) for tag in tags]])
     schema_type = str(config["schema_type"])
 
     json_ld = _compact_json_ld(
@@ -874,8 +1029,14 @@ def build_content_detail_seo_html(
             "mainEntityOfPage": canonical_url,
             "datePublished": published_at.isoformat() if published_at else "",
             "dateModified": updated_at.isoformat() if updated_at else "",
-            "author": {"@id": f"{base_url}/#person", "name": real_name},
-            "publisher": {"@id": f"{base_url}/#website"},
+            "image": identity["image"],
+            "author": {
+                "@type": "Person",
+                "@id": f"{base_url}/#person",
+                "name": real_name,
+                "url": _internal_url(base_url, "/resume"),
+            },
+            "publisher": {"@id": f"{base_url}/#person"},
             "keywords": tags,
             "articleBody": _plain_text(getattr(item, "body", ""), max_length=12000),
         }
@@ -896,16 +1057,16 @@ def build_content_detail_seo_html(
     )
 
     return _build_html_document(
-        title=f"{title} · {site_title}" if site_title else title,
+        title=f"{title} · {site_name}" if site_name else title,
         description=description,
         canonical_url=canonical_url,
-        site_name=site_title,
+        site_name=site_name,
         body_html=body_html,
         json_ld=json_ld,
         og_type="article",
         image=str(identity["image"]),
         author=real_name,
-        keywords=[str(tag) for tag in tags],
+        keywords=meta_keywords,
         app_shell_html=app_shell_html,
         shell_key=str(config["detail_shell_key"]),
         alternate_links=[
@@ -1002,7 +1163,7 @@ def build_friends_seo_html(
     """Build crawler-readable HTML for the public friends page."""
     identity = _read_public_identity(session, site_url)
     base_url = str(identity["base_url"])
-    site_title = str(identity["site_title"])
+    site_name = str(identity["site_name"])
     real_name = str(identity["real_name"])
     page_title, page_description = _social_page_copy(
         session,
@@ -1065,10 +1226,10 @@ def build_friends_seo_html(
         ]
     )
     return _build_html_document(
-        title=f"{page_title} · {site_title}" if site_title else page_title,
+        title=f"{page_title} · {site_name}" if site_name else page_title,
         description=page_description,
         canonical_url=canonical_url,
-        site_name=site_title,
+        site_name=site_name,
         body_html=body_html,
         json_ld=json_ld,
         image=str(identity["image"]),
@@ -1118,7 +1279,7 @@ def build_guestbook_seo_html(
     """Build crawler-readable HTML for the public guestbook page."""
     identity = _read_public_identity(session, site_url)
     base_url = str(identity["base_url"])
-    site_title = str(identity["site_title"])
+    site_name = str(identity["site_name"])
     real_name = str(identity["real_name"])
     page_title, page_description = _social_page_copy(
         session,
@@ -1183,10 +1344,10 @@ def build_guestbook_seo_html(
         ]
     )
     return _build_html_document(
-        title=f"{page_title} · {site_title}" if site_title else page_title,
+        title=f"{page_title} · {site_name}" if site_name else page_title,
         description=page_description,
         canonical_url=canonical_url,
-        site_name=site_title,
+        site_name=site_name,
         body_html=body_html,
         json_ld=json_ld,
         image=str(identity["image"]),
@@ -1213,14 +1374,14 @@ def _build_html_document(
     alternate_links: list[tuple[str, str, str]] | None = None,
     app_shell_html: str | None = None,
     shell_key: str = "page",
+    robots: str = "index,follow,max-snippet:-1,max-image-preview:large,max-video-preview:-1",
 ) -> str:
     keyword_content = ", ".join(keywords or [])
     social_title = share_title or title
     head_markup_parts = [
         f"<title>{_html_text(title)}</title>",
         f'<meta name="description" content="{_html_attr(description)}">',
-        f'<meta name="title" content="{_html_attr(social_title)}">',
-        '<meta name="robots" content="index,follow,max-snippet:-1,max-image-preview:large,max-video-preview:-1">',
+        f'<meta name="robots" content="{_html_attr(robots)}">',
         f'<link rel="canonical" href="{_html_attr(canonical_url)}">',
         f'<meta property="og:type" content="{_html_attr(og_type)}">',
         f'<meta property="og:title" content="{_html_attr(social_title)}">',
@@ -1273,7 +1434,6 @@ def _strip_loading_head_tags(app_shell_html: str) -> str:
     patterns = [
         r"\s*<title>.*?</title>",
         r'\s*<meta\s+name=["\']description["\'][^>]*>',
-        r'\s*<meta\s+name=["\']title["\'][^>]*>',
         r'\s*<meta\s+name=["\']author["\'][^>]*>',
         r'\s*<meta\s+name=["\']robots["\'][^>]*>',
         r'\s*<link\s+rel=["\']canonical["\'][^>]*>',
@@ -1317,9 +1477,11 @@ def build_home_seo_html(
     base_url = str(identity["base_url"])
     profile = identity["profile"]
     real_name = str(identity["real_name"])
+    display_name = str(identity["display_name"])
+    site_name = str(identity["site_name"])
     site_title = str(identity["site_title"])
     search_title = str(identity["search_title"])
-    nickname = str(identity["nickname"])
+    alternate_names = list(identity["alternate_names"]) if isinstance(identity["alternate_names"], list) else []
     description = str(identity["search_description"])
     identity_summary = str(identity["identity_summary"])
     identity_bridge_sentence = str(identity["identity_bridge_sentence"])
@@ -1329,7 +1491,7 @@ def build_home_seo_html(
     role = _clean_llms_text(profile.role if isinstance(profile, SiteProfile) else "", max_length=160)
     person_id = f"{base_url}/#person"
     website_id = f"{base_url}/#website"
-    include_diary = not diary_private_enabled(session)
+    include_diary = not bool(identity["diary_private"])
     alternate_links = [
         ("text/markdown", _internal_url(base_url, "/llms.txt"), "AI-readable site guide"),
         ("application/rss+xml", _internal_url(base_url, "/feeds/posts.xml"), "Latest public posts"),
@@ -1347,7 +1509,7 @@ def build_home_seo_html(
                     "@type": "Person",
                     "@id": person_id,
                     "name": real_name,
-                    "alternateName": [nickname] if nickname and nickname != real_name else [],
+                    "alternateName": alternate_names,
                     "jobTitle": role,
                     "description": identity_summary,
                     "url": _internal_url(base_url, "/"),
@@ -1359,8 +1521,7 @@ def build_home_seo_html(
                 {
                     "@type": "WebSite",
                     "@id": website_id,
-                    "name": site_title,
-                    "alternateName": search_title if search_title and search_title != site_title else "",
+                    "name": site_name,
                     "url": _internal_url(base_url, "/"),
                     "description": description,
                     "publisher": {"@id": person_id},
@@ -1379,14 +1540,18 @@ def build_home_seo_html(
     body_html = "\n".join(
         [
             "<main>",
-            f"<h1>{_html_text(site_title)}</h1>",
+            f"<h1>{_html_text(site_name)}</h1>",
             f"<p>{_html_text(identity_bridge_sentence)}</p>" if identity_bridge_sentence else "",
             f"<p>{_html_text(identity_summary)}</p>",
-            f'<p>Public identity: <a href="{_html_attr(_internal_url(base_url, "/resume"))}">{_html_text(real_name)}</a></p>',
+            f'<p>Public identity: <a href="{_html_attr(_internal_url(base_url, "/resume"))}">{_html_text(display_name)}</a></p>',
             _render_ai_navigation_instructions(base_url, include_diary=include_diary),
             _render_public_resource_links(base_url, api_base_path=api_base_path, include_diary=include_diary),
             expertise_html,
-            _render_posts_list(session, base_url),
+            _render_posts_list(
+                session,
+                base_url,
+                hide_protected_posts=bool(identity["post_approval_enabled"]),
+            ),
             "</main>",
         ]
     )
@@ -1395,7 +1560,7 @@ def build_home_seo_html(
         title=site_title,
         description=description,
         canonical_url=_internal_url(base_url, "/"),
-        site_name=site_title,
+        site_name=site_name,
         body_html=body_html,
         json_ld=json_ld,
         image=str(identity["image"]),
@@ -1423,21 +1588,16 @@ def build_resume_seo_html(
         raise ResourceNotFound("resume basics are missing")
 
     real_name = str(identity["real_name"])
-    site_title = str(identity["site_title"])
-    nickname = str(identity["nickname"])
+    display_name = str(identity["display_name"])
+    site_name = str(identity["site_name"])
+    alternate_names = list(identity["alternate_names"]) if isinstance(identity["alternate_names"], list) else []
     description = _plain_text(resume.summary, max_length=280) or str(identity["search_description"])
-    description = _strengthen_identity_description(
-        description,
-        real_name=real_name,
-        nickname=nickname,
-        max_length=280,
-    )
     expertise = list(identity["expertise"]) if isinstance(identity["expertise"], list) else []
     same_as = list(identity["same_as"]) if isinstance(identity["same_as"], list) else []
     api_path = _normalize_robots_path(api_base_path, "/api").rstrip("/")
     profile_page_id = f"{base_url}/resume#profile"
     person_id = f"{base_url}/#person"
-    include_diary = not diary_private_enabled(session)
+    include_diary = not bool(identity["diary_private"])
 
     json_ld = _compact_json_ld(
         {
@@ -1447,7 +1607,7 @@ def build_resume_seo_html(
                     "@type": "ProfilePage",
                     "@id": profile_page_id,
                     "url": _internal_url(base_url, "/resume"),
-                    "name": f"{real_name} Resume",
+                    "name": f"{display_name} Resume",
                     "description": description,
                     "about": {"@id": person_id},
                     "mainEntity": {"@id": person_id},
@@ -1457,7 +1617,7 @@ def build_resume_seo_html(
                     "@type": "Person",
                     "@id": person_id,
                     "name": real_name,
-                    "alternateName": [nickname] if nickname and nickname != real_name else [],
+                    "alternateName": alternate_names,
                     "description": str(identity["identity_summary"]),
                     "url": _internal_url(base_url, "/"),
                     "image": identity["image"],
@@ -1479,7 +1639,7 @@ def build_resume_seo_html(
     body_html = "\n".join(
         [
             "<main>",
-            f"<h1>{_html_text(real_name)}</h1>",
+            f"<h1>{_html_text(display_name)}</h1>",
             f'<p><a href="{_html_attr(_internal_url(base_url, "/resume.md"))}">AI-readable resume Markdown</a></p>',
             f'<p><a href="{_html_attr(_internal_url(base_url, f"{api_path}/v1/site/resume"))}">Structured resume JSON</a></p>',
             contact_html,
@@ -1492,16 +1652,18 @@ def build_resume_seo_html(
         ]
     )
 
-    browser_title = real_name
+    browser_title = display_name
     share_title = (
-        f"{real_name} Resume · {site_title}" if site_title and site_title != real_name else f"{real_name} Resume"
+        f"{display_name} Resume · {site_name}"
+        if site_name and site_name not in {real_name, display_name}
+        else f"{display_name} Resume"
     )
 
     return _build_html_document(
         title=browser_title,
         description=description,
         canonical_url=_internal_url(base_url, "/resume"),
-        site_name=site_title,
+        site_name=site_name,
         body_html=body_html,
         json_ld=json_ld,
         og_type="profile",
@@ -1524,7 +1686,13 @@ def build_resume_markdown(session: Session) -> str:
     if resume is None:
         raise ResourceNotFound("resume basics are missing")
 
-    title = _clean_llms_text(resume.title, max_length=160) or "Resume"
+    profile = session.scalars(select(SiteProfile).order_by(SiteProfile.created_at.asc())).first()
+    search_config = _read_search_optimization(profile)
+    real_name = _clean_llms_text(search_config.get("real_name"), max_length=120) or _clean_llms_text(
+        resume.title, max_length=120
+    )
+    english_name = _clean_llms_text(search_config.get("english_name"), max_length=120)
+    title = _bilingual_name(real_name, english_name) or "Resume"
     summary = str(resume.summary or "").replace("\r\n", "\n").replace("\r", "\n").strip()
     lines = [f"# {title}", ""]
     contact_lines = []
@@ -1544,34 +1712,24 @@ def build_resume_markdown(session: Session) -> str:
 
 def build_llms_txt(session: Session, site_url: str, *, api_base_path: str = "/api") -> str:
     """Build an AI-readable site map for agents that cannot execute the SPA."""
-    base_url = site_url.rstrip("/")
     api_path = _normalize_robots_path(api_base_path, "/api").rstrip("/")
-    include_diary = not diary_private_enabled(session)
-    profile = session.scalars(select(SiteProfile).order_by(SiteProfile.created_at.asc())).first()
-    resume = session.scalars(select(ResumeBasics).order_by(ResumeBasics.created_at.asc())).first()
-    social_links = session.scalars(
-        select(SocialLink).order_by(SocialLink.order_index.asc(), SocialLink.created_at.asc()).limit(8)
-    ).all()
-    search_config = _read_search_optimization(profile)
-    real_name = (
-        _clean_llms_text(search_config.get("real_name"), max_length=120)
-        or _clean_llms_text(resume.title if resume else "", max_length=120)
-        or _clean_llms_text(profile.name if profile else "", max_length=120)
-        or "Site owner"
-    )
-    site_title = (
-        _clean_llms_text(search_config.get("meta_title"), max_length=160)
-        or _clean_llms_text(profile.title if profile else "", max_length=160)
-        or real_name
-    )
-    identity_summary = (
-        _clean_llms_text(search_config.get("llm_summary"), max_length=360)
-        or _clean_llms_text(search_config.get("meta_description"), max_length=360)
-        or _clean_llms_text(profile.bio if profile else "", max_length=360)
-        or _clean_llms_text(resume.summary if resume else "", max_length=360)
-        or f"Public personal website and blog for {real_name}."
-    )
-    expertise = _read_text_list(search_config.get("expertise"))
+    identity = _read_public_identity(session, site_url)
+    include_diary = not bool(identity["diary_private"])
+    base_url = str(identity["base_url"])
+    profile = identity["profile"]
+    social_links = list(identity["social_links"]) if isinstance(identity["social_links"], list) else []
+    real_name = str(identity["real_name"])
+    english_name = str(identity["english_name"])
+    display_name = str(identity["display_name"])
+    nickname = str(identity["nickname"])
+    site_title = display_name or str(identity["site_title"])
+    identity_summary = str(identity["identity_summary"])
+    expertise = list(identity["expertise"]) if isinstance(identity["expertise"], list) else []
+    alternate_identity_sentence = ""
+    if english_name and nickname and nickname not in {real_name, english_name}:
+        alternate_identity_sentence = f"{english_name} and {nickname} are public alternate names for {real_name}."
+    elif english_name:
+        alternate_identity_sentence = f"{english_name} is the public English name for {real_name}."
 
     writing_guidance = (
         "For public writing, read /posts and /diary first; they are crawler-readable index pages with summaries and canonical links."
@@ -1589,7 +1747,8 @@ def build_llms_txt(session: Session, site_url: str, *, api_base_path: str = "/ap
         "",
         f"> {identity_summary}",
         "",
-        f"This is the public AI-readable map for {real_name}.",
+        f"This is the public AI-readable map for {display_name}.",
+        alternate_identity_sentence,
         "The site is a personal blog, resume, and writing platform.",
         "To understand the person behind the site, read /resume.md first. If structured data is needed, use /api/v1/site/resume.",
         writing_guidance,
@@ -1641,7 +1800,7 @@ def build_llms_txt(session: Session, site_url: str, *, api_base_path: str = "/ap
             "",
             "## Start here",
             "",
-            f"- [Resume Markdown]({_internal_url(base_url, '/resume.md')}): Public CV/resume for {real_name}; read this first for identity, education, projects, skills, and contact context.",
+            f"- [Resume Markdown]({_internal_url(base_url, '/resume.md')}): Public CV/resume for {display_name}; read this first for identity, education, projects, skills, and contact context.",
             f"- [Homepage]({_internal_url(base_url, '/')}): Main public profile page, visual identity, navigation, and primary links.",
             f"- [Sitemap]({_internal_url(base_url, '/sitemap.xml')}): Complete public URL index for crawlable pages.",
             f"- [Robots policy]({_internal_url(base_url, '/robots.txt')}): Crawler access policy; admin routes are not for indexing or AI browsing.",
@@ -1656,9 +1815,12 @@ def build_llms_txt(session: Session, site_url: str, *, api_base_path: str = "/ap
         ]
     )
 
+    hide_protected_posts = bool(identity["post_approval_enabled"])
     posts = session.scalars(
         select(PostEntry)
-        .where(PostEntry.visibility == "public")
+        .where(
+            *_crawler_public_conditions(PostEntry, hide_protected_posts=hide_protected_posts),
+        )
         .order_by(PostEntry.is_pinned.desc(), PostEntry.pin_order.asc(), PostEntry.updated_at.desc())
         .limit(8)
     ).all()
@@ -1683,7 +1845,6 @@ def build_llms_txt(session: Session, site_url: str, *, api_base_path: str = "/ap
             "",
             f"- [Friends]({_internal_url(base_url, '/friends')}): Public friends/blogroll page.",
             f"- [Guestbook]({_internal_url(base_url, '/guestbook')}): Public guestbook.",
-            f"- [Calendar]({_internal_url(base_url, '/calendar')}): Public activity calendar.",
         ]
     )
 

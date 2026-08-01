@@ -21,6 +21,7 @@ const NotFound = () => {
       <PageMeta
         title={metaTitle}
         description={metaDescription}
+        noIndex
       />
       <div
         className="absolute inset-0 opacity-70"

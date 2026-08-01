@@ -10,7 +10,7 @@ export interface SiteProfileAdminRead {
   id: unknown;
   /** Site owner display name */
   name: unknown;
-  /** Site title */
+  /** Generated site title */
   title: unknown;
   /** Short biography */
   bio: unknown;

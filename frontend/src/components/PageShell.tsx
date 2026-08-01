@@ -15,6 +15,8 @@ interface PageShellProps {
   metaTitle?: string;
   metaDescription?: string;
   metaAuthor?: string;
+  metaType?: "website" | "article" | "profile";
+  noIndex?: boolean;
   children: ReactNode;
   headerAside?: ReactNode;
   width?: "narrow" | "content" | "wide";
@@ -37,6 +39,8 @@ const PageShell = ({
   metaTitle,
   metaDescription,
   metaAuthor,
+  metaType = "website",
+  noIndex = false,
   children,
   headerAside,
   width = "content",
@@ -53,7 +57,13 @@ const PageShell = ({
     <>
       <Navbar />
       <div className="relative flex min-h-screen min-h-[100dvh] flex-col overflow-hidden bg-background text-foreground">
-        <PageMeta title={metaTitle ?? title} description={metaDescription ?? description} author={metaAuthor} />
+        <PageMeta
+          title={metaTitle ?? title}
+          description={metaDescription ?? description}
+          author={metaAuthor}
+          type={metaType}
+          noIndex={noIndex}
+        />
         <FallingPetals />
 
         <div className="pointer-events-none absolute inset-x-0 top-0 h-[440px]">

@@ -22,6 +22,7 @@ from sqlalchemy.orm import Session
 from aerisun.core.time import shanghai_now
 from aerisun.domain.exceptions import ResourceNotFound, ValidationError
 from aerisun.domain.site_config import repository as repo
+from aerisun.domain.site_config.identity import build_site_brand_title, read_search_identity_names
 from aerisun.domain.site_config.schemas import (
     CommunityConfigAdminRead,
     CommunityConfigRead,
@@ -682,10 +683,13 @@ def get_site_config(session: Session) -> SiteConfigRead:
             )
             navigation.append(nav_read)
 
+    real_name, english_name = read_search_identity_names(site.feature_flags)
+    site_title = build_site_brand_title(site.name, real_name, english_name)
+
     return SiteConfigRead(
         site=SiteProfileRead(
             name=site.name,
-            title=site.title,
+            title=site_title,
             bio=site.bio,
             role=site.role,
             og_image=site.og_image,
@@ -843,7 +847,9 @@ def _get_site_profile_orm(session: Session):
 def get_site_profile_admin(session: Session) -> SiteProfileAdminRead:
     """Return the primary SiteProfile as a DTO."""
     profile = _get_site_profile_orm(session)
-    return SiteProfileAdminRead.model_validate(profile)
+    real_name, english_name = read_search_identity_names(profile.feature_flags)
+    title = build_site_brand_title(profile.name, real_name, english_name)
+    return SiteProfileAdminRead.model_validate(profile).model_copy(update={"title": title})
 
 
 def update_site_profile_admin(session: Session, payload: BaseModel) -> SiteProfileAdminRead:
@@ -854,7 +860,11 @@ def update_site_profile_admin(session: Session, payload: BaseModel) -> SiteProfi
     previous_hero_image_url = profile.hero_image_url
     previous_hero_poster_url = profile.hero_poster_url
     for key, value in payload.model_dump(exclude_unset=True).items():
+        if key == "title":
+            continue
         setattr(profile, key, value)
+    real_name, english_name = read_search_identity_names(profile.feature_flags)
+    profile.title = build_site_brand_title(profile.name, real_name, english_name)
     session.commit()
     session.refresh(profile)
     if (

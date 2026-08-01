@@ -208,7 +208,7 @@ class SiteProfileCreate(BaseModel):
 
 class SiteProfileUpdate(BaseModel):
     name: str | None = Field(default=None, description="Site owner display name")
-    title: str | None = Field(default=None, description="Site title")
+    title: str | None = Field(default=None, description="Deprecated generated site title")
     bio: str | None = Field(default=None, description="Short biography")
     role: str | None = Field(default=None, description="Professional role or tagline")
     og_image: str | None = Field(default=None, description="Open Graph/Twitter sharing image path")
@@ -237,7 +237,7 @@ class SiteProfileUpdate(BaseModel):
 class SiteProfileAdminRead(ModelBase):
     id: str = Field(description="Unique profile identifier")
     name: str = Field(description="Site owner display name")
-    title: str = Field(description="Site title")
+    title: str = Field(description="Generated site title")
     bio: str = Field(description="Short biography")
     role: str = Field(description="Professional role or tagline")
     og_image: str = Field(description="Open Graph/Twitter sharing image path")

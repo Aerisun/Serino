@@ -257,6 +257,7 @@ const Thoughts = () => {
       title={config.title}
       description={config.description}
       metaDescription={config.metaDescription}
+      noIndex={Boolean(previewThought)}
       width={
         config.width === "narrow" ? "content" : (config.width ?? "content")
       }

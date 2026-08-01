@@ -1,5 +1,6 @@
 import { useEffect } from "react"
 import { useSiteConfig } from "@/contexts/runtime-config"
+import { buildArticleStructuredData } from "@/lib/article-structured-data"
 
 interface JsonLdProps {
   title: string
@@ -7,39 +8,32 @@ interface JsonLdProps {
   slug: string
   type: "posts" | "diary"
   publishedAt?: string
+  modifiedAt?: string
   tags?: string[]
 }
 
-const JsonLd = ({ title, description, slug, type, publishedAt, tags }: JsonLdProps) => {
+const JsonLd = ({ title, description, slug, type, publishedAt, modifiedAt, tags }: JsonLdProps) => {
   const site = useSiteConfig()
 
   useEffect(() => {
-    const publisherName = site.name || site.title
     const script = document.createElement("script")
     script.type = "application/ld+json"
     script.id = "json-ld-blogposting"
 
-    const data: Record<string, unknown> = {
-      "@context": "https://schema.org",
-      "@type": "BlogPosting",
-      headline: title,
-      description: description?.slice(0, 160) || "",
-      author: {
-        "@type": "Person",
-        name: publisherName,
-      },
-      publisher: {
-        "@type": "Person",
-        name: publisherName,
-      },
-      mainEntityOfPage: {
-        "@type": "WebPage",
-        "@id": `${window.location.origin}/${type}/${slug}`,
-      },
-    }
-
-    if (publishedAt) data.datePublished = publishedAt
-    if (tags && tags.length > 0) data.keywords = tags.join(", ")
+    const data = buildArticleStructuredData({
+      title,
+      description,
+      slug,
+      type,
+      publishedAt,
+      modifiedAt,
+      tags,
+      image: site.ogImage,
+      origin: window.location.origin,
+      canonicalBaseUrl: site.searchOptimization.canonicalUrl,
+      siteName: site.name || site.title,
+      realName: site.searchOptimization.realName,
+    })
 
     script.textContent = JSON.stringify(data)
 
@@ -51,7 +45,7 @@ const JsonLd = ({ title, description, slug, type, publishedAt, tags }: JsonLdPro
       const el = document.getElementById("json-ld-blogposting")
       if (el) el.remove()
     }
-  }, [title, description, slug, type, publishedAt, tags, site])
+  }, [title, description, slug, type, publishedAt, modifiedAt, tags, site])
 
   return null
 }

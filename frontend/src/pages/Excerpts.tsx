@@ -232,6 +232,7 @@ const Excerpts = () => {
       title={config.title}
       description={config.description}
       metaDescription={config.metaDescription}
+      noIndex={Boolean(previewExcerpt)}
       width={
         config.width === "narrow" ? "content" : (config.width ?? "content")
       }

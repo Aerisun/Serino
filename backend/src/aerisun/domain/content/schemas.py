@@ -30,6 +30,10 @@ class ContentSummaryRead(ModelBase):
     poem: str | None = Field(default=None, description="Associated poem text")
     author: str | None = Field(default=None, description="Original author name")
     source: str | None = Field(default=None, description="Source URL or reference")
+    requires_approval: bool = Field(
+        default=False,
+        description="Whether viewing this public post requires approval",
+    )
 
 
 class ContentEntryRead(ContentSummaryRead):

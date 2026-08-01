@@ -203,6 +203,7 @@ export const ReadPostApiV1SitePostsSlugGetResponse = zod.object({
   "poem": zod.unknown().optional().describe('Associated poem text'),
   "author": zod.unknown().optional().describe('Original author name'),
   "source": zod.unknown().optional().describe('Source URL or reference'),
+  "requires_approval": zod.unknown().optional().describe('Whether viewing this public post requires approval'),
   "body": zod.unknown().describe('Full content body in Markdown')
 })
 
@@ -259,6 +260,7 @@ export const ReadDiaryEntryApiV1SiteDiarySlugGetResponse = zod.object({
   "poem": zod.unknown().optional().describe('Associated poem text'),
   "author": zod.unknown().optional().describe('Original author name'),
   "source": zod.unknown().optional().describe('Source URL or reference'),
+  "requires_approval": zod.unknown().optional().describe('Whether viewing this public post requires approval'),
   "body": zod.unknown().describe('Full content body in Markdown')
 })
 
@@ -1906,7 +1908,7 @@ export const PostGenerateDiaryPoemApiV1AdminDiaryGeneratePoemPostResponse = zod.
 export const GetProfileApiV1AdminSiteConfigProfileGetResponse = zod.object({
   "id": zod.unknown().describe('Unique profile identifier'),
   "name": zod.unknown().describe('Site owner display name'),
-  "title": zod.unknown().describe('Site title'),
+  "title": zod.unknown().describe('Generated site title'),
   "bio": zod.unknown().describe('Short biography'),
   "role": zod.unknown().describe('Professional role or tagline'),
   "og_image": zod.unknown().describe('Open Graph\/Twitter sharing image path'),
@@ -1930,7 +1932,7 @@ export const GetProfileApiV1AdminSiteConfigProfileGetResponse = zod.object({
  */
 export const UpdateProfileApiV1AdminSiteConfigProfilePutBody = zod.object({
   "name": zod.union([zod.string(),zod.null()]).optional().describe('Site owner display name'),
-  "title": zod.union([zod.string(),zod.null()]).optional().describe('Site title'),
+  "title": zod.union([zod.string(),zod.null()]).optional().describe('Deprecated generated site title'),
   "bio": zod.union([zod.string(),zod.null()]).optional().describe('Short biography'),
   "role": zod.union([zod.string(),zod.null()]).optional().describe('Professional role or tagline'),
   "og_image": zod.union([zod.string(),zod.null()]).optional().describe('Open Graph\/Twitter sharing image path'),
@@ -1949,7 +1951,7 @@ export const UpdateProfileApiV1AdminSiteConfigProfilePutBody = zod.object({
 export const UpdateProfileApiV1AdminSiteConfigProfilePutResponse = zod.object({
   "id": zod.unknown().describe('Unique profile identifier'),
   "name": zod.unknown().describe('Site owner display name'),
-  "title": zod.unknown().describe('Site title'),
+  "title": zod.unknown().describe('Generated site title'),
   "bio": zod.unknown().describe('Short biography'),
   "role": zod.unknown().describe('Professional role or tagline'),
   "og_image": zod.unknown().describe('Open Graph\/Twitter sharing image path'),

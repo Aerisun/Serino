@@ -7,6 +7,8 @@ interface PageMetaProps {
   description?: string;
   image?: string;
   author?: string;
+  noIndex?: boolean;
+  type?: "website" | "article" | "profile";
 }
 
 const SITE_JSON_LD_SCRIPT_ID = "json-ld-site-profile";
@@ -80,6 +82,8 @@ const PageMeta = ({
   description,
   image,
   author,
+  noIndex = false,
+  type = "website",
 }: PageMetaProps) => {
   const site = useSiteConfig();
   const pathname = typeof window !== "undefined" ? window.location.pathname : "/";
@@ -93,8 +97,10 @@ const PageMeta = ({
         pageImage: image,
         pageAuthor: author,
         pathname,
+        noIndex,
+        ogType: type,
       }),
-    [author, description, image, pathname, site, title],
+    [author, description, image, noIndex, pathname, site, title, type],
   );
 
   useEffect(() => {
@@ -104,11 +110,12 @@ const PageMeta = ({
     syncMeta('meta[name="author"]', { name: "author" }, metadata.author);
     syncMeta('meta[name="keywords"]', { name: "keywords" }, metadata.keywords);
     syncMeta('meta[name="robots"]', { name: "robots" }, metadata.robots);
-    syncMeta('meta[name="title"]', { name: "title" }, metadata.shareTitle);
     syncMeta('meta[property="og:title"]', { property: "og:title" }, metadata.shareTitle);
+    syncMeta('meta[property="og:type"]', { property: "og:type" }, metadata.ogType);
     syncMeta('meta[property="og:description"]', { property: "og:description" }, metadata.description);
     syncMeta('meta[property="og:image"]', { property: "og:image" }, metadata.image);
     syncMeta('meta[property="og:site_name"]', { property: "og:site_name" }, metadata.siteTitle);
+    syncMeta('meta[property="og:url"]', { property: "og:url" }, metadata.canonicalUrl);
     syncMeta('meta[name="twitter:title"]', { name: "twitter:title" }, metadata.shareTitle);
     syncMeta('meta[name="twitter:description"]', { name: "twitter:description" }, metadata.description);
     syncMeta('meta[name="twitter:image"]', { name: "twitter:image" }, metadata.image);

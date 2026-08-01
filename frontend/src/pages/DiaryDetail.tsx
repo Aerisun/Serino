@@ -21,7 +21,7 @@ import {
   useDiaryAccessPrompt,
 } from "@/components/DiaryAccessPrompt";
 import { useFeatureFlags, usePageConfig } from "@/contexts/runtime-config";
-import { useFrontendI18n, type FrontendLang } from "@/i18n";
+import { useFrontendI18n } from "@/i18n";
 import { formatPublishedDate } from "@/lib/api/utils";
 import { usePreviewChannel, type ContentPreviewData } from "@/lib/preview";
 import { formatDateInBeijing } from "@/lib/time";
@@ -29,6 +29,7 @@ import { useReadDiaryEntryApiV1SiteDiarySlugGet } from "@serino/api-client/site"
 import type { ContentEntryRead } from "@serino/api-client/models";
 import type { BaseViewPageConfig } from "@/lib/page-config";
 import { lazyWithPreload } from "@/lib/lazy";
+import { buildContentSearchDescription } from "@/lib/article-structured-data";
 import {
   DIARY_WEATHER_ICONS,
   getDiaryWeatherLabelKey,
@@ -42,12 +43,14 @@ const ArticleMarkdownRenderer = lazyWithPreload(() => import("@/components/Artic
 interface DiaryData {
   slug: string;
   date: string;
-  weekday: string;
+  publishedAt?: string;
+  modifiedAt?: string;
   headerDate: string;
   isArchived: boolean;
   weather?: DiaryWeather;
   mood?: string;
   title: string;
+  summary: string;
   body: string;
   poem?: string;
   likes: number | null;
@@ -61,12 +64,6 @@ interface DiaryDetailPageConfig extends BaseViewPageConfig {
   detailMissingDescription?: string;
   detailEndLabel?: string;
 }
-
-const formatWeekday = (value: string | null, lang: FrontendLang) => {
-  return value
-    ? formatDateInBeijing(value, lang === "zh" ? "zh-CN" : "en-US", { weekday: "short" })
-    : "";
-};
 
 const formatEnglishHeaderDate = (
   value: string | null | undefined,
@@ -84,17 +81,18 @@ const formatEnglishHeaderDate = (
 
 const buildRemoteDiaryEntry = (
   entry: ContentEntryRead,
-  lang: FrontendLang,
   t: (key: string, values?: Record<string, string | number>, fallback?: string) => string,
 ): DiaryData => ({
   slug: entry.slug,
   date: formatPublishedDate(entry.published_at) || "",
-  weekday: formatWeekday(entry.published_at, lang),
+  publishedAt: entry.published_at ?? undefined,
+  modifiedAt: entry.updated_at ?? undefined,
   headerDate: formatEnglishHeaderDate(entry.published_at, t),
   isArchived: entry.visibility === "private",
   weather: normalizeDiaryWeather(entry.weather),
   mood: entry.mood ?? undefined,
   title: entry.title,
+  summary: typeof entry.summary === "string" ? entry.summary : "",
   body: entry.body,
   poem: entry.poem ?? undefined,
   likes: entry.like_count ?? null,
@@ -103,32 +101,26 @@ const buildRemoteDiaryEntry = (
 
 const buildPreviewDiaryEntry = (
   preview: ContentPreviewData,
-  lang: FrontendLang,
   t: (key: string, values?: Record<string, string | number>, fallback?: string) => string,
 ): DiaryData => ({
   slug: preview.slug || "",
   date: formatPublishedDate(preview.published_at) || t("common.draft"),
-  weekday: formatWeekday(preview.published_at ?? null, lang),
+  publishedAt: preview.published_at ?? undefined,
+  modifiedAt: preview.updated_at ?? undefined,
   headerDate: formatEnglishHeaderDate(preview.published_at, t),
   isArchived: false,
   weather: normalizeDiaryWeather(preview.weather),
   mood: preview.mood ?? undefined,
   title: preview.title,
+  summary: preview.summary || "",
   body: preview.body || "",
   poem: preview.poem ?? undefined,
   likes: 0,
   comments: 0,
 });
 
-const buildDiaryPublicLabel = (entry: DiaryData | null, fallback: string) => {
-  if (!entry) {
-    return fallback;
-  }
-  return entry.weekday ? `${entry.weekday} · ${entry.date}` : entry.date || fallback;
-};
-
 const DiaryDetail = () => {
-  const { t, lang } = useFrontendI18n();
+  const { t } = useFrontendI18n();
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -175,10 +167,10 @@ const DiaryDetail = () => {
   });
 
   const previewEntry =
-    previewData?.type === "diary" ? buildPreviewDiaryEntry(previewData, lang, t) : null;
+    previewData?.type === "diary" ? buildPreviewDiaryEntry(previewData, t) : null;
   const entry =
     previewEntry ??
-    (response?.data ? buildRemoteDiaryEntry(response.data, lang, t) : null);
+    (response?.data ? buildRemoteDiaryEntry(response.data, t) : null);
   const is404 =
     isError &&
     error != null &&
@@ -220,6 +212,16 @@ const DiaryDetail = () => {
       ? t("diaryDetail.missingId")
       : "";
   const showArticleEnhancements = Boolean(entry) && featureFlags.toc;
+  const entryDescription = entry
+    ? buildContentSearchDescription({ summary: entry.summary, body: entry.body })
+    : pageStatus === "blocked"
+      ? t("diaryAccess.privateDescription")
+      : errorMessage || detailMissingDescription;
+  const shouldNoIndex =
+    pageStatus !== "ready" ||
+    Boolean(previewEntry) ||
+    diaryPrivateEnabled ||
+    Boolean(entry?.isArchived);
 
   useEffect(() => {
     if (entry) {
@@ -231,25 +233,25 @@ const DiaryDetail = () => {
   const WeatherIcon = entry?.weather ? DIARY_WEATHER_ICONS[entry.weather] : null;
   const weatherLabelKey = getDiaryWeatherLabelKey(entry?.weather);
   const weatherLabel = weatherLabelKey ? t(weatherLabelKey) : "";
-  const publicDiaryLabel = buildDiaryPublicLabel(entry, t("nav.diary"));
   const headerDateLabel = entry?.headerDate || "";
 
   return (
     <div className="min-h-screen bg-background text-foreground">
       {promptNode}
       <PageMeta
-        title={entry ? publicDiaryLabel : (status === "error" ? errorTitle : detailMissingTitle)}
-        description={
-          entry?.body.slice(0, 150) ??
-          (pageStatus === "blocked" ? t("diaryAccess.privateDescription") : errorMessage || detailMissingDescription)
-        }
+        title={entry?.title || (status === "error" ? errorTitle : detailMissingTitle)}
+        description={entryDescription}
+        type="article"
+        noIndex={shouldNoIndex}
       />
-      {entry && (
+      {entry && !shouldNoIndex && (
         <JsonLd
-          title={publicDiaryLabel}
-          description={entry.body.slice(0, 200) || ""}
+          title={entry.title}
+          description={entryDescription}
           slug={entry.slug}
           type="diary"
+          publishedAt={entry.publishedAt}
+          modifiedAt={entry.modifiedAt}
         />
       )}
       <FallingPetals />

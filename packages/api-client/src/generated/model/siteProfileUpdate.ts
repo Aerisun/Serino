@@ -9,7 +9,7 @@ import type { SiteProfileUpdateFeatureFlags } from './siteProfileUpdateFeatureFl
 export interface SiteProfileUpdate {
   /** Site owner display name */
   name?: string | null;
-  /** Site title */
+  /** Deprecated generated site title */
   title?: string | null;
   /** Short biography */
   bio?: string | null;

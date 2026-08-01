@@ -1737,8 +1737,8 @@ def test_deploy_contract_reuses_shared_env_keys():
     assert '"/robots.txt": {' in frontend_vite_text
     assert '"/llms.txt": {' in frontend_vite_text
     assert '"/resume.md": {' in frontend_vite_text
-    assert 'href="/llms.txt"' in frontend_index_text
-    assert 'href="/resume.md"' in frontend_index_text
+    assert 'rel="alternate"' not in frontend_index_text
+    assert "aerisun.top" not in frontend_index_text
     assert 'const walineBasePath = stripTrailingSlash(env.AERISUN_WALINE_BASE_PATH ?? "/waline");' in frontend_vite_text
     assert 'const adminBasePath = normalizeBasePath(env.AERISUN_ADMIN_BASE_PATH || "", "/admin/");' in admin_vite_text
     assert 'const apiBasePath = (env.AERISUN_API_BASE_PATH || "/api").replace(/\\/+$/, "");' in admin_vite_text
@@ -1778,12 +1778,14 @@ def test_caddy_routes_serino_before_local_extensions_and_returns_real_404():
     assert caddy_text.count("try_files {path} /index.html") == 1
     assert "try_files /index.html" in caddy_text
     assert "@frontendSpa" in caddy_text
+    assert "@previewPage" in caddy_text
+    assert 'header X-Robots-Tag "noindex, nofollow"' in caddy_text
     assert "redir /admin /admin/ 308" in caddy_text
     assert "path /assets/* /fonts/* /index.html /registerSW.js /sw.js" in caddy_text
     assert (
-        "path / /posts /posts/* /friends /thoughts /diary /diary/* /excerpts /resume /guestbook /calendar /preview"
-        in caddy_text
+        "path / /posts /posts/* /friends /thoughts /diary /diary/* /excerpts /resume /guestbook /calendar" in caddy_text
     )
+    assert "path /preview" in caddy_text
     assert caddy_text.index("@apiRoutes") < caddy_text.index("import routes.d/*.caddy")
     assert caddy_text.index("import routes.d/*.caddy") < caddy_text.index("respond 404")
 

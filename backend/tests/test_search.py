@@ -6,6 +6,7 @@ from aerisun.core.db import get_session_factory
 from aerisun.core.time import BEIJING_TZ, shanghai_now
 from aerisun.domain.content.models import PostEntry
 from aerisun.domain.diary_access.models import DiaryAccessRequest
+from aerisun.domain.post_access.models import PostAccessRequest
 from aerisun.domain.site_auth.models import SiteUser
 
 
@@ -41,6 +42,64 @@ def test_search_empty_results(client):
     assert r.status_code == 200
     data = r.json()
     assert data["total"] == 0
+
+
+def test_search_never_exposes_body_matches_from_posts_that_require_approval(client, admin_headers):
+    secret = "approvalsearchsecret9f2b"
+    created = client.post(
+        "/api/v1/admin/posts/",
+        json={
+            "slug": "approval-search-secret",
+            "title": "Approval Search Secret",
+            "body": secret,
+            "visibility": "public",
+            "requires_approval": True,
+        },
+        headers=admin_headers,
+    )
+    assert created.status_code == 201
+
+    response = client.get("/api/v1/site/search", params={"q": secret})
+
+    assert response.status_code == 200
+    assert response.json()["items"] == []
+
+
+def test_search_preserves_protected_post_results_for_an_approved_reader(client, admin_headers):
+    secret = "approvedreadersearch6c1a"
+    created = client.post(
+        "/api/v1/admin/posts/",
+        json={
+            "slug": "approved-reader-search",
+            "title": "Approved Reader Search",
+            "body": secret,
+            "visibility": "public",
+            "requires_approval": True,
+        },
+        headers=admin_headers,
+    )
+    assert created.status_code == 201
+    _login_site_user(client, email="approved-search@example.com", display_name="Approved Search")
+
+    with get_session_factory()() as session:
+        user = session.query(SiteUser).filter(SiteUser.email == "approved-search@example.com").one()
+        post = session.query(PostEntry).filter(PostEntry.slug == "approved-reader-search").one()
+        session.add(
+            PostAccessRequest(
+                post_id=post.id,
+                site_user_id=user.id,
+                reason="Approved search access",
+                status="approved",
+                granted_at=shanghai_now(),
+                expires_at=shanghai_now() + timedelta(days=7),
+            )
+        )
+        session.commit()
+
+    response = client.get("/api/v1/site/search", params={"q": secret})
+
+    assert response.status_code == 200
+    assert any(item["slug"] == "approved-reader-search" for item in response.json()["items"])
 
 
 def test_search_splits_keywords_and_highlights_terms_in_first_keyword_snippet(client):

@@ -31,24 +31,28 @@ def _make_payload(content_type: str, suffix: str) -> dict:
 
 
 @pytest.mark.parametrize(
-    ("path", "channel_title", "slug", "item_path"),
+    ("path", "channel_section", "slug", "item_path"),
     [
-        ("/feeds/posts.xml", "Aerisun Posts", "from-zero-design-system", "/posts/from-zero-design-system"),
-        ("/feeds/diary.xml", "Aerisun Diary", "spring-equinox-and-warm-light", "/diary/spring-equinox-and-warm-light"),
-        ("/feeds/thoughts.xml", "Aerisun Thoughts", "spacing-rhythm-note", "/thoughts#spacing-rhythm-note"),
-        ("/feeds/excerpts.xml", "Aerisun Excerpts", "good-design-note", "/excerpts#good-design-note"),
+        ("/feeds/posts.xml", "Posts", "from-zero-design-system", "/posts/from-zero-design-system"),
+        ("/feeds/diary.xml", "Diary", "spring-equinox-and-warm-light", "/diary/spring-equinox-and-warm-light"),
+        ("/feeds/thoughts.xml", "Thoughts", "spacing-rhythm-note", "/thoughts#spacing-rhythm-note"),
+        ("/feeds/excerpts.xml", "Excerpts", "good-design-note", "/excerpts#good-design-note"),
     ],
 )
-def test_public_content_feeds_return_rss_xml(client, path: str, channel_title: str, slug: str, item_path: str) -> None:
+def test_public_content_feeds_return_rss_xml(
+    client, path: str, channel_section: str, slug: str, item_path: str
+) -> None:
     if path == "/feeds/diary.xml":
         _set_diary_private_enabled(False)
     site_url = (get_settings().site_url or "https://example.com").rstrip("/")
+    with get_session_factory()() as session:
+        site_name = session.query(SiteProfile).one().name
 
     response = client.get(path)
 
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("application/rss+xml")
-    assert f"<title>{channel_title}</title>" in response.text
+    assert f"<title>{site_name} {channel_section}</title>" in response.text
     assert slug in response.text
     assert f"{site_url}{item_path}" in response.text
 
@@ -109,6 +113,33 @@ def test_posts_feed_excludes_public_posts_marked_for_rss_exclusion(client, admin
 
     assert visible_payload["slug"] in response.text
     assert hidden_payload["slug"] not in response.text
+
+
+def test_posts_feed_excludes_posts_that_require_access_approval(client, admin_headers) -> None:
+    protected_payload = _make_payload("posts", "-approval-only")
+    protected_payload["requires_approval"] = True
+
+    created = client.post(f"{ADMIN_BASE}/posts/", json=protected_payload, headers=admin_headers)
+    assert created.status_code == 201
+
+    response = client.get("/feeds/posts.xml")
+
+    assert response.status_code == 200
+    assert protected_payload["slug"] not in response.text
+
+
+def test_feed_identity_uses_the_configured_public_site_name(client) -> None:
+    with get_session_factory()() as session:
+        profile = session.query(SiteProfile).one()
+        profile.name = "Custom Public Name"
+        session.commit()
+
+    response = client.get("/feeds/posts.xml")
+
+    assert response.status_code == 200
+    assert "<title>Custom Public Name Posts</title>" in response.text
+    assert "<description>Latest published posts from Custom Public Name</description>" in response.text
+    assert "<generator>Serino</generator>" in response.text
 
 
 def test_posts_feed_backfills_limit_after_excluding_newer_posts(client, admin_headers) -> None:

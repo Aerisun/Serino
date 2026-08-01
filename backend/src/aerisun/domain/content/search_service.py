@@ -7,10 +7,14 @@ from datetime import datetime
 from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Session
 
+from aerisun.core.time import shanghai_now
 from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
 from aerisun.domain.content.schemas import SearchResponse, SearchResultItem
 from aerisun.domain.diary_access.service import current_site_user_can_view_diary
+from aerisun.domain.post_access.models import PostAccessRequest
+from aerisun.domain.post_access.service import post_access_approval_enabled
 from aerisun.domain.site_auth.models import SiteUser, SiteUserSession
+from aerisun.domain.site_auth.service import is_site_user_admin
 
 SNIPPET_RADIUS = 120
 
@@ -98,13 +102,37 @@ def search_public_content(
     results: list[SearchResultItem] = []
 
     include_diary = current_site_user_can_view_diary(session, current_user, current_site_session)
+    hide_protected_posts = post_access_approval_enabled(session)
     for model, type_name in _CONTENT_TYPES:
         if type_name == "diary" and not include_diary:
             continue
+        access_conditions = [model.visibility == "public"]
+        if model is PostEntry and hide_protected_posts:
+            is_admin = current_user is not None and is_site_user_admin(
+                session,
+                current_user,
+                current_site_session,
+            )
+            if not is_admin and current_user is not None:
+                accessible_post_ids = select(PostAccessRequest.post_id).where(
+                    PostAccessRequest.site_user_id == current_user.id,
+                    PostAccessRequest.status == "approved",
+                    PostAccessRequest.revoked_at.is_(None),
+                    PostAccessRequest.expires_at.is_not(None),
+                    PostAccessRequest.expires_at > shanghai_now(),
+                )
+                access_conditions.append(
+                    or_(
+                        PostEntry.requires_approval.is_(False),
+                        PostEntry.id.in_(accessible_post_ids),
+                    )
+                )
+            elif not is_admin:
+                access_conditions.append(PostEntry.requires_approval.is_(False))
         rows = session.scalars(
             select(model)
             .where(
-                model.visibility == "public",
+                *access_conditions,
                 and_(*(_keyword_condition(model, keyword) for keyword in keywords)),
             )
             .order_by(model.published_at.desc().nullslast())

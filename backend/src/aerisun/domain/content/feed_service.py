@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from email.utils import format_datetime
 from xml.etree.ElementTree import Element, SubElement, tostring
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from aerisun.core.time import to_beijing_datetime
@@ -15,8 +16,10 @@ from aerisun.domain.content.service import (
     list_public_thoughts,
     list_rss_posts,
 )
-from aerisun.domain.diary_access.service import diary_private_enabled
+from aerisun.domain.diary_access.service import DIARY_PRIVATE_FEATURE_FLAG
 from aerisun.domain.exceptions import ValidationError
+from aerisun.domain.post_access.service import POST_ACCESS_APPROVAL_FEATURE_FLAG
+from aerisun.domain.site_config.models import SiteProfile
 
 
 @dataclass(frozen=True, slots=True)
@@ -111,26 +114,49 @@ def get_feed_definition(feed_key: str) -> FeedDefinition:
 
 def build_feed_rss_xml(session: Session, site_url: str, feed_key: str, *, limit: int | None = None) -> str:
     definition = get_feed_definition(feed_key)
+    profile = session.scalar(select(SiteProfile).order_by(SiteProfile.created_at.asc()).limit(1))
+    site_name = ((profile.name or profile.title).strip() if profile is not None else "") or "Site"
+    feature_flags = profile.feature_flags if profile is not None and isinstance(profile.feature_flags, dict) else {}
+    diary_private = bool(feature_flags.get(DIARY_PRIVATE_FEATURE_FLAG, True))
+    post_approval_enabled = bool(feature_flags.get(POST_ACCESS_APPROVAL_FEATURE_FLAG, True))
     settings_url = site_url.rstrip("/")
     feed_url = f"{settings_url}{definition.feed_path}"
     channel_url = f"{settings_url}{definition.channel_path}"
-    collection = (
-        None
-        if definition.key == "diary" and diary_private_enabled(session)
-        else definition.list_items(
+    if definition.key == "diary" and diary_private:
+        collection = None
+    elif definition.key == "posts":
+        collection = list_rss_posts(
+            session,
+            limit=limit or definition.limit,
+            offset=0,
+            exclude_requires_approval=post_approval_enabled,
+        )
+    else:
+        collection = definition.list_items(
             session,
             limit=limit or definition.limit,
             offset=0,
         )
-    )
 
     rss = Element("rss", version="2.0")
     channel = SubElement(rss, "channel")
-    SubElement(channel, "title").text = definition.title
+    section_title = {
+        "posts": "Posts",
+        "diary": "Diary",
+        "thoughts": "Thoughts",
+        "excerpts": "Excerpts",
+    }[definition.key]
+    content_label = {
+        "posts": "posts",
+        "diary": "diary entries",
+        "thoughts": "thoughts",
+        "excerpts": "excerpts",
+    }[definition.key]
+    SubElement(channel, "title").text = f"{site_name} {section_title}"
     SubElement(channel, "link").text = channel_url
-    SubElement(channel, "description").text = definition.description
+    SubElement(channel, "description").text = f"Latest published {content_label} from {site_name}"
     SubElement(channel, "language").text = "zh-CN"
-    SubElement(channel, "generator").text = "Aerisun"
+    SubElement(channel, "generator").text = "Serino"
     SubElement(channel, "ttl").text = "60"
     SubElement(
         channel,

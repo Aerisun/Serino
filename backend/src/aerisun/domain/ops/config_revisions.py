@@ -31,6 +31,7 @@ from aerisun.domain.outbound_proxy.service import (
 )
 from aerisun.domain.site_auth.config_service import get_site_auth_config_orm
 from aerisun.domain.site_config import repository as site_repo
+from aerisun.domain.site_config.identity import build_site_brand_title, read_search_identity_names
 from aerisun.domain.site_config.models import (
     CommunityConfig,
     NavItem,
@@ -396,10 +397,11 @@ def _site_profile_capture(session: Session) -> dict[str, Any]:
     profile = session.scalars(select(SiteProfile).order_by(SiteProfile.created_at.asc())).first()
     if profile is None:
         raise ResourceNotFound("Site profile not configured")
+    real_name, english_name = read_search_identity_names(profile.feature_flags)
     return canonicalize_snapshot(
         {
             "name": profile.name,
-            "title": profile.title,
+            "title": build_site_brand_title(profile.name, real_name, english_name),
             "bio": profile.bio,
             "role": profile.role,
             "og_image": profile.og_image,
@@ -428,6 +430,8 @@ def _site_profile_restore(session: Session, snapshot: dict[str, Any]) -> None:
             profile.feature_flags = dict(value or {})
         else:
             setattr(profile, key, value)
+    real_name, english_name = read_search_identity_names(profile.feature_flags)
+    profile.title = build_site_brand_title(profile.name, real_name, english_name)
     session.flush()
 
 

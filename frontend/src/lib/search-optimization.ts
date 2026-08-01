@@ -1,3 +1,9 @@
+import {
+  isPublicHttpUrl,
+  resolvePublicResourceUrl,
+  resolvePublicUrl,
+} from "@/lib/public-url";
+
 export const SEARCH_OPTIMIZATION_FLAG_KEY = "search_optimization";
 export const DEFAULT_ROBOTS_DIRECTIVE =
   "index,follow,max-snippet:-1,max-image-preview:large,max-video-preview:-1";
@@ -8,6 +14,7 @@ export interface SearchOptimizationConfig {
   keywords: string[];
   llmSummary: string;
   realName: string;
+  englishName: string;
   expertise: string[];
   sameAs: string[];
   canonicalUrl: string;
@@ -30,6 +37,8 @@ interface BuildSearchMetadataInput {
   pageAuthor?: string;
   pathname?: string;
   origin?: string;
+  noIndex?: boolean;
+  ogType?: "website" | "article" | "profile";
 }
 
 export interface SearchMetadata {
@@ -41,6 +50,7 @@ export interface SearchMetadata {
   siteTitle: string;
   keywords: string;
   robots: string;
+  ogType: "website" | "article" | "profile";
   canonicalUrl: string;
   siteJsonLd: Record<string, unknown>;
 }
@@ -51,6 +61,7 @@ const EMPTY_SEARCH_OPTIMIZATION: SearchOptimizationConfig = {
   keywords: [],
   llmSummary: "",
   realName: "",
+  englishName: "",
   expertise: [],
   sameAs: [],
   canonicalUrl: "",
@@ -90,6 +101,7 @@ export function normalizeSearchOptimization(raw: unknown): SearchOptimizationCon
     keywords: splitTextList(raw.keywords),
     llmSummary: normalizeText(raw.llm_summary),
     realName: normalizeText(raw.real_name),
+    englishName: normalizeText(raw.english_name),
     expertise: splitTextList(raw.expertise),
     sameAs: splitTextList(raw.same_as),
     canonicalUrl: normalizeText(raw.canonical_url),
@@ -102,28 +114,6 @@ const normalizePathname = (value: string): string => {
   return normalized === "/" ? "/" : normalized.replace(/\/+$/, "");
 };
 
-const resolveCanonicalUrl = ({
-  canonicalBaseUrl,
-  pathname = "/",
-  origin,
-}: {
-  canonicalBaseUrl: string;
-  pathname?: string;
-  origin?: string;
-}) => {
-  const normalizedPath = pathname.startsWith("/") ? pathname : `/${pathname}`;
-  const base = canonicalBaseUrl || origin || (typeof window !== "undefined" ? window.location.origin : "");
-  if (!base) {
-    return normalizedPath;
-  }
-
-  try {
-    return new URL(normalizedPath, base.endsWith("/") ? base : `${base}/`).href;
-  } catch {
-    return normalizedPath;
-  }
-};
-
 const omitEmpty = (value: Record<string, unknown>) =>
   Object.fromEntries(
     Object.entries(value).filter(([, entry]) => {
@@ -134,37 +124,21 @@ const omitEmpty = (value: Record<string, unknown>) =>
     }),
   );
 
-const hasCjk = (value: string) => /[\u3400-\u9fff]/.test(value);
-
 const uniqueTextList = (values: string[]) =>
   Array.from(new Set(values.map((value) => value.trim()).filter(Boolean)));
 
-const buildIdentityLabel = (realName: string, nickname: string) => {
-  if (!realName || !nickname || realName === nickname) {
-    return realName;
-  }
-  return hasCjk(realName) ? `${realName}（${nickname}）` : `${realName} (${nickname})`;
+const buildIdentityAliases = (realName: string, englishName: string, nickname: string) =>
+  uniqueTextList([englishName, nickname]).filter((value) => value !== realName);
+
+const buildBilingualName = (realName: string, englishName: string) => {
+  const names = uniqueTextList([realName, englishName]);
+  return names.join(" - ");
 };
 
-const strengthenIdentityDescription = ({
-  description,
-  realName,
-  nickname,
-}: {
-  description: string;
-  realName: string;
-  nickname: string;
-}) => {
-  const label = buildIdentityLabel(realName, nickname);
-  if (!label || label === realName) {
-    return description;
-  }
-  if (description.includes(realName) && description.includes(nickname)) {
-    return description;
-  }
-  const separator = hasCjk(realName) ? "。" : ".";
-  return description ? `${label}${separator} ${description}` : label;
-};
+const buildSiteBrandTitle = (siteName: string, realName: string, englishName: string) =>
+  siteName && realName && englishName
+    ? `${siteName} - ${realName}(${englishName})`
+    : siteName;
 
 export function buildSearchMetadata({
   site,
@@ -175,8 +149,15 @@ export function buildSearchMetadata({
   pageAuthor,
   pathname = "/",
   origin,
+  noIndex = false,
+  ogType = "website",
 }: BuildSearchMetadataInput): SearchMetadata {
-  const siteTitle = site.title || site.name;
+  const siteTitle = normalizeText(site.name) || normalizeText(site.title);
+  const homepageTitle = buildSiteBrandTitle(
+    siteTitle,
+    searchOptimization.realName,
+    searchOptimization.englishName,
+  );
   const normalizedPathname = normalizePathname(pathname);
   const normalizedPageTitle = pageTitle?.trim() ?? "";
   const normalizedPageAuthor = pageAuthor?.trim() ?? "";
@@ -184,11 +165,25 @@ export function buildSearchMetadata({
   const isResumePage = normalizedPathname === RESUME_PATH;
   const author = searchOptimization.realName || normalizedPageAuthor || site.name || site.title;
   const nickname = siteTitle && siteTitle !== author ? siteTitle : "";
-  const title = normalizedPageTitle
-    ? `${normalizedPageTitle} · ${siteTitle}`
-    : isResumePage && author
-      ? author
-      : siteTitle;
+  const identityAliases = buildIdentityAliases(
+    author,
+    searchOptimization.englishName,
+    nickname,
+  );
+  const identityKeywords = uniqueTextList([
+    author,
+    searchOptimization.englishName,
+    nickname,
+    ...searchOptimization.keywords,
+  ]);
+  const bilingualName = buildBilingualName(author, searchOptimization.englishName) || author;
+  const title = isResumePage && author
+    ? bilingualName
+    : normalizedPageTitle
+      ? `${normalizedPageTitle} · ${siteTitle}`
+      : isHomePage
+        ? homepageTitle
+        : siteTitle;
   const baseDescription =
     (isHomePage ? searchOptimization.metaDescription : "") ||
     pageDescription ||
@@ -197,56 +192,48 @@ export function buildSearchMetadata({
     isHomePage && searchOptimization.metaTitle
       ? searchOptimization.metaTitle
       : isResumePage && searchOptimization.realName
-        ? `${author} Resume${siteTitle && siteTitle !== author ? ` · ${siteTitle}` : ""}`
+        ? `${bilingualName} Resume${siteTitle && siteTitle !== author ? ` · ${siteTitle}` : ""}`
         : title;
-  const shouldStrengthenIdentity = isHomePage || isResumePage;
-  const description =
-    shouldStrengthenIdentity && searchOptimization.realName
-      ? strengthenIdentityDescription({
-          description: baseDescription,
-          realName: author,
-          nickname,
-        })
-      : baseDescription;
-  const image = pageImage || site.ogImage;
-  const canonicalUrl = resolveCanonicalUrl({
+  const description = baseDescription;
+  const rawImage = pageImage || site.ogImage;
+  const fallbackBaseUrl =
+    origin || (typeof window !== "undefined" ? window.location.origin : "");
+  const canonicalUrl = resolvePublicUrl({
     canonicalBaseUrl: searchOptimization.canonicalUrl,
-    pathname,
-    origin,
+    pathname: normalizedPathname,
+    fallbackBaseUrl,
   });
-  const siteUrl = resolveCanonicalUrl({
+  const siteUrl = resolvePublicUrl({
     canonicalBaseUrl: searchOptimization.canonicalUrl,
     pathname: "/",
-    origin,
+    fallbackBaseUrl,
   });
-  const resumeUrl = resolveCanonicalUrl({
+  const resumeUrl = resolvePublicUrl({
     canonicalBaseUrl: searchOptimization.canonicalUrl,
     pathname: RESUME_PATH,
-    origin,
+    fallbackBaseUrl,
+  });
+  const image = resolvePublicResourceUrl({
+    value: rawImage,
+    canonicalBaseUrl: searchOptimization.canonicalUrl,
+    fallbackBaseUrl,
   });
   const identityDescription = searchOptimization.llmSummary || description;
-  const personId = `${siteUrl.replace(/\/$/, "")}#person`;
+  const personId = `${siteUrl}#person`;
   const profilePageId = `${resumeUrl.replace(/\/$/, "")}#profile`;
-  const identityAlternateNames = uniqueTextList([nickname]).filter((value) => value !== author);
-  const strengthenedIdentityDescription =
-    shouldStrengthenIdentity && searchOptimization.realName
-      ? strengthenIdentityDescription({
-          description: identityDescription,
-          realName: author,
-          nickname,
-        })
-      : identityDescription;
+  const structuredIdentityDescription = identityDescription;
+  const publicSameAs = searchOptimization.sameAs.filter(isPublicHttpUrl);
 
   const person = omitEmpty({
     "@type": "Person",
     "@id": personId,
     name: author,
-    alternateName: identityAlternateNames,
+    alternateName: identityAliases,
     jobTitle: site.role,
-    description: strengthenedIdentityDescription,
+    description: structuredIdentityDescription,
     image,
     url: siteUrl,
-    sameAs: searchOptimization.sameAs,
+    sameAs: publicSameAs,
     knowsAbout: searchOptimization.expertise,
     mainEntityOfPage: {
       "@id": profilePageId,
@@ -258,12 +245,11 @@ export function buildSearchMetadata({
     ],
   });
 
-  const webSiteId = `${siteUrl.replace(/\/$/, "")}#website`;
+  const webSiteId = `${siteUrl}#website`;
   const webSite = omitEmpty({
     "@type": "WebSite",
     "@id": webSiteId,
     name: siteTitle,
-    alternateName: searchOptimization.metaTitle,
     url: siteUrl,
     description,
     publisher: {
@@ -281,8 +267,8 @@ export function buildSearchMetadata({
     "@type": "ProfilePage",
     "@id": profilePageId,
     url: resumeUrl,
-    name: author ? `${author} Resume` : "Resume",
-    description: strengthenedIdentityDescription,
+    name: bilingualName ? `${bilingualName} Resume` : "Resume",
+    description: structuredIdentityDescription,
     isPartOf: {
       "@id": webSiteId,
     },
@@ -293,6 +279,11 @@ export function buildSearchMetadata({
       "@id": personId,
     },
   });
+  const structuredDataGraph = isHomePage
+    ? [person, webSite]
+    : isResumePage
+      ? [person, profilePage]
+      : [person];
 
   return {
     title,
@@ -301,12 +292,13 @@ export function buildSearchMetadata({
     image,
     author,
     siteTitle,
-    keywords: searchOptimization.keywords.join(", "),
-    robots: DEFAULT_ROBOTS_DIRECTIVE,
+    keywords: identityKeywords.join(", "),
+    robots: noIndex ? "noindex,follow" : DEFAULT_ROBOTS_DIRECTIVE,
+    ogType,
     canonicalUrl,
     siteJsonLd: {
       "@context": "https://schema.org",
-      "@graph": [person, webSite, profilePage],
+      "@graph": structuredDataGraph,
     },
   };
 }

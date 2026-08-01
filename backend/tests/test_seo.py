@@ -6,14 +6,16 @@ import re
 from aerisun.core.db import get_session_factory
 from aerisun.domain.content.seo_service import build_robots_txt
 from aerisun.domain.diary_access.service import DIARY_PRIVATE_FEATURE_FLAG
-from aerisun.domain.site_config.models import SiteProfile
+from aerisun.domain.site_config.models import ResumeBasics, SiteProfile
 
 
-def configure_search_identity(**search_optimization: str) -> None:
+def configure_search_identity(*, homepage_name: str | None = None, **search_optimization: str) -> None:
     factory = get_session_factory()
     with factory() as session:
         profile = session.query(SiteProfile).order_by(SiteProfile.created_at.asc()).first()
         assert profile is not None
+        if homepage_name is not None:
+            profile.name = homepage_name
         profile.feature_flags = {
             **dict(profile.feature_flags or {}),
             "search_optimization": search_optimization,
@@ -100,6 +102,28 @@ def test_robots_txt_uses_configured_admin_base_path():
 
     assert "Disallow: /control-room/" in content
     assert "Disallow: /admin/" not in content
+
+
+def test_robots_and_feeds_use_the_configured_canonical_site_root(client):
+    configure_search_identity(canonical_url="HTTPS://CANONICAL.EXAMPLE:443/")
+
+    robots = client.get("/robots.txt")
+    feed = client.get("/feeds/posts.xml")
+
+    assert robots.status_code == 200
+    assert "Sitemap: https://canonical.example/sitemap.xml" in robots.text
+    assert feed.status_code == 200
+    assert "https://canonical.example/feeds/posts.xml" in feed.text
+    assert "https://canonical.example/posts/from-zero-design-system" in feed.text
+
+
+def test_canonical_configuration_with_a_path_falls_back_to_the_deployment_origin(client):
+    configure_search_identity(canonical_url="https://canonical.example/blog")
+
+    robots = client.get("/robots.txt")
+
+    assert robots.status_code == 200
+    assert "Sitemap: http://localhost:8080/sitemap.xml" in robots.text
 
 
 def test_llms_txt_guides_ai_agents_to_person_and_public_content(client):
@@ -191,38 +215,56 @@ def test_home_seo_html_exposes_public_profile_in_app_shell(client):
     assert "/feeds/posts.xml" in r.text
     assert "/feeds/diary.xml" in r.text
     assert "/posts" in r.text
-    for href, title in (
-        ("/", "AI-readable homepage"),
-        ("/resume", "AI-readable resume page"),
-        ("/posts", "AI-readable posts list"),
-        ("/diary", "AI-readable diary list"),
-        ("/thoughts", "AI-readable thoughts list"),
-        ("/excerpts", "AI-readable excerpts list"),
-        ("/friends", "AI-readable friends page"),
-        ("/guestbook", "AI-readable guestbook"),
-    ):
-        href_pattern = re.escape(href)
-        href_pattern = r"(?:https://aerisun\.top)?/" if href == "/" else rf"(?:https://aerisun\.top)?{href_pattern}"
-        assert re.search(rf'href="{href_pattern}" title="{re.escape(title)}"', r.text)
+    for href in ("/", "/resume", "/posts", "/diary"):
+        assert f'href="http://localhost:8080{href}"' in r.text
+    assert "AI-readable homepage" not in r.text
+    assert "AI-readable resume page" not in r.text
     assert '<a href="http://localhost:8080/diary">Diary</a>' in r.text
     assert 'href="http://localhost:8080/feeds/diary.xml" title="Latest public diary entries"' in r.text
     assert "application/ld+json" in r.text
     assert "WebSite" in r.text
     assert "Person" in r.text
-    assert "This is the personal website, blog, and public work archive for Felix (Aerisun)." in r.text
-    assert "Aerisun is the personal website, blog, and public work archive for Felix." not in r.text
+    assert "<title>Felix</title>" in r.text
+    assert "This is the personal website, blog, and public work archive for Felix (Aerisun)." not in r.text
 
 
-def test_home_seo_html_promotes_configured_real_name_without_changing_browser_title(client):
-    configure_search_identity(real_name="测试姓名", meta_title="测试搜索标题")
+def test_identity_fallback_and_image_match_the_public_site_profile(client):
+    factory = get_session_factory()
+    with factory() as session:
+        profile = session.query(SiteProfile).one()
+        profile.name = "Public Brand"
+        profile.og_image = "/media/public-brand.webp"
+        profile.feature_flags = {
+            **dict(profile.feature_flags or {}),
+            "search_optimization": {},
+        }
+        resume = session.query(ResumeBasics).one()
+        resume.title = "Different Resume Name"
+        resume.profile_image_url = "/media/resume-only.webp"
+        session.commit()
+
+    response = client.get("/")
+    graph = read_json_ld_graph(response.text)
+    person = next(item for item in graph if item.get("@type") == "Person")
+
+    assert person["name"] == "Public Brand"
+    assert person["image"] == "http://localhost:8080/media/public-brand.webp"
+
+
+def test_home_seo_html_falls_back_to_homepage_name_when_bilingual_identity_is_incomplete(client):
+    configure_search_identity(
+        homepage_name="Aerisun",
+        real_name="测试姓名",
+        meta_title="测试搜索标题",
+        meta_description="用户填写的测试摘要",
+    )
 
     r = client.get("/")
     assert r.status_code == 200
     assert "<title>Aerisun</title>" in r.text
     assert '<meta property="og:title" content="测试搜索标题">' in r.text
     assert '<meta name="author" content="测试姓名">' in r.text
-    assert 'content="测试姓名（Aerisun）' in r.text
-    assert "测试姓名（Aerisun）。" in r.text
+    assert '<meta name="description" content="用户填写的测试摘要">' in r.text
 
     graph = read_json_ld_graph(r.text)
     person = next(item for item in graph if item.get("@type") == "Person")
@@ -231,6 +273,58 @@ def test_home_seo_html_promotes_configured_real_name_without_changing_browser_ti
     assert "Aerisun" in person["alternateName"]
     assert website["about"] == {"@id": "http://localhost:8080/#person"}
     assert website["mainEntity"] == {"@id": "http://localhost:8080/#person"}
+
+
+def test_home_seo_html_does_not_pair_english_name_with_a_fallback_real_name(client):
+    configure_search_identity(homepage_name="Aerisun", english_name="Wenbo Yang")
+
+    r = client.get("/")
+    assert r.status_code == 200
+    assert "<title>Aerisun</title>" in r.text
+    assert "<title>Aerisun - Felix(Wenbo Yang)</title>" not in r.text
+
+
+def test_home_seo_description_uses_the_configured_text_without_identity_prefixes(client):
+    configured_description = "杨汶帛，北京大学集成电路设计与集成系统专业24级本科生，辅修智能科学与技术"
+    configure_search_identity(
+        homepage_name="Aerisun",
+        real_name="杨汶帛",
+        english_name="Wenbo Yang",
+        meta_description=configured_description,
+    )
+
+    r = client.get("/")
+    assert r.status_code == 200
+    assert f'<meta name="description" content="{configured_description}">' in r.text
+
+
+def test_home_seo_description_preserves_internal_spacing_newlines_and_length(client):
+    configured_description = "杨汶帛  Wenbo Yang\n" + ("北京大学集成电路设计与集成系统专业本科生。" * 20)
+    configure_search_identity(
+        homepage_name="Aerisun",
+        real_name="杨汶帛",
+        english_name="Wenbo Yang",
+        meta_description=f"  {configured_description}  ",
+    )
+
+    r = client.get("/")
+    assert r.status_code == 200
+    assert f'<meta name="description" content="{configured_description}">' in r.text
+    graph = read_json_ld_graph(r.text)
+    person = next(item for item in graph if item.get("@type") == "Person")
+    website = next(item for item in graph if item.get("@type") == "WebSite")
+    assert person["description"] == configured_description
+    assert website["description"] == configured_description
+
+
+def test_unsafe_canonical_configuration_falls_back_to_the_deployment_url(client):
+    configure_search_identity(canonical_url="javascript:alert(1)")
+
+    r = client.get("/")
+
+    assert r.status_code == 200
+    assert '<link rel="canonical" href="http://localhost:8080/">' in r.text
+    assert "javascript:alert" not in r.text
 
 
 def test_home_seo_shell_keeps_react_mount_before_crawler_fallback(client):
@@ -268,7 +362,7 @@ def test_resume_seo_html_uses_configured_real_name_in_browser_title(client):
     r = client.get("/resume")
     assert r.status_code == 200
     assert "<title>测试姓名</title>" in r.text
-    assert '<meta property="og:title" content="测试姓名 Resume · Aerisun">' in r.text
+    assert '<meta property="og:title" content="测试姓名 Resume · Felix">' in r.text
     assert '<meta name="author" content="测试姓名">' in r.text
 
     graph = read_json_ld_graph(r.text)
@@ -276,7 +370,112 @@ def test_resume_seo_html_uses_configured_real_name_in_browser_title(client):
     person = next(item for item in graph if item.get("@type") == "Person")
     assert profile_page["name"] == "测试姓名 Resume"
     assert person["name"] == "测试姓名"
-    assert "Aerisun" in person["alternateName"]
+    assert "Felix" in person["alternateName"]
+
+
+def test_bilingual_search_identity_is_consistent_across_public_crawler_surfaces(client):
+    configure_search_identity(
+        homepage_name="Aerisun",
+        real_name="杨汶帛",
+        english_name="Wenbo Yang",
+        meta_title="杨汶帛 - 北京大学24级本科生",
+        canonical_url="https://aerisun.top",
+    )
+
+    home = client.get("/")
+    assert home.status_code == 200
+    assert "<title>Aerisun - 杨汶帛(Wenbo Yang)</title>" in home.text
+    assert "杨汶帛" in home.text
+    assert "Wenbo Yang" in home.text
+    assert ">杨汶帛 - Wenbo Yang</a>" in home.text
+
+    home_graph = read_json_ld_graph(home.text)
+    person = next(item for item in home_graph if item.get("@type") == "Person")
+    website = next(item for item in home_graph if item.get("@type") == "WebSite")
+    assert person["name"] == "杨汶帛"
+    assert person["alternateName"] == ["Wenbo Yang", "Aerisun"]
+    assert website["name"] == "Aerisun"
+    assert '<meta name="keywords" content="杨汶帛, Wenbo Yang, Aerisun">' in home.text
+
+    resume = client.get("/resume")
+    assert resume.status_code == 200
+    assert "<title>杨汶帛 - Wenbo Yang</title>" in resume.text
+    assert "<h1>杨汶帛 - Wenbo Yang</h1>" in resume.text
+    assert 'content="杨汶帛 - Wenbo Yang Resume · Aerisun"' in resume.text
+
+    posts = client.get("/posts")
+    assert posts.status_code == 200
+    assert "<title>Posts · Aerisun</title>" in posts.text
+    assert "<title>Posts · Aerisun - 杨汶帛(Wenbo Yang)</title>" not in posts.text
+
+    article = client.get("/posts/from-zero-design-system")
+    assert article.status_code == 200
+    assert (
+        '"author":{"@type":"Person","@id":"https://aerisun.top/#person","name":"杨汶帛","url":"https://aerisun.top/resume"}'
+        in article.text
+    )
+    article_json_ld_match = re.search(r'<script type="application/ld\+json">(.+?)</script>', article.text)
+    assert article_json_ld_match is not None
+    article_json_ld = json.loads(article_json_ld_match.group(1))
+    assert article_json_ld["publisher"] == {"@id": "https://aerisun.top/#person"}
+    assert '<meta name="keywords" content="杨汶帛, Wenbo Yang, Aerisun' in article.text
+    assert '<meta name="title"' not in article.text
+
+    resume_markdown = client.get("/resume.md")
+    assert resume_markdown.status_code == 200
+    assert resume_markdown.text.startswith("# 杨汶帛 - Wenbo Yang")
+
+    llms = client.get("/llms.txt")
+    assert llms.status_code == 200
+    assert llms.text.startswith("# 杨汶帛 - Wenbo Yang")
+    assert "杨汶帛" in llms.text
+    assert "Wenbo Yang" in llms.text
+    assert "Aerisun" in llms.text
+    assert "Wenbo Yang and Aerisun are public alternate names for 杨汶帛." in llms.text
+
+
+def test_protected_posts_never_leak_into_public_crawler_surfaces(client, admin_headers):
+    secret_body = "approval-only-secret-body-7d9f"
+    created = client.post(
+        "/api/v1/admin/posts/",
+        json={
+            "slug": "approval-only-crawler-secret",
+            "title": "Approval Only Crawler Secret",
+            "body": secret_body,
+            "visibility": "public",
+            "requires_approval": True,
+        },
+        headers=admin_headers,
+    )
+    assert created.status_code == 201
+
+    detail = client.get("/posts/approval-only-crawler-secret")
+    posts = client.get("/posts")
+    home = client.get("/")
+    sitemap = client.get("/sitemap.xml")
+    feed = client.get("/feeds/posts.xml")
+    llms = client.get("/llms.txt")
+
+    assert detail.status_code == 404
+    for response in (detail, posts, home, sitemap, feed, llms):
+        assert secret_body not in response.text
+    for response in (posts, home, sitemap, feed, llms):
+        assert "approval-only-crawler-secret" not in response.text
+
+
+def test_person_same_as_only_contains_http_identity_pages(client):
+    configure_search_identity(
+        real_name="杨汶帛",
+        english_name="Wenbo Yang",
+        same_as="https://github.com/Aerisun\nmailto:ywb@example.com",
+    )
+
+    r = client.get("/")
+    assert r.status_code == 200
+    graph = read_json_ld_graph(r.text)
+    person = next(item for item in graph if item.get("@type") == "Person")
+    assert "https://github.com/Aerisun" in person["sameAs"]
+    assert all(str(link).startswith(("http://", "https://")) for link in person["sameAs"])
 
 
 def test_content_collection_seo_html_exposes_public_entries_in_app_shell(client):

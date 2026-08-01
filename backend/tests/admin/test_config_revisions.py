@@ -24,15 +24,17 @@ def _get_revision_detail(client, admin_headers, revision_id: str) -> dict[str, o
 
 def test_profile_config_revision_round_trip_and_audit_link(client, admin_headers) -> None:
     profile = client.get(f"{SITE_CONFIG_BASE}/profile", headers=admin_headers).json()
+    original_name = profile["name"]
     original_title = profile["title"]
 
     response = client.put(
         f"{SITE_CONFIG_BASE}/profile",
         headers=admin_headers,
-        json={"title": "Config Revision Profile Title"},
+        json={"name": "Config Revision Profile Name"},
     )
     assert response.status_code == 200
-    assert response.json()["title"] == "Config Revision Profile Title"
+    assert response.json()["name"] == "Config Revision Profile Name"
+    assert response.json()["title"] == "Config Revision Profile Name"
 
     revisions = _list_revisions(client, admin_headers, resource_key="site.profile")
     assert revisions
@@ -41,9 +43,11 @@ def test_profile_config_revision_round_trip_and_audit_link(client, admin_headers
     assert latest["operation"] == "update"
 
     detail = _get_revision_detail(client, admin_headers, str(latest["id"]))
-    assert any(line["path"] == "title" for line in detail["diff_lines"])
+    assert any(line["path"] == "name" for line in detail["diff_lines"])
+    assert detail["before_preview"]["name"] == original_name
+    assert detail["after_preview"]["name"] == "Config Revision Profile Name"
     assert detail["before_preview"]["title"] == original_title
-    assert detail["after_preview"]["title"] == "Config Revision Profile Title"
+    assert detail["after_preview"]["title"] == "Config Revision Profile Name"
 
     restore_response = client.post(
         f"{BASE}/config-revisions/{latest['id']}/restore",
@@ -53,6 +57,7 @@ def test_profile_config_revision_round_trip_and_audit_link(client, admin_headers
     assert restore_response.status_code == 200
     restored = client.get(f"{SITE_CONFIG_BASE}/profile", headers=admin_headers)
     assert restored.status_code == 200
+    assert restored.json()["name"] == original_name
     assert restored.json()["title"] == original_title
 
     revisions_after = _list_revisions(client, admin_headers, resource_key="site.profile")

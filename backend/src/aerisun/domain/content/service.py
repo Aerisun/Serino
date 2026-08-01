@@ -704,6 +704,7 @@ def _content_summary_payload(
         "poem": poem,
         "author": author_name,
         "source": source,
+        "requires_approval": bool(getattr(item, "requires_approval", False)),
     }
 
 
@@ -774,6 +775,7 @@ def _list_summary_entries(
     *,
     include_private: bool = False,
     exclude_from_rss: bool = False,
+    exclude_requires_approval: bool = False,
     summary_fallback_max_length: int = 500,
 ) -> ContentSummaryCollectionRead:
     items, total = repo.find_published(
@@ -784,6 +786,7 @@ def _list_summary_entries(
         include_private=include_private,
         load_body=False,
         exclude_from_rss=exclude_from_rss,
+        exclude_requires_approval=exclude_requires_approval,
     )
     slugs = [item.slug for item in items]
     item_ids = [item.id for item in items]
@@ -837,6 +840,8 @@ def list_rss_posts(
     session: Session,
     limit: int = 20,
     offset: int = 0,
+    *,
+    exclude_requires_approval: bool = False,
 ) -> ContentSummaryCollectionRead:
     return _list_summary_entries(
         session,
@@ -845,6 +850,7 @@ def list_rss_posts(
         limit,
         offset,
         exclude_from_rss=True,
+        exclude_requires_approval=exclude_requires_approval,
         summary_fallback_max_length=30,
     )
 

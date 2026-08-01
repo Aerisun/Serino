@@ -26,6 +26,7 @@ import { useReadPostApiV1SitePostsSlugGet } from "@serino/api-client/site";
 import type { ContentEntryRead } from "@serino/api-client/models";
 import type { BaseViewPageConfig } from "@/lib/page-config";
 import { lazyWithPreload } from "@/lib/lazy";
+import { buildContentSearchDescription } from "@/lib/article-structured-data";
 
 const CommentSection = lazyWithPreload(() => import("@/components/CommentSection"));
 const ArticleMarkdownRenderer = lazyWithPreload(() => import("@/components/ArticleMarkdownRenderer"));
@@ -34,8 +35,12 @@ interface PostData {
   slug: string;
   title: string;
   date: string;
+  publishedAt?: string;
+  modifiedAt?: string;
   updatedAt: number | null;
   isArchived: boolean;
+  requiresApproval: boolean;
+  summary: string;
   category: string;
   tags: string[];
   likes: number;
@@ -103,8 +108,12 @@ const buildRemotePost = (
   slug: entry.slug,
   title: entry.title,
   date: formatPublishedDate(entry.published_at) || "",
+  publishedAt: entry.published_at ?? undefined,
+  modifiedAt: entry.updated_at ?? undefined,
   updatedAt: parseUpdateTimestamp(entry.updated_at),
   isArchived: entry.visibility === "private",
+  requiresApproval: entry.requires_approval === true,
+  summary: typeof entry.summary === "string" ? entry.summary : "",
   category: entry.category || fallbackCategoryLabel,
   tags: normalizeContentTags(entry.tags),
   likes: entry.like_count ?? 0,
@@ -121,8 +130,12 @@ const buildPreviewPost = (
   slug: preview.slug || "",
   title: preview.title,
   date: formatPublishedDate(preview.published_at) || draftLabel,
+  publishedAt: preview.published_at ?? undefined,
+  modifiedAt: preview.updated_at ?? undefined,
   updatedAt: parseUpdateTimestamp(preview.updated_at),
   isArchived: false,
+  requiresApproval: false,
+  summary: preview.summary || "",
   category: preview.category || fallbackCategoryLabel,
   tags: normalizeContentTags(preview.tags),
   likes: 0,
@@ -247,6 +260,16 @@ const PostDetail = () => {
         : error instanceof Error ? error.message : errorTitle
     : !id ? t("postDetail.missingId") : "";
   const showArticleEnhancements = Boolean(post) && featureFlags.toc;
+  const postDescription = post
+    ? buildContentSearchDescription({ summary: post.summary, body: post.content })
+    : pageStatus === "blocked"
+      ? t("postAccess.privateDescription")
+      : errorMessage || detailMissingDescription;
+  const shouldNoIndex =
+    pageStatus !== "ready" ||
+    Boolean(previewPost) ||
+    Boolean(post?.isArchived) ||
+    Boolean(postApprovalEnabled && post?.requiresApproval);
   const wordCount = useEstimatedWordCount(post?.content ?? "", lang, t("common.words"));
   const updatedRelativeLabel = post?.updatedAt != null
     ? formatRelativeUpdatedAt(post.updatedAt)
@@ -266,15 +289,18 @@ const PostDetail = () => {
       {promptNode}
       <PageMeta
         title={post?.title ?? (status === "error" ? errorTitle : detailMissingTitle)}
-        description={post?.content.slice(0, 150) ?? (pageStatus === "blocked" ? t("postAccess.privateDescription") : errorMessage || detailMissingDescription)}
+        description={postDescription}
+        type="article"
+        noIndex={shouldNoIndex}
       />
-      {post && (
+      {post && !shouldNoIndex && (
         <JsonLd
           title={post.title}
-          description={post.content.slice(0, 200) || ""}
+          description={postDescription}
           slug={post.slug}
           type="posts"
-          publishedAt={post.date}
+          publishedAt={post.publishedAt}
+          modifiedAt={post.modifiedAt}
           tags={post.tags}
         />
       )}

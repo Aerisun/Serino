@@ -21602,6 +21602,10 @@
             "title": "Source",
             "description": "Source URL or reference"
           },
+          "requires_approval": {
+            "title": "Requires Approval",
+            "description": "Whether viewing this public post requires approval"
+          },
           "body": {
             "title": "Body",
             "description": "Full content body in Markdown"
@@ -22403,6 +22407,10 @@
           "source": {
             "title": "Source",
             "description": "Source URL or reference"
+          },
+          "requires_approval": {
+            "title": "Requires Approval",
+            "description": "Whether viewing this public post requires approval"
           }
         },
         "type": "object",
@@ -28017,7 +28025,7 @@
           },
           "title": {
             "title": "Title",
-            "description": "Site title"
+            "description": "Generated site title"
           },
           "bio": {
             "title": "Bio",
@@ -28205,7 +28213,7 @@
               }
             ],
             "title": "Title",
-            "description": "Site title"
+            "description": "Deprecated generated site title"
           },
           "bio": {
             "anyOf": [

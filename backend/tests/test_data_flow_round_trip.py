@@ -39,6 +39,12 @@ def test_admin_profile_update_flows_to_public_site(seeded_session, admin_user) -
         bio="Profile changes should be visible to the public site.",
         filing_info="京ICP备2022002869号-2",
         site_icon_url="/media/internal/assets/site-icon/flow-icon.svg",
+        feature_flags={
+            "search_optimization": {
+                "real_name": "流程测试",
+                "english_name": "Flow Test Person",
+            }
+        },
     )
 
     update_profile(update_payload, _admin=admin_user, session=seeded_session)
@@ -47,11 +53,11 @@ def test_admin_profile_update_flows_to_public_site(seeded_session, admin_user) -
     profile = seeded_session.query(SiteProfile).first()
     assert profile is not None
     assert payload.site.name == update_payload.name
-    assert payload.site.title == update_payload.title
+    assert payload.site.title == "Flow Test - 流程测试(Flow Test Person)"
     assert payload.site.bio == update_payload.bio
     assert payload.site.filing_info == update_payload.filing_info
     assert payload.site.site_icon_url == update_payload.site_icon_url
-    assert profile.title == update_payload.title
+    assert profile.title == "Flow Test - 流程测试(Flow Test Person)"
     assert profile.bio == update_payload.bio
     assert profile.filing_info == update_payload.filing_info
 

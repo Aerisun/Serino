@@ -48,6 +48,8 @@ export interface ContentEntryRead {
   author?: unknown;
   /** Source URL or reference */
   source?: unknown;
+  /** Whether viewing this public post requires approval */
+  requires_approval?: unknown;
   /** Full content body in Markdown */
   body: unknown;
 }

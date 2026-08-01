@@ -261,6 +261,7 @@ def test_private_diary_machine_readable_surfaces_do_not_expose_details(client) -
     calendar = client.get("/api/v1/site/calendar?from=2026-03-01&to=2026-03-31")
     collection_html = client.get("/diary")
     detail_html = client.get(f"/diary/{DIARY_SLUG}")
+    robots = client.get("/robots.txt")
 
     assert llms.status_code == 200
     assert "Do not access /diary or /diary/*" in llms.text
@@ -279,7 +280,14 @@ def test_private_diary_machine_readable_surfaces_do_not_expose_details(client) -
     assert collection_html.status_code == 200
     assert DIARY_SLUG not in collection_html.text
     assert "春分，天气转暖" not in collection_html.text
+    assert '<meta name="robots" content="noindex,follow">' in collection_html.text
 
     assert detail_html.status_code == 200
     assert DIARY_SLUG not in detail_html.text
     assert "春分，天气转暖" not in detail_html.text
+    assert '<meta name="robots" content="noindex,follow">' in detail_html.text
+
+    assert robots.status_code == 200
+    assert "Disallow: /diary\n" not in robots.text
+    assert "Disallow: /diary/" not in robots.text
+    assert "Disallow: /api/v1/site/diary/" in robots.text

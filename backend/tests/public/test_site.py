@@ -30,7 +30,7 @@ def test_read_site_returns_seeded_payload(client) -> None:
 
     payload = response.json()
     assert payload["site"]["name"] == "Felix"
-    assert payload["site"]["title"] == "Aerisun"
+    assert payload["site"]["title"] == "Felix"
     assert {"footer_text", "author", "meta_description", "copyright"} & payload["site"].keys() == set()
     assert "site_icon_url" in payload["site"]
     assert payload["site"]["hero_video_url"] == (
@@ -61,7 +61,7 @@ def test_read_site_manifest_uses_configured_site_icon(client) -> None:
     assert response.headers["content-type"].startswith("application/manifest+json")
 
     payload = response.json()
-    assert payload["name"] == "Aerisun"
+    assert payload["name"] == "Felix"
     assert payload["short_name"] == "Felix"
     assert payload["description"] == "我做网页设计，也写前端，把视觉、节奏、内容和交互整理成一个自然流动的个人空间。"
     assert payload["icons"][0]["src"] == "/media/internal/assets/site-icon/4cc8bfdd4830.svg"
@@ -78,7 +78,7 @@ def test_read_site_bootstrap_returns_aggregated_payload(client) -> None:
     payload = response.json()
     assert payload["revision"]
     assert payload["generated_at"]
-    assert payload["site"]["site"]["title"] == "Aerisun"
+    assert payload["site"]["site"]["title"] == "Felix"
     assert payload["pages"]["items"]
     assert payload["resume"]["title"]
 

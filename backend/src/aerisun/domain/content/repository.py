@@ -29,6 +29,7 @@ def _public_filter(
     *,
     include_private: bool = False,
     exclude_from_rss: bool = False,
+    exclude_requires_approval: bool = False,
 ) -> Select:
     """Base query for public content, with optional owner-only private items."""
     visibility_filter = model.visibility == "public"
@@ -37,6 +38,8 @@ def _public_filter(
     query = select(model).where(visibility_filter)
     if exclude_from_rss and hasattr(model, "exclude_from_rss"):
         query = query.where(model.exclude_from_rss.is_(False))
+    if exclude_requires_approval and hasattr(model, "requires_approval"):
+        query = query.where(model.requires_approval.is_(False))
     return query.order_by(desc(model.published_at), desc(model.created_at))
 
 
@@ -58,6 +61,7 @@ def _summary_load_attributes(model: type[ContentModel]) -> list:
         "poem",
         "author_name",
         "source",
+        "requires_approval",
     ]
     return [getattr(model, field) for field in fields if hasattr(model, field)]
 
@@ -71,12 +75,14 @@ def find_published(
     include_private: bool = False,
     load_body: bool = True,
     exclude_from_rss: bool = False,
+    exclude_requires_approval: bool = False,
 ) -> tuple[list, int]:
     """Paginated query for public content. Returns (items, total)."""
     base = _public_filter(
         model,
         include_private=include_private,
         exclude_from_rss=exclude_from_rss,
+        exclude_requires_approval=exclude_requires_approval,
     )
     total = session.scalar(select(func.count()).select_from(base.subquery())) or 0
     if not load_body:

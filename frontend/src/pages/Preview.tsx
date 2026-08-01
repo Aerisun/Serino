@@ -18,6 +18,7 @@ import { useFeatureFlags, usePageConfig } from "@/contexts/runtime-config";
 import { useFrontendI18n, type FrontendLang } from "@/i18n";
 import EmbeddedResume from "@/components/EmbeddedResume";
 import PreviewModeBadge from "@/components/PreviewModeBadge";
+import PageMeta from "@/components/PageMeta";
 import { lazyWithPreload } from "@/lib/lazy";
 import { usePreviewChannel, type ContentPreviewData } from "@/lib/preview";
 import { formatDateInBeijing } from "@/lib/time";
@@ -324,6 +325,8 @@ function ResumePreview({ data }: { data: ContentPreviewData }) {
       width="wide"
       contentClassName="mt-0"
       compactHeader
+      metaType="profile"
+      noIndex
     >
       <motion.div
         initial={{ opacity: 0, y: 16 }}
@@ -353,6 +356,7 @@ export default function Preview() {
   if (isLoading || !data) {
     return (
       <div className="min-h-screen bg-background text-foreground">
+        <PageMeta title={t("preview.loadingData")} noIndex />
         <FallingPetals />
         <Navbar />
         <main className="mx-auto max-w-2xl px-6 pt-28 pb-20 lg:px-8">
@@ -378,6 +382,11 @@ export default function Preview() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <PageMeta
+        title={data.title || t("common.untitled")}
+        type="article"
+        noIndex
+      />
       <FallingPetals />
       <Navbar />
 

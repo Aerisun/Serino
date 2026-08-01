@@ -141,8 +141,19 @@ http://127.0.0.1:8081 {
 		}
 
 		# 前端 SPA 只接管 Serino 明确拥有的页面路径。
+		@previewPage {
+			path /preview
+		}
+		handle @previewPage {
+			root * {$AERISUN_FRONTEND_DIST_DIR:/srv/aerisun/frontend}
+			header Cache-Control "no-cache, max-age=0, must-revalidate"
+			header X-Robots-Tag "noindex, nofollow"
+			try_files /index.html
+			file_server
+		}
+
 		@frontendSpa {
-			path / /posts /posts/* /friends /thoughts /diary /diary/* /excerpts /resume /guestbook /calendar /preview
+			path / /posts /posts/* /friends /thoughts /diary /diary/* /excerpts /resume /guestbook /calendar
 		}
 		handle @frontendSpa {
 			root * {$AERISUN_FRONTEND_DIST_DIR:/srv/aerisun/frontend}
