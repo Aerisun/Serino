@@ -26,7 +26,7 @@ function MarkdownEditorHarness() {
 
   return (
     <LanguageProvider>
-      <MarkdownEditor value={value} onChange={setValue} minHeight="200px" />
+      <MarkdownEditor assetCategory="post" value={value} onChange={setValue} minHeight="200px" />
     </LanguageProvider>
   );
 }
@@ -37,6 +37,7 @@ function AttachmentMarkdownEditorHarness() {
   return (
     <LanguageProvider>
       <MarkdownEditor
+        assetCategory="thought"
         value={value}
         onChange={setValue}
         minHeight="200px"
@@ -55,6 +56,7 @@ function MarkdownAttachmentRoundTripHarness() {
   return (
     <LanguageProvider>
       <MarkdownEditor
+        assetCategory="post"
         value={value}
         onChange={setValue}
         minHeight="200px"
@@ -71,6 +73,7 @@ function InlineAttachmentPositionHarness() {
   return (
     <LanguageProvider>
       <MarkdownEditor
+        assetCategory="post"
         value={value}
         onChange={setValue}
         minHeight="200px"

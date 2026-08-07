@@ -141,6 +141,23 @@ body {
   max-width: min(100%, 24rem);
 }
 
+.markdown-indent-enabled .markdown-paragraph {
+  text-indent: 2em;
+}
+
+.markdown-indent-enabled :where(li, blockquote) > .markdown-paragraph,
+.markdown-indent-enabled .markdown-paragraph:has(> .markdown-preview-image:only-child) {
+  text-indent: 0;
+}
+
+.prose .markdown-paragraph.markdown-paragraph--force-indent {
+  text-indent: 2em;
+}
+
+.prose .markdown-paragraph.markdown-paragraph--force-no-indent {
+  text-indent: 0;
+}
+
 @media (max-width: 640px) {
   .markdown-preview-image--portrait {
     max-width: min(78%, 16rem);

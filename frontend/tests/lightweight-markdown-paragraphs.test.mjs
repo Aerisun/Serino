@@ -26,6 +26,13 @@ test("excerpts and thoughts keep the lightweight renderer and use blank lines fo
   assert.match(thoughts, /import CommentMarkdownRenderer from "@\/components\/CommentMarkdownRenderer";/);
   assert.doesNotMatch(getRendererClass(excerpts, "selected"), /whitespace-pre-wrap/);
   assert.doesNotMatch(getRendererClass(thoughts, "thought"), /whitespace-pre-wrap/);
-  assert.match(renderer, /extractMarkdownImageAttachments\(content, imageSourceMap\)/);
-  assert.match(renderer, /remarkPlugins=\{\[remarkGfm, remarkMath\]\}/);
+  assert.match(renderer, /resolveMarkdownDocumentIndent\(content\)/);
+  assert.match(
+    renderer,
+    /extractMarkdownImageAttachments\(\s*documentIndent\.content,\s*imageSourceMap,?\s*\)/,
+  );
+  assert.match(
+    renderer,
+    /remarkPlugins=\{\[[\s\S]*remarkGfm,[\s\S]*remarkMath,[\s\S]*remarkDirective,[\s\S]*remarkAerisunIndentDirectives,[\s\S]*\]\}/,
+  );
 });

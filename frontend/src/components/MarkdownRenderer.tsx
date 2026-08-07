@@ -38,6 +38,7 @@ import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import type { Components } from "react-markdown";
 import type { Options as RehypeHighlightOptions } from "rehype-highlight";
 import { isSquareImage } from "@serino/utils/image-dimensions";
+import { resolveMarkdownDocumentIndent } from "@serino/utils/markdown-indentation";
 import { getFrontendLang } from "@/i18n";
 import { frontendTranslations } from "@/i18n/translations";
 import {
@@ -49,6 +50,11 @@ import MarkdownMermaid from "@/components/MarkdownMermaid";
 import MarkdownCarousel from "@/components/MarkdownCarousel";
 import ImageLightbox from "@/components/ImageLightbox";
 import { remarkAerisunDirectives } from "@/components/markdown-directives";
+import {
+  getMarkdownIndentDirectiveKind,
+  getMarkdownParagraphClassName,
+  resolveMarkdownParagraphIndent,
+} from "@/components/markdown-paragraph-indent";
 import { resolveMarkdownImageSrc } from "@/lib/markdown-image-url";
 import "katex/dist/katex.min.css";
 import "./markdown.css";
@@ -56,6 +62,7 @@ import "./markdown.css";
 interface MarkdownRendererProps {
   content: string;
   className?: string;
+  indentParagraphs?: boolean;
 }
 
 type MarkdownDataPropsBase = {
@@ -597,8 +604,14 @@ function MarkdownImage({
   );
 }
 
-function MarkdownParagraph({ children, ...props }: ComponentPropsWithoutRef<"p">) {
-  const cleanChildren = cleanChildrenArray(children);
+function MarkdownParagraph({
+  children,
+  className,
+  node: _node,
+  ...props
+}: ComponentPropsWithoutRef<"p"> & { node?: unknown }) {
+  const resolved = resolveMarkdownParagraphIndent(children);
+  const cleanChildren = cleanChildrenArray(resolved.children);
   if (cleanChildren.length === 1) {
     const child = cleanChildren[0];
     if (isValidElement<{ href?: string; children?: ReactNode }>(child)) {
@@ -609,7 +622,14 @@ function MarkdownParagraph({ children, ...props }: ComponentPropsWithoutRef<"p">
     }
   }
 
-  return <p {...props}>{children}</p>;
+  return (
+    <p
+      className={getMarkdownParagraphClassName(className, resolved.modifierClassName)}
+      {...props}
+    >
+      {resolved.children}
+    </p>
+  );
 }
 
 function MarkdownAdmonition({
@@ -915,6 +935,16 @@ function MarkdownSpan({
   className,
   ...props
 }: MarkdownDataSpanProps) {
+  const kind = props["data-md-kind"];
+  const indentationKind = getMarkdownIndentDirectiveKind(kind);
+  if (indentationKind) {
+    return (
+      <>
+        {children ?? `:${indentationKind}`}
+      </>
+    );
+  }
+
   if (props["data-md-kind"] === "underline") {
     return <MarkdownUnderline>{children}</MarkdownUnderline>;
   }
@@ -1156,9 +1186,19 @@ const components = {
   ),
 } satisfies Components;
 
-export default function MarkdownRenderer({ content, className = "" }: MarkdownRendererProps) {
+export default function MarkdownRenderer({
+  content,
+  className = "",
+  indentParagraphs = true,
+}: MarkdownRendererProps) {
+  const documentIndent = resolveMarkdownDocumentIndent(content);
+  const shouldIndentParagraphs = documentIndent.indentParagraphs ?? indentParagraphs;
+  const indentationClassName = shouldIndentParagraphs ? "markdown-indent-enabled" : "";
+
   return (
-    <div className={`prose prose-sm dark:prose-invert max-w-none font-body ${className}`}>
+    <div
+      className={`prose prose-sm dark:prose-invert max-w-none font-body ${indentationClassName} ${className}`}
+    >
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath, remarkDirective, remarkAerisunDirectives]}
         rehypePlugins={[
@@ -1169,7 +1209,7 @@ export default function MarkdownRenderer({ content, className = "" }: MarkdownRe
         ]}
         components={components}
       >
-        {content}
+        {documentIndent.content}
       </ReactMarkdown>
     </div>
   );

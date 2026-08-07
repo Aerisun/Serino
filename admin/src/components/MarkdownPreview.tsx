@@ -14,6 +14,7 @@ import ReactMarkdown, { type Components } from "react-markdown";
 import remarkDirective from "remark-directive";
 import remarkGfm from "remark-gfm";
 import { isSquareImage } from "@serino/utils/image-dimensions";
+import { resolveMarkdownDocumentIndent } from "@serino/utils/markdown-indentation";
 import { buildPreviewImageUrl, fetchLinkPreview, type LinkPreviewPayload } from "@/lib/link-preview";
 import { remarkAdminMarkdownDirectives } from "@/components/markdown-directives";
 
@@ -24,6 +25,64 @@ interface MarkdownPreviewProps {
 
 const cleanChildrenArray = (children: ReactNode) =>
   Children.toArray(children).filter((child) => !(typeof child === "string" && child.trim() === ""));
+
+type MarkdownIndentDirectiveProps = {
+  children?: ReactNode;
+  "data-md-kind"?: "indent" | "noindent";
+};
+
+type MarkdownIndentDirectiveKind = NonNullable<
+  MarkdownIndentDirectiveProps["data-md-kind"]
+>;
+
+const getMarkdownIndentDirectiveKind = (
+  value: unknown,
+): MarkdownIndentDirectiveKind | undefined =>
+  value === "indent" || value === "noindent" ? value : undefined;
+
+const resolveMarkdownParagraphIndent = (children: ReactNode) => {
+  const paragraphChildren = Children.toArray(children);
+  const directive = paragraphChildren[0];
+  if (!isValidElement<MarkdownIndentDirectiveProps>(directive)) {
+    return { children, modifierClassName: "" };
+  }
+
+  const kind = getMarkdownIndentDirectiveKind(directive.props["data-md-kind"]);
+  if (!kind || Children.count(directive.props.children) > 0) {
+    return { children, modifierClassName: "" };
+  }
+
+  const content = paragraphChildren.slice(1);
+  const separator = content[0];
+  if (typeof separator !== "string" || !/^[\t ]+/.test(separator)) {
+    return { children, modifierClassName: "" };
+  }
+
+  content[0] = separator.replace(/^[\t ]+/, "");
+  if (content[0] === "") {
+    content.shift();
+  }
+
+  const hasContent = content.some(
+    (child) => typeof child !== "string" || child.trim() !== "",
+  );
+  if (!hasContent) {
+    return { children, modifierClassName: "" };
+  }
+
+  return {
+    children: content,
+    modifierClassName:
+      kind === "indent"
+        ? "markdown-paragraph--force-indent"
+        : "markdown-paragraph--force-no-indent",
+  };
+};
+
+const getMarkdownParagraphClassName = (
+  className: string | undefined,
+  modifierClassName: string,
+) => ["markdown-paragraph", modifierClassName, className ?? ""].filter(Boolean).join(" ");
 
 const flattenDirectiveChildren = (children: ReactNode) => {
   const items: ReactNode[] = [];
@@ -328,8 +387,14 @@ function MarkdownAnchor({ href, children, ...props }: ComponentPropsWithoutRef<"
   );
 }
 
-function MarkdownParagraph({ children, ...props }: ComponentPropsWithoutRef<"p">) {
-  const cleanChildren = cleanChildrenArray(children);
+function MarkdownParagraph({
+  children,
+  className,
+  node: _node,
+  ...props
+}: ComponentPropsWithoutRef<"p"> & { node?: unknown }) {
+  const resolved = resolveMarkdownParagraphIndent(children);
+  const cleanChildren = cleanChildrenArray(resolved.children);
   if (cleanChildren.length === 1) {
     const child = cleanChildren[0];
     if (isValidElement<{ href?: string; children?: ReactNode }>(child)) {
@@ -344,7 +409,14 @@ function MarkdownParagraph({ children, ...props }: ComponentPropsWithoutRef<"p">
     }
   }
 
-  return <p {...props}>{children}</p>;
+  return (
+    <p
+      className={getMarkdownParagraphClassName(className, resolved.modifierClassName)}
+      {...props}
+    >
+      {resolved.children}
+    </p>
+  );
 }
 
 function MarkdownPreviewImage({
@@ -433,8 +505,25 @@ function MarkdownPreviewDiv({ children, ...props }: ComponentPropsWithoutRef<"di
   return <div {...props}>{children}</div>;
 }
 
-function MarkdownPreviewSpan({ children, ...props }: ComponentPropsWithoutRef<"span">) {
-  if (props["data-md-kind" as keyof typeof props] === "underline") {
+function MarkdownPreviewSpan({
+  children,
+  "data-md-kind": dataMarkdownKind,
+  node: _node,
+  ...props
+}: ComponentPropsWithoutRef<"span"> & {
+  "data-md-kind"?: string;
+  node?: unknown;
+}) {
+  const indentationKind = getMarkdownIndentDirectiveKind(dataMarkdownKind);
+  if (indentationKind) {
+    return (
+      <>
+        {children ?? `:${indentationKind}`}
+      </>
+    );
+  }
+
+  if (dataMarkdownKind === "underline") {
     return <MarkdownPreviewUnderline>{children}</MarkdownPreviewUnderline>;
   }
 
@@ -483,10 +572,15 @@ const components = {
 } satisfies Components;
 
 export default function MarkdownPreview({ content, className = "" }: MarkdownPreviewProps) {
+  const documentIndent = resolveMarkdownDocumentIndent(content);
+  const indentationClassName = documentIndent.indentParagraphs === false
+    ? ""
+    : "markdown-indent-enabled";
+
   return (
-    <div className={`prose prose-sm dark:prose-invert max-w-none font-body ${className}`}>
+    <div className={`prose prose-sm dark:prose-invert max-w-none font-body ${indentationClassName} ${className}`}>
       <ReactMarkdown remarkPlugins={[remarkGfm, remarkDirective, remarkAdminMarkdownDirectives]} components={components}>
-        {content}
+        {documentIndent.content}
       </ReactMarkdown>
     </div>
   );

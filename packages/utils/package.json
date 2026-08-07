@@ -12,6 +12,7 @@
     "./preview": "./src/preview.ts",
     "./image-dimensions": "./src/image-dimensions.ts",
     "./image-upload": "./src/image-upload.ts",
+    "./markdown-indentation": "./src/markdown-indentation.ts",
     "./oauth-navigation": "./src/oauth-navigation.ts",
     "./i18n": "./src/i18n.tsx"
   },

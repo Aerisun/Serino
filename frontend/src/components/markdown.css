@@ -214,6 +214,24 @@ code:not([class*="language-"]) {
   content: none;
 }
 
+/* Chinese body copy uses a two-character first-line indent without leaking it into structure. */
+.markdown-indent-enabled .markdown-paragraph {
+  text-indent: 2em;
+}
+
+.markdown-indent-enabled :where(li, blockquote) > .markdown-paragraph,
+.markdown-indent-enabled .markdown-paragraph:has(> .markdown-figure:only-child) {
+  text-indent: 0;
+}
+
+.prose .markdown-paragraph.markdown-paragraph--force-indent {
+  text-indent: 2em;
+}
+
+.prose .markdown-paragraph.markdown-paragraph--force-no-indent {
+  text-indent: 0;
+}
+
 /* Heading anchor links */
 .prose h1 a,
 .prose h2 a,

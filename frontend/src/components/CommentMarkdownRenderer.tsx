@@ -1,24 +1,79 @@
 import { useState, type ComponentPropsWithoutRef, type CSSProperties } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import rehypeKatex from "rehype-katex";
+import remarkDirective from "remark-directive";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import "katex/dist/katex.min.css";
+import { resolveMarkdownDocumentIndent } from "@serino/utils/markdown-indentation";
 import ImageLightbox from "@/components/ImageLightbox";
+import { remarkAerisunIndentDirectives } from "@/components/markdown-directives";
+import {
+  getMarkdownIndentDirectiveKind,
+  getMarkdownParagraphClassName,
+  resolveMarkdownParagraphIndent,
+} from "@/components/markdown-paragraph-indent";
 import { extractMarkdownImageAttachments } from "@/lib/markdown-images";
 import "./CommentMarkdownRenderer.css";
 
 interface CommentMarkdownRendererProps {
   content: string;
   className?: string;
+  indentParagraphs?: boolean;
   imageSourceMap?: Record<string, string>;
   style?: CSSProperties;
+}
+
+function MarkdownParagraph({
+  children,
+  className,
+  node: _node,
+  ...props
+}: ComponentPropsWithoutRef<"p"> & { node?: unknown }) {
+  const resolved = resolveMarkdownParagraphIndent(children);
+
+  return (
+    <p
+      className={getMarkdownParagraphClassName(className, resolved.modifierClassName)}
+      {...props}
+    >
+      {resolved.children}
+    </p>
+  );
+}
+
+function MarkdownSpan({
+  children,
+  className,
+  node: _node,
+  "data-md-kind": dataMarkdownKind,
+  ...props
+}: ComponentPropsWithoutRef<"span"> & {
+  node?: unknown;
+  "data-md-kind"?: string;
+}) {
+  const indentationKind = getMarkdownIndentDirectiveKind(dataMarkdownKind);
+  if (indentationKind) {
+    return (
+      <>
+        {children ?? `:${indentationKind}`}
+      </>
+    );
+  }
+
+  return (
+    <span className={className} {...props}>
+      {children}
+    </span>
+  );
 }
 
 const buildComponents = (
   imageSourceMap: Record<string, string> | undefined,
   onImageOpen: (src: string, alt: string) => void,
 ) => ({
+  p: MarkdownParagraph,
+  span: MarkdownSpan,
   a: ({ href, children, ...props }: ComponentPropsWithoutRef<"a">) => (
     <a
       href={href}
@@ -90,17 +145,24 @@ const buildComponents = (
 export default function CommentMarkdownRenderer({
   content,
   className = "",
+  indentParagraphs = false,
   imageSourceMap,
   style,
 }: CommentMarkdownRendererProps) {
   const [lightboxImage, setLightboxImage] = useState<{ src: string; alt: string } | null>(null);
-  const { images, text } = extractMarkdownImageAttachments(content, imageSourceMap);
+  const documentIndent = resolveMarkdownDocumentIndent(content);
+  const { images, text } = extractMarkdownImageAttachments(
+    documentIndent.content,
+    imageSourceMap,
+  );
   const openImage = (src: string, alt: string) => setLightboxImage({ src, alt });
+  const shouldIndentParagraphs = documentIndent.indentParagraphs ?? indentParagraphs;
+  const indentationClassName = shouldIndentParagraphs ? "markdown-indent-enabled" : "";
 
   return (
     <>
       <div
-        className={`aerisun-comment-markdown prose prose-sm dark:prose-invert max-w-none font-body ${className}`}
+        className={`aerisun-comment-markdown prose prose-sm dark:prose-invert max-w-none font-body ${indentationClassName} ${className}`}
         style={style}
       >
         {images.length > 0 ? (
@@ -125,7 +187,12 @@ export default function CommentMarkdownRenderer({
         ) : null}
         {text ? (
           <ReactMarkdown
-            remarkPlugins={[remarkGfm, remarkMath]}
+            remarkPlugins={[
+              remarkGfm,
+              remarkMath,
+              remarkDirective,
+              remarkAerisunIndentDirectives,
+            ]}
             rehypePlugins={[rehypeKatex]}
             components={buildComponents(imageSourceMap, openImage)}
           >

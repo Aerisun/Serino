@@ -228,11 +228,16 @@ test("thoughts and excerpts retain the original attachment-grid Markdown rendere
   const commentRenderer = readSource("frontend/src/components/CommentMarkdownRenderer.tsx");
   const imageAttachments = readSource("frontend/src/lib/markdown-images.ts");
 
-  assert.match(commentRenderer, /remarkPlugins=\{\[remarkGfm, remarkMath\]\}/);
+  assert.match(commentRenderer, /import remarkDirective from "remark-directive"/);
+  assert.match(commentRenderer, /remarkAerisunIndentDirectives/);
+  assert.match(
+    commentRenderer,
+    /remarkPlugins=\{\[[\s\S]*remarkGfm,[\s\S]*remarkMath,[\s\S]*remarkDirective,[\s\S]*remarkAerisunIndentDirectives,[\s\S]*\]\}/,
+  );
   assert.match(commentRenderer, /import ImageLightbox from "@\/components\/ImageLightbox"/);
   assert.match(commentRenderer, /<ImageLightbox/);
   assert.doesNotMatch(commentRenderer, /aerisun-comment-image-lightbox__close/);
-  assert.doesNotMatch(commentRenderer, /remarkDirective/);
+  assert.doesNotMatch(commentRenderer, /remarkAerisunDirectives/);
   assert.doesNotMatch(commentRenderer, /MarkdownCarousel/);
   assert.doesNotMatch(imageAttachments, /isCarouselDirectiveStart/);
   assert.doesNotMatch(imageAttachments, /carouselDirectiveDepth/);

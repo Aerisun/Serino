@@ -15,11 +15,18 @@ test("lightweight Markdown renders fenced code and KaTeX math without restoring 
   assert.match(renderer, /import remarkMath from "remark-math";/);
   assert.match(renderer, /import rehypeKatex from "rehype-katex";/);
   assert.match(renderer, /import "katex\/dist\/katex\.min\.css";/);
-  assert.match(renderer, /remarkPlugins=\{\[remarkGfm, remarkMath\]\}/);
+  assert.match(
+    renderer,
+    /remarkPlugins=\{\[[\s\S]*remarkGfm,[\s\S]*remarkMath,[\s\S]*remarkDirective,[\s\S]*remarkAerisunIndentDirectives,[\s\S]*\]\}/,
+  );
   assert.match(renderer, /rehypePlugins=\{\[rehypeKatex\]\}/);
   assert.match(renderer, /code: \(\{ className, children/);
   assert.match(renderer, /pre: \(\{ children/);
-  assert.match(renderer, /extractMarkdownImageAttachments\(content, imageSourceMap\)/);
+  assert.match(renderer, /resolveMarkdownDocumentIndent\(content\)/);
+  assert.match(
+    renderer,
+    /extractMarkdownImageAttachments\(\s*documentIndent\.content,\s*imageSourceMap,?\s*\)/,
+  );
   assert.match(styles, /\.aerisun-comment-markdown pre:has\(> code\.math-display\)/);
   assert.match(styles, /\.aerisun-comment-markdown \.katex-display/);
 });

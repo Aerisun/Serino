@@ -458,11 +458,12 @@ const Excerpts = () => {
                 <div className={`aerisun-excerpt-reader aerisun-detail-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-y-contain pr-2 touch-pan-y [-webkit-overflow-scrolling:touch] ${showModalComments ? "max-h-[min(8vh,5.5rem)] sm:max-h-[min(18vh,10.5rem)]" : ""}`}>
                   <CommentMarkdownRenderer
                     content={selected.content}
-                            className="content-detail-markdown aerisun-excerpt-markdown indent-[2em] text-[1.04rem] leading-8 text-foreground/90 transition-colors [overflow-wrap:anywhere] [word-break:break-word] [&>p:first-child]:mt-0 [&>p:last-child]:mb-0"
-                        style={{
-                          fontFamily: getExcerptFontFamily(stripMarkdownImages(selected.content)),
-                          "--detail-reading-font": getExcerptFontFamily(stripMarkdownImages(selected.content)),
-                        } as CSSProperties}
+                    className="content-detail-markdown aerisun-excerpt-markdown text-[1.04rem] leading-8 text-foreground/90 transition-colors [overflow-wrap:anywhere] [word-break:break-word] [&>p:first-child]:mt-0 [&>p:last-child]:mb-0"
+                    indentParagraphs
+                    style={{
+                      fontFamily: getExcerptFontFamily(stripMarkdownImages(selected.content)),
+                      "--detail-reading-font": getExcerptFontFamily(stripMarkdownImages(selected.content)),
+                    } as CSSProperties}
                   />
                   {selected.category ? (
                     <div className="mt-6 text-[11px] font-body text-foreground/25 transition-colors">

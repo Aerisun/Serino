@@ -9,29 +9,106 @@ type DirectiveNode = {
     hName?: string;
     hProperties?: Record<string, string | number>;
   };
+  position?: {
+    start?: { offset?: number };
+    end?: { offset?: number };
+  };
+};
+
+type DirectiveParent = {
+  children?: unknown[];
 };
 
 const ADMONITION_NAMES = new Set(["tip", "warning", "note", "info", "danger", "success"]);
+const INDENT_DIRECTIVE_NAMES = new Set(["indent", "noindent"]);
 
 const getStringAttribute = (value?: string | null) => (value ?? "").trim();
 
 const getTagName = (node: DirectiveNode) => (node.type === "textDirective" ? "span" : "div");
 
-export const remarkAerisunDirectives: Plugin = () => {
-  return (tree) => {
-    visit(tree, (node) => {
-      if (
-        !node
-        || typeof node !== "object"
-        || !("type" in node)
-        || (node.type !== "containerDirective" && node.type !== "leafDirective" && node.type !== "textDirective")
-      ) {
+const applyIndentDirective = (directiveNode: DirectiveNode, name: string) => {
+  if (directiveNode.type !== "textDirective" || !INDENT_DIRECTIVE_NAMES.has(name)) {
+    return false;
+  }
+
+  const data = directiveNode.data || (directiveNode.data = {});
+  data.hName = "span";
+  data.hProperties = {
+    "data-md-kind": name,
+  };
+  return true;
+};
+
+const restoreDirectiveSource = (
+  directiveNode: DirectiveNode,
+  source: string,
+  index: number | undefined,
+  parent: DirectiveParent | undefined,
+) => {
+  const start = directiveNode.position?.start?.offset;
+  const end = directiveNode.position?.end?.offset;
+  if (
+    typeof index !== "number"
+    || !parent?.children
+    || typeof start !== "number"
+    || typeof end !== "number"
+  ) {
+    return;
+  }
+
+  parent.children[index] = {
+    type: "text",
+    value: source.slice(start, end),
+  };
+};
+
+const visitMarkdownDirectives = (
+  tree: unknown,
+  handleDirective: (
+    directiveNode: DirectiveNode,
+    name: string,
+    index: number | undefined,
+    parent: DirectiveParent | undefined,
+  ) => void,
+) => {
+  visit(tree, (node, index, parent) => {
+    if (
+      !node
+      || typeof node !== "object"
+      || !("type" in node)
+      || (node.type !== "containerDirective" && node.type !== "leafDirective" && node.type !== "textDirective")
+    ) {
+      return;
+    }
+
+    const directiveNode = node as DirectiveNode;
+    const name = getStringAttribute(directiveNode.name);
+    if (name) {
+      handleDirective(directiveNode, name, index, parent as DirectiveParent | undefined);
+    }
+  });
+};
+
+export const remarkAerisunIndentDirectives: Plugin = () => {
+  return (tree, file) => {
+    const source = String(file.value ?? "");
+
+    visitMarkdownDirectives(tree, (directiveNode, name, index, parent) => {
+      if (applyIndentDirective(directiveNode, name)) {
         return;
       }
 
-      const directiveNode = node as DirectiveNode;
-      const name = getStringAttribute(directiveNode.name);
-      if (!name) {
+      restoreDirectiveSource(directiveNode, source, index, parent);
+    });
+  };
+};
+
+export const remarkAerisunDirectives: Plugin = () => {
+  return (tree, file) => {
+    const source = String(file.value ?? "");
+
+    visitMarkdownDirectives(tree, (directiveNode, name, index, parent) => {
+      if (applyIndentDirective(directiveNode, name)) {
         return;
       }
 
@@ -126,6 +203,7 @@ export const remarkAerisunDirectives: Plugin = () => {
           return;
 
         default:
+          restoreDirectiveSource(directiveNode, source, index, parent);
           return;
       }
     });

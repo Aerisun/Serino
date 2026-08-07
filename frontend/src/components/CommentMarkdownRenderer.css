@@ -47,3 +47,23 @@
   padding: 0.75rem 0.25rem;
   text-align: center;
 }
+
+.aerisun-comment-markdown.markdown-indent-enabled .markdown-paragraph {
+  text-indent: 2em;
+}
+
+.aerisun-comment-markdown.markdown-indent-enabled
+  :where(li, blockquote)
+  > .markdown-paragraph {
+  text-indent: 0;
+}
+
+.aerisun-comment-markdown
+  .markdown-paragraph.markdown-paragraph--force-indent {
+  text-indent: 2em;
+}
+
+.aerisun-comment-markdown
+  .markdown-paragraph.markdown-paragraph--force-no-indent {
+  text-indent: 0;
+}
