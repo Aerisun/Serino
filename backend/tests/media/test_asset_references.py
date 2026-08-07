@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from types import SimpleNamespace
 
 from sqlalchemy import text
@@ -15,7 +16,9 @@ from aerisun.domain.media.references import (
     rewrite_text,
     scan_unhandled_legacy_references,
 )
-from aerisun.domain.ops.models import ConfigRevision
+from aerisun.domain.ops.models import ConfigRevision, VisitRecord
+from aerisun.domain.site_config.models import SiteProfile, SocialLink
+from aerisun.domain.social.models import Friend
 from aerisun.domain.waline.service import (
     collect_waline_asset_references,
     connect_waline_db,
@@ -130,6 +133,62 @@ def test_collect_registered_references_retains_every_content_usage(seeded_sessio
     assert classification.category == "post"
 
 
+def test_friend_avatar_is_rewritten_without_changing_asset_to_article_scope(seeded_session) -> None:
+    old = "/media/internal/assets/general/friend-avatar.jpg"
+    new = "/media/assets/asset-friend-avatar.jpg"
+    friend = Friend(
+        name="Friend",
+        url="https://friend.example",
+        avatar_url=old,
+        description="Friend description",
+    )
+    seeded_session.add(friend)
+    seeded_session.commit()
+
+    references = collect_registered_references(seeded_session, {old: "asset-friend-avatar"})
+
+    assert [(reference.table, reference.column, reference.row_id, reference.usage) for reference in references] == [
+        ("friends", "avatar_url", friend.id, None)
+    ]
+    classification = classify_asset_usages({reference.usage for reference in references if reference.usage})
+    assert classification.model_dump() == {
+        "scope": "user",
+        "category": "general",
+        "usages": (),
+    }
+    assert rewrite_registered_references(seeded_session, {old: new}) == 1
+    assert friend.avatar_url == new
+
+
+def test_social_link_resource_is_rewritten_without_changing_asset_scope(seeded_session) -> None:
+    old = "https://site.example/media/social-qr-code"
+    new = "/media/assets/asset-social-qr-code.jpg"
+    profile = seeded_session.query(SiteProfile).one()
+    social_link = SocialLink(
+        site_profile_id=profile.id,
+        name="Social QR code",
+        href=old,
+        icon_key="message",
+        placement="both",
+    )
+    seeded_session.add(social_link)
+    seeded_session.commit()
+
+    references = collect_registered_references(seeded_session, {old: "asset-social-qr-code"})
+
+    assert [(reference.table, reference.column, reference.row_id, reference.usage) for reference in references] == [
+        ("social_links", "href", social_link.id, None)
+    ]
+    classification = classify_asset_usages({reference.usage for reference in references if reference.usage})
+    assert classification.model_dump() == {
+        "scope": "user",
+        "category": "general",
+        "usages": (),
+    }
+    assert rewrite_registered_references(seeded_session, {old: new}) == 1
+    assert social_link.href == new
+
+
 def test_rewrite_registered_references_updates_text_and_json_without_committing(seeded_session) -> None:
     old = "/media/public/assets/site/cover.webp"
     new = "/media/assets/cover-id.webp"
@@ -155,6 +214,26 @@ def test_rewrite_registered_references_updates_text_and_json_without_committing(
     assert post.body == f"cover: {new}?size=2"
     assert revision.before_snapshot == {"hero_image_url": new}
     assert revision.after_snapshot == {"hero_image_url": f"{new}#after"}
+
+
+def test_scan_ignores_historical_visit_referer_without_rewriting_it(seeded_session) -> None:
+    old = "/media/public/assets/hero-image/historical.webp"
+    record = VisitRecord(
+        visited_at=datetime.now(UTC),
+        path="/posts/example",
+        ip_address="127.0.0.1",
+        referer=f"https://site.example{old}",
+        status_code=200,
+        duration_ms=12,
+        is_bot=False,
+    )
+    seeded_session.add(record)
+    seeded_session.commit()
+
+    unhandled = scan_unhandled_legacy_references(seeded_session, {old, f"https://site.example{old}"})
+
+    assert unhandled == []
+    assert record.referer == f"https://site.example{old}"
 
 
 def test_scan_unhandled_legacy_references_reports_unknown_text_columns(seeded_session) -> None:

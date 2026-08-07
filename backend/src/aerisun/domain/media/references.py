@@ -15,7 +15,8 @@ from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, T
 from aerisun.domain.engagement.models import Comment, GuestbookEntry
 from aerisun.domain.media.paths import AssetScope
 from aerisun.domain.ops.models import AuditLog, ConfigRevision
-from aerisun.domain.site_config.models import PageCopy, ResumeBasics, SiteProfile
+from aerisun.domain.site_config.models import PageCopy, ResumeBasics, SiteProfile, SocialLink
+from aerisun.domain.social.models import Friend
 from aerisun.domain.subscription.models import ContentNotification
 
 ARTICLE_CATEGORY_PRIORITY = ("post", "diary", "thought", "excerpt", "resume", "friends")
@@ -90,6 +91,8 @@ REFERENCE_FIELDS: tuple[ReferenceField, ...] = (
     ReferenceField(ResumeBasics, "summary", "text", "resume"),
     ReferenceField(ResumeBasics, "profile_image_url", "text", "system:resume-avatar"),
     ReferenceField(PageCopy, "extras", "json", usage_resolver=_page_copy_usage),
+    ReferenceField(Friend, "avatar_url", "text"),
+    ReferenceField(SocialLink, "href", "text"),
     ReferenceField(Comment, "body", "text", "comment"),
     ReferenceField(GuestbookEntry, "body", "text", "guestbook"),
     ReferenceField(SiteProfile, "og_image", "text", "system:site-og"),
@@ -121,6 +124,7 @@ _NON_CONTENT_MEDIA_METADATA_FIELDS = {
     ("asset_local_delete_queue_items", "storage_path"),
     ("asset_remote_delete_queue_items", "object_key"),
     ("asset_remote_upload_queue_items", "object_key"),
+    ("visit_records", "referer"),
 }
 
 
