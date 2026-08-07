@@ -686,7 +686,7 @@ def test_read_comments_marks_email_bound_admin_identity(client) -> None:
     comment = next(item for item in _flatten_comments(payload["items"]) if item["body"] == "邮箱绑定管理员评论")
     assert comment["author_name"] == "Felix"
     assert comment["is_author"] is True
-    assert "/media/public/assets/hero-image/" in comment["avatar_url"]
+    assert comment["avatar_url"].startswith("/media/assets/")
 
 
 def test_create_comment_marks_bound_admin_user_as_author(client) -> None:
@@ -713,7 +713,7 @@ def test_create_comment_marks_bound_admin_user_as_author(client) -> None:
     assert payload["item"]["author_name"] == "Felix"
     assert payload["item"]["is_author"] is True
     assert payload["item"]["avatar"] == "site-admin"
-    assert "/media/public/assets/hero-image/" in payload["item"]["avatar_url"]
+    assert payload["item"]["avatar_url"].startswith("/media/assets/")
 
 
 def test_read_guestbook_marks_email_bound_admin_identity(client) -> None:
@@ -738,7 +738,7 @@ def test_read_guestbook_marks_email_bound_admin_identity(client) -> None:
     entry = next(item for item in payload["items"] if item["body"] == "管理员留言")
     assert entry["name"] == "Felix"
     assert entry["is_author"] is True
-    assert "/media/public/assets/hero-image/" in entry["avatar_url"]
+    assert entry["avatar_url"].startswith("/media/assets/")
 
 
 def test_create_guestbook_marks_bound_admin_user_as_author(client) -> None:
@@ -765,7 +765,7 @@ def test_create_guestbook_marks_bound_admin_user_as_author(client) -> None:
     assert payload["item"]["name"] == "Felix"
     assert payload["item"]["is_author"] is True
     assert payload["item"]["avatar"] == "site-admin"
-    assert "/media/public/assets/hero-image/" in payload["item"]["avatar_url"]
+    assert payload["item"]["avatar_url"].startswith("/media/assets/")
 
 
 def test_create_comment_requires_login(client) -> None:
@@ -865,7 +865,7 @@ def test_comment_image_upload_rejects_spoofed_content_type(client) -> None:
     assert "图片格式" in response.json()["detail"]
 
 
-def test_comment_image_upload_uses_user_asset_upload(client) -> None:
+def test_comment_image_upload_uses_visitor_comment_asset_upload(client) -> None:
     _login_site_user(client, email="image-upload@example.com", display_name="Image Upload")
     _update_community_config(image_uploader=True)
 
@@ -877,7 +877,7 @@ def test_comment_image_upload_uses_user_asset_upload(client) -> None:
     assert response.status_code == 200
     payload = response.json()
     url = payload["data"]["url"]
-    assert url.startswith("/media/internal/assets/comment/")
+    assert url.startswith("/media/assets/")
 
     from pathlib import Path
 
@@ -889,11 +889,33 @@ def test_comment_image_upload_uses_user_asset_upload(client) -> None:
     with factory() as session:
         asset = session.query(Asset).filter(Asset.resource_key == resource_key).one()
 
-    assert asset.scope == "user"
+    assert asset.scope == "visitor"
     assert asset.visibility == "internal"
     assert asset.category == "comment"
     assert asset.file_name == "image.png"
     assert Path(asset.storage_path).is_file()
+
+
+def test_guestbook_image_upload_uses_visitor_guestbook_category(client) -> None:
+    _login_site_user(client, email="guestbook-image@example.com", display_name="Guestbook Image")
+    _update_community_config(image_uploader=True)
+
+    response = client.post(
+        "/api/v1/site-interactions/comment-image?surface=guestbook",
+        files={"file": ("guestbook.png", PNG_BYTES, "image/png")},
+    )
+
+    assert response.status_code == 200
+    resource_key = response.json()["data"]["url"].removeprefix("/media/")
+
+    from aerisun.core.db import get_session_factory
+    from aerisun.domain.media.models import Asset
+
+    with get_session_factory()() as session:
+        asset = session.query(Asset).filter(Asset.resource_key == resource_key).one()
+
+    assert asset.scope == "visitor"
+    assert asset.category == "guestbook"
 
 
 def test_comment_image_upload_with_oss_queues_async_mirror(monkeypatch, client) -> None:
@@ -933,7 +955,7 @@ def test_comment_image_upload_with_oss_queues_async_mirror(monkeypatch, client) 
         asset = session.query(Asset).filter(Asset.resource_key == resource_key).one()
         mirrors = session.query(AssetMirrorQueueItem).filter_by(asset_id=asset.id).all()
 
-    assert asset.scope == "user"
+    assert asset.scope == "visitor"
     assert asset.visibility == "internal"
     assert asset.category == "comment"
     assert asset.file_name == "image.png"
@@ -941,7 +963,7 @@ def test_comment_image_upload_with_oss_queues_async_mirror(monkeypatch, client) 
     assert asset.mirror_status == "queued"
     assert len(mirrors) == 1
     assert mirrors[0].status == "queued"
-    assert mirrors[0].object_key == resource_key
+    assert mirrors[0].object_key == asset.remote_object_key
     assert not Path(asset.storage_path).exists()
 
 

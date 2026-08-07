@@ -701,7 +701,10 @@ const WalineSurface = ({
         const uploadedImages: string[] = [];
         try {
           for (const item of pendingCommentImages) {
-            const response = await uploadCommentImageApiV1SiteInteractionsCommentImagePost({ file: item.file } as never);
+            const response = await uploadCommentImageApiV1SiteInteractionsCommentImagePost(
+              { file: item.file } as never,
+              { surface: isGuestbook ? "guestbook" : "comment" },
+            );
             const imageUrl = response.data.data?.url;
             if (!imageUrl) {
               throw new Error(t("waline.surface.imageUploadMissingUrl"));

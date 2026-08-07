@@ -123,11 +123,11 @@
         "label": "留言板"
       }
     ],
-    "hero_image_url": "/media/public/assets/hero-image/9c5bd7ee9001.webp",
-    "hero_poster_url": "/media/internal/assets/hero-poster/95ed8e12e970.webp",
+    "hero_image_url": "/media/assets/3f73c546-6545-5903-bc1b-c21de1a43b1a.webp",
+    "hero_poster_url": "/media/assets/86942c5a-e8ab-5356-b22f-d502f007c458.webp",
     "hero_video_url": "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260306_115329_5e00c9c5-4d69-49b7-94c3-9c31c60bb644.mp4",
     "name": "Felix",
-    "og_image": "/media/internal/assets/site-og/05758e3247f5.webp",
+    "og_image": "/media/assets/71348368-e2ea-5c38-aa62-e10a7f582cd1.webp",
     "poem_hitokoto_keywords": [],
     "poem_hitokoto_types": [
       "d",
@@ -135,7 +135,7 @@
     ],
     "poem_source": "hitokoto",
     "role": "UI/UX Designer · Frontend Developer",
-    "site_icon_url": "/media/internal/assets/site-icon/4cc8bfdd4830.svg",
+    "site_icon_url": "/media/assets/fa2c283d-190f-587d-bcc5-18cbf00827ec.svg",
     "title": "Felix"
   },
   "social_links": [

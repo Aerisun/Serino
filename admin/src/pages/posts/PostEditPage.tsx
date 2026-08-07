@@ -109,6 +109,7 @@ export default function PostEditPage() {
         <div className="space-y-2">
           <Label>{t("posts.body")}</Label>
           <MarkdownEditor
+            assetCategory="post"
             value={form.body}
             onChange={(v) => setField("body", v)}
             minHeight="400px"

@@ -536,7 +536,7 @@ def test_admin_moderation_uses_waline_storage(client) -> None:
 def test_deleting_comment_removes_bound_comment_images(client) -> None:
     token = _create_admin_token("waline-image-cleanup-admin")
     settings = get_settings()
-    resource_key = "internal/assets/comment/delete-bound.png"
+    resource_key = "assets/user/delete-bound.png"
     storage_path = settings.media_dir.expanduser().resolve() / resource_key
     storage_path.parent.mkdir(parents=True, exist_ok=True)
     storage_path.write_bytes(b"\x89PNG\r\n\x1a\nimage")

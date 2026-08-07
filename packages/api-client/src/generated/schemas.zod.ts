@@ -884,6 +884,12 @@ export const DeleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReaction
 /**
  * @summary 评论图片上传
  */
+export const uploadCommentImageApiV1SiteInteractionsCommentImagePostQuerySurfaceDefault = `comment`;
+
+export const UploadCommentImageApiV1SiteInteractionsCommentImagePostQueryParams = zod.object({
+  "surface": zod.enum(['comment', 'guestbook']).default(uploadCommentImageApiV1SiteInteractionsCommentImagePostQuerySurfaceDefault)
+})
+
 export const UploadCommentImageApiV1SiteInteractionsCommentImagePostBody = zod.object({
   "file": zod.instanceof(File)
 })
@@ -3798,7 +3804,7 @@ export const listAssetsEndpointApiV1AdminAssetsGetQueryPageSizeMax = 100;
 export const listAssetsEndpointApiV1AdminAssetsGetQueryQOneMax = 200;
 
 export const listAssetsEndpointApiV1AdminAssetsGetQueryScopeDefault = `user`;
-export const listAssetsEndpointApiV1AdminAssetsGetQueryScopeRegExp = new RegExp('^(system|user)$');
+export const listAssetsEndpointApiV1AdminAssetsGetQueryScopeRegExp = new RegExp('^(user|article|visitor|system)$');
 
 
 export const ListAssetsEndpointApiV1AdminAssetsGetQueryParams = zod.object({
@@ -3861,7 +3867,7 @@ export const InitUploadAssetEndpointApiV1AdminAssetsInitUploadPostBody = zod.obj
   "sha256": zod.string().min(initUploadAssetEndpointApiV1AdminAssetsInitUploadPostBodySha256Min).max(initUploadAssetEndpointApiV1AdminAssetsInitUploadPostBodySha256Max),
   "mime_type": zod.union([zod.string().max(initUploadAssetEndpointApiV1AdminAssetsInitUploadPostBodyMimeTypeOneMax),zod.null()]).optional(),
   "visibility": zod.enum(['internal', 'public']).default(initUploadAssetEndpointApiV1AdminAssetsInitUploadPostBodyVisibilityDefault),
-  "scope": zod.enum(['system', 'user']).default(initUploadAssetEndpointApiV1AdminAssetsInitUploadPostBodyScopeDefault),
+  "scope": zod.enum(['user', 'article', 'visitor', 'system']).default(initUploadAssetEndpointApiV1AdminAssetsInitUploadPostBodyScopeDefault),
   "category": zod.string().max(initUploadAssetEndpointApiV1AdminAssetsInitUploadPostBodyCategoryMax).default(initUploadAssetEndpointApiV1AdminAssetsInitUploadPostBodyCategoryDefault),
   "note": zod.union([zod.string().max(initUploadAssetEndpointApiV1AdminAssetsInitUploadPostBodyNoteOneMax),zod.null()]).optional(),
   "public_slug": zod.union([zod.string().max(initUploadAssetEndpointApiV1AdminAssetsInitUploadPostBodyPublicSlugOneMax),zod.null()]).optional()
@@ -3924,6 +3930,19 @@ export const BulkDeleteAssetsEndpointApiV1AdminAssetsBulkDeletePostResponse = zo
 
 
 /**
+ * @summary 创建后台资源查看地址
+ */
+export const CreateAssetOpenUrlEndpointApiV1AdminAssetsAssetIdOpenUrlPostParams = zod.object({
+  "asset_id": zod.string()
+})
+
+export const CreateAssetOpenUrlEndpointApiV1AdminAssetsAssetIdOpenUrlPostResponse = zod.object({
+  "url": zod.unknown(),
+  "expires_at": zod.unknown().optional()
+})
+
+
+/**
  * @summary 获取单个资源
  */
 export const GetAssetEndpointApiV1AdminAssetsAssetIdGetParams = zod.object({
@@ -3968,7 +3987,7 @@ export const updateAssetEndpointApiV1AdminAssetsAssetIdPatchBodyPublicSlugOneMax
 
 export const UpdateAssetEndpointApiV1AdminAssetsAssetIdPatchBody = zod.object({
   "visibility": zod.union([zod.enum(['internal', 'public']),zod.null()]).optional(),
-  "scope": zod.union([zod.enum(['system', 'user']),zod.null()]).optional(),
+  "scope": zod.union([zod.enum(['user', 'article', 'visitor', 'system']),zod.null()]).optional(),
   "category": zod.union([zod.string(),zod.null()]).optional(),
   "note": zod.union([zod.string(),zod.null()]).optional(),
   "public_slug": zod.union([zod.string().max(updateAssetEndpointApiV1AdminAssetsAssetIdPatchBodyPublicSlugOneMax),zod.null()]).optional()

@@ -96,11 +96,15 @@ def test_apply_production_baseline_uses_backend_system_asset_sources(tmp_path, m
             assets = {asset.category: asset for asset in session.query(Asset).all()}
             friends_page = session.query(PageCopy).filter(PageCopy.page_key == "friends").one()
 
-        assert site.og_image.startswith("/media/internal/assets/site-og/")
-        assert site.site_icon_url.startswith("/media/internal/assets/site-icon/")
-        assert site.hero_image_url.startswith("/media/public/assets/hero-image/")
-        assert site.hero_poster_url.startswith("/media/internal/assets/hero-poster/")
-        assert resume.profile_image_url.startswith("/media/internal/assets/resume-avatar/")
+        assert site.og_image == f"/media/{assets['site-og'].resource_key}"
+        assert site.site_icon_url == f"/media/{assets['site-icon'].resource_key}"
+        assert site.hero_image_url == f"/media/{assets['hero-image'].resource_key}"
+        assert site.hero_poster_url == f"/media/{assets['hero-poster'].resource_key}"
+        assert resume.profile_image_url == f"/media/{assets['resume-avatar'].resource_key}"
+        assert all(
+            asset.resource_key == f"assets/{asset.id}{Path(asset.file_name).suffix}" for asset in assets.values()
+        )
+        assert all(Path(asset.storage_path).parent.name == "system" for asset in assets.values())
         assert assets["hero-image"].visibility == "public"
         assert assets["hero-image"].public_slug == "avatar"
         assert ":copy[https://your_site.com/media/avatar]" in friends_page.extras["applicationMarkdown"]

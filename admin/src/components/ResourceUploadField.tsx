@@ -18,6 +18,7 @@ import { NativeSelect } from "@/components/ui/NativeSelect";
 import { Textarea } from "@/components/ui/Textarea";
 import { canCompressImage, prepareImageUploadFile } from "@serino/utils/image-upload";
 import { uploadManagedAsset } from "@/lib/managedAssetUpload";
+import type { AssetScope } from "@/lib/managedAssetUpload";
 import { toast } from "sonner";
 import { Upload } from "lucide-react";
 
@@ -25,7 +26,7 @@ interface ResourceUploadFieldProps {
   label: ReactNode;
   value: string;
   category: string;
-  scope?: "system" | "user";
+  scope?: AssetScope;
   accept?: string;
   placeholder?: string;
   note?: string;
@@ -64,14 +65,25 @@ export function ResourceUploadField({
       return;
     }
 
-    const response = await listAssetsEndpointApiV1AdminAssetsGet({
-      page: 1,
-      page_size: 100,
-      q: category,
-      scope,
-    });
-    const items = (response.data?.items ?? []) as AssetAdminRead[];
-    const staleAssets = items.filter(
+    const categoryAssets: AssetAdminRead[] = [];
+    let page = 1;
+    while (true) {
+      const response = await listAssetsEndpointApiV1AdminAssetsGet({
+        page,
+        page_size: 100,
+        q: category,
+        scope,
+      });
+      const payload = response.data as { items?: unknown; total?: unknown } | undefined;
+      const items = Array.isArray(payload?.items) ? (payload.items as AssetAdminRead[]) : [];
+      categoryAssets.push(...items);
+      const total = Number(payload?.total);
+      if (items.length < 100 || (Number.isFinite(total) && categoryAssets.length >= total)) {
+        break;
+      }
+      page += 1;
+    }
+    const staleAssets = categoryAssets.filter(
       (item) =>
         item.category === category &&
         item.scope === scope &&
@@ -121,32 +133,36 @@ export function ResourceUploadField({
         toast.error("资源上传失败");
         return;
       }
-      try {
-        await cleanupCategoryAssets(asset.internal_url);
-      } catch {
-        toast.error("新资源已上传，但旧资源清理失败");
-      }
+      const previousUrl = value;
       onChange(asset.internal_url);
-      let autoSaveFailed = false;
       if (onUploadPersist) {
         setIsPersisting(true);
         try {
           await onUploadPersist(asset.internal_url);
         } catch (error) {
-          autoSaveFailed = true;
+          onChange(previousUrl);
+          if (asset.internal_url !== previousUrl) {
+            try {
+              await deleteAssetEndpointApiV1AdminAssetsAssetIdDelete(asset.id);
+            } catch {
+              toast.error("自动保存失败，新上传资源未能自动清理，请到资源页检查");
+            }
+          }
           const message = error instanceof Error ? error.message : "请稍后重试";
-          toast.error(`资源已上传，但自动保存失败：${message}`);
+          toast.error(`自动保存失败，已恢复原资源：${message}`);
+          return;
         } finally {
           setIsPersisting(false);
         }
       }
-      toast.success(
-        autoSaveFailed
-          ? "资源上传成功，请手动保存页面修改"
-          : onUploadPersist
-            ? "资源上传并自动保存成功"
-            : "资源上传成功",
-      );
+      if (onUploadPersist) {
+        try {
+          await cleanupCategoryAssets(asset.internal_url);
+        } catch {
+          toast.error("新资源已生效，但旧资源清理失败，请到资源页检查");
+        }
+      }
+      toast.success(onUploadPersist ? "资源上传并自动保存成功" : "资源上传成功");
       setOpen(false);
       setSelectedFile(null);
       if (fileRef.current) fileRef.current.value = "";

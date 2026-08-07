@@ -51,6 +51,7 @@ const VisitorsUsersPage = lazyAdminPage(() => import("@/pages/visitors/VisitorsU
 const VisitorMonitoringPage = lazyAdminPage(() => import("@/pages/visitors/VisitorMonitoringPage"));
 const VisitorsSubscribersPage = lazyAdminPage(() => import("@/pages/visitors/VisitorsSubscribersPage"));
 const AssetsPage = lazyAdminPage(() => import("@/pages/assets/AssetsPage"));
+const AssetPreviewPage = lazyAdminPage(() => import("@/pages/assets/AssetPreviewPage"));
 const McpPage = lazyAdminPage(() => import("@/pages/integrations/McpPage"));
 const AgentPage = lazyAdminPage(() => import("@/pages/automation/AgentPage"));
 const AgentRunDetailPage = lazyAdminPage(() => import("@/pages/automation/AgentRunDetailPage"));
@@ -158,35 +159,47 @@ function ProtectedRoutes() {
   );
 }
 
+function AdminSessionRoutes() {
+  return (
+    <AuthProvider>
+      <Suspense fallback={null}>
+        <Toaster richColors position="top-right" />
+      </Suspense>
+      <Routes>
+        <Route
+          path="/login"
+          element={
+            <Suspense fallback={<RouteSpinner />}>
+              <LoginRoute />
+            </Suspense>
+          }
+        />
+        <Route path="/*" element={<ProtectedRoutes />} />
+      </Routes>
+    </AuthProvider>
+  );
+}
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider storageKey={ADMIN_THEME_STORAGE_KEY}>
         <LanguageProvider>
-          <AuthProvider>
-            <BrowserRouter
-              basename={routerBasename}
-              future={{
-                v7_startTransition: true,
-                v7_relativeSplatPath: true,
-              }}
-            >
-              <Suspense fallback={null}>
-                <Toaster richColors position="top-right" />
-              </Suspense>
-              <Routes>
-                <Route
-                  path="/login"
-                  element={
-                    <Suspense fallback={<RouteSpinner />}>
-                      <LoginRoute />
-                    </Suspense>
-                  }
-                />
-                <Route path="/*" element={<ProtectedRoutes />} />
-              </Routes>
-            </BrowserRouter>
-          </AuthProvider>
+          <BrowserRouter
+            basename={routerBasename}
+            future={{
+              v7_startTransition: true,
+              v7_relativeSplatPath: true,
+            }}
+          >
+            <Routes>
+              <Route
+                path="/assets/preview/:assetId"
+                element={<RoutePage page={AssetPreviewPage} />}
+              />
+              <Route path="/*" element={<AdminSessionRoutes />} />
+            </Routes>
+          </BrowserRouter>
         </LanguageProvider>
       </ThemeProvider>
     </QueryClientProvider>

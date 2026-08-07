@@ -54,6 +54,7 @@ import type {
   ApprovalDecisionWrite,
   AssetAdminRead,
   AssetAdminUpdate,
+  AssetOpenUrlRead,
   AssetUploadCompleteWrite,
   AssetUploadPlanRead,
   AssetUploadPlanWrite,
@@ -12011,6 +12012,94 @@ export const useBulkDeleteAssetsEndpointApiV1AdminAssetsBulkDeletePost = <TError
         TContext
       > => {
       return useMutation(getBulkDeleteAssetsEndpointApiV1AdminAssetsBulkDeletePostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 创建后台资源查看地址
+ */
+export type createAssetOpenUrlEndpointApiV1AdminAssetsAssetIdOpenUrlPostResponse200 = {
+  data: AssetOpenUrlRead
+  status: 200
+}
+
+export type createAssetOpenUrlEndpointApiV1AdminAssetsAssetIdOpenUrlPostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type createAssetOpenUrlEndpointApiV1AdminAssetsAssetIdOpenUrlPostResponseSuccess = (createAssetOpenUrlEndpointApiV1AdminAssetsAssetIdOpenUrlPostResponse200) & {
+  headers: Headers;
+};
+export type createAssetOpenUrlEndpointApiV1AdminAssetsAssetIdOpenUrlPostResponseError = (createAssetOpenUrlEndpointApiV1AdminAssetsAssetIdOpenUrlPostResponse422) & {
+  headers: Headers;
+};
+
+export type createAssetOpenUrlEndpointApiV1AdminAssetsAssetIdOpenUrlPostResponse = (createAssetOpenUrlEndpointApiV1AdminAssetsAssetIdOpenUrlPostResponseSuccess | createAssetOpenUrlEndpointApiV1AdminAssetsAssetIdOpenUrlPostResponseError)
+
+export const getCreateAssetOpenUrlEndpointApiV1AdminAssetsAssetIdOpenUrlPostUrl = (assetId: string,) => {
+
+
+
+
+  return `/api/v1/admin/assets/${assetId}/open-url`
+}
+
+export const createAssetOpenUrlEndpointApiV1AdminAssetsAssetIdOpenUrlPost = async (assetId: string, options?: RequestInit): Promise<createAssetOpenUrlEndpointApiV1AdminAssetsAssetIdOpenUrlPostResponse> => {
+
+  return customInstance<createAssetOpenUrlEndpointApiV1AdminAssetsAssetIdOpenUrlPostResponse>(getCreateAssetOpenUrlEndpointApiV1AdminAssetsAssetIdOpenUrlPostUrl(assetId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getCreateAssetOpenUrlEndpointApiV1AdminAssetsAssetIdOpenUrlPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAssetOpenUrlEndpointApiV1AdminAssetsAssetIdOpenUrlPost>>, TError,{assetId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof createAssetOpenUrlEndpointApiV1AdminAssetsAssetIdOpenUrlPost>>, TError,{assetId: string}, TContext> => {
+
+const mutationKey = ['createAssetOpenUrlEndpointApiV1AdminAssetsAssetIdOpenUrlPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAssetOpenUrlEndpointApiV1AdminAssetsAssetIdOpenUrlPost>>, {assetId: string}> = (props) => {
+          const {assetId} = props ?? {};
+
+          return  createAssetOpenUrlEndpointApiV1AdminAssetsAssetIdOpenUrlPost(assetId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateAssetOpenUrlEndpointApiV1AdminAssetsAssetIdOpenUrlPostMutationResult = NonNullable<Awaited<ReturnType<typeof createAssetOpenUrlEndpointApiV1AdminAssetsAssetIdOpenUrlPost>>>
+
+    export type CreateAssetOpenUrlEndpointApiV1AdminAssetsAssetIdOpenUrlPostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 创建后台资源查看地址
+ */
+export const useCreateAssetOpenUrlEndpointApiV1AdminAssetsAssetIdOpenUrlPost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAssetOpenUrlEndpointApiV1AdminAssetsAssetIdOpenUrlPost>>, TError,{assetId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createAssetOpenUrlEndpointApiV1AdminAssetsAssetIdOpenUrlPost>>,
+        TError,
+        {assetId: string},
+        TContext
+      > => {
+      return useMutation(getCreateAssetOpenUrlEndpointApiV1AdminAssetsAssetIdOpenUrlPostMutationOptions(options), queryClient);
     }
     /**
  * @summary 获取单个资源

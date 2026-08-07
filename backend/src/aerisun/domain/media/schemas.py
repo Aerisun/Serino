@@ -6,6 +6,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 from aerisun.core.schemas import ModelBase
+from aerisun.domain.media.paths import AssetScope
 
 
 class AssetAdminRead(ModelBase):
@@ -14,7 +15,7 @@ class AssetAdminRead(ModelBase):
     resource_key: str
     public_slug: str | None
     visibility: Literal["internal", "public"]
-    scope: Literal["system", "user"]
+    scope: AssetScope
     category: str
     note: str | None
     storage_path: str
@@ -34,10 +35,15 @@ class AssetAdminRead(ModelBase):
 
 class AssetAdminUpdate(ModelBase):
     visibility: Literal["internal", "public"] | None = None
-    scope: Literal["system", "user"] | None = None
+    scope: AssetScope | None = None
     category: str | None = None
     note: str | None = None
     public_slug: str | None = Field(default=None, max_length=160)
+
+
+class AssetOpenUrlRead(ModelBase):
+    url: str
+    expires_at: datetime | None = None
 
 
 class AssetUploadPlanWrite(BaseModel):
@@ -46,7 +52,7 @@ class AssetUploadPlanWrite(BaseModel):
     sha256: str = Field(min_length=32, max_length=128)
     mime_type: str | None = Field(default=None, max_length=120)
     visibility: Literal["internal", "public"] = "internal"
-    scope: Literal["system", "user"] = "user"
+    scope: AssetScope = "user"
     category: str = Field(default="general", max_length=80)
     note: str | None = Field(default=None, max_length=500)
     public_slug: str | None = Field(default=None, max_length=160)
@@ -114,7 +120,7 @@ class ObjectStorageHealthRead(ModelBase):
 
 class ObjectStorageSyncRecordRead(ModelBase):
     id: str
-    record_type: Literal["mirror", "remote_delete", "remote_upload"]
+    record_type: Literal["mirror", "local_delete", "remote_delete", "remote_upload"]
     status: str
     object_key: str
     asset_id: str | None = None

@@ -49,6 +49,7 @@ interface MarkdownEditorProps {
   minHeight?: string;
   mobileFullscreen?: boolean;
   imageLayout?: "inline" | "attachments";
+  assetCategory: "post" | "diary" | "thought" | "excerpt" | "resume" | "friends";
 }
 
 type InsertAction = { prefix: string; suffix: string; placeholder: string };
@@ -62,7 +63,6 @@ type MarkdownImageAttachment = {
   end: number;
 };
 
-const FIXED_IMAGE_CATEGORY = "markdown-image";
 const MOBILE_EDITOR_QUERY = "(max-width: 767px)";
 
 const ACTIONS: Record<string, InsertAction> = {
@@ -330,6 +330,7 @@ export function MarkdownEditor({
   minHeight = "300px",
   mobileFullscreen = false,
   imageLayout = "inline",
+  assetCategory,
 }: MarkdownEditorProps) {
   const { t } = useI18n();
   const [preview, setPreview] = useState(false);
@@ -587,8 +588,8 @@ export function MarkdownEditor({
       const asset = await uploadManagedAsset({
         file: fileToUpload,
         visibility: "internal",
-        scope: "user",
-        category: FIXED_IMAGE_CATEGORY,
+        scope: "article",
+        category: assetCategory,
         note: imageNote.trim() || undefined,
       });
       if (!asset.internal_url) {
@@ -607,7 +608,7 @@ export function MarkdownEditor({
     } finally {
       setImageUploading(false);
     }
-  }, [imageNote, imageUploadMode, insertImageMarkdown, selectedImageFile, t]);
+  }, [assetCategory, imageNote, imageUploadMode, insertImageMarkdown, selectedImageFile, t]);
 
   const toolbarButtons = [
     { action: "bold", icon: Bold },
@@ -878,7 +879,7 @@ export function MarkdownEditor({
             <div className="grid gap-2">
               <Label>{t("assets.category")}</Label>
               <Input
-                value={FIXED_IMAGE_CATEGORY}
+                value={assetCategory}
                 disabled
                 className="min-h-10 bg-muted text-muted-foreground sm:min-h-[2.75rem]"
               />

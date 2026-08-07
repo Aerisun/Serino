@@ -6,7 +6,7 @@ export interface UploadedAssetRead {
   resource_key: string;
   public_slug?: string | null;
   visibility: "internal" | "public";
-  scope: "system" | "user";
+  scope: AssetScope;
   category: string;
   note?: string | null;
   storage_path: string;
@@ -16,6 +16,8 @@ export interface UploadedAssetRead {
   byte_size?: number | null;
   sha256?: string | null;
 }
+
+export type AssetScope = "user" | "article" | "visitor" | "system";
 
 type AssetUploadPlanRead = {
   mode: "local" | "oss" | "existing";
@@ -30,7 +32,7 @@ type AssetUploadPlanRead = {
 export interface ManagedAssetUploadInput {
   file: File;
   visibility: "internal" | "public";
-  scope: "system" | "user";
+  scope: AssetScope;
   category: string;
   note?: string;
   publicSlug?: string;

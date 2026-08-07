@@ -228,6 +228,9 @@ main() {
 
   if [[ "${check_only}" != "true" ]]; then
     repair_upgrade_preflight_layout
+    # 上一次升级可能已经越过健康检查，只在旧副本清理阶段遇到临时 OSS/权限错误。
+    # 先幂等重试 post-commit cleanup，避免 doctor 把可自动恢复的 cleanup_pending 永久挡住。
+    cleanup_release_data_migrations blocking >/dev/null 2>&1 || true
   fi
   run_upgrade_preflight
 
@@ -278,14 +281,25 @@ main() {
     validate_release_compose_configuration &&
     compose pull &&
     run_release_migrations &&
-    run_release_data_migrations blocking &&
+    run_release_data_migrations blocking --defer-cleanup &&
     enable_serino_service &&
+    AERISUN_DEFER_READY_CLEANUP_TO_CALLER=true &&
     wait_for_release_ready
   ); then
+    if deferred_release_data_migration_is_armed; then
+      if ! rollback_deferred_release_data_migration; then
+        die "升级失败，且无法安全撤销本次迁移创建的 OSS 副本；为避免恢复出新旧数据混合状态，未自动覆盖当前数据。请保留现场后重试升级。"
+      fi
+    fi
     rollback_failed_upgrade
     die "升级失败，已回滚到旧版本。可执行 sercli doctor 与 sercli logs api waline caddy 查看诊断信息。"
   fi
 
+  log_info "🧹 新版本已就绪，正在清理迁移确认不再需要的旧资源副本..."
+  if ! cleanup_release_data_migrations blocking; then
+    UPGRADE_ROLLBACK_STAGE=""
+    die "新版本已经启动并通过健康检查，但旧资源副本清理未完成。为避免误删或不安全回滚，站点保持在新版本；请修复 OSS 或文件权限后执行 sercli migrate data --mode blocking 重试清理。"
+  fi
   UPGRADE_ROLLBACK_STAGE=""
   schedule_release_background_data_migrations || true
 

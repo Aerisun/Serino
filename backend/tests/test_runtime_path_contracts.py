@@ -1323,6 +1323,10 @@ curl() {
   return 0
 }
 
+cleanup_release_data_migrations() {
+  :
+}
+
 wait_for_release_ready 3
 cat "${SERINO_CURL_LOG}"
 """
@@ -1337,6 +1341,73 @@ cat "${SERINO_CURL_LOG}"
         "--noproxy * --fail --silent --show-error --connect-timeout 5 --max-time 10 http://198.51.100.42/admin/",
         "--noproxy * --fail --silent --show-error --connect-timeout 5 --max-time 10 http://198.51.100.42/waline/",
     ]
+
+
+def test_release_ready_does_not_trigger_old_upgrade_rollback_when_post_health_cleanup_fails():
+    completed = run_installer_bash_result(
+        """
+source installer/lib/common.sh
+source installer/lib/docker.sh
+
+load_env_file() {
+  AERISUN_DOMAIN='http://198.51.100.42'
+  AERISUN_SITE_URL='http://198.51.100.42'
+  AERISUN_WALINE_SERVER_URL='http://198.51.100.42/waline'
+}
+resolve_backend_healthcheck_url() { printf 'http://127.0.0.1/readyz'; }
+wait_for_url() { return 0; }
+cleanup_release_data_migrations() { return 1; }
+
+wait_for_release_ready 3
+"""
+    )
+
+    assert completed.returncode == 0
+    assert "站点保持新版本" in completed.stderr
+
+
+def test_current_upgrade_can_defer_ready_cleanup_to_its_single_explicit_cleanup_step():
+    completed = run_installer_bash_result(
+        """
+source installer/lib/common.sh
+source installer/lib/docker.sh
+
+AERISUN_DEFER_READY_CLEANUP_TO_CALLER='true'
+load_env_file() {
+  AERISUN_DOMAIN='http://198.51.100.42'
+  AERISUN_SITE_URL='http://198.51.100.42'
+  AERISUN_WALINE_SERVER_URL='http://198.51.100.42/waline'
+}
+resolve_backend_healthcheck_url() { printf 'http://127.0.0.1/readyz'; }
+wait_for_url() { return 0; }
+cleanup_release_data_migrations() { printf 'unexpected-compat-cleanup\n'; }
+
+wait_for_release_ready 3
+"""
+    )
+
+    assert completed.returncode == 0
+    assert completed.stdout.strip() == ""
+
+
+def test_release_readiness_failure_reverts_deferred_external_copies_before_old_script_rolls_back():
+    completed = run_installer_bash_result(
+        """
+source installer/lib/common.sh
+source installer/lib/docker.sh
+
+AERISUN_RELEASE_DATA_MIGRATION_DEFERRED='true'
+rollback_release_data_migration_external_copies() {
+  printf 'external-rollback:%s\n' "${1:-}"
+}
+
+fail_release_readiness 'not ready'
+"""
+    )
+
+    assert completed.returncode == 1
+    assert completed.stdout.strip() == "external-rollback:blocking"
+    assert "not ready" in completed.stderr
 
 
 def test_wait_for_domain_url_bypasses_proxy_for_local_https_ready_checks():
@@ -1398,8 +1469,115 @@ run_release_data_migrations blocking
     )
 
     assert completed.returncode == 0
-    assert completed.stdout.strip() == "data-migrate.sh apply --mode blocking --progress"
+    assert completed.stdout.strip() == "data-migrate.sh apply --mode blocking --progress --defer-cleanup"
     assert completed.stderr.strip() == "[INFO] 🛠️ 正在执行版本化数据迁移..."
+
+
+def test_release_upgrade_can_defer_cleanup_and_exposes_explicit_cleanup_hooks():
+    completed = run_installer_bash_result(
+        """
+source installer/lib/common.sh
+source installer/lib/docker.sh
+
+compose_api_task() {
+  printf '%s\n' "$*"
+}
+
+run_release_data_migrations blocking --defer-cleanup
+cleanup_release_data_migrations blocking
+rollback_release_data_migration_external_copies blocking
+"""
+    )
+
+    assert completed.returncode == 0
+    assert completed.stdout.strip().splitlines() == [
+        "data-migrate.sh apply --mode blocking --progress --defer-cleanup",
+        "data-migrate.sh cleanup --mode blocking",
+        "data-migrate.sh rollback-external --mode blocking",
+    ]
+
+
+def test_upgrade_cleans_legacy_assets_only_after_new_release_is_ready():
+    upgrade_text = read_project_file("installer/upgrade.sh")
+
+    deferred = "run_release_data_migrations blocking --defer-cleanup"
+    ready = "wait_for_release_ready"
+    cleanup = "cleanup_release_data_migrations blocking"
+    rollback_external = "rollback_deferred_release_data_migration"
+    rollback_local = "rollback_failed_upgrade"
+    deferred_index = upgrade_text.index(deferred)
+    ready_index = upgrade_text.index(ready, deferred_index)
+    cleanup_index = upgrade_text.index(cleanup, ready_index)
+    assert deferred_index < ready_index < cleanup_index
+    assert upgrade_text.index("AERISUN_DEFER_READY_CLEANUP_TO_CALLER=true", deferred_index) < ready_index
+    assert upgrade_text.index(rollback_external, deferred_index) < upgrade_text.index(rollback_local, deferred_index)
+    assert "站点保持在新版本" in upgrade_text
+
+
+def test_upgrade_pull_failure_rolls_back_locally_without_invoking_external_data_rollback():
+    completed = run_installer_bash_result(
+        """
+source installer/lib/common.sh
+source installer/lib/docker.sh
+
+compose() {
+  printf 'pull-failed\n'
+  return 1
+}
+run_release_data_migrations() {
+  printf 'data-migration-must-not-run\n'
+}
+rollback_release_data_migration_external_copies() {
+  printf 'external-rollback-must-not-run\n'
+}
+rollback_failed_upgrade() {
+  printf 'local-rollback\n'
+}
+
+if ! (compose pull && run_release_data_migrations blocking); then
+  if deferred_release_data_migration_is_armed; then
+    rollback_deferred_release_data_migration
+  fi
+  rollback_failed_upgrade
+fi
+"""
+    )
+
+    assert completed.returncode == 0
+    assert completed.stdout.strip().splitlines() == ["pull-failed", "local-rollback"]
+
+
+def test_blocking_data_migration_arms_external_rollback_only_when_it_starts(tmp_path: Path):
+    marker_root = tmp_path / "upgrade-backup"
+    marker_root.mkdir()
+    completed = run_installer_bash_result(
+        f"""
+source installer/lib/common.sh
+source installer/lib/docker.sh
+
+UPGRADE_ROLLBACK_BACKUP_DIR='{marker_root}'
+run_as_root() {{ "$@"; }}
+compose_api_task() {{ printf '%s\n' "$*"; }}
+
+run_release_data_migrations blocking
+deferred_release_data_migration_is_armed
+printf 'armed\n'
+commit_deferred_release_data_migration
+if deferred_release_data_migration_is_armed; then
+  printf 'still-armed\n'
+else
+  printf 'disarmed\n'
+fi
+"""
+    )
+
+    assert completed.returncode == 0
+    assert completed.stdout.strip().splitlines() == [
+        "data-migrate.sh apply --mode blocking --progress --defer-cleanup",
+        "armed",
+        "disarmed",
+    ]
+    assert not (marker_root / ".target-data-migration-runner-ready").exists()
 
 
 def test_sercli_logs_can_list_known_runtime_services():
@@ -1467,6 +1645,34 @@ cmd_migrate data --mode background
     assert output == "mode:background"
 
 
+def test_sercli_blocking_migrate_finishes_deferred_cleanup_explicitly():
+    output = (
+        run_installer_bash(
+            """
+source installer/bin/sercli
+
+ensure_supported_existing_installation() {
+  :
+}
+
+run_release_data_migrations() {
+  printf 'apply:%s\n' "${1:-}"
+}
+
+cleanup_release_data_migrations() {
+  printf 'cleanup:%s\n' "${1:-}"
+}
+
+cmd_migrate data --mode blocking
+"""
+        )
+        .strip()
+        .splitlines()
+    )
+
+    assert output == ["apply:blocking", "cleanup:blocking"]
+
+
 def test_sercli_migrate_status_uses_data_migration_script():
     output = run_installer_bash(
         """
@@ -1526,6 +1732,41 @@ summarize_migration_report_json "${payload}"
         "ok\tdata.migrations.blocking\t阻塞式数据迁移已对齐。\t",
         "warn\tdata.migrations.background\t存在待调度的后台数据迁移：0002_rehash_assets\tsercli migrate data --mode background",
     ]
+
+
+def test_doctor_migration_summary_reports_interrupted_blocking_lane():
+    output = (
+        run_installer_bash(
+            """
+source installer/doctor.sh
+payload='{"current_revision":"0019_asset_storage_layout","head_revisions":["0019_asset_storage_layout"],"baseline":{"migration_key":"2026_04_production_baseline_v1","status":"applied"},"blocking":{"applied":[],"pending":[],"running":["2026_08_asset_storage_layout_v1"],"failed":[]},"background":{"applied":[],"pending":[],"scheduled":[],"running":[],"failed":[]}}'
+summarize_migration_report_json "${payload}"
+"""
+        )
+        .strip()
+        .splitlines()
+    )
+
+    assert any(
+        line
+        == "fail\tdata.migrations.blocking\t存在中断后待恢复的阻塞式数据迁移：2026_08_asset_storage_layout_v1\tsercli migrate data --mode blocking"
+        for line in output
+    )
+
+
+def test_doctor_migration_summary_reports_pending_post_release_cleanup():
+    output = run_installer_bash(
+        """
+source installer/doctor.sh
+payload='{"current_revision":"0019_asset_storage_layout","head_revisions":["0019_asset_storage_layout"],"baseline":{"migration_key":"2026_04_production_baseline_v1","status":"applied"},"blocking":{"applied":["2026_08_asset_storage_layout_v1"],"pending":[],"running":[],"failed":[],"cleanup_pending":["2026_08_asset_storage_layout_v1"]},"background":{"applied":[],"pending":[],"scheduled":[],"running":[],"failed":[],"cleanup_pending":[]}}'
+summarize_migration_report_json "${payload}"
+"""
+    )
+
+    assert (
+        "fail\tdata.migrations.blocking\t阻塞式数据迁移仍有待确认清理的旧副本："
+        "2026_08_asset_storage_layout_v1\tsercli migrate data --mode blocking"
+    ) in output
 
 
 def test_doctor_text_report_uses_icons_for_statuses():

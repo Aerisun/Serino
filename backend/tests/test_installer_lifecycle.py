@@ -1321,6 +1321,7 @@ main v2.0.0
         "run_release_data_migrations:blocking",
         "enable_serino_service",
         "wait_for_release_ready",
+        "compose:run --rm --no-deps -T api /bin/bash /app/backend/scripts/data-migrate.sh cleanup --mode blocking",
         "schedule_release_background_data_migrations",
     ]
 

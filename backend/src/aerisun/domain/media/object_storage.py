@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import hashlib
 import logging
-import mimetypes
-import re
+import os
 import time
+from contextlib import suppress
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -13,11 +13,12 @@ from urllib.parse import quote
 
 from sqlalchemy.orm import Session
 
-from aerisun.core.base import utcnow, uuid_str
+from aerisun.core.base import utcnow
+from aerisun.core.data_storage_lock import data_storage_cleanup_pending, data_storage_locked
 from aerisun.core.db import get_session_factory
 from aerisun.core.settings import get_settings
 from aerisun.core.time import normalize_shanghai_datetime
-from aerisun.domain.exceptions import ResourceNotFound, ValidationError
+from aerisun.domain.exceptions import ResourceNotFound, StateConflict, ValidationError
 from aerisun.domain.media import repository as repo
 from aerisun.domain.media.models import (
     Asset,
@@ -26,9 +27,14 @@ from aerisun.domain.media.models import (
     AssetRemoteUploadQueueItem,
     ObjectStorageConfig,
 )
+from aerisun.domain.media.paths import (
+    assert_managed_local_path,
+    build_local_path,
+    build_remote_object_key,
+    identity_from_resource_key,
+)
 from aerisun.domain.media.schemas import (
     AssetAdminRead,
-    AssetUploadPlanWrite,
     ObjectStorageConfigRead,
     ObjectStorageConfigUpdate,
     ObjectStorageHealthRead,
@@ -56,12 +62,32 @@ DEFAULT_OBJECT_STORAGE_CONFIG = {
 _MIRROR_CHUNK_SIZE = 256 * 1024
 
 
+class AssetMirrorIntegrityError(RuntimeError):
+    """The downloaded OSS object does not match the immutable asset metadata."""
+
+
+def object_key_for_asset(asset: Asset) -> str:
+    identity = identity_from_resource_key(str(asset.resource_key))
+    expected = build_remote_object_key(identity, asset.scope)
+    existing = str(asset.remote_object_key or "").strip()
+    if existing and existing != expected:
+        raise ValidationError("资源 OSS Key 与永久标识或范围不一致")
+    return expected
+
+
 @dataclass(slots=True)
 class ObjectHead:
     content_length: int | None
     content_type: str | None
     etag: str | None
     last_modified: datetime | None
+
+
+@dataclass(frozen=True, slots=True)
+class ObjectStorageEntry:
+    object_key: str
+    content_length: int
+    etag: str | None
 
 
 class BitifulObjectStorageProvider:
@@ -123,6 +149,14 @@ class BitifulObjectStorageProvider:
         self._client.put_object(**params)
         return self.head_object(object_key=object_key)
 
+    def upload_local_file(self, *, object_key: str, source_path: Path, content_type: str | None) -> ObjectHead:
+        extra_args = {"ContentType": content_type} if content_type else None
+        if extra_args is None:
+            self._client.upload_file(str(source_path), self._bucket, object_key)
+        else:
+            self._client.upload_file(str(source_path), self._bucket, object_key, ExtraArgs=extra_args)
+        return self.head_object(object_key=object_key)
+
     def copy_object(self, *, source_key: str, object_key: str, content_type: str | None = None) -> ObjectHead:
         params: dict[str, Any] = {
             "Bucket": self._bucket,
@@ -149,6 +183,44 @@ class BitifulObjectStorageProvider:
             etag=str(response.get("ETag") or "").strip().strip('"') or None,
             last_modified=last_modified if isinstance(last_modified, datetime) else None,
         )
+
+    def find_object(self, *, object_key: str) -> ObjectHead | None:
+        """Return None only for an authoritative S3 not-found response."""
+        try:
+            return self.head_object(object_key=object_key)
+        except Exception as exc:
+            try:
+                from botocore.exceptions import ClientError
+            except ImportError:  # pragma: no cover - boto3 construction already guards this
+                raise
+            if not isinstance(exc, ClientError):
+                raise
+            response = exc.response if isinstance(exc.response, dict) else {}
+            error = response.get("Error") if isinstance(response.get("Error"), dict) else {}
+            metadata = response.get("ResponseMetadata") if isinstance(response.get("ResponseMetadata"), dict) else {}
+            code = str(error.get("Code") or "")
+            status = metadata.get("HTTPStatusCode")
+            if code in {"404", "NoSuchKey", "NotFound"} or status == 404:
+                return None
+            raise
+
+    def list_objects(self, *, prefix: str) -> tuple[ObjectStorageEntry, ...]:
+        paginator = self._client.get_paginator("list_objects_v2")
+        entries: list[ObjectStorageEntry] = []
+        for page in paginator.paginate(Bucket=self._bucket, Prefix=prefix):
+            for item in page.get("Contents") or ():
+                object_key = str(item.get("Key") or "")
+                if not object_key:
+                    continue
+                entries.append(
+                    ObjectStorageEntry(
+                        object_key=object_key,
+                        content_length=int(item.get("Size") or 0),
+                        etag=str(item.get("ETag") or "").strip().strip('"') or None,
+                    )
+                )
+        entries.sort(key=lambda item: item.object_key)
+        return tuple(entries)
 
     def download_to_local(
         self,
@@ -234,7 +306,10 @@ def get_object_storage_config_read(session: Session) -> ObjectStorageConfigRead:
     return _config_to_read(get_or_create_object_storage_config(session))
 
 
+@data_storage_locked
 def restore_object_storage_config(session: Session, snapshot: dict[str, Any]) -> None:
+    if data_storage_cleanup_pending():
+        raise StateConflict("资源迁移正在完成旧副本清理，请稍后再恢复 OSS 配置")
     config = get_or_create_object_storage_config(session)
     config.enabled = bool(snapshot.get("enabled", config.enabled))
     config.provider = str(snapshot.get("provider") or config.provider or "bitiful")
@@ -259,7 +334,10 @@ def restore_object_storage_config(session: Session, snapshot: dict[str, Any]) ->
     session.flush()
 
 
+@data_storage_locked
 def update_object_storage_config(session: Session, payload: ObjectStorageConfigUpdate) -> ObjectStorageConfigRead:
+    if data_storage_cleanup_pending():
+        raise StateConflict("资源迁移正在完成旧副本清理，请稍后再修改 OSS 配置")
     config = get_or_create_object_storage_config(session)
     updates = payload.model_dump(exclude_unset=True)
     for key, value in updates.items():
@@ -427,6 +505,22 @@ def list_object_storage_sync_records(
             )
         )
 
+    for item in repo.list_local_delete_queue_items(session):
+        records.append(
+            ObjectStorageSyncRecordRead(
+                id=item.id,
+                record_type="local_delete",
+                status=item.status,
+                object_key=item.storage_path,
+                retry_count=item.retry_count,
+                last_error=item.last_error,
+                started_at=item.started_at,
+                finished_at=item.finished_at,
+                created_at=item.created_at,
+                updated_at=item.updated_at,
+            )
+        )
+
     for item in repo.list_remote_upload_queue_items(session):
         asset = asset_by_id.get(item.asset_id)
         records.append(
@@ -482,7 +576,7 @@ def queue_asset_mirror(session: Session, asset: Asset) -> AssetMirrorQueueItem:
     item = repo.create_mirror_queue_item(
         session,
         asset_id=asset.id,
-        object_key=asset.remote_object_key or asset.resource_key,
+        object_key=object_key_for_asset(asset),
         status="queued",
         retry_count=0,
         next_retry_at=utcnow(),
@@ -500,7 +594,7 @@ def queue_asset_remote_upload(session: Session, asset: Asset) -> tuple[AssetRemo
     existing = repo.find_active_remote_upload_queue_item_for_asset(session, asset.id)
     if existing is not None:
         return existing, False
-    object_key = str(asset.remote_object_key or asset.resource_key).strip()
+    object_key = object_key_for_asset(asset)
     if not object_key:
         return None, False
     item = repo.create_remote_upload_queue_item(
@@ -557,6 +651,24 @@ def queue_remote_asset_delete(
     return item
 
 
+def queue_local_asset_delete(session: Session, *, storage_path: Path) -> str:
+    target = assert_managed_local_path(storage_path)
+    normalized_path = str(target)
+    existing = repo.find_active_local_delete_queue_item(session, normalized_path)
+    if existing is not None:
+        return existing.id
+    item = repo.create_local_delete_queue_item(
+        session,
+        storage_path=normalized_path,
+        status="queued",
+        retry_count=0,
+        next_retry_at=utcnow(),
+        last_error=None,
+    )
+    session.flush()
+    return item.id
+
+
 def record_completed_remote_asset_delete(
     session: Session,
     *,
@@ -600,10 +712,17 @@ def dispatch_due_asset_mirror_jobs() -> None:
         _execute_asset_mirror(queue_item_id=queue_item_id)
     except Exception as exc:  # pragma: no cover - failure path exercised via tests
         logger.exception("Asset mirror job failed")
-        _mark_asset_mirror_failed(queue_item_id=queue_item_id, error=str(exc))
+        _mark_asset_mirror_failed(
+            queue_item_id=queue_item_id,
+            error=str(exc),
+            integrity_failure=isinstance(exc, AssetMirrorIntegrityError),
+        )
 
 
+@data_storage_locked
 def dispatch_due_remote_asset_delete_jobs() -> None:
+    if data_storage_cleanup_pending():
+        return
     session_factory = get_session_factory()
     now = utcnow()
     with session_factory() as session:
@@ -621,6 +740,45 @@ def dispatch_due_remote_asset_delete_jobs() -> None:
     try:
         _execute_remote_asset_delete(queue_item_id=queue_item_id)
     except Exception as exc:  # pragma: no cover - failure path exercised via tests
+        logger.exception("Remote asset delete job failed")
+        _mark_remote_asset_delete_failed(queue_item_id=queue_item_id, error=str(exc))
+
+
+@data_storage_locked
+def dispatch_due_local_asset_delete_jobs() -> None:
+    if data_storage_cleanup_pending():
+        return
+    session_factory = get_session_factory()
+    now = utcnow()
+    with session_factory() as session:
+        if repo.find_running_local_delete_queue_item(session) is not None:
+            return
+        queue_item = repo.find_due_local_delete_queue_item(session, now=now)
+        if queue_item is None:
+            return
+        queue_item.status = "running"
+        queue_item.started_at = now
+        queue_item.last_error = None
+        session.commit()
+        queue_item_id = queue_item.id
+
+    process_local_asset_delete(queue_item_id)
+
+
+@data_storage_locked
+def process_local_asset_delete(queue_item_id: str) -> None:
+    try:
+        _execute_local_asset_delete(queue_item_id=queue_item_id)
+    except Exception as exc:
+        logger.exception("Local asset delete job failed")
+        _mark_local_asset_delete_failed(queue_item_id=queue_item_id, error=str(exc))
+
+
+@data_storage_locked
+def process_remote_asset_delete(queue_item_id: str, *, provider: Any | None = None) -> None:
+    try:
+        _execute_remote_asset_delete(queue_item_id=queue_item_id, provider_override=provider)
+    except Exception as exc:
         logger.exception("Remote asset delete job failed")
         _mark_remote_asset_delete_failed(queue_item_id=queue_item_id, error=str(exc))
 
@@ -680,13 +838,39 @@ def _execute_asset_mirror(*, queue_item_id: str) -> None:
         if provider is None:
             raise ValidationError("OSS 当前不可用，无法执行本地镜像")
         config = get_or_create_object_storage_config(session)
-        target_path = Path(asset.storage_path)
+        target_path = assert_managed_local_path(Path(asset.storage_path))
+        expected_path = build_local_path(identity_from_resource_key(asset.resource_key), asset.scope)
+        if target_path != expected_path:
+            raise ValidationError("资源本地镜像路径与范围不一致")
+        expected_size = asset.byte_size
+        expected_sha256 = str(asset.sha256 or "").strip().lower()
 
-    byte_size, etag = provider.download_to_local(
-        object_key=queue_item.object_key,
-        dest_path=target_path,
-        bandwidth_limit_bps=int(config.mirror_bandwidth_limit_bps or 0),
-    )
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+    temporary_path = target_path.with_name(f".{target_path.name}.{queue_item_id}.mirror.tmp")
+    try:
+        byte_size, etag = provider.download_to_local(
+            object_key=queue_item.object_key,
+            dest_path=temporary_path,
+            bandwidth_limit_bps=int(config.mirror_bandwidth_limit_bps or 0),
+        )
+        actual_size = temporary_path.stat().st_size
+        if byte_size != actual_size:
+            raise ValidationError("OSS 镜像下载返回的大小与实际文件不一致")
+        if expected_size is not None and actual_size != expected_size:
+            raise AssetMirrorIntegrityError("OSS 镜像文件大小与资源记录不一致")
+        actual_sha256 = hashlib.sha256(temporary_path.read_bytes()).hexdigest()
+        if expected_sha256 and actual_sha256 != expected_sha256:
+            raise AssetMirrorIntegrityError("OSS 镜像文件摘要与资源记录不一致")
+        with temporary_path.open("rb") as handle:
+            os.fsync(handle.fileno())
+        temporary_path.replace(target_path)
+        descriptor = os.open(target_path.parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+        try:
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+    finally:
+        temporary_path.unlink(missing_ok=True)
 
     with session_factory() as session:
         queue_item = repo.get_mirror_queue_item(session, queue_item_id)
@@ -699,14 +883,15 @@ def _execute_asset_mirror(*, queue_item_id: str) -> None:
         if asset is not None:
             asset.byte_size = asset.byte_size or byte_size
             asset.remote_etag = asset.remote_etag or etag
+            asset.remote_status = "available"
             asset.mirror_status = "completed"
             asset.mirror_last_error = None
-            if not asset.sha256 and Path(asset.storage_path).exists():
-                asset.sha256 = hashlib.sha256(Path(asset.storage_path).read_bytes()).hexdigest()
+            if not asset.sha256:
+                asset.sha256 = actual_sha256
         session.commit()
 
 
-def _mark_asset_mirror_failed(*, queue_item_id: str, error: str) -> None:
+def _mark_asset_mirror_failed(*, queue_item_id: str, error: str, integrity_failure: bool = False) -> None:
     session_factory = get_session_factory()
     with session_factory() as session:
         queue_item = repo.get_mirror_queue_item(session, queue_item_id)
@@ -723,6 +908,8 @@ def _mark_asset_mirror_failed(*, queue_item_id: str, error: str) -> None:
             queue_item.status = "retrying"
             queue_item.next_retry_at = utcnow() + timedelta(seconds=30 * queue_item.retry_count)
         if asset is not None:
+            if integrity_failure:
+                asset.remote_status = "invalid"
             asset.mirror_status = "failed" if queue_item.status == "failed" else "retrying"
             asset.mirror_last_error = error
         session.commit()
@@ -743,15 +930,24 @@ def _execute_remote_asset_upload(*, queue_item_id: str) -> None:
         provider = build_object_storage_maintenance_provider(session)
         if provider is None:
             raise ValidationError("OSS 当前不可用，无法执行远端同步")
-        object_key = str(asset.remote_object_key or asset.resource_key).strip()
+        object_key = object_key_for_asset(asset)
         mime_type = asset.mime_type
         content = local_path.read_bytes()
 
-    head = provider.upload_bytes(
-        object_key=object_key,
-        data=content,
-        content_type=mime_type,
-    )
+    try:
+        head = provider.upload_bytes(
+            object_key=object_key,
+            data=content,
+            content_type=mime_type,
+        )
+        if head.content_length is not None and head.content_length != len(content):
+            raise ValidationError("OSS 补同步后的对象大小与本地文件不一致")
+    except Exception:
+        try:
+            provider.delete_object(object_key=object_key)
+        except Exception:
+            logger.exception("Failed to clean remote object after sync failure: %s", object_key)
+        raise
 
     with session_factory() as session:
         queue_item = repo.get_remote_upload_queue_item(session, queue_item_id)
@@ -794,13 +990,13 @@ def _mark_remote_asset_upload_failed(*, queue_item_id: str, error: str) -> None:
         session.commit()
 
 
-def _execute_remote_asset_delete(*, queue_item_id: str) -> None:
+def _execute_remote_asset_delete(*, queue_item_id: str, provider_override: Any | None = None) -> None:
     session_factory = get_session_factory()
     with session_factory() as session:
         queue_item = repo.get_remote_delete_queue_item(session, queue_item_id)
         if queue_item is None:
             raise ResourceNotFound("Remote delete queue item not found")
-        provider = build_object_storage_maintenance_provider(session)
+        provider = provider_override or build_object_storage_maintenance_provider(session)
         if provider is None:
             raise ValidationError("OSS 当前不可用，无法执行远端删除补偿")
         object_key = queue_item.object_key
@@ -816,6 +1012,51 @@ def _execute_remote_asset_delete(*, queue_item_id: str) -> None:
         queue_item.finished_at = now
         queue_item.next_retry_at = now
         queue_item.last_error = None
+        session.commit()
+
+
+def _execute_local_asset_delete(*, queue_item_id: str) -> None:
+    session_factory = get_session_factory()
+    with session_factory() as session:
+        queue_item = repo.get_local_delete_queue_item(session, queue_item_id)
+        if queue_item is None:
+            raise ResourceNotFound("Local delete queue item not found")
+        raw_path = Path(queue_item.storage_path)
+        if raw_path.is_symlink():
+            raise ValidationError("拒绝删除符号链接资源")
+        target = assert_managed_local_path(raw_path)
+
+    target.unlink(missing_ok=True)
+    with suppress(OSError):
+        target.parent.rmdir()
+
+    with session_factory() as session:
+        queue_item = repo.get_local_delete_queue_item(session, queue_item_id)
+        if queue_item is None:
+            return
+        now = utcnow()
+        queue_item.status = "completed"
+        queue_item.finished_at = now
+        queue_item.next_retry_at = now
+        queue_item.last_error = None
+        session.commit()
+
+
+def _mark_local_asset_delete_failed(*, queue_item_id: str, error: str) -> None:
+    session_factory = get_session_factory()
+    with session_factory() as session:
+        queue_item = repo.get_local_delete_queue_item(session, queue_item_id)
+        if queue_item is None:
+            return
+        config = get_or_create_object_storage_config(session)
+        queue_item.retry_count += 1
+        queue_item.last_error = error
+        queue_item.finished_at = utcnow()
+        if queue_item.retry_count > int(config.mirror_retry_count):
+            queue_item.status = "failed"
+        else:
+            queue_item.status = "retrying"
+            queue_item.next_retry_at = utcnow() + timedelta(seconds=30 * queue_item.retry_count)
         session.commit()
 
 
@@ -838,11 +1079,13 @@ def _mark_remote_asset_delete_failed(*, queue_item_id: str, error: str) -> None:
 
 
 def sign_asset_download_url(session: Session, asset: Asset) -> str | None:
+    if asset.remote_status != "available":
+        return None
     provider = build_object_storage_provider(session)
     if provider is None:
         return None
     config = get_or_create_object_storage_config(session)
-    object_key = str(asset.remote_object_key or asset.resource_key).strip()
+    object_key = object_key_for_asset(asset)
     if not object_key:
         return None
     if config.health_check_enabled:
@@ -878,11 +1121,31 @@ def upload_asset_bytes_to_remote(
     provider = build_object_storage_provider(session)
     if provider is None:
         raise ValidationError("OSS 不可用，无法执行远端上传")
-    head = provider.upload_bytes(
-        object_key=str(asset.remote_object_key or asset.resource_key).strip(),
-        data=content,
-        content_type=mime_type,
-    )
+    object_key = object_key_for_asset(asset)
+    try:
+        head = provider.upload_bytes(
+            object_key=object_key,
+            data=content,
+            content_type=mime_type,
+        )
+        if head.content_length is not None and head.content_length != len(content):
+            raise ValidationError("OSS 上传后的对象大小与源文件不一致")
+    except Exception:
+        try:
+            provider.delete_object(object_key=object_key)
+        except Exception as cleanup_exc:
+            logger.exception("Failed to clean remote object after upload failure: %s", object_key)
+            try:
+                with get_session_factory()() as cleanup_session:
+                    queue_remote_asset_delete(
+                        cleanup_session,
+                        object_key=object_key,
+                        error=f"上传失败后的目标清理待重试：{cleanup_exc}",
+                    )
+                    cleanup_session.commit()
+            except Exception:
+                logger.exception("Failed to persist remote cleanup retry: %s", object_key)
+        raise
     asset.storage_provider = "bitiful"
     asset.remote_status = "available"
     asset.remote_uploaded_at = utcnow()
@@ -892,73 +1155,11 @@ def upload_asset_bytes_to_remote(
     return asset
 
 
-def build_asset_storage_path(resource_key: str) -> Path:
-    settings = get_settings()
-    media_dir = settings.media_dir.expanduser().resolve()
-    media_dir.mkdir(parents=True, exist_ok=True)
-    return media_dir / resource_key
-
-
-def internal_resource_key_for(resource_key: str) -> str:
-    key = str(resource_key or "").strip().lstrip("/")
-    if key.startswith("public/"):
-        return f"internal/{key[len('public/') :]}"
-    return key
-
-
-def public_resource_key_for(resource_key: str) -> str:
-    key = str(resource_key or "").strip().lstrip("/")
-    if key.startswith("internal/"):
-        return f"public/{key[len('internal/') :]}"
-    return key
-
-
-def guess_extension(file_name: str, mime_type: str | None) -> str:
-    suffix = Path(file_name).suffix.lower().lstrip(".")
-    if suffix:
-        return suffix
-    guessed = mimetypes.guess_extension(mime_type or "")
-    if guessed:
-        return guessed.lstrip(".").lower()
-    return "bin"
-
-
-def build_resource_key_from_digest(
-    *,
-    file_name: str,
-    digest: str,
-    mime_type: str | None,
-    category: str,
-    visibility: str,
-    digest_prefix_length: int = 12,
-) -> str:
-    ext = guess_extension(file_name, mime_type)
-    key = re.sub(r"[^a-z0-9_-]+", "", str(digest or "").strip().lower())
-    if not key:
-        key = uuid_str().replace("-", "")
-    prefix_length = max(12, min(int(digest_prefix_length), len(key)))
-    return f"{visibility}/assets/{category}/{key[:prefix_length]}.{ext}"
-
-
-def build_resource_key_for_plan(plan: AssetUploadPlanWrite, *, category: str, visibility: str) -> str:
-    digest = str(plan.sha256 or "").strip().lower()
-    if not digest:
-        digest = uuid_str().replace("-", "")
-    return build_resource_key_from_digest(
-        file_name=plan.file_name,
-        digest=digest,
-        mime_type=plan.mime_type,
-        category=category,
-        visibility=visibility,
-    )
-
-
 def asset_admin_read_from_model(asset: Asset) -> AssetAdminRead:
     site_url = (get_settings().site_url or "").rstrip("/")
-    internal_url = f"/media/{internal_resource_key_for(asset.resource_key)}"
-    public_path = (
-        f"/media/{asset.public_slug}" if asset.public_slug else f"/media/{public_resource_key_for(asset.resource_key)}"
-    )
+    resource_key = str(asset.resource_key or "").strip().lstrip("/")
+    internal_url = f"/media/{resource_key}"
+    public_path = f"/media/{asset.public_slug}" if asset.public_slug else internal_url
     public_url = f"{site_url}{public_path}" if site_url else public_path
     if asset.visibility != "public":
         public_url = None

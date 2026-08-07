@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from aerisun.domain.media.models import (
     Asset,
+    AssetLocalDeleteQueueItem,
     AssetMirrorQueueItem,
     AssetRemoteDeleteQueueItem,
     AssetRemoteUploadQueueItem,
@@ -64,6 +65,25 @@ def find_asset_by_resource_key(session: Session, resource_key: str) -> Asset | N
 def find_asset_by_public_slug(session: Session, public_slug: str) -> Asset | None:
     """Find asset by normalized public slug."""
     return session.query(Asset).filter(Asset.public_slug == public_slug).first()
+
+
+def find_asset_by_fingerprint(
+    session: Session,
+    *,
+    sha256: str,
+    scope: str,
+    category: str,
+) -> Asset | None:
+    return (
+        session.query(Asset)
+        .filter(
+            Asset.sha256 == sha256,
+            Asset.scope == scope,
+            Asset.category == category,
+        )
+        .order_by(Asset.created_at.asc(), Asset.id.asc())
+        .first()
+    )
 
 
 def update_asset(session: Session, asset: Asset, **kwargs) -> Asset:
@@ -180,6 +200,49 @@ def get_remote_delete_queue_item(session: Session, queue_item_id: str) -> AssetR
     return session.get(AssetRemoteDeleteQueueItem, queue_item_id)
 
 
+def find_active_local_delete_queue_item(session: Session, storage_path: str) -> AssetLocalDeleteQueueItem | None:
+    return (
+        session.query(AssetLocalDeleteQueueItem)
+        .filter(
+            AssetLocalDeleteQueueItem.storage_path == storage_path,
+            AssetLocalDeleteQueueItem.status.in_(("queued", "running", "retrying")),
+        )
+        .order_by(AssetLocalDeleteQueueItem.created_at.desc())
+        .first()
+    )
+
+
+def create_local_delete_queue_item(session: Session, **kwargs) -> AssetLocalDeleteQueueItem:
+    item = AssetLocalDeleteQueueItem(**kwargs)
+    session.add(item)
+    return item
+
+
+def find_running_local_delete_queue_item(session: Session) -> AssetLocalDeleteQueueItem | None:
+    return (
+        session.query(AssetLocalDeleteQueueItem)
+        .filter(AssetLocalDeleteQueueItem.status == "running")
+        .order_by(AssetLocalDeleteQueueItem.started_at.asc(), AssetLocalDeleteQueueItem.created_at.asc())
+        .first()
+    )
+
+
+def find_due_local_delete_queue_item(session: Session, *, now: datetime) -> AssetLocalDeleteQueueItem | None:
+    return (
+        session.query(AssetLocalDeleteQueueItem)
+        .filter(
+            AssetLocalDeleteQueueItem.status.in_(("queued", "retrying")),
+            AssetLocalDeleteQueueItem.next_retry_at <= now,
+        )
+        .order_by(AssetLocalDeleteQueueItem.next_retry_at.asc(), AssetLocalDeleteQueueItem.created_at.asc())
+        .first()
+    )
+
+
+def get_local_delete_queue_item(session: Session, queue_item_id: str) -> AssetLocalDeleteQueueItem | None:
+    return session.get(AssetLocalDeleteQueueItem, queue_item_id)
+
+
 def find_active_remote_upload_queue_item_for_asset(
     session: Session, asset_id: str
 ) -> AssetRemoteUploadQueueItem | None:
@@ -237,6 +300,14 @@ def list_remote_delete_queue_items(session: Session) -> list[AssetRemoteDeleteQu
     return list(
         session.query(AssetRemoteDeleteQueueItem)
         .order_by(AssetRemoteDeleteQueueItem.updated_at.desc(), AssetRemoteDeleteQueueItem.created_at.desc())
+        .all()
+    )
+
+
+def list_local_delete_queue_items(session: Session) -> list[AssetLocalDeleteQueueItem]:
+    return list(
+        session.query(AssetLocalDeleteQueueItem)
+        .order_by(AssetLocalDeleteQueueItem.updated_at.desc(), AssetLocalDeleteQueueItem.created_at.desc())
         .all()
     )
 

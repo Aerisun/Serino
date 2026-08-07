@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Literal
+
 from fastapi import APIRouter, Depends, Query, Request, UploadFile, status
 from sqlalchemy.orm import Session
 
@@ -233,6 +235,7 @@ def delete_reaction(
 def upload_comment_image(
     request: Request,
     file: UploadFile,
+    surface: Literal["comment", "guestbook"] = Query(default="comment"),
     session: Session = Depends(get_session),
     current_user: SiteUser = Depends(get_current_site_user),
 ) -> dict:
@@ -249,6 +252,7 @@ def upload_comment_image(
         file.filename or "img",
         file.content_type,
         uploader_id=current_user.id,
+        surface=surface,
     )
     return {"errno": 0, "data": {"url": url}}
 

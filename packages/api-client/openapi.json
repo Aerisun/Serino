@@ -2454,6 +2454,20 @@
         "operationId": "upload_comment_image_api_v1_site_interactions_comment_image_post",
         "parameters": [
           {
+            "name": "surface",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "comment",
+                "guestbook"
+              ],
+              "type": "string",
+              "default": "comment",
+              "title": "Surface"
+            }
+          },
+          {
             "name": "aerisun_site_session",
             "in": "cookie",
             "required": false,
@@ -9988,7 +10002,7 @@
             "required": false,
             "schema": {
               "type": "string",
-              "pattern": "^(system|user)$",
+              "pattern": "^(user|article|visitor|system)$",
               "default": "user",
               "title": "Scope"
             }
@@ -10202,6 +10216,54 @@
             "HTTPBearer": []
           }
         ]
+      }
+    },
+    "/api/v1/admin/assets/{asset_id}/open-url": {
+      "post": {
+        "tags": [
+          "admin",
+          "admin-assets"
+        ],
+        "summary": "创建后台资源查看地址",
+        "operationId": "create_asset_open_url_endpoint_api_v1_admin_assets__asset_id__open_url_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "asset_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Asset Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetOpenUrlRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/admin/assets/{asset_id}": {
@@ -18774,8 +18836,10 @@
               {
                 "type": "string",
                 "enum": [
-                  "system",
-                  "user"
+                  "user",
+                  "article",
+                  "visitor",
+                  "system"
                 ]
               },
               {
@@ -18821,6 +18885,21 @@
         },
         "type": "object",
         "title": "AssetAdminUpdate"
+      },
+      "AssetOpenUrlRead": {
+        "properties": {
+          "url": {
+            "title": "Url"
+          },
+          "expires_at": {
+            "title": "Expires At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "title": "AssetOpenUrlRead"
       },
       "AssetUploadCompleteWrite": {
         "properties": {
@@ -18909,8 +18988,10 @@
           "scope": {
             "type": "string",
             "enum": [
-              "system",
-              "user"
+              "user",
+              "article",
+              "visitor",
+              "system"
             ],
             "title": "Scope",
             "default": "user"

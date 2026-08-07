@@ -16,7 +16,7 @@ from aerisun.domain.exceptions import (
     ValidationError,
 )
 from aerisun.domain.iam import repository as repo
-from aerisun.domain.iam.models import AdminUser, ApiKey
+from aerisun.domain.iam.models import AdminSession, AdminUser, ApiKey
 from aerisun.domain.iam.schemas import (
     AdminSessionRead,
     AdminUserRead,
@@ -163,11 +163,8 @@ def revoke_admin_session(session: Session, admin_user_id: str, session_id: str) 
     session.commit()
 
 
-def validate_session_token(session: Session, token: str) -> AdminUser:
-    """Validate a session token and return the admin user. Raises PermissionError."""
-    admin_session = repo.find_session_by_token(session, token)
-    if admin_session is None:
-        raise AuthenticationFailed("Invalid or expired session token")
+def validate_admin_session(session: Session, admin_session: AdminSession) -> AdminUser:
+    """Validate an already-loaded admin session and return its active user."""
     now_current = shanghai_now()
     now = now_current.replace(tzinfo=None) if admin_session.expires_at.tzinfo is None else now_current
     if admin_session.expires_at < now:
@@ -178,6 +175,14 @@ def validate_session_token(session: Session, token: str) -> AdminUser:
     if user is None or not user.is_active:
         raise PermissionDenied("User not found or inactive")
     return user
+
+
+def validate_session_token(session: Session, token: str) -> AdminUser:
+    """Validate a session token and return the admin user. Raises PermissionError."""
+    admin_session = repo.find_session_by_token(session, token)
+    if admin_session is None:
+        raise AuthenticationFailed("Invalid or expired session token")
+    return validate_admin_session(session, admin_session)
 
 
 def validate_api_key(session: Session, token: str, required_scopes: tuple[str, ...]) -> ApiKey:

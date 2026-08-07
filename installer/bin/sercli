@@ -358,6 +358,9 @@ cmd_migrate() {
         esac
       done
       run_release_data_migrations "${mode}"
+      if [[ "${mode}" == "blocking" ]]; then
+        cleanup_release_data_migrations "${mode}"
+      fi
       ;;
     status)
       local json_mode="false"

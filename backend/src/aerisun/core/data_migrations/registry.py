@@ -20,6 +20,10 @@ class DataMigrationSpec:
     summary: str
     mode: str
     apply: Callable[[Session], None]
+    finalize: Callable[[Session], None] | None = None
+    cleanup: Callable[[Session], None] | None = None
+    cleanup_pending: Callable[[], bool] | None = None
+    rollback_external: Callable[[Session], None] | None = None
     resource_keys: tuple[str, ...] = ()
     checksum: str = ""
     module_name: str = ""
@@ -41,8 +45,20 @@ def _spec(module: object) -> DataMigrationSpec:
     schema_revision = str(getattr(module, "schema_revision", "")).strip()
     summary = str(getattr(module, "summary", "")).strip()
     apply = getattr(module, "apply", None)
+    finalize = getattr(module, "finalize", None)
+    cleanup = getattr(module, "cleanup", None)
+    cleanup_pending = getattr(module, "cleanup_pending", None)
+    rollback_external = getattr(module, "rollback_external", None)
     if not migration_key or not schema_revision or not summary or not callable(apply):
         raise RuntimeError(f"Invalid data migration module: {getattr(module, '__name__', module)!r}")
+    if finalize is not None and not callable(finalize):
+        raise RuntimeError(f"Invalid data migration finalizer: {getattr(module, '__name__', module)!r}")
+    if cleanup is not None and not callable(cleanup):
+        raise RuntimeError(f"Invalid data migration cleanup: {getattr(module, '__name__', module)!r}")
+    if cleanup_pending is not None and not callable(cleanup_pending):
+        raise RuntimeError(f"Invalid data migration cleanup status: {getattr(module, '__name__', module)!r}")
+    if rollback_external is not None and not callable(rollback_external):
+        raise RuntimeError(f"Invalid data migration rollback hook: {getattr(module, '__name__', module)!r}")
 
     return DataMigrationSpec(
         migration_key=migration_key,
@@ -50,6 +66,10 @@ def _spec(module: object) -> DataMigrationSpec:
         summary=summary,
         mode=mode,
         apply=apply,
+        finalize=finalize,
+        cleanup=cleanup,
+        cleanup_pending=cleanup_pending,
+        rollback_external=rollback_external,
         resource_keys=tuple(getattr(module, "resource_keys", ())),
         checksum=_module_checksum(module),
         module_name=str(getattr(module, "__name__", "")),

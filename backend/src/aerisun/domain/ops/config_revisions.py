@@ -9,6 +9,7 @@ from typing import Any, Literal
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from aerisun.core.data_storage_lock import data_storage_cleanup_pending, data_storage_locked
 from aerisun.core.time import format_beijing_iso_datetime
 from aerisun.domain.automation.schemas import AgentWorkflowRead
 from aerisun.domain.automation.settings import (
@@ -320,6 +321,7 @@ def get_config_revision(session: Session, revision_id: str) -> ConfigRevision:
     return revision
 
 
+@data_storage_locked
 def restore_config_revision(
     session: Session,
     *,
@@ -330,6 +332,8 @@ def restore_config_revision(
 ) -> ConfigRevision:
     revision = get_config_revision(session, revision_id)
     spec = get_config_resource_spec(revision.resource_key)
+    if spec.key == "integrations.object_storage" and data_storage_cleanup_pending():
+        raise StateConflict("资源迁移正在完成旧副本清理，请稍后再恢复 OSS 配置")
     if revision.resource_version != spec.resource_version:
         raise StateConflict("Config revision version is not supported by the current restore handler")
     snapshot = revision.before_snapshot if target == "before" else revision.after_snapshot

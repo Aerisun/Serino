@@ -41,6 +41,7 @@ import type {
   ReadCommentsApiV1SiteInteractionsCommentsContentTypeSlugGetParams,
   ReadGuestbookApiV1SiteInteractionsGuestbookGetParams,
   ReadReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGetParams,
+  UploadCommentImageApiV1SiteInteractionsCommentImagePostParams,
   VisitBeaconIn,
   VisitBeaconResponse
 } from '../model';
@@ -1217,19 +1218,27 @@ export type uploadCommentImageApiV1SiteInteractionsCommentImagePostResponseError
 
 export type uploadCommentImageApiV1SiteInteractionsCommentImagePostResponse = (uploadCommentImageApiV1SiteInteractionsCommentImagePostResponseSuccess | uploadCommentImageApiV1SiteInteractionsCommentImagePostResponseError)
 
-export const getUploadCommentImageApiV1SiteInteractionsCommentImagePostUrl = () => {
+export const getUploadCommentImageApiV1SiteInteractionsCommentImagePostUrl = (params?: UploadCommentImageApiV1SiteInteractionsCommentImagePostParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/v1/site-interactions/comment-image`
+  return stringifiedParams.length > 0 ? `/api/v1/site-interactions/comment-image?${stringifiedParams}` : `/api/v1/site-interactions/comment-image`
 }
 
-export const uploadCommentImageApiV1SiteInteractionsCommentImagePost = async (bodyUploadCommentImageApiV1SiteInteractionsCommentImagePost: BodyUploadCommentImageApiV1SiteInteractionsCommentImagePost, options?: RequestInit): Promise<uploadCommentImageApiV1SiteInteractionsCommentImagePostResponse> => {
+export const uploadCommentImageApiV1SiteInteractionsCommentImagePost = async (bodyUploadCommentImageApiV1SiteInteractionsCommentImagePost: BodyUploadCommentImageApiV1SiteInteractionsCommentImagePost,
+    params?: UploadCommentImageApiV1SiteInteractionsCommentImagePostParams, options?: RequestInit): Promise<uploadCommentImageApiV1SiteInteractionsCommentImagePostResponse> => {
     const formData = new FormData();
 formData.append(`file`, bodyUploadCommentImageApiV1SiteInteractionsCommentImagePost.file);
 
-  return customInstance<uploadCommentImageApiV1SiteInteractionsCommentImagePostResponse>(getUploadCommentImageApiV1SiteInteractionsCommentImagePostUrl(),
+  return customInstance<uploadCommentImageApiV1SiteInteractionsCommentImagePostResponse>(getUploadCommentImageApiV1SiteInteractionsCommentImagePostUrl(params),
   {
     ...options,
     method: 'POST'
@@ -1243,8 +1252,8 @@ formData.append(`file`, bodyUploadCommentImageApiV1SiteInteractionsCommentImageP
 
 
 export const getUploadCommentImageApiV1SiteInteractionsCommentImagePostMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadCommentImageApiV1SiteInteractionsCommentImagePost>>, TError,{data: BodyType<BodyUploadCommentImageApiV1SiteInteractionsCommentImagePost>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof uploadCommentImageApiV1SiteInteractionsCommentImagePost>>, TError,{data: BodyType<BodyUploadCommentImageApiV1SiteInteractionsCommentImagePost>}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadCommentImageApiV1SiteInteractionsCommentImagePost>>, TError,{data: BodyType<BodyUploadCommentImageApiV1SiteInteractionsCommentImagePost>;params?: UploadCommentImageApiV1SiteInteractionsCommentImagePostParams}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof uploadCommentImageApiV1SiteInteractionsCommentImagePost>>, TError,{data: BodyType<BodyUploadCommentImageApiV1SiteInteractionsCommentImagePost>;params?: UploadCommentImageApiV1SiteInteractionsCommentImagePostParams}, TContext> => {
 
 const mutationKey = ['uploadCommentImageApiV1SiteInteractionsCommentImagePost'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -1256,10 +1265,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof uploadCommentImageApiV1SiteInteractionsCommentImagePost>>, {data: BodyType<BodyUploadCommentImageApiV1SiteInteractionsCommentImagePost>}> = (props) => {
-          const {data} = props ?? {};
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof uploadCommentImageApiV1SiteInteractionsCommentImagePost>>, {data: BodyType<BodyUploadCommentImageApiV1SiteInteractionsCommentImagePost>;params?: UploadCommentImageApiV1SiteInteractionsCommentImagePostParams}> = (props) => {
+          const {data,params} = props ?? {};
 
-          return  uploadCommentImageApiV1SiteInteractionsCommentImagePost(data,requestOptions)
+          return  uploadCommentImageApiV1SiteInteractionsCommentImagePost(data,params,requestOptions)
         }
 
 
@@ -1277,11 +1286,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary 评论图片上传
  */
 export const useUploadCommentImageApiV1SiteInteractionsCommentImagePost = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadCommentImageApiV1SiteInteractionsCommentImagePost>>, TError,{data: BodyType<BodyUploadCommentImageApiV1SiteInteractionsCommentImagePost>}, TContext>, request?: SecondParameter<typeof customInstance>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadCommentImageApiV1SiteInteractionsCommentImagePost>>, TError,{data: BodyType<BodyUploadCommentImageApiV1SiteInteractionsCommentImagePost>;params?: UploadCommentImageApiV1SiteInteractionsCommentImagePostParams}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof uploadCommentImageApiV1SiteInteractionsCommentImagePost>>,
         TError,
-        {data: BodyType<BodyUploadCommentImageApiV1SiteInteractionsCommentImagePost>},
+        {data: BodyType<BodyUploadCommentImageApiV1SiteInteractionsCommentImagePost>;params?: UploadCommentImageApiV1SiteInteractionsCommentImagePostParams},
         TContext
       > => {
       return useMutation(getUploadCommentImageApiV1SiteInteractionsCommentImagePostMutationOptions(options), queryClient);

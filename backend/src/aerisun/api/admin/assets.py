@@ -10,6 +10,7 @@ from aerisun.domain.iam.models import AdminUser
 from aerisun.domain.media.schemas import (
     AssetAdminRead,
     AssetAdminUpdate,
+    AssetOpenUrlRead,
     AssetUploadCompleteWrite,
     AssetUploadPlanRead,
     AssetUploadPlanWrite,
@@ -17,6 +18,7 @@ from aerisun.domain.media.schemas import (
 from aerisun.domain.media.service import (
     bulk_delete_assets,
     complete_asset_upload,
+    create_asset_open_url,
     delete_asset,
     get_asset,
     list_assets,
@@ -25,7 +27,7 @@ from aerisun.domain.media.service import (
     upload_asset,
 )
 
-from .deps import get_current_admin
+from .deps import AuthenticatedAdminSession, get_authenticated_admin_session, get_current_admin
 from .schemas import BulkActionResponse, BulkDeleteRequest, PaginatedResponse
 
 router = APIRouter(prefix="/assets", tags=["admin-assets"])
@@ -36,7 +38,7 @@ def list_assets_endpoint(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
     q: str | None = Query(default=None, max_length=200),
-    scope: str = Query(default="user", pattern="^(system|user)$"),
+    scope: str = Query(default="user", pattern="^(user|article|visitor|system)$"),
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> dict[str, Any]:
@@ -93,6 +95,19 @@ def bulk_delete_assets_endpoint(
     session: Session = Depends(get_session),
 ) -> Any:
     return {"affected": bulk_delete_assets(session, payload.ids)}
+
+
+@router.post("/{asset_id}/open-url", response_model=AssetOpenUrlRead, summary="创建后台资源查看地址")
+def create_asset_open_url_endpoint(
+    asset_id: str,
+    authenticated: AuthenticatedAdminSession = Depends(get_authenticated_admin_session),
+    session: Session = Depends(get_session),
+) -> AssetOpenUrlRead:
+    return create_asset_open_url(
+        session,
+        asset_id,
+        admin_session=authenticated.session,
+    )
 
 
 @router.get("/{asset_id}", response_model=AssetAdminRead, summary="获取单个资源")

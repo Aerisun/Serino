@@ -101,6 +101,7 @@ export function FriendsPageContentSection() {
         <div className="space-y-2">
           <Label>{t("friends.pageContentLabel")}</Label>
           <MarkdownEditor
+            assetCategory="friends"
             value={markdown}
             onChange={setMarkdown}
             placeholder={t("friends.pageContentPlaceholder")}

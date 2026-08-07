@@ -9,6 +9,8 @@ export type AssetUploadPlanWriteScope = typeof AssetUploadPlanWriteScope[keyof t
 
 
 export const AssetUploadPlanWriteScope = {
-  system: 'system',
   user: 'user',
+  article: 'article',
+  visitor: 'visitor',
+  system: 'system',
 } as const;

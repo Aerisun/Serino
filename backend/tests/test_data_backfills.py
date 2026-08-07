@@ -3,15 +3,17 @@ from __future__ import annotations
 import importlib
 from datetime import timedelta
 
+import pytest
 from sqlalchemy import text
 
 from aerisun.core.data_migrations.registry import DataMigrationSpec
 from aerisun.core.data_migrations.runner import (
     apply_pending_data_migrations,
+    cleanup_applied_data_migrations,
     collect_migration_status,
     schedule_pending_background_data_migrations,
 )
-from aerisun.core.data_migrations.state import get_migration_entry
+from aerisun.core.data_migrations.state import get_migration_entry, mark_data_migration_running
 from aerisun.core.db import get_session_factory, run_database_migrations
 from aerisun.core.production_baseline import PRODUCTION_BASELINE_SCHEMA_REVISION, apply_production_baseline
 from aerisun.core.time import shanghai_now
@@ -288,5 +290,191 @@ def test_apply_pending_data_migrations_records_failures(tmp_path, monkeypatch) -
         assert journal is not None
         assert journal.status == "failed"
         assert "boom" in (journal.last_error or "")
+    finally:
+        teardown_runtime_state()
+
+
+def test_blocking_data_migration_finalizer_runs_after_durable_prepare_and_can_resume(tmp_path, monkeypatch) -> None:
+    from tests.support.runtime import configure_runtime_environment, reset_runtime_state, teardown_runtime_state
+
+    configure_runtime_environment(tmp_path, monkeypatch)
+    reset_runtime_state()
+    try:
+        run_database_migrations()
+        apply_production_baseline(force=True)
+
+        events: list[str] = []
+        fail_finalize = True
+
+        def prepare(session) -> None:
+            page = session.query(PageCopy).filter(PageCopy.page_key == "notFound").one()
+            extras = dict(page.extras or {})
+            extras["migrationPhase"] = "prepared"
+            page.extras = extras
+            events.append("prepare")
+
+        def finalize(session) -> None:
+            nonlocal fail_finalize
+            page = session.query(PageCopy).filter(PageCopy.page_key == "notFound").one()
+            journal = get_migration_entry(session, "0001_two_phase_cleanup")
+            assert page.extras["migrationPhase"] == "prepared"
+            assert journal is not None
+            assert journal.status == "running"
+            events.append("finalize")
+            if fail_finalize:
+                fail_finalize = False
+                raise RuntimeError("cleanup failed")
+
+        spec = DataMigrationSpec(
+            migration_key="0001_two_phase_cleanup",
+            schema_revision=PRODUCTION_BASELINE_SCHEMA_REVISION,
+            summary="两阶段资源清理",
+            mode="blocking",
+            apply=prepare,
+            finalize=finalize,
+            resource_keys=(),
+            checksum="two-phase-cleanup",
+            module_name="tests.two_phase_cleanup",
+        )
+        monkeypatch.setattr("aerisun.core.data_migrations.runner.get_registered_data_migrations", lambda: (spec,))
+
+        with pytest.raises(RuntimeError, match="cleanup failed"):
+            apply_pending_data_migrations(mode="blocking")
+
+        session_factory = get_session_factory()
+        with session_factory() as session:
+            journal = get_migration_entry(session, "0001_two_phase_cleanup")
+            page = session.query(PageCopy).filter(PageCopy.page_key == "notFound").one()
+        assert journal is not None
+        assert journal.status == "failed"
+        assert page.extras["migrationPhase"] == "prepared"
+
+        assert apply_pending_data_migrations(mode="blocking") == ["0001_two_phase_cleanup"]
+        assert events == ["prepare", "finalize", "prepare", "finalize"]
+        with session_factory() as session:
+            journal = get_migration_entry(session, "0001_two_phase_cleanup")
+        assert journal is not None
+        assert journal.status == "applied"
+    finally:
+        teardown_runtime_state()
+
+
+def test_running_two_phase_migration_resumes_at_finalizer_without_repeating_prepare(tmp_path, monkeypatch) -> None:
+    from tests.support.runtime import configure_runtime_environment, reset_runtime_state, teardown_runtime_state
+
+    configure_runtime_environment(tmp_path, monkeypatch)
+    reset_runtime_state()
+    try:
+        run_database_migrations()
+        apply_production_baseline(force=True)
+        events: list[str] = []
+        spec = DataMigrationSpec(
+            migration_key="0001_resume_finalizer",
+            schema_revision=PRODUCTION_BASELINE_SCHEMA_REVISION,
+            summary="恢复中断后的清理",
+            mode="blocking",
+            apply=lambda session: events.append("prepare"),
+            finalize=lambda session: events.append("finalize"),
+            checksum="resume-finalizer",
+            module_name="tests.resume_finalizer",
+        )
+        monkeypatch.setattr("aerisun.core.data_migrations.runner.get_registered_data_migrations", lambda: (spec,))
+
+        with get_session_factory()() as session:
+            mark_data_migration_running(
+                session,
+                migration_key=spec.migration_key,
+                schema_revision=spec.schema_revision,
+                mode=spec.mode,
+                checksum=spec.checksum,
+            )
+            session.commit()
+
+        assert apply_pending_data_migrations(mode="blocking") == [spec.migration_key]
+        assert events == ["finalize"]
+        with get_session_factory()() as session:
+            journal = get_migration_entry(session, spec.migration_key)
+        assert journal is not None
+        assert journal.status == "applied"
+    finally:
+        teardown_runtime_state()
+
+
+def test_post_commit_cleanup_failure_keeps_applied_journal_and_retries_cleanup_only(tmp_path, monkeypatch) -> None:
+    from tests.support.runtime import configure_runtime_environment, reset_runtime_state, teardown_runtime_state
+
+    configure_runtime_environment(tmp_path, monkeypatch)
+    reset_runtime_state()
+    try:
+        run_database_migrations()
+        apply_production_baseline(force=True)
+        events: list[str] = []
+        fail_cleanup = True
+
+        def cleanup(session) -> None:
+            nonlocal fail_cleanup
+            journal = get_migration_entry(session, "0001_post_commit_cleanup")
+            assert journal is not None
+            assert journal.status == "applied"
+            events.append("cleanup")
+            if fail_cleanup:
+                fail_cleanup = False
+                raise RuntimeError("post-commit cleanup failed")
+
+        spec = DataMigrationSpec(
+            migration_key="0001_post_commit_cleanup",
+            schema_revision=PRODUCTION_BASELINE_SCHEMA_REVISION,
+            summary="提交后清理",
+            mode="blocking",
+            apply=lambda _session: events.append("apply"),
+            finalize=lambda _session: events.append("finalize"),
+            cleanup=cleanup,
+            resource_keys=(),
+            checksum="post-commit-cleanup",
+            module_name="tests.post_commit_cleanup",
+        )
+        monkeypatch.setattr("aerisun.core.data_migrations.runner.get_registered_data_migrations", lambda: (spec,))
+
+        with pytest.raises(RuntimeError, match="post-commit cleanup failed"):
+            apply_pending_data_migrations(mode="blocking")
+
+        with get_session_factory()() as session:
+            journal = get_migration_entry(session, spec.migration_key)
+        assert journal is not None
+        assert journal.status == "applied"
+
+        assert apply_pending_data_migrations(mode="blocking") == []
+        assert events == ["apply", "finalize", "cleanup", "cleanup"]
+    finally:
+        teardown_runtime_state()
+
+
+def test_deferred_cleanup_runs_only_when_explicitly_requested(tmp_path, monkeypatch) -> None:
+    from tests.support.runtime import configure_runtime_environment, reset_runtime_state, teardown_runtime_state
+
+    configure_runtime_environment(tmp_path, monkeypatch)
+    reset_runtime_state()
+    try:
+        run_database_migrations()
+        apply_production_baseline(force=True)
+        events: list[str] = []
+        spec = DataMigrationSpec(
+            migration_key="0001_deferred_cleanup",
+            schema_revision=PRODUCTION_BASELINE_SCHEMA_REVISION,
+            summary="延后清理",
+            mode="blocking",
+            apply=lambda _session: events.append("apply"),
+            finalize=lambda _session: events.append("finalize"),
+            cleanup=lambda _session: events.append("cleanup"),
+            resource_keys=(),
+            checksum="deferred-cleanup",
+            module_name="tests.deferred_cleanup",
+        )
+        monkeypatch.setattr("aerisun.core.data_migrations.runner.get_registered_data_migrations", lambda: (spec,))
+
+        assert apply_pending_data_migrations(mode="blocking", defer_cleanup=True) == [spec.migration_key]
+        assert events == ["apply", "finalize"]
+        assert cleanup_applied_data_migrations(mode="blocking") == [spec.migration_key]
+        assert events == ["apply", "finalize", "cleanup"]
     finally:
         teardown_runtime_state()

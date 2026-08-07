@@ -11,6 +11,7 @@ from aerisun.domain.automation.runtime_registry import get_automation_runtime
 from aerisun.domain.automation.service import dispatch_due_webhooks, execute_due_runs
 from aerisun.domain.media.object_storage import (
     dispatch_due_asset_mirror_jobs,
+    dispatch_due_local_asset_delete_jobs,
     dispatch_due_remote_asset_delete_jobs,
     dispatch_due_remote_asset_upload_jobs,
     reconcile_object_storage_remote_sync,
@@ -112,6 +113,16 @@ class TaskManager:
             coalesce=True,
         )
         self._scheduler.add_job(
+            self._dispatch_asset_local_delete_jobs,
+            trigger="interval",
+            seconds=15,
+            id="asset_local_delete_dispatcher",
+            name="Asset local delete dispatcher",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+        )
+        self._scheduler.add_job(
             self._dispatch_asset_remote_delete_jobs,
             trigger="interval",
             seconds=30,
@@ -176,6 +187,9 @@ class TaskManager:
 
     def _dispatch_asset_remote_delete_jobs(self) -> None:
         dispatch_due_remote_asset_delete_jobs()
+
+    def _dispatch_asset_local_delete_jobs(self) -> None:
+        dispatch_due_local_asset_delete_jobs()
 
     def _dispatch_asset_remote_upload_jobs(self) -> None:
         dispatch_due_remote_asset_upload_jobs()

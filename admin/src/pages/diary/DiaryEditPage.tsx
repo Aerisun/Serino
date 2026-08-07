@@ -140,6 +140,7 @@ export default function DiaryEditPage() {
         <div className="space-y-2">
           <Label>{t("posts.body")}</Label>
           <MarkdownEditor
+            assetCategory="diary"
             value={form.body}
             onChange={(v) => setField("body", v)}
             minHeight="350px"

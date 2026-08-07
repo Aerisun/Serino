@@ -94,6 +94,7 @@ export default function ThoughtEditPage() {
         <div className="space-y-2">
           <Label>{t("posts.body")}</Label>
           <MarkdownEditor
+            assetCategory="thought"
             value={form.body}
             onChange={(v) => setField("body", v)}
             minHeight="200px"

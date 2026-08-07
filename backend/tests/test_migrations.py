@@ -9,7 +9,7 @@ from alembic.script import ScriptDirectory
 from aerisun.core.db import dispose_engine, run_database_migrations
 from aerisun.core.settings import get_settings
 
-CURRENT_SCHEMA_HEAD = "0018_post_access_requests"
+CURRENT_SCHEMA_HEAD = "0019_asset_storage_layout"
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
 
@@ -97,6 +97,7 @@ def test_active_alembic_history_is_reset_to_single_production_baseline_head() ->
         "0016_post_rss_exclusion.py",
         "0017_post_requires_approval.py",
         "0018_post_access_requests.py",
+        "0019_asset_storage_layout.py",
     ]
     assert not (BACKEND_ROOT / "alembic" / "legacy_versions").exists()
 
@@ -115,6 +116,7 @@ def test_run_database_migrations_creates_baseline_schema_and_journal(tmp_path, m
     assert "backup_bootstrap_claims" in tables
     assert "diary_access_requests" in tables
     assert "_aerisun_data_migrations" in tables
+    assert "asset_local_delete_queue_items" in tables
     assert "failed_attempts" in _get_columns(db_path, "content_notifications")
     assert "ix_diary_access_requests_site_user_created_id" in _get_indexes(
         db_path,
@@ -127,6 +129,8 @@ def test_run_database_migrations_creates_baseline_schema_and_journal(tmp_path, m
     }
     assert "retention_days" in _get_columns(db_path, "backup_target_configs")
     assert "public_slug" in _get_columns(db_path, "assets")
+    assert "ix_assets_scope_category_created_at" in _get_indexes(db_path, "assets")
+    assert "ix_assets_remote_object_key" in _get_indexes(db_path, "assets")
     assert "exclude_from_rss" in _get_columns(db_path, "posts")
     assert "requires_approval" in _get_columns(db_path, "posts")
     assert "post_access_requests" in tables

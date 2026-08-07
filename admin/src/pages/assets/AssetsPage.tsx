@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useHref } from "react-router-dom";
 import {
   useListAssetsEndpointApiV1AdminAssetsGet as useListAssetsApiV1AdminAssetsGet,
   useDeleteAssetEndpointApiV1AdminAssetsAssetIdDelete as useDeleteAssetApiV1AdminAssetsAssetIdDelete,
@@ -21,12 +22,25 @@ import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Textarea } from "@/components/ui/Textarea";
 import { NativeSelect } from "@/components/ui/NativeSelect";
-import { Upload, Trash2, Copy, ExternalLink, Link as LinkIcon, Pencil, Zap } from "lucide-react";
+import {
+  Cloud,
+  Copy,
+  ExternalLink,
+  FileText,
+  Link as LinkIcon,
+  MessageCircle,
+  Pencil,
+  Settings,
+  Trash2,
+  Upload,
+  UserRound,
+  Zap,
+} from "lucide-react";
 import { canCompressImage, prepareImageUploadFile } from "@serino/utils/image-upload";
-import { formatDate, formatBytes } from "@/lib/utils";
+import { cn, formatDate, formatBytes } from "@/lib/utils";
 import { useI18n } from "@/i18n";
 import { extractApiErrorMessage } from "@/lib/api-error";
-import { uploadManagedAsset } from "@/lib/managedAssetUpload";
+import { uploadManagedAsset, type AssetScope } from "@/lib/managedAssetUpload";
 import {
   getObjectStorageConfig,
   listObjectStorageSyncRecords,
@@ -35,12 +49,21 @@ import {
 import { toast } from "sonner";
 import type { AssetAdminRead } from "@serino/api-client/models";
 
+type AssetViewMode = AssetScope | "oss_sync";
+
+const CATEGORY_OPTIONS: Record<AssetScope, readonly string[]> = {
+  user: ["general"],
+  article: ["post", "diary", "thought", "excerpt", "resume", "friends"],
+  visitor: ["comment", "guestbook"],
+  system: ["general", "hero-image", "hero-poster", "hero-video", "site-og", "site-icon", "resume-avatar"],
+};
+
 export default function AssetsPage() {
   const { t } = useI18n();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
-  const [viewMode, setViewMode] = useState<"user" | "system" | "oss_sync">("user");
-  const [scope, setScope] = useState<"user" | "system">("user");
+  const [viewMode, setViewMode] = useState<AssetViewMode>("user");
+  const [scope, setScope] = useState<AssetScope>("user");
   const [search, setSearch] = useState("");
   const [searchDebounced, setSearchDebounced] = useState("");
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -52,7 +75,7 @@ export default function AssetsPage() {
   const [publicSlug, setPublicSlug] = useState("");
   const [note, setNote] = useState("");
   const [editVisibility, setEditVisibility] = useState<"internal" | "public">("internal");
-  const [editScope, setEditScope] = useState<"user" | "system">("user");
+  const [editScope, setEditScope] = useState<AssetScope>("user");
   const [editCategory, setEditCategory] = useState("general");
   const [editPublicSlug, setEditPublicSlug] = useState("");
   const [editNote, setEditNote] = useState("");
@@ -62,6 +85,7 @@ export default function AssetsPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isSyncView = viewMode === "oss_sync";
+  const previewBaseHref = useHref("/assets/preview");
 
   useEffect(() => {
     return () => {
@@ -116,10 +140,6 @@ export default function AssetsPage() {
     toast.success(t(successKey));
   };
 
-  const openPreview = (asset: AssetAdminRead) => {
-    window.open(asset.internal_url, "_blank", "noopener,noreferrer");
-  };
-
   const handleFileChange = () => {
     const file = fileRef.current?.files?.[0] ?? null;
     setSelectedFile(file);
@@ -134,13 +154,34 @@ export default function AssetsPage() {
     }, 300);
   };
 
-  const handleViewModeChange = (value: "user" | "system" | "oss_sync") => {
+  const handleViewModeChange = (value: AssetViewMode) => {
     setViewMode(value);
     if (value !== "oss_sync") {
       setScope(value);
+      setCategory(CATEGORY_OPTIONS[value][0]);
     }
     setPage(1);
   };
+
+  const scopeLabel = (value: AssetScope) => {
+    switch (value) {
+      case "article":
+        return t("assets.scopeArticle");
+      case "visitor":
+        return t("assets.scopeVisitor");
+      case "system":
+        return t("assets.scopeSystem");
+      default:
+        return t("assets.scopeUser");
+    }
+  };
+
+  const scopeTabs = [
+    { value: "user" as const, label: t("assets.scopeUser"), icon: UserRound },
+    { value: "article" as const, label: t("assets.scopeArticle"), icon: FileText },
+    { value: "visitor" as const, label: t("assets.scopeVisitor"), icon: MessageCircle },
+    { value: "system" as const, label: t("assets.scopeSystem"), icon: Settings },
+  ];
 
   const formatSyncStatus = (status: string) => {
     switch (status) {
@@ -251,27 +292,41 @@ export default function AssetsPage() {
           </div>
         }
       />
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3 w-full">
-          <div className="w-[180px]">
-            <NativeSelect
-              value={viewMode}
-              onChange={(event) =>
-                handleViewModeChange(event.target.value as "user" | "system" | "oss_sync")
-              }
+      <div className="mb-4 space-y-3">
+        <div className="overflow-x-auto pb-1">
+          <div className="flex min-w-max items-center gap-2" aria-label={t("assets.scope")}>
+            {scopeTabs.map(({ value, label, icon: Icon }) => (
+              <Button
+                key={value}
+                type="button"
+                variant={viewMode === value ? "default" : "outline"}
+                aria-pressed={viewMode === value}
+                onClick={() => handleViewModeChange(value)}
+                className="h-10 rounded-full px-4"
+              >
+                <Icon className="mr-2 h-4 w-4" />
+                {label}
+              </Button>
+            ))}
+            <span className="mx-1 h-6 w-px bg-border/70" aria-hidden="true" />
+            <Button
+              type="button"
+              variant={isSyncView ? "default" : "ghost"}
+              aria-pressed={isSyncView}
+              onClick={() => handleViewModeChange("oss_sync")}
+              className="h-10 rounded-full px-4"
             >
-              <option value="user">{t("assets.scopeUser")}</option>
-              <option value="system">{t("assets.scopeSystem")}</option>
-              <option value="oss_sync">{t("assets.scopeOssSync")}</option>
-            </NativeSelect>
+              <Cloud className="mr-2 h-4 w-4" />
+              {t("assets.scopeOssSync")}
+            </Button>
           </div>
-          <div className="w-full max-w-md">
+        </div>
+        <div className="w-full max-w-md">
             <Input
               value={search}
               onChange={(e) => handleSearch(e.target.value)}
               placeholder={t("assets.searchPlaceholder")}
             />
-          </div>
         </div>
       </div>
       <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
@@ -300,10 +355,15 @@ export default function AssetsPage() {
                 <Label>{t("assets.scope")}</Label>
                 <NativeSelect
                   value={scope}
-                  onChange={(event) => setScope(event.target.value as "user" | "system")}
+                  onChange={(event) => {
+                    const nextScope = event.target.value as AssetScope;
+                    setScope(nextScope);
+                    setCategory(CATEGORY_OPTIONS[nextScope][0]);
+                  }}
                 >
-                  <option value="user">{t("assets.scopeUser")}</option>
-                  <option value="system">{t("assets.scopeSystem")}</option>
+                  {scopeTabs.map((item) => (
+                    <option key={item.value} value={item.value}>{item.label}</option>
+                  ))}
                 </NativeSelect>
               </div>
 
@@ -328,7 +388,11 @@ export default function AssetsPage() {
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
                   placeholder={t("assets.category")}
+                  list="asset-upload-category-options"
                 />
+                <datalist id="asset-upload-category-options">
+                  {CATEGORY_OPTIONS[scope].map((item) => <option key={item} value={item} />)}
+                </datalist>
               </div>
 
               <div className="grid gap-2">
@@ -427,10 +491,11 @@ export default function AssetsPage() {
               <Label>{t("assets.scope")}</Label>
               <NativeSelect
                 value={editScope}
-                onChange={(event) => setEditScope(event.target.value as "user" | "system")}
+                onChange={(event) => setEditScope(event.target.value as AssetScope)}
               >
-                <option value="user">{t("assets.scopeUser")}</option>
-                <option value="system">{t("assets.scopeSystem")}</option>
+                {scopeTabs.map((item) => (
+                  <option key={item.value} value={item.value}>{item.label}</option>
+                ))}
               </NativeSelect>
             </div>
 
@@ -441,7 +506,11 @@ export default function AssetsPage() {
                   value={editCategory}
                   onChange={(e) => setEditCategory(e.target.value)}
                   placeholder={t("assets.category")}
+                  list="asset-edit-category-options"
                 />
+                <datalist id="asset-edit-category-options">
+                  {CATEGORY_OPTIONS[editScope].map((item) => <option key={item} value={item} />)}
+                </datalist>
               </div>
 
               <div className="grid gap-2">
@@ -488,6 +557,8 @@ export default function AssetsPage() {
                     ? t("assets.syncTypeMirror")
                     : row.record_type === "remote_upload"
                       ? t("assets.syncTypeRemoteUpload")
+                      : row.record_type === "local_delete"
+                        ? t("assets.syncTypeLocalDelete")
                       : t("assets.syncTypeRemoteDelete"),
               },
               {
@@ -540,19 +611,34 @@ export default function AssetsPage() {
           />
         ) : (
         <DataTable<AssetAdminRead>
+          tableClassName="min-w-[59rem] table-fixed"
           columns={[
             {
               header: t("assets.fileName"),
+              className: "w-[12rem] min-w-[12rem]",
               accessor: (row) => (
-                <div className="flex items-center gap-2">
-                  <div className="font-medium text-foreground/92">{row.file_name}</div>
+                <div className="flex w-full min-w-0 max-w-full items-center gap-1.5">
+                  <div
+                    className="min-w-0 truncate font-medium text-foreground/92"
+                    title={row.file_name}
+                  >
+                    {row.file_name}
+                  </div>
                   <Button
                     variant="ghost"
                     size="icon"
+                    className="h-8 w-8 shrink-0"
                     title={t("assets.openPreview")}
                     onClick={(e) => {
                       e.stopPropagation();
-                      openPreview(row);
+                      const targetUrl = row.visibility === "public"
+                        ? row.internal_url
+                        : `${previewBaseHref}/${encodeURIComponent(row.id)}`;
+                      window.open(
+                        targetUrl,
+                        "_blank",
+                        "noopener,noreferrer",
+                      );
                     }}
                   >
                     <ExternalLink className="h-4 w-4" />
@@ -562,23 +648,52 @@ export default function AssetsPage() {
             },
             {
               header: t("assets.note"),
+              className: "w-[10rem] min-w-[10rem]",
               accessor: (row) => (
-                <div className="max-w-[280px] whitespace-pre-wrap break-words text-sm text-muted-foreground">
+                <div
+                  className={cn(
+                    "max-w-full line-clamp-2 break-words text-[13px] leading-5 text-muted-foreground",
+                    !row.note && "text-center",
+                  )}
+                  title={row.note || undefined}
+                >
                   {row.note || "-"}
                 </div>
               ),
             },
-            { header: t("assets.category"), accessor: (row) => row.category },
-            { header: t("assets.scope"), accessor: (row) => row.scope === "system" ? t("assets.scopeSystem") : t("assets.scopeUser") },
-            { header: t("assets.visibility"), accessor: (row) => row.visibility === "public" ? t("assets.visibilityPublic") : t("assets.visibilityInternal") },
-            { header: t("assets.fileSize"), accessor: (row) => formatBytes(row.byte_size ?? 0) },
+            {
+              header: t("assets.category"),
+              className: "w-[8rem] min-w-[8rem] whitespace-nowrap px-2 text-center",
+              accessor: (row) => (
+                <div className="max-w-full truncate" title={row.category}>
+                  {row.category}
+                </div>
+              ),
+            },
+            {
+              header: t("assets.scope"),
+              className: "w-[5.25rem] min-w-[5.25rem] whitespace-nowrap px-2",
+              accessor: (row) => scopeLabel(row.scope as AssetScope),
+            },
+            {
+              header: t("assets.visibility"),
+              className: "w-[4.75rem] min-w-[4.75rem] whitespace-nowrap px-2",
+              accessor: (row) => row.visibility === "public" ? t("assets.visibilityPublic") : t("assets.visibilityInternal"),
+            },
+            {
+              header: t("assets.fileSize"),
+              className: "w-[5.5rem] min-w-[5.5rem] whitespace-nowrap px-2",
+              accessor: (row) => formatBytes(row.byte_size ?? 0),
+            },
             {
               header: t("assets.links"),
+              className: "w-[4.75rem] min-w-[4.75rem] whitespace-nowrap px-1 text-center",
               accessor: (row) => (
-                <div className="flex w-full items-center gap-1 flex-wrap">
+                <div className="flex w-full flex-nowrap items-center justify-center gap-1">
                   <Button
                     variant="ghost"
                     size="icon"
+                    className="h-8 w-8"
                     title={t("assets.copyInternal")}
                     onClick={(e) => { e.stopPropagation(); void copyText(row.internal_url, "assets.copyInternalSuccess"); }}
                   >
@@ -589,6 +704,7 @@ export default function AssetsPage() {
                       <Button
                         variant="ghost"
                         size="icon"
+                        className="h-8 w-8"
                         title={t("assets.copyPublic")}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -605,12 +721,14 @@ export default function AssetsPage() {
               )
             },
             {
-              header: "",
+              header: t("common.actions"),
+              className: "w-[4.75rem] min-w-[4.75rem] whitespace-nowrap px-1 text-center",
               accessor: (row) => (
-                <div className="flex w-full items-center justify-end gap-1">
+                <div className="flex w-full flex-nowrap items-center justify-center gap-1">
                   <Button
                     variant="ghost"
                     size="icon"
+                    className="h-8 w-8"
                     title={t("common.edit")}
                     onClick={(e) => {
                       e.stopPropagation();
@@ -623,7 +741,7 @@ export default function AssetsPage() {
                     variant="outline"
                     size="icon"
                     title={t("assets.deleteConfirm")}
-                    className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    className="h-8 w-8 border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
                     onClick={(e) => { e.stopPropagation(); if (confirm(t("assets.deleteConfirm"))) del.mutate({ assetId: row.id }); }}
                   >
                     <Trash2 className="h-4 w-4" />

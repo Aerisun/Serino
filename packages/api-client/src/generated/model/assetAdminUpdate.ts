@@ -7,7 +7,7 @@
 
 export interface AssetAdminUpdate {
   visibility?: 'internal' | 'public' | null;
-  scope?: 'system' | 'user' | null;
+  scope?: 'user' | 'article' | 'visitor' | 'system' | null;
   category?: string | null;
   note?: string | null;
   public_slug?: string | null;

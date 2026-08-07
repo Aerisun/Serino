@@ -65,6 +65,15 @@ class WalineNickIdentity:
     updated_at: datetime
 
 
+@dataclass(frozen=True, slots=True)
+class WalineAssetReference:
+    asset_id: str
+    row_id: str
+    usage: str
+    matched_url: str
+    occurrence_count: int
+
+
 def get_waline_db_path() -> Path:
     settings = get_settings()
     return settings.waline_db_path
@@ -1159,6 +1168,76 @@ def waline_comment_body_references(text: str, db_path: Path | None = None) -> bo
             (needle,),
         ).fetchone()
         return row is not None
+
+
+def collect_waline_asset_references(
+    db_path: Path,
+    legacy_url_to_asset_id: dict[str, str],
+) -> list[WalineAssetReference]:
+    from aerisun.domain.media.references import find_legacy_url_counts
+
+    references: list[WalineAssetReference] = []
+    legacy_urls = set(legacy_url_to_asset_id)
+    with connect_waline_db(db_path) as connection:
+        comment_rows = connection.execute("SELECT id, comment, avatar, url FROM wl_comment ORDER BY id ASC").fetchall()
+        user_rows = connection.execute("SELECT id, avatar FROM wl_users ORDER BY id ASC").fetchall()
+    for row in comment_rows:
+        usage = (
+            "guestbook" if str(row["url"] or "").split("?", 1)[0].rstrip("/") == WALINE_GUESTBOOK_PATH else "comment"
+        )
+        for value in (row["comment"] or "", row["avatar"] or ""):
+            for matched_url, count in find_legacy_url_counts(value, legacy_urls).items():
+                references.append(
+                    WalineAssetReference(
+                        asset_id=legacy_url_to_asset_id[matched_url],
+                        row_id=str(row["id"]),
+                        usage=usage,
+                        matched_url=matched_url,
+                        occurrence_count=count,
+                    )
+                )
+    for row in user_rows:
+        for matched_url, count in find_legacy_url_counts(row["avatar"] or "", legacy_urls).items():
+            references.append(
+                WalineAssetReference(
+                    asset_id=legacy_url_to_asset_id[matched_url],
+                    row_id=f"user:{row['id']}",
+                    usage="user-avatar",
+                    matched_url=matched_url,
+                    occurrence_count=count,
+                )
+            )
+    references.sort(key=lambda item: (item.asset_id, item.row_id, item.matched_url))
+    return references
+
+
+def rewrite_waline_asset_references(db_path: Path, replacements: dict[str, str]) -> int:
+    from aerisun.domain.media.references import rewrite_text
+
+    total = 0
+    with connect_waline_db(db_path) as connection:
+        rows = connection.execute("SELECT id, comment, avatar FROM wl_comment ORDER BY id ASC").fetchall()
+        for row in rows:
+            comment_result = rewrite_text(str(row["comment"] or ""), replacements)
+            avatar_result = rewrite_text(str(row["avatar"] or ""), replacements)
+            if comment_result.replacement_count == 0 and avatar_result.replacement_count == 0:
+                continue
+            connection.execute(
+                "UPDATE wl_comment SET comment = ?, avatar = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?",
+                (comment_result.value, avatar_result.value, row["id"]),
+            )
+            total += comment_result.replacement_count + avatar_result.replacement_count
+        user_rows = connection.execute("SELECT id, avatar FROM wl_users ORDER BY id ASC").fetchall()
+        for row in user_rows:
+            avatar_result = rewrite_text(str(row["avatar"] or ""), replacements)
+            if avatar_result.replacement_count == 0:
+                continue
+            connection.execute(
+                "UPDATE wl_users SET avatar = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?",
+                (avatar_result.value, row["id"]),
+            )
+            total += avatar_result.replacement_count
+    return total
 
 
 def moderate_waline_record(

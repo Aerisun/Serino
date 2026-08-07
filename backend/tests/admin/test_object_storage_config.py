@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from aerisun.core.settings import get_settings
+
 OBJECT_STORAGE_BASE = "/api/v1/admin/object-storage/config"
 SYSTEM_BASE = "/api/v1/admin/system"
 
@@ -91,6 +93,25 @@ def test_object_storage_config_put_persists_and_creates_masked_revision(client, 
     assert detail["after_preview"]["bucket"] == "asset-bucket"
     assert detail["after_preview"]["secret_key"] == ""
     assert detail["after_preview"]["cdn_token_key"] == ""
+
+
+def test_object_storage_config_put_is_rejected_while_asset_cleanup_is_pending(
+    client,
+    admin_headers,
+) -> None:
+    state_dir = get_settings().data_dir / ".data-migrations"
+    state_dir.mkdir(parents=True, exist_ok=True)
+    manifest = state_dir / "pending-storage-cleanup.json"
+    manifest.write_text("{}", encoding="utf-8")
+
+    response = client.put(
+        OBJECT_STORAGE_BASE,
+        headers=admin_headers,
+        json={"bucket": "must-not-be-saved"},
+    )
+
+    assert response.status_code == 409
+    assert "稍后再修改 OSS 配置" in response.json()["detail"]
 
 
 def test_object_storage_config_test_endpoint_uses_transient_payload(client, admin_headers, monkeypatch):
@@ -243,19 +264,20 @@ def test_object_storage_config_put_enqueues_local_only_assets_when_enabled(
     admin_headers,
     monkeypatch,
     seeded_session,
-    tmp_path,
 ):
     from aerisun.domain.media import object_storage as object_storage_module
     from aerisun.domain.media.models import Asset, AssetRemoteUploadQueueItem
 
-    local_file = tmp_path / "media" / "internal" / "assets" / "general" / "backfill.png"
+    asset_id = "backfill-asset"
+    local_file = get_settings().media_dir / f"assets/user/{asset_id}.png"
     local_file.parent.mkdir(parents=True, exist_ok=True)
     local_file.write_bytes(b"backfill-bytes")
 
     seeded_session.add(
         Asset(
+            id=asset_id,
             file_name="backfill.png",
-            resource_key="internal/assets/general/backfill.png",
+            resource_key=f"assets/{asset_id}.png",
             visibility="internal",
             scope="user",
             category="general",
@@ -299,8 +321,9 @@ def test_object_storage_config_put_enqueues_local_only_assets_when_enabled(
     assert payload["remote_sync_enqueued_count"] >= 1
 
     queued = seeded_session.query(AssetRemoteUploadQueueItem).all()
-    assert any(item.object_key == "internal/assets/general/backfill.png" for item in queued)
-    target = next(item for item in queued if item.object_key == "internal/assets/general/backfill.png")
+    expected_key = f"assets/user/{asset_id}.png"
+    assert any(item.object_key == expected_key for item in queued)
+    target = next(item for item in queued if item.object_key == expected_key)
     assert target.status == "queued"
 
 

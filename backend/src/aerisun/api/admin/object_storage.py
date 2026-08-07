@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
+from aerisun.core.data_storage_lock import data_storage_locked
 from aerisun.core.db import get_session
 from aerisun.domain.iam.models import AdminUser
 from aerisun.domain.media.object_storage import (
@@ -34,6 +35,7 @@ def get_object_storage_config(
 
 
 @router.put("/config", response_model=ObjectStorageConfigRead, summary="更新 OSS 加速配置")
+@data_storage_locked
 def put_object_storage_config(
     payload: ObjectStorageConfigUpdate,
     admin: AdminUser = Depends(get_current_admin),

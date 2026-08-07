@@ -152,10 +152,20 @@ else:
     )
 
 blocking_failed = blocking.get("failed") or []
+blocking_running = blocking.get("running") or []
 blocking_pending = blocking.get("pending") or []
+blocking_cleanup_pending = blocking.get("cleanup_pending") or []
 if blocking_failed:
     print(
         f"fail\tdata.migrations.blocking\t阻塞式数据迁移失败：{', '.join(blocking_failed)}\tsercli migrate data --mode blocking"
+    )
+elif blocking_running:
+    print(
+        f"fail\tdata.migrations.blocking\t存在中断后待恢复的阻塞式数据迁移：{', '.join(blocking_running)}\tsercli migrate data --mode blocking"
+    )
+elif blocking_cleanup_pending:
+    print(
+        f"fail\tdata.migrations.blocking\t阻塞式数据迁移仍有待确认清理的旧副本：{', '.join(blocking_cleanup_pending)}\tsercli migrate data --mode blocking"
     )
 elif blocking_pending:
     print(
@@ -168,9 +178,14 @@ background_failed = background.get("failed") or []
 background_scheduled = background.get("scheduled") or []
 background_running = background.get("running") or []
 background_pending = background.get("pending") or []
+background_cleanup_pending = background.get("cleanup_pending") or []
 if background_failed:
     print(
         f"fail\tdata.migrations.background\t后台数据迁移失败：{', '.join(background_failed)}\tsercli migrate data --mode background"
+    )
+elif background_cleanup_pending:
+    print(
+        f"warn\tdata.migrations.background\t后台数据迁移仍有待确认清理的旧副本：{', '.join(background_cleanup_pending)}\tsercli migrate data --mode background"
     )
 elif background_scheduled or background_running:
     details = []

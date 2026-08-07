@@ -305,6 +305,7 @@ export default function ResumePage() {
             <div className="mt-5 space-y-2">
               <Label>简历正文</Label>
               <MarkdownEditor
+                assetCategory="resume"
                 value={form.summary}
                 onChange={(value) => setForm((p) => ({ ...p, summary: value }))}
                 minHeight="460px"

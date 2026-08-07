@@ -293,11 +293,17 @@ daemon_reload() {
 }
 
 enable_serino_service() {
-  run_as_root systemctl enable "${SERINO_SYSTEMD_UNIT}" >/dev/null 2>&1
-  run_as_root systemctl start "${SERINO_SYSTEMD_UNIT}" >/dev/null 2>&1
+  if ! run_as_root systemctl enable "${SERINO_SYSTEMD_UNIT}" >/dev/null 2>&1 \
+    || ! run_as_root systemctl start "${SERINO_SYSTEMD_UNIT}" >/dev/null 2>&1; then
+    rollback_deferred_release_data_migration || true
+    return 1
+  fi
   run_as_root systemctl enable --now "${SERINO_SYSTEMD_UPDATER_TIMER}" >/dev/null 2>&1 || true
   run_as_root systemctl enable --now "${SERINO_SYSTEMD_UPDATER_PATH}" >/dev/null 2>&1 || true
-  run_as_root systemctl is-active --quiet "${SERINO_SYSTEMD_UNIT}"
+  if ! run_as_root systemctl is-active --quiet "${SERINO_SYSTEMD_UNIT}"; then
+    rollback_deferred_release_data_migration || true
+    return 1
+  fi
 }
 
 start_serino_service() {
@@ -820,12 +826,41 @@ run_release_admin_bootstrap() {
 
 run_release_data_migrations() {
   local mode="${1:-blocking}"
+  shift || true
+  local -a extra_args=("$@")
+  local has_deferred_cleanup="false"
+  local arg=""
+  for arg in "${extra_args[@]}"; do
+    if [[ "${arg}" == "--defer-cleanup" ]]; then
+      has_deferred_cleanup="true"
+      break
+    fi
+  done
+  if [[ "${mode}" == "blocking" && "${has_deferred_cleanup}" != "true" ]]; then
+    extra_args+=("--defer-cleanup")
+  fi
+  if [[ "${mode}" == "blocking" ]]; then
+    arm_deferred_release_data_migration
+  fi
   if [[ "${mode}" == "blocking" ]]; then
     log_info "🛠️ 正在执行版本化数据迁移..."
   else
     log_info "🛠️ 正在执行版本化数据迁移（mode=${mode}）..."
   fi
-  compose_api_task "data-migrate.sh" apply --mode "${mode}" --progress
+  if ! compose_api_task "data-migrate.sh" apply --mode "${mode}" --progress "${extra_args[@]}"; then
+    rollback_deferred_release_data_migration || true
+    return 1
+  fi
+}
+
+cleanup_release_data_migrations() {
+  local mode="${1:-blocking}"
+  compose_api_task "data-migrate.sh" cleanup --mode "${mode}"
+}
+
+rollback_release_data_migration_external_copies() {
+  local mode="${1:-blocking}"
+  compose_api_task "data-migrate.sh" rollback-external --mode "${mode}"
 }
 
 schedule_release_background_data_migrations() {
@@ -866,6 +901,60 @@ resolve_release_ready_timeout() {
   [[ "${timeout}" =~ ^[0-9]+$ ]] || die "就绪等待超时必须是正整数秒数。"
   [[ "${timeout}" -gt 0 ]] || die "就绪等待超时必须大于 0 秒。"
   printf '%s' "${timeout}"
+}
+
+deferred_release_data_migration_marker() {
+  local backup_dir="${UPGRADE_ROLLBACK_BACKUP_DIR:-}"
+  [[ -n "${backup_dir}" ]] || return 1
+  printf '%s' "${backup_dir}/.target-data-migration-runner-ready"
+}
+
+deferred_release_data_migration_is_armed() {
+  local marker=""
+  if [[ "${AERISUN_RELEASE_DATA_MIGRATION_DEFERRED:-false}" == "true" ]]; then
+    return 0
+  fi
+  marker="$(deferred_release_data_migration_marker || true)"
+  [[ -n "${marker}" ]] && path_is_file "${marker}"
+}
+
+arm_deferred_release_data_migration() {
+  local marker=""
+  AERISUN_RELEASE_DATA_MIGRATION_DEFERRED="true"
+  marker="$(deferred_release_data_migration_marker || true)"
+  if [[ -n "${marker}" ]]; then
+    run_as_root touch "${marker}"
+  fi
+}
+
+commit_deferred_release_data_migration() {
+  local marker=""
+  marker="$(deferred_release_data_migration_marker || true)"
+  if [[ -n "${marker}" ]] && path_is_file "${marker}"; then
+    run_as_root rm -f "${marker}"
+  fi
+  AERISUN_RELEASE_DATA_MIGRATION_DEFERRED="false"
+}
+
+rollback_deferred_release_data_migration() {
+  local marker=""
+  deferred_release_data_migration_is_armed || return 0
+  marker="$(deferred_release_data_migration_marker || true)"
+  log_info "↩️ 新版本尚未就绪，正在撤销本次迁移创建的 OSS 新副本..."
+  if ! rollback_release_data_migration_external_copies blocking; then
+    log_error "无法撤销本次迁移创建的 OSS 新副本；旧对象仍保留，已保留回滚标记供重试。"
+    return 1
+  fi
+  if [[ -n "${marker}" ]] && path_is_file "${marker}"; then
+    run_as_root rm -f "${marker}"
+  fi
+  AERISUN_RELEASE_DATA_MIGRATION_DEFERRED="false"
+}
+
+fail_release_readiness() {
+  local message="$1"
+  rollback_deferred_release_data_migration || true
+  die "${message}"
 }
 
 wait_for_domain_url() {
@@ -1318,19 +1407,38 @@ wait_for_release_ready() {
 
   local backend_url=""
   backend_url="$(resolve_backend_healthcheck_url)"
-  wait_for_url "${backend_url}" "${timeout_seconds}" || die "后端健康检查未通过：${backend_url}"
+  wait_for_url "${backend_url}" "${timeout_seconds}" || fail_release_readiness "后端健康检查未通过：${backend_url}"
 
   if [[ "${AERISUN_DOMAIN}" == http://* ]]; then
-    wait_for_url "${AERISUN_SITE_URL}/" "${timeout_seconds}" || die "前台未就绪：${AERISUN_SITE_URL}/"
-    wait_for_url "${AERISUN_SITE_URL}${AERISUN_ADMIN_BASE_PATH:-/admin/}" "${timeout_seconds}" || die "后台未就绪。"
-    wait_for_url "${AERISUN_WALINE_SERVER_URL}/" "${timeout_seconds}" || die "Waline 未就绪。"
+    wait_for_url "${AERISUN_SITE_URL}/" "${timeout_seconds}" || fail_release_readiness "前台未就绪：${AERISUN_SITE_URL}/"
+    wait_for_url "${AERISUN_SITE_URL}${AERISUN_ADMIN_BASE_PATH:-/admin/}" "${timeout_seconds}" \
+      || fail_release_readiness "后台未就绪。"
+    wait_for_url "${AERISUN_WALINE_SERVER_URL}/" "${timeout_seconds}" || fail_release_readiness "Waline 未就绪。"
   else
-    wait_for_domain_url "${AERISUN_DOMAIN}" "/" "${timeout_seconds}" \
-      || die_domain_https_not_ready "${AERISUN_DOMAIN}" "前台" "/"
-    wait_for_domain_url "${AERISUN_DOMAIN}" "${AERISUN_ADMIN_BASE_PATH:-/admin/}" "${timeout_seconds}" \
-      || die_domain_https_not_ready "${AERISUN_DOMAIN}" "后台" "${AERISUN_ADMIN_BASE_PATH:-/admin/}"
-    wait_for_domain_url "${AERISUN_DOMAIN}" "${AERISUN_WALINE_BASE_PATH:-/waline}/" "${timeout_seconds}" \
-      || die_domain_https_not_ready "${AERISUN_DOMAIN}" "Waline" "${AERISUN_WALINE_BASE_PATH:-/waline}/"
+    if ! wait_for_domain_url "${AERISUN_DOMAIN}" "/" "${timeout_seconds}"; then
+      rollback_deferred_release_data_migration
+      die_domain_https_not_ready "${AERISUN_DOMAIN}" "前台" "/"
+    fi
+    if ! wait_for_domain_url "${AERISUN_DOMAIN}" "${AERISUN_ADMIN_BASE_PATH:-/admin/}" "${timeout_seconds}"; then
+      rollback_deferred_release_data_migration
+      die_domain_https_not_ready "${AERISUN_DOMAIN}" "后台" "${AERISUN_ADMIN_BASE_PATH:-/admin/}"
+    fi
+    if ! wait_for_domain_url "${AERISUN_DOMAIN}" "${AERISUN_WALINE_BASE_PATH:-/waline}/" "${timeout_seconds}"; then
+      rollback_deferred_release_data_migration
+      die_domain_https_not_ready "${AERISUN_DOMAIN}" "Waline" "${AERISUN_WALINE_BASE_PATH:-/waline}/"
+    fi
+  fi
+
+  # 健康检查通过即越过旧版本回滚点；后续清理失败时必须保留新版本继续服务。
+  commit_deferred_release_data_migration
+
+  # 兼容从旧版本直接升级：旧 upgrade.sh 会重新 source 本文件，但不会获得目标版本
+  # upgrade.sh 的新控制流。健康检查通过后在这里越过回滚点；清理失败只保留 pending，
+  # 绝不能把返回码变成失败后让旧脚本恢复已不再完整的旧数据。
+  if [[ "${AERISUN_DEFER_READY_CLEANUP_TO_CALLER:-false}" != "true" ]]; then
+    if ! cleanup_release_data_migrations blocking; then
+      log_warn "新版本已就绪，但旧资源副本暂未清理完成；站点保持新版本，可稍后执行 sercli migrate data --mode blocking 重试。"
+    fi
   fi
 }
 

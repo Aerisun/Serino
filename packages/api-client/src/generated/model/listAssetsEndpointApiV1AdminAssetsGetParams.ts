@@ -17,7 +17,7 @@ page?: number;
 page_size?: number;
 q?: string | null;
 /**
- * @pattern ^(system|user)$
+ * @pattern ^(user|article|visitor|system)$
  */
 scope?: string;
 };

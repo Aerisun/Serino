@@ -4,11 +4,15 @@ import hashlib
 import mimetypes
 import shutil
 from pathlib import Path
+from uuid import NAMESPACE_URL, uuid5
 
 from sqlalchemy.orm import Session
 
 from aerisun.core.settings import get_settings
+from aerisun.domain.media import repository as media_repo
+from aerisun.domain.media.local_storage import write_local_asset_file
 from aerisun.domain.media.models import Asset
+from aerisun.domain.media.paths import build_local_path, build_resource_key, identity_from_upload
 
 
 def purge_managed_media_root() -> None:
@@ -33,27 +37,29 @@ def ensure_seed_content_asset(
     visibility: str = "internal",
     note: str | None = None,
 ) -> str:
-    settings = get_settings()
-    media_dir = settings.media_dir.expanduser().resolve()
-    digest = hashlib.sha256(content).hexdigest()[:12]
-    guessed_ext = mimetypes.guess_extension(mime_type or "") or ".bin"
-    ext = Path(file_name).suffix.lower().lstrip(".") or guessed_ext.lstrip(".")
-    resource_key = f"{visibility}/assets/{category}/{digest}.{ext}"
-    existing = session.query(Asset).filter(Asset.resource_key == resource_key).first()
+    sha256 = hashlib.sha256(content).hexdigest()
+    existing = media_repo.find_asset_by_fingerprint(
+        session,
+        sha256=sha256,
+        scope="system",
+        category=category,
+    )
     if existing is not None:
-        if existing.scope != "system":
-            existing.scope = "system"
+        if visibility == "public":
+            existing.visibility = "public"
         if note and not existing.note:
             existing.note = note
         session.flush()
         return f"/media/{existing.resource_key}"
 
-    storage_path = media_dir / resource_key
-    storage_path.parent.mkdir(parents=True, exist_ok=True)
-    if not storage_path.exists():
-        storage_path.write_bytes(content)
+    asset_id = str(uuid5(NAMESPACE_URL, f"serino-system-asset:{category}:{sha256}"))
+    identity = identity_from_upload(asset_id=asset_id, file_name=file_name, mime_type=mime_type)
+    resource_key = build_resource_key(identity)
+    storage_path = build_local_path(identity, "system")
+    write_local_asset_file(storage_path, content, sha256=sha256)
 
     asset = Asset(
+        id=asset_id,
         file_name=file_name,
         resource_key=resource_key,
         visibility=visibility,
@@ -63,7 +69,7 @@ def ensure_seed_content_asset(
         storage_path=str(storage_path),
         mime_type=mime_type,
         byte_size=len(content),
-        sha256=hashlib.sha256(content).hexdigest(),
+        sha256=sha256,
     )
     session.add(asset)
     session.flush()
@@ -92,38 +98,44 @@ def ensure_seed_asset(
     public_slug: str | None = None,
     note: str | None = None,
 ) -> str:
-    settings = get_settings()
-    media_dir = settings.media_dir.expanduser().resolve()
     if not source_path.exists():
         return ""
 
     content = source_path.read_bytes()
-    digest = hashlib.sha256(content).hexdigest()[:12]
-    ext = source_path.suffix.lower().lstrip(".") or "bin"
-    resource_key = f"{visibility}/assets/{category}/{digest}.{ext}"
-    existing = session.query(Asset).filter(Asset.resource_key == resource_key).first()
+    sha256 = hashlib.sha256(content).hexdigest()
+    slug_owner = session.query(Asset).filter(Asset.public_slug == public_slug).first() if public_slug else None
+    if slug_owner is not None and (
+        str(slug_owner.sha256 or "").lower() != sha256
+        or slug_owner.scope != "system"
+        or slug_owner.category != category
+    ):
+        raise RuntimeError(f"Public asset slug is already in use: {public_slug}")
+    existing = media_repo.find_asset_by_fingerprint(
+        session,
+        sha256=sha256,
+        scope="system",
+        category=category,
+    )
+    if slug_owner is not None:
+        existing = slug_owner
     if existing is not None:
         if existing.visibility != visibility:
             existing.visibility = visibility
         if public_slug:
-            slug_owner = session.query(Asset).filter(Asset.public_slug == public_slug).first()
-            if slug_owner is not None and slug_owner.id != existing.id:
-                raise RuntimeError(f"Public asset slug is already in use: {public_slug}")
             existing.public_slug = public_slug
-        if existing.scope != "system":
-            existing.scope = "system"
         if note and not existing.note:
             existing.note = note
         session.flush()
         return f"/media/{existing.resource_key}"
 
-    storage_path = media_dir / resource_key
-    storage_path.parent.mkdir(parents=True, exist_ok=True)
-    if not storage_path.exists():
-        storage_path.write_bytes(content)
-
     mime_type, _ = mimetypes.guess_type(source_path.name)
+    asset_id = str(uuid5(NAMESPACE_URL, f"serino-system-asset:{category}:{sha256}"))
+    identity = identity_from_upload(asset_id=asset_id, file_name=source_path.name, mime_type=mime_type)
+    resource_key = build_resource_key(identity)
+    storage_path = build_local_path(identity, "system")
+    write_local_asset_file(storage_path, content, sha256=sha256)
     asset = Asset(
+        id=asset_id,
         file_name=source_path.name,
         resource_key=resource_key,
         visibility=visibility,
@@ -134,7 +146,7 @@ def ensure_seed_asset(
         storage_path=str(storage_path),
         mime_type=mime_type,
         byte_size=len(content),
-        sha256=hashlib.sha256(content).hexdigest(),
+        sha256=sha256,
     )
     session.add(asset)
     session.flush()
@@ -158,34 +170,8 @@ def ensure_system_asset_reference(
         resource_key = value.removeprefix("/media/").strip("/")
         asset = session.query(Asset).filter(Asset.resource_key == resource_key).first()
         if asset is None:
-            storage_path = get_settings().media_dir.expanduser().resolve() / resource_key
-            if not storage_path.exists():
-                return value
+            return value
 
-            mime_type, _ = mimetypes.guess_type(storage_path.name)
-            visibility = resource_key.split("/", 1)[0] if "/" in resource_key else "internal"
-            resource_parts = resource_key.split("/")
-            inferred_category = (
-                resource_parts[2] if len(resource_parts) >= 4 and resource_parts[1] == "assets" else category
-            )
-            asset = Asset(
-                file_name=storage_path.name,
-                resource_key=resource_key,
-                visibility=visibility,
-                scope="system",
-                category=inferred_category,
-                note=note,
-                storage_path=str(storage_path),
-                mime_type=mime_type,
-                byte_size=storage_path.stat().st_size,
-                sha256=hashlib.sha256(storage_path.read_bytes()).hexdigest(),
-            )
-            session.add(asset)
-            session.flush()
-            return f"/media/{asset.resource_key}"
-
-        if asset.scope != "system":
-            asset.scope = "system"
         if note and not asset.note:
             asset.note = note
         session.flush()

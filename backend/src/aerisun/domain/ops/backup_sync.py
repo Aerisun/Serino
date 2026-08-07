@@ -34,6 +34,7 @@ from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
 from sqlalchemy.orm import Session
 
 from aerisun.core.base import uuid_str
+from aerisun.core.data_storage_lock import data_storage_cleanup_pending, data_storage_locked
 from aerisun.core.db import dispose_engine, get_session_factory
 from aerisun.core.settings import get_settings
 from aerisun.core.time import normalize_shanghai_datetime, shanghai_now
@@ -1608,7 +1609,10 @@ def _remote_backup_commit_restore_record(
     }
 
 
+@data_storage_locked
 def restore_remote_backup_history(session: Session, payload: BackupRemoteHistoryRestoreWrite) -> BackupCommitRead:
+    if data_storage_cleanup_pending():
+        raise StateConflict("资源迁移正在完成旧副本清理，请稍后再恢复备份")
     config = _config_object_from_payload(payload.config)
     _validate_config(config)
     transport = _remote_history_transport(config)
@@ -1797,6 +1801,8 @@ def ensure_backup_queue_item(session: Session, *, trigger_kind: str, force: bool
 
 
 def trigger_backup_sync(session: Session) -> BackupRunRead:
+    if data_storage_cleanup_pending():
+        raise StateConflict("资源迁移正在完成旧副本清理，请稍后再创建备份")
     queue_item = ensure_backup_queue_item(session, trigger_kind="manual", force=False)
     queue_item_id = queue_item.id
     dispatch_backup_sync()
@@ -1816,6 +1822,8 @@ def trigger_backup_sync(session: Session) -> BackupRunRead:
 def retry_backup_sync_run(session: Session, run_id: str) -> BackupRunRead:
     from aerisun.domain.automation.events import emit_backup_sync_retried
 
+    if data_storage_cleanup_pending():
+        raise StateConflict("资源迁移正在完成旧副本清理，请稍后再重试备份")
     run = repo.get_sync_run(session, run_id)
     if run is None:
         raise ResourceNotFound("Backup sync run not found")
@@ -1842,6 +1850,9 @@ def retry_backup_sync_run(session: Session, run_id: str) -> BackupRunRead:
 def dispatch_backup_sync() -> BackupRunRead | None:
     from aerisun.domain.automation.events import emit_backup_sync_started
 
+    if data_storage_cleanup_pending():
+        logger.info("Skipping backup dispatch: asset storage cleanup pending")
+        return None
     if _restore_in_progress.is_set():
         logger.info("Skipping backup dispatch: restore in progress")
         return None
@@ -3198,7 +3209,10 @@ class SftpTransport:
         return {digest: destination_dir / digest for digest in unique_digests}
 
 
+@data_storage_locked
 def restore_backup_commit(session: Session, commit_id: str) -> BackupCommitRead:
+    if data_storage_cleanup_pending():
+        raise StateConflict("资源迁移正在完成旧副本清理，请稍后再恢复备份")
     commit = repo.get_backup_commit(session, commit_id)
     if commit is None:
         raise ResourceNotFound("Backup commit not found")
@@ -3250,7 +3264,10 @@ def _backup_commit_restore_record(commit) -> dict[str, Any]:
     }
 
 
+@data_storage_locked
 def restore_backup_snapshot(session: Session, snapshot_id: str) -> BackupSnapshotRead:
+    if data_storage_cleanup_pending():
+        raise StateConflict("资源迁移正在完成旧副本清理，请稍后再恢复备份")
     commit = repo.get_backup_commit(session, snapshot_id)
     if commit is None:
         raise ResourceNotFound("Backup snapshot not found")

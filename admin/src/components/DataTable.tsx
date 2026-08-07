@@ -21,6 +21,7 @@ interface Column<T> {
 interface DataTableProps<T> {
   columns: Column<T>[];
   data: T[];
+  tableClassName?: string;
   total?: number;
   page?: number;
   pageSize?: number;
@@ -42,6 +43,7 @@ interface DataTableProps<T> {
 export function DataTable<T extends { id: string }>({
   columns,
   data,
+  tableClassName,
   total = 0,
   page = 1,
   pageSize = 20,
@@ -119,7 +121,7 @@ export function DataTable<T extends { id: string }>({
 
   return (
     <div className="overflow-x-auto rounded-lg admin-glass-strong">
-      <Table>
+      <Table className={tableClassName}>
         <TableHeader>
           <TableRow>
             {hasExpandedRow && <TableHead className="w-10" />}
