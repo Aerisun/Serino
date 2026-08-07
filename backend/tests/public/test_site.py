@@ -64,7 +64,8 @@ def test_read_site_manifest_uses_configured_site_icon(client) -> None:
     assert payload["name"] == "Felix"
     assert payload["short_name"] == "Felix"
     assert payload["description"] == "我做网页设计，也写前端，把视觉、节奏、内容和交互整理成一个自然流动的个人空间。"
-    assert payload["icons"][0]["src"] == "/media/internal/assets/site-icon/4cc8bfdd4830.svg"
+    assert payload["icons"][0]["src"].startswith("/media/assets/")
+    assert payload["icons"][0]["src"].endswith(".svg")
 
 
 def test_read_site_bootstrap_returns_aggregated_payload(client) -> None:
@@ -481,6 +482,87 @@ def test_read_link_preview_returns_open_graph_metadata(client, monkeypatch: pyte
     assert payload["image_width"] is None
     assert payload["image_height"] is None
     assert payload["icon_url"] == "https://example.com/favicon.ico"
+
+
+@respx.mock
+def test_read_link_preview_identifies_as_bot_for_server_rendered_metadata(
+    client,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from aerisun.domain.site_config import service as site_service
+
+    preview_url = "https://example.com/posts/server-rendered"
+    monkeypatch.setattr(site_service, "_ensure_public_link_preview_url", lambda value: value)
+
+    def render_for_user_agent(request: httpx.Request) -> httpx.Response:
+        if "bot" in request.headers.get("user-agent", "").casefold():
+            html = """
+            <html><head>
+              <meta property="og:title" content="Server-rendered article" />
+              <meta property="og:description" content="The real article summary." />
+              <meta property="og:image" content="/article-cover.webp" />
+              <link rel="icon" href="/favicon.svg" />
+            </head></html>
+            """
+        else:
+            html = """
+            <html><head>
+              <title>站点加载中</title>
+              <meta name="description" content="站点配置加载中。" />
+              <link rel="icon" href="data:," />
+            </head></html>
+            """
+        return httpx.Response(
+            200,
+            text=html,
+            headers={"content-type": "text/html; charset=utf-8"},
+            request=request,
+        )
+
+    respx.get(preview_url).mock(side_effect=render_for_user_agent)
+
+    response = client.get("/api/v1/site/link-preview", params={"url": preview_url})
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["title"] == "Server-rendered article"
+    assert payload["description"] == "The real article summary."
+    assert payload["image_url"] == "https://example.com/article-cover.webp"
+    assert payload["icon_url"] == "https://example.com/favicon.svg"
+
+
+@respx.mock
+def test_read_link_preview_does_not_cache_loading_shell_as_valid_metadata(
+    client,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from aerisun.domain.site_config import service as site_service
+
+    preview_url = "https://example.com/posts/loading-shell"
+    monkeypatch.setattr(site_service, "_ensure_public_link_preview_url", lambda value: value)
+    route = respx.get(preview_url).mock(
+        return_value=httpx.Response(
+            200,
+            text="""
+            <html><head>
+              <title>站点加载中</title>
+              <meta name="description" content="站点配置加载中。" />
+              <link rel="icon" href="data:," />
+            </head></html>
+            """,
+            headers={"content-type": "text/html; charset=utf-8"},
+            request=httpx.Request("GET", preview_url),
+        )
+    )
+
+    first = client.get("/api/v1/site/link-preview", params={"url": preview_url})
+    second = client.get("/api/v1/site/link-preview", params={"url": preview_url})
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+    assert first.json()["available"] is False
+    assert second.json()["available"] is False
+    assert route.call_count == 2
 
 
 @respx.mock

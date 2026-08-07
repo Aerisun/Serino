@@ -4,9 +4,9 @@ import json
 import re
 import time
 from datetime import datetime
-from html import escape
+from html import escape, unescape
 from threading import Lock
-from urllib.parse import urlsplit
+from urllib.parse import urljoin, urlsplit
 from xml.etree.ElementTree import Element, SubElement, tostring
 
 from sqlalchemy import func, select
@@ -296,6 +296,78 @@ def _plain_text(value: object, *, max_length: int = 280) -> str:
     return _clean_llms_text(text, max_length=max_length)
 
 
+_MARKDOWN_INLINE_IMAGE_RE = re.compile(
+    r"(?<!\\)!\[(?:[^\]\\]|\\.)*]\(\s*(?:<(?P<angle>[^>\r\n]+)>|(?P<plain>(?:\\.|[^()\s]|\([^()\r\n]*\))+))",
+)
+_MARKDOWN_REFERENCE_IMAGE_RE = re.compile(
+    r"(?<!\\)!\[(?P<alt>(?:[^\]\\]|\\.)*)]\[(?P<label>(?:[^\]\\]|\\.)*)]",
+)
+_MARKDOWN_SHORTCUT_IMAGE_RE = re.compile(
+    r"(?<!\\)!\[(?P<label>(?:[^\]\\]|\\.)*)](?![\[(])",
+)
+_MARKDOWN_REFERENCE_DEFINITION_RE = re.compile(
+    r"^[ \t]{0,3}\[(?P<label>[^]\r\n]+)]:[ \t]*(?:<(?P<angle>[^>\r\n]+)>|(?P<plain>\S+))",
+    re.MULTILINE,
+)
+_HTML_IMAGE_RE = re.compile(
+    r"<img\b[^>]*?\bsrc\s*=\s*(?:\"(?P<double>[^\"]+)\"|'(?P<single>[^']+)'|(?P<bare>[^\s\"'=<>`]+))",
+    re.IGNORECASE,
+)
+_MARKDOWN_BACKSLASH_ESCAPE_RE = re.compile(r"\\([!\"#$%&'()*+,./:;<=>?@\[\\\]^_`{|}~-])")
+
+
+def _markdown_reference_label(value: str) -> str:
+    return " ".join(value.split()).casefold()
+
+
+def _resolve_content_image_url(base_url: str, value: str) -> str:
+    candidate = unescape(value).strip()
+    candidate = _MARKDOWN_BACKSLASH_ESCAPE_RE.sub(r"\1", candidate)
+    if not candidate or any(character.isspace() for character in candidate):
+        return ""
+    resolved = urljoin(f"{base_url}/", candidate)
+    try:
+        parsed = urlsplit(resolved)
+    except ValueError:
+        return ""
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname or parsed.username or parsed.password:
+        return ""
+    return resolved
+
+
+def _first_content_image_url(base_url: str, body: object) -> str:
+    markdown = str(body or "")
+    if not markdown:
+        return ""
+
+    reference_definitions: dict[str, str] = {}
+    for match in _MARKDOWN_REFERENCE_DEFINITION_RE.finditer(markdown):
+        label = _markdown_reference_label(match.group("label"))
+        if label and label not in reference_definitions:
+            reference_definitions[label] = match.group("angle") or match.group("plain") or ""
+
+    candidates: list[tuple[int, str]] = []
+    for match in _MARKDOWN_INLINE_IMAGE_RE.finditer(markdown):
+        candidates.append((match.start(), match.group("angle") or match.group("plain") or ""))
+    for match in _MARKDOWN_REFERENCE_IMAGE_RE.finditer(markdown):
+        label = match.group("label") or match.group("alt")
+        destination = reference_definitions.get(_markdown_reference_label(label), "")
+        if destination:
+            candidates.append((match.start(), destination))
+    for match in _MARKDOWN_SHORTCUT_IMAGE_RE.finditer(markdown):
+        destination = reference_definitions.get(_markdown_reference_label(match.group("label")), "")
+        if destination:
+            candidates.append((match.start(), destination))
+    for match in _HTML_IMAGE_RE.finditer(markdown):
+        candidates.append((match.start(), match.group("double") or match.group("single") or match.group("bare") or ""))
+
+    for _, candidate in sorted(candidates, key=lambda entry: entry[0]):
+        resolved = _resolve_content_image_url(base_url, candidate)
+        if resolved:
+            return resolved
+    return ""
+
+
 def _has_cjk(value: str) -> bool:
     return bool(re.search(r"[\u3400-\u9fff]", value))
 
@@ -465,6 +537,8 @@ def _read_public_identity(session: Session, site_url: str) -> dict[str, object]:
         image = _public_link(base_url, profile.hero_image_url)
     elif profile and profile.og_image:
         image = _public_link(base_url, profile.og_image)
+    icon = _public_link(base_url, profile.site_icon_url) if profile and profile.site_icon_url else ""
+    default_share_image = _public_link(base_url, profile.og_image) if profile and profile.og_image else ""
 
     return {
         "base_url": base_url,
@@ -488,6 +562,8 @@ def _read_public_identity(session: Session, site_url: str) -> dict[str, object]:
         "keywords": keywords,
         "same_as": _unique_links(base_url, same_as_values),
         "image": image,
+        "icon": icon,
+        "default_share_image": default_share_image,
         "diary_private": bool(feature_flags.get(DIARY_PRIVATE_FEATURE_FLAG, True)),
         "post_approval_enabled": bool(feature_flags.get(POST_ACCESS_APPROVAL_FEATURE_FLAG, True)),
     }
@@ -953,6 +1029,7 @@ def build_content_collection_seo_html(
         body_html=body_html,
         json_ld=json_ld,
         image=str(identity["image"]),
+        icon=str(identity["icon"]),
         author=real_name,
         keywords=list(identity["keywords"]) if isinstance(identity["keywords"], list) else [],
         app_shell_html=app_shell_html,
@@ -1000,6 +1077,7 @@ def build_content_detail_seo_html(
             body_html=body_html,
             json_ld=None,
             image=str(identity["image"]),
+            icon=str(identity["icon"]),
             author=real_name,
             app_shell_html=app_shell_html,
             shell_key=str(config["detail_shell_key"]),
@@ -1021,6 +1099,7 @@ def build_content_detail_seo_html(
     identity_keywords = identity["keywords"] if isinstance(identity["keywords"], list) else []
     meta_keywords = _unique_text([*[str(value) for value in identity_keywords], *[str(tag) for tag in tags]])
     schema_type = str(config["schema_type"])
+    detail_image = _first_content_image_url(base_url, getattr(item, "body", "")) or str(identity["default_share_image"])
 
     json_ld = _compact_json_ld(
         {
@@ -1033,7 +1112,7 @@ def build_content_detail_seo_html(
             "mainEntityOfPage": canonical_url,
             "datePublished": published_at.isoformat() if published_at else "",
             "dateModified": updated_at.isoformat() if updated_at else "",
-            "image": identity["image"],
+            "image": detail_image,
             "author": {
                 "@type": "Person",
                 "@id": f"{base_url}/#person",
@@ -1068,7 +1147,8 @@ def build_content_detail_seo_html(
         body_html=body_html,
         json_ld=json_ld,
         og_type="article",
-        image=str(identity["image"]),
+        image=detail_image,
+        icon=str(identity["icon"]),
         author=real_name,
         keywords=meta_keywords,
         app_shell_html=app_shell_html,
@@ -1237,6 +1317,7 @@ def build_friends_seo_html(
         body_html=body_html,
         json_ld=json_ld,
         image=str(identity["image"]),
+        icon=str(identity["icon"]),
         author=real_name,
         keywords=list(identity["keywords"]) if isinstance(identity["keywords"], list) else [],
         app_shell_html=app_shell_html,
@@ -1355,6 +1436,7 @@ def build_guestbook_seo_html(
         body_html=body_html,
         json_ld=json_ld,
         image=str(identity["image"]),
+        icon=str(identity["icon"]),
         author=real_name,
         keywords=list(identity["keywords"]) if isinstance(identity["keywords"], list) else [],
         app_shell_html=app_shell_html,
@@ -1372,6 +1454,7 @@ def _build_html_document(
     json_ld: object,
     og_type: str = "website",
     image: str = "",
+    icon: str = "",
     author: str = "",
     share_title: str = "",
     keywords: list[str] | None = None,
@@ -1407,6 +1490,8 @@ def _build_html_document(
                 f'<meta name="twitter:image" content="{_html_attr(image)}">',
             ]
         )
+    if icon:
+        head_markup_parts.append(f'<link rel="icon" href="{_html_attr(icon)}" sizes="any">')
     for rel_type, href, link_title in alternate_links or []:
         head_markup_parts.append(
             f'<link rel="alternate" type="{_html_attr(rel_type)}" href="{_html_attr(href)}" title="{_html_attr(link_title)}">'
@@ -1441,6 +1526,7 @@ def _strip_loading_head_tags(app_shell_html: str) -> str:
         r'\s*<meta\s+name=["\']author["\'][^>]*>',
         r'\s*<meta\s+name=["\']robots["\'][^>]*>',
         r'\s*<link\s+rel=["\']canonical["\'][^>]*>',
+        r'\s*<link\s+rel=["\'](?:shortcut\s+)?icon["\'][^>]*>',
         r'\s*<meta\s+property=["\']og:(?:title|description|type|site_name|image)["\'][^>]*>',
         r'\s*<meta\s+name=["\']twitter:(?:card|title|description|image)["\'][^>]*>',
     ]
@@ -1568,6 +1654,7 @@ def build_home_seo_html(
         body_html=body_html,
         json_ld=json_ld,
         image=str(identity["image"]),
+        icon=str(identity["icon"]),
         author=real_name,
         share_title=search_title or site_title,
         keywords=keywords,
@@ -1672,6 +1759,7 @@ def build_resume_seo_html(
         json_ld=json_ld,
         og_type="profile",
         image=str(identity["image"]),
+        icon=str(identity["icon"]),
         author=real_name,
         share_title=share_title,
         keywords=list(identity["keywords"]) if isinstance(identity["keywords"], list) else [],

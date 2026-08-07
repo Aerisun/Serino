@@ -4,6 +4,7 @@ import json
 import re
 
 from aerisun.core.db import get_session_factory
+from aerisun.domain.content.models import PostEntry
 from aerisun.domain.content.seo_service import build_robots_txt
 from aerisun.domain.diary_access.service import DIARY_PRIVATE_FEATURE_FLAG
 from aerisun.domain.site_config.models import ResumeBasics, SiteProfile
@@ -228,6 +229,21 @@ def test_home_seo_html_exposes_public_profile_in_app_shell(client):
     assert "This is the personal website, blog, and public work archive for Felix (Aerisun)." not in r.text
 
 
+def test_seo_html_statically_exposes_configured_favicon(client):
+    factory = get_session_factory()
+    with factory() as session:
+        profile = session.query(SiteProfile).one()
+        profile.site_icon_url = "/media/site-icon.svg"
+        session.commit()
+
+    for path in ("/", "/posts/from-zero-design-system"):
+        response = client.get(path)
+
+        assert response.status_code == 200
+        assert '<link rel="icon" href="http://localhost:8080/media/site-icon.svg" sizes="any">' in response.text
+        assert '<link rel="icon" href="data:,"' not in response.text
+
+
 def test_identity_name_uses_site_profile_and_image_uses_resume_profile(client):
     factory = get_session_factory()
     with factory() as session:
@@ -274,6 +290,78 @@ def test_identity_image_falls_back_to_hero_then_homepage_static_image(client):
     assert (
         '<meta property="og:image" content="http://localhost:8080/media/homepage-static.webp">' in static_response.text
     )
+
+
+def test_post_seo_prefers_first_body_image_over_homepage_static_image(client):
+    factory = get_session_factory()
+    with factory() as session:
+        profile = session.query(SiteProfile).one()
+        profile.og_image = "/media/homepage-static.webp"
+        resume = session.query(ResumeBasics).one()
+        resume.profile_image_url = "/media/resume-only.webp"
+        post = session.query(PostEntry).filter(PostEntry.slug == "from-zero-design-system").one()
+        post.body = "正文开头。\n\n![文章首图](/media/article-first.webp)\n\n![第二张图](/media/article-second.webp)"
+        session.commit()
+
+    response = client.get("/posts/from-zero-design-system")
+    article_json_ld_match = re.search(r'<script type="application/ld\+json">(.+?)</script>', response.text)
+    assert article_json_ld_match is not None
+    article_json_ld = json.loads(article_json_ld_match.group(1))
+
+    expected_image = "http://localhost:8080/media/article-first.webp"
+    assert f'<meta property="og:image" content="{expected_image}">' in response.text
+    assert article_json_ld["image"] == expected_image
+
+
+def test_post_seo_without_body_image_uses_homepage_static_image_not_resume_image(client):
+    factory = get_session_factory()
+    with factory() as session:
+        profile = session.query(SiteProfile).one()
+        profile.og_image = "/media/homepage-static.webp"
+        profile.hero_image_url = "/media/homepage-person.webp"
+        resume = session.query(ResumeBasics).one()
+        resume.profile_image_url = "/media/resume-only.webp"
+        post = session.query(PostEntry).filter(PostEntry.slug == "from-zero-design-system").one()
+        post.body = "这篇文章没有图片。"
+        session.commit()
+
+    response = client.get("/posts/from-zero-design-system")
+    article_json_ld_match = re.search(r'<script type="application/ld\+json">(.+?)</script>', response.text)
+    assert article_json_ld_match is not None
+    article_json_ld = json.loads(article_json_ld_match.group(1))
+
+    expected_image = "http://localhost:8080/media/homepage-static.webp"
+    assert f'<meta property="og:image" content="{expected_image}">' in response.text
+    assert article_json_ld["image"] == expected_image
+    assert '<meta property="og:image" content="http://localhost:8080/media/resume-only.webp">' not in response.text
+
+
+def test_post_seo_recognizes_reference_and_html_body_images(client):
+    cases = [
+        (
+            '![引用首图][cover]\n\n[cover]: /media/reference-cover.webp "封面"',
+            "http://localhost:8080/media/reference-cover.webp",
+        ),
+        (
+            '<img alt="HTML 首图" src="https://cdn.example.com/html-cover.webp">',
+            "https://cdn.example.com/html-cover.webp",
+        ),
+        (
+            "![不可公开复用的图片](data:image/png;base64,AAAA)\n\n![有效图片](/media/safe-cover.webp)",
+            "http://localhost:8080/media/safe-cover.webp",
+        ),
+    ]
+    factory = get_session_factory()
+
+    for body, expected_image in cases:
+        with factory() as session:
+            post = session.query(PostEntry).filter(PostEntry.slug == "from-zero-design-system").one()
+            post.body = body
+            session.commit()
+
+        response = client.get("/posts/from-zero-design-system")
+
+        assert f'<meta property="og:image" content="{expected_image}">' in response.text
 
 
 def test_home_seo_html_falls_back_to_homepage_name_when_bilingual_identity_is_incomplete(client):

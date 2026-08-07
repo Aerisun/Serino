@@ -56,7 +56,7 @@ LINK_PREVIEW_CACHE_TTL_SECONDS = 900.0
 LINK_PREVIEW_MAX_BYTES = 512 * 1024
 LINK_PREVIEW_MAX_REDIRECTS = 4
 LINK_PREVIEW_IMAGE_MAX_BYTES = 5 * 1024 * 1024
-LINK_PREVIEW_USER_AGENT = "Mozilla/5.0 (compatible; AerisunLinkPreview/1.0; +https://aerisun.example)"
+LINK_PREVIEW_USER_AGENT = "Mozilla/5.0 (compatible; AerisunLinkPreviewBot/1.0; +https://aerisun.example)"
 GITHUB_API_ACCEPT = "application/vnd.github+json"
 GITHUB_API_VERSION = "2022-11-28"
 _GITHUB_PROFILE_LOGIN_PATTERN = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$")
@@ -393,6 +393,7 @@ def _extract_link_preview(url: str) -> LinkPreviewRead:
     image_width = _parse_positive_int(meta.get("og:image:width") or meta.get("twitter:image:width"))
     image_height = _parse_positive_int(meta.get("og:image:height") or meta.get("twitter:image:height"))
     icon_url = _resolve_link_preview_asset(parser.icon_href, base_url=final_url)
+    is_loading_shell = title == "站点加载中" and description == "站点配置加载中。"
 
     return LinkPreviewRead(
         url=normalized_url,
@@ -407,8 +408,8 @@ def _extract_link_preview(url: str) -> LinkPreviewRead:
         card_type="generic",
         image_mode="cover",
         icon_url=icon_url,
-        available=bool(title or description or image_url or icon_url),
-        error=None,
+        available=not is_loading_shell and bool(title or description or image_url or icon_url),
+        error="目标页面仅返回站点加载占位信息。" if is_loading_shell else None,
     )
 
 
@@ -423,8 +424,9 @@ def get_site_link_preview(url: str) -> LinkPreviewRead:
 
     preview = _fetch_github_profile_preview(normalized_url) or _extract_link_preview(normalized_url)
 
-    with _LINK_PREVIEW_CACHE_LOCK:
-        _LINK_PREVIEW_CACHE[normalized_url] = (now + LINK_PREVIEW_CACHE_TTL_SECONDS, preview)
+    if preview.available:
+        with _LINK_PREVIEW_CACHE_LOCK:
+            _LINK_PREVIEW_CACHE[normalized_url] = (now + LINK_PREVIEW_CACHE_TTL_SECONDS, preview)
 
     return preview
 
