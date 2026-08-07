@@ -142,3 +142,38 @@ Expected: all workspace checks pass. If an unrelated pre-existing in-progress ch
 **Step 4: Preserve the user's existing uncommitted work**
 
 Do not create an implementation commit automatically: `AssetsPage.tsx` and its test already contain the user's broader uncommitted resource work. Report the exact files and hunks changed for this layout fix so the user can include them in the eventual feature commit without accidentally splitting or capturing unrelated work.
+
+### Task 4: Show notes on two lines and center selected column headers
+
+**Files:**
+- Modify: `admin/src/components/DataTable.tsx:12-135`
+- Modify: `admin/src/pages/assets/AssetsPage.tsx:616-672`
+- Test: `admin/tests/assets-page.test.tsx:162-212`
+
+**Step 1: Extend the existing layout regression test**
+
+Set a long note in the existing long-filename layout test and assert that its rendered element uses `line-clamp-2`, `text-[13px]`, and `leading-5`, while no longer using the one-line `truncate` class. Assert that the “文件名”“备注” headers and cells remain left-aligned, while the “分类” header and cell use `text-center`.
+
+**Step 2: Run the focused test to verify RED**
+
+Run:
+
+```bash
+pnpm -C admin exec vitest run tests/assets-page.test.tsx
+```
+
+Expected: the new assertions fail because notes are still one-line `text-sm` content and the category column is not centered.
+
+**Step 3: Apply the approved resource-list text treatment**
+
+Keep filename and note columns left-aligned, add `text-center` to the category column, and replace the note's one-line classes with:
+
+```tsx
+className="max-w-full line-clamp-2 break-words text-[13px] leading-5 text-muted-foreground"
+```
+
+Keep the existing `title` and empty-note fallback, and center only the `-` placeholder when the note is empty.
+
+**Step 4: Verify GREEN and run admin checks**
+
+Run the focused test, then the complete admin tests, typecheck, lint, and production build. Inspect the page in a real browser to confirm two-line notes remain within the row and only the requested headers are centered.
