@@ -7,7 +7,7 @@
 
 export interface NavChildRead {
   /** Child navigation label */
-  label: unknown;
+  label: string;
   /** Child navigation URL */
-  href: unknown;
+  href: string;
 }

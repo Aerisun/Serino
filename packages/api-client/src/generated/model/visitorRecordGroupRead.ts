@@ -4,15 +4,16 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { VisitorRecordRead } from './visitorRecordRead';
 
 export interface VisitorRecordGroupRead {
-  id: unknown;
-  ip_address: unknown;
-  record_count: unknown;
-  newest_record: unknown;
-  oldest_record: unknown;
-  newest_visited_at: unknown;
-  oldest_visited_at: unknown;
-  ok_count?: unknown;
-  error_count?: unknown;
+  id: string;
+  ip_address: string;
+  record_count: number;
+  newest_record: VisitorRecordRead;
+  oldest_record: VisitorRecordRead;
+  newest_visited_at: string;
+  oldest_visited_at: string;
+  ok_count?: number;
+  error_count?: number;
 }

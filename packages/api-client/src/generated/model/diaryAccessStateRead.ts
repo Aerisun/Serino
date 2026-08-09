@@ -6,12 +6,12 @@
  */
 
 export interface DiaryAccessStateRead {
-  authenticated: unknown;
-  diary_private_enabled: unknown;
-  has_access: unknown;
-  owner_name: unknown;
-  mail_feedback_available?: unknown;
-  access_expires_at?: unknown;
-  remaining_seconds?: unknown;
-  pending_request_id?: unknown;
+  authenticated: boolean;
+  diary_private_enabled: boolean;
+  has_access: boolean;
+  owner_name: string;
+  mail_feedback_available?: boolean;
+  access_expires_at?: string | null;
+  remaining_seconds?: number | null;
+  pending_request_id?: string | null;
 }

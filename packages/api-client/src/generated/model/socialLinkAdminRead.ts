@@ -7,21 +7,21 @@
 
 export interface SocialLinkAdminRead {
   /** Unique social link identifier */
-  id: unknown;
+  id: string;
   /** Associated site profile ID */
-  site_profile_id: unknown;
+  site_profile_id: string;
   /** Social platform name */
-  name: unknown;
+  name: string;
   /** Social profile URL */
-  href: unknown;
+  href: string;
   /** Icon identifier */
-  icon_key: unknown;
+  icon_key: string;
   /** Display location */
-  placement: unknown;
+  placement: string;
   /** Sort order */
-  order_index: unknown;
+  order_index: number;
   /** Creation timestamp */
-  created_at: unknown;
+  created_at: string;
   /** Last update timestamp */
-  updated_at: unknown;
+  updated_at: string;
 }

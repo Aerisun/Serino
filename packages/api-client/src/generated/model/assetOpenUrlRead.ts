@@ -6,6 +6,6 @@
  */
 
 export interface AssetOpenUrlRead {
-  url: unknown;
-  expires_at?: unknown;
+  url: string;
+  expires_at?: string | null;
 }

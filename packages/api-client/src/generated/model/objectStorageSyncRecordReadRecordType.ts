@@ -10,6 +10,7 @@ export type ObjectStorageSyncRecordReadRecordType = typeof ObjectStorageSyncReco
 
 export const ObjectStorageSyncRecordReadRecordType = {
   mirror: 'mirror',
+  local_delete: 'local_delete',
   remote_delete: 'remote_delete',
   remote_upload: 'remote_upload',
 } as const;

@@ -11,7 +11,7 @@ class ModelBase(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     @field_serializer("*", when_used="json", check_fields=False)
-    def _serialize_datetime_fields(self, value: object) -> object:
+    def _serialize_datetime_fields(self, value: object):
         if isinstance(value, datetime):
             return format_beijing_iso_datetime(value)
         return value

@@ -7,7 +7,7 @@
 
 export interface PoemRead {
   /** Poem text content */
-  content: unknown;
+  content: string;
   /** Display order */
-  order_index: unknown;
+  order_index: number;
 }

@@ -4,12 +4,14 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { AgentWorkflowCatalogTriggerTypeReadConfigSchema } from './agentWorkflowCatalogTriggerTypeReadConfigSchema';
+import type { AgentWorkflowCatalogTriggerTypeReadExampleConfig } from './agentWorkflowCatalogTriggerTypeReadExampleConfig';
 
 export interface AgentWorkflowCatalogTriggerTypeRead {
-  type: unknown;
-  label: unknown;
-  description?: unknown;
-  config_schema?: unknown;
-  example_config?: unknown;
-  supports_target_types?: unknown;
+  type: string;
+  label: string;
+  description?: string;
+  config_schema?: AgentWorkflowCatalogTriggerTypeReadConfigSchema;
+  example_config?: AgentWorkflowCatalogTriggerTypeReadExampleConfig;
+  supports_target_types?: string[];
 }

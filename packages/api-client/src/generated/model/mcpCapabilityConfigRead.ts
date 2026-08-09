@@ -7,15 +7,15 @@
 
 export interface McpCapabilityConfigRead {
   /** Stable capability identifier */
-  id: unknown;
+  id: string;
   /** Capability name */
-  name: unknown;
+  name: string;
   /** Capability kind: tool or resource */
-  kind: unknown;
+  kind: string;
   /** Human-readable capability description */
-  description: unknown;
+  description: string;
   /** Scopes required to access this capability */
-  required_scopes?: unknown;
+  required_scopes?: string[];
   /** Whether this capability is enabled for MCP exposure */
-  enabled: unknown;
+  enabled: boolean;
 }

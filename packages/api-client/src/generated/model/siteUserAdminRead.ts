@@ -4,26 +4,28 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { SiteUserAdminReadAuthMode } from './siteUserAdminReadAuthMode';
+import type { SiteUserOAuthAccountAdminRead } from './siteUserOAuthAccountAdminRead';
 
 export interface SiteUserAdminRead {
   /** Site user id */
-  id: unknown;
+  id: string;
   /** Login email identifier */
-  email: unknown;
+  email: string;
   /** Current display name */
-  display_name: unknown;
+  display_name: string;
   /** Current avatar URL */
-  avatar_url: unknown;
+  avatar_url: string;
   /** Primary auth provider */
-  primary_auth_provider: unknown;
+  primary_auth_provider: string;
   /** Whether this user is email-only or has OAuth bindings */
-  auth_mode: unknown;
+  auth_mode: SiteUserAdminReadAuthMode;
   /** Linked OAuth accounts */
-  oauth_accounts?: unknown;
+  oauth_accounts?: SiteUserOAuthAccountAdminRead[];
   /** Creation time */
-  created_at: unknown;
+  created_at: string;
   /** Last update time */
-  updated_at: unknown;
+  updated_at: string;
   /** Last login time */
-  last_login_at?: unknown;
+  last_login_at?: string | null;
 }

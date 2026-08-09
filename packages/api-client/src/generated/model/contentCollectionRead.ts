@@ -4,12 +4,13 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { ContentEntryRead } from './contentEntryRead';
 
 export interface ContentCollectionRead {
   /** List of content entries */
-  items: unknown;
+  items: ContentEntryRead[];
   /** Total number of matching entries */
-  total?: unknown;
+  total?: number;
   /** Whether more entries are available */
-  has_more?: unknown;
+  has_more?: boolean;
 }

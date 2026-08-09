@@ -5,6 +5,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AgentWorkflowRunCreateWriteContextPayload } from './agentWorkflowRunCreateWriteContextPayload';
+import type { AgentWorkflowRunCreateWriteExecutionMode } from './agentWorkflowRunCreateWriteExecutionMode';
 import type { AgentWorkflowRunCreateWriteInputPayload } from './agentWorkflowRunCreateWriteInputPayload';
 
 export interface AgentWorkflowRunCreateWrite {
@@ -14,5 +15,7 @@ export interface AgentWorkflowRunCreateWrite {
   target_id?: string | null;
   context_payload?: AgentWorkflowRunCreateWriteContextPayload;
   input_payload?: AgentWorkflowRunCreateWriteInputPayload;
+  idempotency_key?: string | null;
+  execution_mode?: AgentWorkflowRunCreateWriteExecutionMode;
   execute_immediately?: boolean;
 }

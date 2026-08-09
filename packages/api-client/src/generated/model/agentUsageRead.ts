@@ -4,30 +4,38 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { AgentSkillMapRead } from './agentSkillMapRead';
+import type { AgentUsageAuthRead } from './agentUsageAuthRead';
+import type { AgentUsageEndpointRead } from './agentUsageEndpointRead';
+import type { AgentUsageMcpRead } from './agentUsageMcpRead';
+import type { AgentUsagePlaybookRead } from './agentUsagePlaybookRead';
+import type { AgentUsageQuickstartRead } from './agentUsageQuickstartRead';
+import type { AgentUsageScopeGuideRead } from './agentUsageScopeGuideRead';
+import type { AgentUsageTroubleshootingRead } from './agentUsageTroubleshootingRead';
 
 export interface AgentUsageRead {
   /** Usage schema version */
-  schema_version: unknown;
+  schema_version: string;
   /** Server generation timestamp */
-  generated_at: unknown;
+  generated_at: string;
   /** Usage document name */
-  name: unknown;
+  name: string;
   /** Primary goal of this usage document */
-  objective: unknown;
+  objective: string;
   /** Authentication instructions */
-  auth: unknown;
+  auth: AgentUsageAuthRead;
   /** Key endpoints agents should use */
-  endpoints?: unknown;
+  endpoints?: AgentUsageEndpointRead[];
   /** Scope guidance for current API key */
-  scope_guide: unknown;
+  scope_guide: AgentUsageScopeGuideRead;
   /** Copy-pasteable first-run path */
-  quickstart: unknown;
+  quickstart: AgentUsageQuickstartRead;
   /** Task-oriented execution playbooks */
-  playbooks?: unknown;
+  playbooks?: AgentUsagePlaybookRead[];
   /** MCP capability summary */
-  mcp: unknown;
+  mcp: AgentUsageMcpRead;
   /** Common failures and recovery actions */
-  troubleshooting?: unknown;
+  troubleshooting?: AgentUsageTroubleshootingRead[];
   /** Local agent skill maps */
-  skill_maps?: unknown;
+  skill_maps?: AgentSkillMapRead[];
 }

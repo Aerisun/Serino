@@ -4,14 +4,15 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { CommentAdminRead } from './commentAdminRead';
 
 export interface PaginatedResponseCommentAdminRead {
   /** Page of result items */
-  items: unknown;
+  items: CommentAdminRead[];
   /** Total number of items matching the query */
-  total: unknown;
+  total: number;
   /** Current page number (1-based) */
-  page: unknown;
+  page: number;
   /** Number of items per page */
-  page_size: unknown;
+  page_size: number;
 }

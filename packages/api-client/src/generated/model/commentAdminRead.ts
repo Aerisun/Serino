@@ -6,22 +6,22 @@
  */
 
 export interface CommentAdminRead {
-  id: unknown;
-  content_type: unknown;
-  content_slug: unknown;
-  parent_id: unknown;
-  author_name: unknown;
-  author_email: unknown;
+  id: string;
+  content_type: string;
+  content_slug: string;
+  parent_id: string | null;
+  author_name: string;
+  author_email: string | null;
   /** Normalized auth provider */
-  auth_provider?: unknown;
-  body: unknown;
-  status: unknown;
+  auth_provider?: string | null;
+  body: string;
+  status: string;
   /** Whether reply feedback emails are enabled */
-  feedback_enabled?: unknown;
+  feedback_enabled?: boolean;
   /** Whether an admin has read this moderation item */
-  is_read: unknown;
+  is_read: boolean;
   /** Reason when a public self-delete rejected this item */
-  deletion_reason?: unknown;
-  created_at: unknown;
-  updated_at: unknown;
+  deletion_reason?: string | null;
+  created_at: string;
+  updated_at: string;
 }

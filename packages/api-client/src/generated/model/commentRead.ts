@@ -7,35 +7,35 @@
 
 export interface CommentRead {
   /** Unique comment identifier */
-  id: unknown;
+  id: string;
   /** Parent comment ID for threaded replies */
-  parent_id: unknown;
+  parent_id: string | null;
   /** Comment author display name */
-  author_name: unknown;
+  author_name: string;
   /** Comment body text */
-  body: unknown;
+  body: string;
   /** Moderation status */
-  status: unknown;
+  status: string;
   /** Comment creation timestamp */
-  created_at: unknown;
+  created_at: string;
   /** Avatar identifier or key */
-  avatar?: unknown;
+  avatar?: string | null;
   /** Full avatar image URL */
-  avatar_url?: unknown;
+  avatar_url?: string | null;
   /** Number of likes on this comment */
-  like_count?: unknown;
+  like_count?: number;
   /** Whether the current user liked this comment */
-  liked?: unknown;
+  liked?: boolean;
   /** Whether the commenter is the content author */
-  is_author?: unknown;
+  is_author?: boolean;
   /** Whether the current user owns this comment */
-  owned_by_current_user?: unknown;
+  owned_by_current_user?: boolean;
   /** Whether the current user can delete this comment */
-  can_delete?: unknown;
+  can_delete?: boolean;
   /** Whether reply feedback emails are enabled */
-  feedback_enabled?: unknown;
+  feedback_enabled?: boolean;
   /** Whether the current user can update reply feedback for this comment */
-  can_update_feedback?: unknown;
+  can_update_feedback?: boolean;
   /** Nested reply comments */
-  replies?: unknown;
+  replies?: CommentRead[];
 }

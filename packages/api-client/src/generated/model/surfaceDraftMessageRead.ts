@@ -6,7 +6,7 @@
  */
 
 export interface SurfaceDraftMessageRead {
-  role: unknown;
-  content: unknown;
-  created_at: unknown;
+  role: string;
+  content: string;
+  created_at: string;
 }

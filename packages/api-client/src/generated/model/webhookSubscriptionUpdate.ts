@@ -13,6 +13,8 @@ export interface WebhookSubscriptionUpdate {
   secret?: string | null;
   timeout_seconds?: number | null;
   max_attempts?: number | null;
+  allow_private_network?: boolean | null;
   status?: string | null;
   headers?: WebhookSubscriptionUpdateHeaders;
+  clear_secret?: boolean;
 }

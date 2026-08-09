@@ -4,44 +4,45 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { CommunitySurfaceRead } from './communitySurfaceRead';
 
 export interface CommunityConfigAdminRead {
   /** Unique community config identifier */
-  id: unknown;
+  id: string;
   /** Comment system provider */
-  provider: unknown;
+  provider: string;
   /** Comment server URL */
-  server_url: unknown;
+  server_url: string;
   /** Comment-enabled surfaces */
-  surfaces: unknown;
+  surfaces: CommunitySurfaceRead[];
   /** Commenter metadata fields */
-  meta: unknown;
+  meta: string[];
   /** Required metadata fields */
-  required_meta: unknown;
+  required_meta: string[];
   /** Emoji preset CDN URLs */
-  emoji_presets: unknown;
+  emoji_presets: string[];
   /** Image uploads allowed */
-  image_uploader: unknown;
+  image_uploader: boolean;
   /** Whether email login is allowed for commenting */
-  anonymous_enabled: unknown;
+  anonymous_enabled: boolean;
   /** Comment moderation mode */
-  moderation_mode: unknown;
+  moderation_mode: string;
   /** Default sort order */
-  default_sorting: unknown;
+  default_sorting: string;
   /** Initial comments loaded per batch */
-  page_size: unknown;
+  page_size: number;
   /** Max upload image size in bytes */
-  image_max_bytes?: unknown;
+  image_max_bytes?: number | null;
   /** Allowed comment image uploads per rate limit window */
-  comment_image_rate_limit_count: unknown;
+  comment_image_rate_limit_count: number;
   /** Comment image upload rate limit window in minutes */
-  comment_image_rate_limit_window_minutes: unknown;
+  comment_image_rate_limit_window_minutes: number;
   /** Avatar helper text */
-  avatar_helper_copy: unknown;
+  avatar_helper_copy: string;
   /** Waline migration state */
-  migration_state: unknown;
+  migration_state: string;
   /** Creation timestamp */
-  created_at: unknown;
+  created_at: string;
   /** Last update timestamp */
-  updated_at: unknown;
+  updated_at: string;
 }

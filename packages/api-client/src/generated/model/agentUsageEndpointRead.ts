@@ -7,15 +7,15 @@
 
 export interface AgentUsageEndpointRead {
   /** Stable endpoint identifier */
-  id: unknown;
+  id: string;
   /** Absolute endpoint URL */
-  url: unknown;
+  url: string;
   /** HTTP method */
-  method?: unknown;
+  method?: string;
   /** What this endpoint is for */
-  description: unknown;
+  description: string;
   /** Required request headers */
-  required_headers?: unknown;
+  required_headers?: string[];
   /** Expected success status codes */
-  expected_status?: unknown;
+  expected_status?: number[];
 }

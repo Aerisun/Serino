@@ -4,13 +4,14 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { DiaryAccessRequestAdminRead } from './diaryAccessRequestAdminRead';
 
 export interface DiaryAccessRequestAdminList {
-  items: unknown;
-  total: unknown;
-  page: unknown;
-  page_size: unknown;
-  people_total: unknown;
-  pending_total: unknown;
-  authorized_total: unknown;
+  items: DiaryAccessRequestAdminRead[];
+  total: number;
+  page: number;
+  page_size: number;
+  people_total: number;
+  pending_total: number;
+  authorized_total: number;
 }

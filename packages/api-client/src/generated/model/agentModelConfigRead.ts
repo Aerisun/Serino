@@ -4,15 +4,14 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { AgentModelConfigReadPrimarySource } from './agentModelConfigReadPrimarySource';
+import type { ChatGPTModelConfigRead } from './chatGPTModelConfigRead';
+import type { OpenAICompatibleModelConfigRead } from './openAICompatibleModelConfigRead';
 
 export interface AgentModelConfigRead {
-  enabled?: unknown;
-  provider?: unknown;
-  base_url?: unknown;
-  model?: unknown;
-  api_key?: unknown;
-  temperature?: unknown;
-  timeout_seconds?: unknown;
-  advisory_prompt?: unknown;
-  is_ready?: unknown;
+  schema_version?: number;
+  primary_source?: AgentModelConfigReadPrimarySource;
+  chatgpt_oauth?: ChatGPTModelConfigRead;
+  openai_compatible?: OpenAICompatibleModelConfigRead;
+  is_ready?: boolean;
 }

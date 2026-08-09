@@ -4,13 +4,14 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { AgentWorkflowCatalogPortReadDataSchema } from './agentWorkflowCatalogPortReadDataSchema';
 
 export interface AgentWorkflowCatalogPortRead {
-  id: unknown;
-  label: unknown;
-  side: unknown;
-  description?: unknown;
-  match_values?: unknown;
-  data_schema?: unknown;
-  required?: unknown;
+  id: string;
+  label: string;
+  side: string;
+  description?: string;
+  match_values?: string[];
+  data_schema?: AgentWorkflowCatalogPortReadDataSchema;
+  required?: boolean;
 }

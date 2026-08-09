@@ -6,13 +6,13 @@
  */
 
 export interface PostAccessRequestRead {
-  id: unknown;
-  post_id: unknown;
-  reason: unknown;
-  status: unknown;
-  has_access: unknown;
-  access_expires_at?: unknown;
-  remaining_seconds?: unknown;
-  created_at: unknown;
-  updated_at: unknown;
+  id: string;
+  post_id: string;
+  reason: string;
+  status: string;
+  has_access: boolean;
+  access_expires_at?: string | null;
+  remaining_seconds?: number | null;
+  created_at: string;
+  updated_at: string;
 }

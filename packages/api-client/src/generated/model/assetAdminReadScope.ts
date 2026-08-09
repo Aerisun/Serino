@@ -9,6 +9,8 @@ export type AssetAdminReadScope = typeof AssetAdminReadScope[keyof typeof AssetA
 
 
 export const AssetAdminReadScope = {
-  system: 'system',
   user: 'user',
+  article: 'article',
+  visitor: 'visitor',
+  system: 'system',
 } as const;

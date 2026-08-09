@@ -6,20 +6,20 @@
  */
 
 export interface DiaryAccessRequestAdminRead {
-  id: unknown;
-  site_user_id: unknown;
-  visitor_email: unknown;
-  visitor_display_name: unknown;
-  visitor_avatar_url: unknown;
-  visitor_auth_provider: unknown;
-  visitor_oauth_providers: unknown;
-  reason: unknown;
-  status: unknown;
-  has_access: unknown;
-  access_granted_at?: unknown;
-  access_expires_at?: unknown;
-  access_revoked_at?: unknown;
-  remaining_seconds?: unknown;
-  created_at: unknown;
-  updated_at: unknown;
+  id: string;
+  site_user_id: string;
+  visitor_email: string;
+  visitor_display_name: string;
+  visitor_avatar_url: string;
+  visitor_auth_provider: string;
+  visitor_oauth_providers: string[];
+  reason: string;
+  status: string;
+  has_access: boolean;
+  access_granted_at?: string | null;
+  access_expires_at?: string | null;
+  access_revoked_at?: string | null;
+  remaining_seconds?: number | null;
+  created_at: string;
+  updated_at: string;
 }

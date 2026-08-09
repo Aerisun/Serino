@@ -4,16 +4,19 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { PageCollectionRead } from './pageCollectionRead';
+import type { ResumeRead } from './resumeRead';
+import type { SiteConfigRead } from './siteConfigRead';
 
 export interface SiteBootstrapRead {
   /** Stable revision hash for the current public site bootstrap payload */
-  revision: unknown;
+  revision: string;
   /** 上海时间戳，表示当前站点引导数据生成时间 */
-  generated_at: unknown;
+  generated_at: string;
   /** Site profile and navigation bundle */
-  site: unknown;
+  site: SiteConfigRead;
   /** Page copy bundle */
-  pages: unknown;
+  pages: PageCollectionRead;
   /** Resume basics bundle */
-  resume: unknown;
+  resume: ResumeRead;
 }

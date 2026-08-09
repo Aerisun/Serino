@@ -7,47 +7,47 @@
 
 export interface ContentSummaryRead {
   /** URL-friendly unique identifier */
-  slug: unknown;
+  slug: string;
   /** Content display title */
-  title: unknown;
+  title: string;
   /** Brief summary or excerpt */
-  summary: unknown;
+  summary: string | null;
   /** List of tag names */
-  tags: unknown;
+  tags: string[];
   /** Visibility level */
-  visibility: unknown;
+  visibility: string;
   /** Publication timestamp */
-  published_at: unknown;
+  published_at: string | null;
   /** Creation timestamp */
-  created_at: unknown;
+  created_at: string;
   /** Last update timestamp */
-  updated_at: unknown;
+  updated_at: string;
   /** Content category */
-  category?: unknown;
+  category?: string | null;
   /** Estimated reading time */
-  read_time?: unknown;
+  read_time?: string | null;
   /** Formatted display date string */
-  display_date?: unknown;
+  display_date?: string | null;
   /** Relative time string (e.g. 3 days ago) */
-  relative_date?: unknown;
+  relative_date?: string | null;
   /** Total page views */
-  view_count?: unknown;
+  view_count?: number | null;
   /** Number of comments */
-  comment_count?: unknown;
+  comment_count?: number | null;
   /** Number of likes */
-  like_count?: unknown;
+  like_count?: number | null;
   /** Number of reposts */
-  repost_count?: unknown;
+  repost_count?: number | null;
   /** Author mood (diary-specific) */
-  mood?: unknown;
+  mood?: string | null;
   /** Weather description (diary-specific) */
-  weather?: unknown;
+  weather?: string | null;
   /** Associated poem text */
-  poem?: unknown;
+  poem?: string | null;
   /** Original author name */
-  author?: unknown;
+  author?: string | null;
   /** Source URL or reference */
-  source?: unknown;
+  source?: string | null;
   /** Whether viewing this public post requires approval */
-  requires_approval?: unknown;
+  requires_approval?: boolean;
 }

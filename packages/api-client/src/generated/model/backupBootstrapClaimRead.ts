@@ -4,24 +4,25 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { BackupBootstrapClaimReadStatus } from './backupBootstrapClaimReadStatus';
 
 export interface BackupBootstrapClaimRead {
-  id: unknown;
-  status: unknown;
-  remote_host: unknown;
-  remote_port: unknown;
-  remote_path: unknown;
-  remote_username: unknown;
-  site_slug: unknown;
-  credential_ref: unknown;
-  public_key_fingerprint: unknown;
-  expires_at: unknown;
-  used_at?: unknown;
-  completed_at?: unknown;
-  revoked_at?: unknown;
-  last_error?: unknown;
-  setup_url?: unknown;
-  setup_command?: unknown;
-  created_at: unknown;
-  updated_at: unknown;
+  id: string;
+  status: BackupBootstrapClaimReadStatus;
+  remote_host: string;
+  remote_port: number;
+  remote_path: string;
+  remote_username: string;
+  site_slug: string;
+  credential_ref: string;
+  public_key_fingerprint: string;
+  expires_at: string;
+  used_at?: string | null;
+  completed_at?: string | null;
+  revoked_at?: string | null;
+  last_error?: string | null;
+  setup_url?: string | null;
+  setup_command?: string | null;
+  created_at: string;
+  updated_at: string;
 }

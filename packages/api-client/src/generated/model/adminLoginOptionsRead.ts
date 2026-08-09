@@ -6,6 +6,6 @@
  */
 
 export interface AdminLoginOptionsRead {
-  oauth_providers?: unknown;
-  email_enabled?: unknown;
+  oauth_providers?: string[];
+  email_enabled?: boolean;
 }

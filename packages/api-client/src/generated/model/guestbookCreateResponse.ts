@@ -4,10 +4,11 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { GuestbookEntryRead } from './guestbookEntryRead';
 
 export interface GuestbookCreateResponse {
   /** Created guestbook entry */
-  item: unknown;
+  item: GuestbookEntryRead;
   /** Whether the entry was auto-approved */
-  accepted: unknown;
+  accepted: boolean;
 }

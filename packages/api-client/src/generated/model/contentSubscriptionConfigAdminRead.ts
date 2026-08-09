@@ -4,60 +4,61 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { ContentSubscriptionConfigAdminReadSmtpAuthMode } from './contentSubscriptionConfigAdminReadSmtpAuthMode';
 
 export interface ContentSubscriptionConfigAdminRead {
   /** Subscription config id */
-  id: unknown;
+  id: string;
   /** Whether public subscription is enabled */
-  enabled: unknown;
+  enabled: boolean;
   /** SMTP authentication mode */
-  smtp_auth_mode: unknown;
+  smtp_auth_mode: ContentSubscriptionConfigAdminReadSmtpAuthMode;
   /** SMTP host */
-  smtp_host: unknown;
+  smtp_host: string;
   /** SMTP port */
-  smtp_port: unknown;
+  smtp_port: number;
   /** SMTP username */
-  smtp_username: unknown;
+  smtp_username: string;
   /** SMTP password */
-  smtp_password: unknown;
+  smtp_password: string;
   /** Microsoft OAuth tenant identifier */
-  smtp_oauth_tenant: unknown;
+  smtp_oauth_tenant: string;
   /** Microsoft OAuth client id */
-  smtp_oauth_client_id: unknown;
+  smtp_oauth_client_id: string;
   /** Microsoft OAuth client secret */
-  smtp_oauth_client_secret: unknown;
+  smtp_oauth_client_secret: string;
   /** Microsoft OAuth refresh token */
-  smtp_oauth_refresh_token: unknown;
+  smtp_oauth_refresh_token: string;
   /** SMTP sender email */
-  smtp_from_email: unknown;
+  smtp_from_email: string;
   /** SMTP sender display name */
-  smtp_from_name: unknown;
+  smtp_from_name: string;
   /** SMTP reply-to email */
-  smtp_reply_to: unknown;
+  smtp_reply_to: string;
   /** Whether STARTTLS is enabled */
-  smtp_use_tls: unknown;
+  smtp_use_tls: boolean;
   /** Whether implicit SSL is enabled */
-  smtp_use_ssl: unknown;
+  smtp_use_ssl: boolean;
   /** Whether SMTP test delivery succeeded for current settings */
-  smtp_test_passed: unknown;
+  smtp_test_passed: boolean;
   /** Last successful SMTP test timestamp */
-  smtp_tested_at: unknown;
+  smtp_tested_at: string | null;
   /** Content types users can subscribe to */
-  allowed_content_types: unknown;
+  allowed_content_types: string[];
   /** Email subject template */
-  mail_subject_template: unknown;
+  mail_subject_template: string;
   /** Email body template */
-  mail_body_template: unknown;
+  mail_body_template: string;
   /** Whether comment reply feedback emails are enabled */
-  comment_feedback_enabled: unknown;
+  comment_feedback_enabled: boolean;
   /** Comment feedback email subject template */
-  comment_feedback_subject_template: unknown;
+  comment_feedback_subject_template: string;
   /** Comment feedback email body template */
-  comment_feedback_body_template: unknown;
+  comment_feedback_body_template: string;
   /** Number of active subscribers */
-  subscriber_count?: unknown;
+  subscriber_count?: number;
   /** Creation time */
-  created_at: unknown;
+  created_at: string;
   /** Last update time */
-  updated_at: unknown;
+  updated_at: string;
 }

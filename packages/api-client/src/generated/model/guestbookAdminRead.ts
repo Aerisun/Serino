@@ -6,18 +6,18 @@
  */
 
 export interface GuestbookAdminRead {
-  id: unknown;
-  name: unknown;
-  email: unknown;
+  id: string;
+  name: string;
+  email: string | null;
   /** Normalized auth provider */
-  auth_provider?: unknown;
-  website: unknown;
-  body: unknown;
-  status: unknown;
+  auth_provider?: string | null;
+  website: string | null;
+  body: string;
+  status: string;
   /** Whether an admin has read this moderation item */
-  is_read: unknown;
+  is_read: boolean;
   /** Reason when a public self-delete rejected this item */
-  deletion_reason?: unknown;
-  created_at: unknown;
-  updated_at: unknown;
+  deletion_reason?: string | null;
+  created_at: string;
+  updated_at: string;
 }

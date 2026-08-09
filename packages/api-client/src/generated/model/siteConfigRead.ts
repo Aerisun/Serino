@@ -4,14 +4,18 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { NavItemRead } from './navItemRead';
+import type { PoemRead } from './poemRead';
+import type { SiteProfileRead } from './siteProfileRead';
+import type { SocialLinkRead } from './socialLinkRead';
 
 export interface SiteConfigRead {
   /** Site profile configuration */
-  site: unknown;
+  site: SiteProfileRead;
   /** Social media links */
-  social_links: unknown;
+  social_links: SocialLinkRead[];
   /** Featured poems */
-  poems: unknown;
+  poems: PoemRead[];
   /** Navigation menu items */
-  navigation?: unknown;
+  navigation?: NavItemRead[];
 }

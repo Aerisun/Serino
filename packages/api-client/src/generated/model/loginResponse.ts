@@ -6,6 +6,6 @@
  */
 
 export interface LoginResponse {
-  token: unknown;
-  expires_at: unknown;
+  token: string;
+  expires_at: string;
 }

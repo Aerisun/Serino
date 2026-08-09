@@ -13,6 +13,7 @@ export interface WebhookSubscriptionCreate {
   secret?: string | null;
   timeout_seconds?: number;
   max_attempts?: number;
+  allow_private_network?: boolean;
   status?: string;
   headers?: WebhookSubscriptionCreateHeaders;
 }

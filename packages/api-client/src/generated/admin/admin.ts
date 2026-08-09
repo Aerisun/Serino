@@ -33,7 +33,10 @@ import type {
   AgentModelConfigRead,
   AgentModelConfigTestRead,
   AgentModelConfigUpdate,
+  AgentModelDiagnosticRead,
+  AgentOverviewRead,
   AgentRunApprovalRead,
+  AgentRunCollectionRead,
   AgentRunRead,
   AgentRunStepRead,
   AgentWorkflowCatalogRead,
@@ -83,6 +86,10 @@ import type {
   BulkDeleteRequest,
   BulkStatusRequest,
   BulkVisibilityRequest,
+  ChatGPTAccountRead,
+  ChatGPTDeviceLoginRead,
+  ChatGPTLoginStatusRead,
+  ChatGPTModelOptionRead,
   CommentAdminRead,
   CommentFeedbackUpdate,
   CommunityConfigAdminRead,
@@ -120,6 +127,8 @@ import type {
   FriendUpdate,
   GetDefaultContentTitleParams,
   GetMcpConfigApiV1AdminIntegrationsMcpConfigGetParams,
+  GetRunsApiV1AdminAutomationRunsGetParams,
+  GetSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGetParams,
   GetWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetParams,
   GuestbookAdminRead,
   HTTPValidationError,
@@ -211,6 +220,7 @@ import type {
   SurfaceDraftApplyRead,
   SurfaceDraftChatWrite,
   SurfaceDraftRead,
+  SystemDiagnosticStateRead,
   SystemInfo,
   SystemUpdateCheckWrite,
   SystemUpdateRequestRead,
@@ -12397,6 +12407,211 @@ export const useDeleteAssetEndpointApiV1AdminAssetsAssetIdDelete = <TError = Err
       return useMutation(getDeleteAssetEndpointApiV1AdminAssetsAssetIdDeleteMutationOptions(options), queryClient);
     }
     /**
+ * @summary Get System Diagnostics State
+ */
+export type getSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGetResponse200 = {
+  data: SystemDiagnosticStateRead
+  status: 200
+}
+
+export type getSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGetResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type getSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGetResponseSuccess = (getSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGetResponse200) & {
+  headers: Headers;
+};
+export type getSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGetResponseError = (getSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGetResponse422) & {
+  headers: Headers;
+};
+
+export type getSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGetResponse = (getSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGetResponseSuccess | getSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGetResponseError)
+
+export const getGetSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGetUrl = (params?: GetSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGetParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/admin/system/diagnostics?${stringifiedParams}` : `/api/v1/admin/system/diagnostics`
+}
+
+export const getSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGet = async (params?: GetSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGetParams, options?: RequestInit): Promise<getSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGetResponse> => {
+
+  return customInstance<getSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGetResponse>(getGetSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGetUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGetQueryKey = (params?: GetSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGetParams,) => {
+    return [
+    `/api/v1/admin/system/diagnostics`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGetQueryOptions = <TData = Awaited<ReturnType<typeof getSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGet>>, TError = ErrorType<HTTPValidationError>>(params?: GetSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGetQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGet>>> = ({ signal }) => getSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGet(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGetQueryResult = NonNullable<Awaited<ReturnType<typeof getSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGet>>>
+export type GetSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGetQueryError = ErrorType<HTTPValidationError>
+
+
+export function useGetSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGet<TData = Awaited<ReturnType<typeof getSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGet>>, TError = ErrorType<HTTPValidationError>>(
+ params: undefined |  GetSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGet>>,
+          TError,
+          Awaited<ReturnType<typeof getSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGet<TData = Awaited<ReturnType<typeof getSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: GetSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGet>>,
+          TError,
+          Awaited<ReturnType<typeof getSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGet<TData = Awaited<ReturnType<typeof getSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: GetSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get System Diagnostics State
+ */
+
+export function useGetSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGet<TData = Awaited<ReturnType<typeof getSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: GetSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGetQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary Start System Diagnostics Run
+ */
+export type startSystemDiagnosticsRunApiV1AdminSystemDiagnosticsRunPostResponse202 = {
+  data: SystemDiagnosticStateRead
+  status: 202
+}
+
+export type startSystemDiagnosticsRunApiV1AdminSystemDiagnosticsRunPostResponseSuccess = (startSystemDiagnosticsRunApiV1AdminSystemDiagnosticsRunPostResponse202) & {
+  headers: Headers;
+};
+;
+
+export type startSystemDiagnosticsRunApiV1AdminSystemDiagnosticsRunPostResponse = (startSystemDiagnosticsRunApiV1AdminSystemDiagnosticsRunPostResponseSuccess)
+
+export const getStartSystemDiagnosticsRunApiV1AdminSystemDiagnosticsRunPostUrl = () => {
+
+
+
+
+  return `/api/v1/admin/system/diagnostics/run`
+}
+
+export const startSystemDiagnosticsRunApiV1AdminSystemDiagnosticsRunPost = async ( options?: RequestInit): Promise<startSystemDiagnosticsRunApiV1AdminSystemDiagnosticsRunPostResponse> => {
+
+  return customInstance<startSystemDiagnosticsRunApiV1AdminSystemDiagnosticsRunPostResponse>(getStartSystemDiagnosticsRunApiV1AdminSystemDiagnosticsRunPostUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getStartSystemDiagnosticsRunApiV1AdminSystemDiagnosticsRunPostMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startSystemDiagnosticsRunApiV1AdminSystemDiagnosticsRunPost>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof startSystemDiagnosticsRunApiV1AdminSystemDiagnosticsRunPost>>, TError,void, TContext> => {
+
+const mutationKey = ['startSystemDiagnosticsRunApiV1AdminSystemDiagnosticsRunPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startSystemDiagnosticsRunApiV1AdminSystemDiagnosticsRunPost>>, void> = () => {
+
+
+          return  startSystemDiagnosticsRunApiV1AdminSystemDiagnosticsRunPost(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartSystemDiagnosticsRunApiV1AdminSystemDiagnosticsRunPostMutationResult = NonNullable<Awaited<ReturnType<typeof startSystemDiagnosticsRunApiV1AdminSystemDiagnosticsRunPost>>>
+
+    export type StartSystemDiagnosticsRunApiV1AdminSystemDiagnosticsRunPostMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Start System Diagnostics Run
+ */
+export const useStartSystemDiagnosticsRunApiV1AdminSystemDiagnosticsRunPost = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startSystemDiagnosticsRunApiV1AdminSystemDiagnosticsRunPost>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof startSystemDiagnosticsRunApiV1AdminSystemDiagnosticsRunPost>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getStartSystemDiagnosticsRunApiV1AdminSystemDiagnosticsRunPostMutationOptions(options), queryClient);
+    }
+    /**
  * @summary 获取审计日志
  */
 export type listAuditLogsApiV1AdminSystemAuditLogsGetResponse200 = {
@@ -17270,6 +17485,586 @@ export const usePostModelConfigTestApiV1AdminAutomationModelConfigTestPost = <TE
       return useMutation(getPostModelConfigTestApiV1AdminAutomationModelConfigTestPostMutationOptions(options), queryClient);
     }
     /**
+ * @summary 获取 ChatGPT OAuth 账号状态
+ */
+export type getChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountGetResponse200 = {
+  data: ChatGPTAccountRead
+  status: 200
+}
+
+export type getChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountGetResponseSuccess = (getChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountGetResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountGetResponse = (getChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountGetResponseSuccess)
+
+export const getGetChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountGetUrl = () => {
+
+
+
+
+  return `/api/v1/admin/automation/model-config/chatgpt/account`
+}
+
+export const getChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountGet = async ( options?: RequestInit): Promise<getChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountGetResponse> => {
+
+  return customInstance<getChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountGetResponse>(getGetChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountGetQueryKey = () => {
+    return [
+    `/api/v1/admin/automation/model-config/chatgpt/account`
+    ] as const;
+    }
+
+
+export const getGetChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountGetQueryOptions = <TData = Awaited<ReturnType<typeof getChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountGet>>> = ({ signal }) => getChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountGetQueryResult = NonNullable<Awaited<ReturnType<typeof getChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountGet>>>
+export type GetChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountGetQueryError = ErrorType<unknown>
+
+
+export function useGetChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountGet<TData = Awaited<ReturnType<typeof getChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountGet>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountGet>>,
+          TError,
+          Awaited<ReturnType<typeof getChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountGet<TData = Awaited<ReturnType<typeof getChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountGet>>,
+          TError,
+          Awaited<ReturnType<typeof getChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountGet<TData = Awaited<ReturnType<typeof getChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取 ChatGPT OAuth 账号状态
+ */
+
+export function useGetChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountGet<TData = Awaited<ReturnType<typeof getChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 退出 ChatGPT OAuth 账号
+ */
+export type deleteChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountDeleteResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deleteChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountDeleteResponseSuccess = (deleteChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountDeleteResponse204) & {
+  headers: Headers;
+};
+;
+
+export type deleteChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountDeleteResponse = (deleteChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountDeleteResponseSuccess)
+
+export const getDeleteChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountDeleteUrl = () => {
+
+
+
+
+  return `/api/v1/admin/automation/model-config/chatgpt/account`
+}
+
+export const deleteChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountDelete = async ( options?: RequestInit): Promise<deleteChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountDeleteResponse> => {
+
+  return customInstance<deleteChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountDeleteResponse>(getDeleteChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountDeleteUrl(),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountDeleteMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountDelete>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountDelete>>, TError,void, TContext> => {
+
+const mutationKey = ['deleteChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountDelete'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountDelete>>, void> = () => {
+
+
+          return  deleteChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountDelete(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountDeleteMutationResult = NonNullable<Awaited<ReturnType<typeof deleteChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountDelete>>>
+
+    export type DeleteChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountDeleteMutationError = ErrorType<unknown>
+
+    /**
+ * @summary 退出 ChatGPT OAuth 账号
+ */
+export const useDeleteChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountDelete = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountDelete>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountDelete>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getDeleteChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountDeleteMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 开始 ChatGPT 设备码登录
+ */
+export type postChatgptLoginApiV1AdminAutomationModelConfigChatgptLoginPostResponse200 = {
+  data: ChatGPTDeviceLoginRead
+  status: 200
+}
+
+export type postChatgptLoginApiV1AdminAutomationModelConfigChatgptLoginPostResponseSuccess = (postChatgptLoginApiV1AdminAutomationModelConfigChatgptLoginPostResponse200) & {
+  headers: Headers;
+};
+;
+
+export type postChatgptLoginApiV1AdminAutomationModelConfigChatgptLoginPostResponse = (postChatgptLoginApiV1AdminAutomationModelConfigChatgptLoginPostResponseSuccess)
+
+export const getPostChatgptLoginApiV1AdminAutomationModelConfigChatgptLoginPostUrl = () => {
+
+
+
+
+  return `/api/v1/admin/automation/model-config/chatgpt/login`
+}
+
+export const postChatgptLoginApiV1AdminAutomationModelConfigChatgptLoginPost = async ( options?: RequestInit): Promise<postChatgptLoginApiV1AdminAutomationModelConfigChatgptLoginPostResponse> => {
+
+  return customInstance<postChatgptLoginApiV1AdminAutomationModelConfigChatgptLoginPostResponse>(getPostChatgptLoginApiV1AdminAutomationModelConfigChatgptLoginPostUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getPostChatgptLoginApiV1AdminAutomationModelConfigChatgptLoginPostMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postChatgptLoginApiV1AdminAutomationModelConfigChatgptLoginPost>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof postChatgptLoginApiV1AdminAutomationModelConfigChatgptLoginPost>>, TError,void, TContext> => {
+
+const mutationKey = ['postChatgptLoginApiV1AdminAutomationModelConfigChatgptLoginPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postChatgptLoginApiV1AdminAutomationModelConfigChatgptLoginPost>>, void> = () => {
+
+
+          return  postChatgptLoginApiV1AdminAutomationModelConfigChatgptLoginPost(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostChatgptLoginApiV1AdminAutomationModelConfigChatgptLoginPostMutationResult = NonNullable<Awaited<ReturnType<typeof postChatgptLoginApiV1AdminAutomationModelConfigChatgptLoginPost>>>
+
+    export type PostChatgptLoginApiV1AdminAutomationModelConfigChatgptLoginPostMutationError = ErrorType<unknown>
+
+    /**
+ * @summary 开始 ChatGPT 设备码登录
+ */
+export const usePostChatgptLoginApiV1AdminAutomationModelConfigChatgptLoginPost = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postChatgptLoginApiV1AdminAutomationModelConfigChatgptLoginPost>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof postChatgptLoginApiV1AdminAutomationModelConfigChatgptLoginPost>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getPostChatgptLoginApiV1AdminAutomationModelConfigChatgptLoginPostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 获取 ChatGPT 登录进度
+ */
+export type getChatgptLoginStatusApiV1AdminAutomationModelConfigChatgptLoginLoginIdGetResponse200 = {
+  data: ChatGPTLoginStatusRead
+  status: 200
+}
+
+export type getChatgptLoginStatusApiV1AdminAutomationModelConfigChatgptLoginLoginIdGetResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type getChatgptLoginStatusApiV1AdminAutomationModelConfigChatgptLoginLoginIdGetResponseSuccess = (getChatgptLoginStatusApiV1AdminAutomationModelConfigChatgptLoginLoginIdGetResponse200) & {
+  headers: Headers;
+};
+export type getChatgptLoginStatusApiV1AdminAutomationModelConfigChatgptLoginLoginIdGetResponseError = (getChatgptLoginStatusApiV1AdminAutomationModelConfigChatgptLoginLoginIdGetResponse422) & {
+  headers: Headers;
+};
+
+export type getChatgptLoginStatusApiV1AdminAutomationModelConfigChatgptLoginLoginIdGetResponse = (getChatgptLoginStatusApiV1AdminAutomationModelConfigChatgptLoginLoginIdGetResponseSuccess | getChatgptLoginStatusApiV1AdminAutomationModelConfigChatgptLoginLoginIdGetResponseError)
+
+export const getGetChatgptLoginStatusApiV1AdminAutomationModelConfigChatgptLoginLoginIdGetUrl = (loginId: string,) => {
+
+
+
+
+  return `/api/v1/admin/automation/model-config/chatgpt/login/${loginId}`
+}
+
+export const getChatgptLoginStatusApiV1AdminAutomationModelConfigChatgptLoginLoginIdGet = async (loginId: string, options?: RequestInit): Promise<getChatgptLoginStatusApiV1AdminAutomationModelConfigChatgptLoginLoginIdGetResponse> => {
+
+  return customInstance<getChatgptLoginStatusApiV1AdminAutomationModelConfigChatgptLoginLoginIdGetResponse>(getGetChatgptLoginStatusApiV1AdminAutomationModelConfigChatgptLoginLoginIdGetUrl(loginId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetChatgptLoginStatusApiV1AdminAutomationModelConfigChatgptLoginLoginIdGetQueryKey = (loginId: string,) => {
+    return [
+    `/api/v1/admin/automation/model-config/chatgpt/login/${loginId}`
+    ] as const;
+    }
+
+
+export const getGetChatgptLoginStatusApiV1AdminAutomationModelConfigChatgptLoginLoginIdGetQueryOptions = <TData = Awaited<ReturnType<typeof getChatgptLoginStatusApiV1AdminAutomationModelConfigChatgptLoginLoginIdGet>>, TError = ErrorType<HTTPValidationError>>(loginId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChatgptLoginStatusApiV1AdminAutomationModelConfigChatgptLoginLoginIdGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetChatgptLoginStatusApiV1AdminAutomationModelConfigChatgptLoginLoginIdGetQueryKey(loginId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getChatgptLoginStatusApiV1AdminAutomationModelConfigChatgptLoginLoginIdGet>>> = ({ signal }) => getChatgptLoginStatusApiV1AdminAutomationModelConfigChatgptLoginLoginIdGet(loginId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(loginId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getChatgptLoginStatusApiV1AdminAutomationModelConfigChatgptLoginLoginIdGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetChatgptLoginStatusApiV1AdminAutomationModelConfigChatgptLoginLoginIdGetQueryResult = NonNullable<Awaited<ReturnType<typeof getChatgptLoginStatusApiV1AdminAutomationModelConfigChatgptLoginLoginIdGet>>>
+export type GetChatgptLoginStatusApiV1AdminAutomationModelConfigChatgptLoginLoginIdGetQueryError = ErrorType<HTTPValidationError>
+
+
+export function useGetChatgptLoginStatusApiV1AdminAutomationModelConfigChatgptLoginLoginIdGet<TData = Awaited<ReturnType<typeof getChatgptLoginStatusApiV1AdminAutomationModelConfigChatgptLoginLoginIdGet>>, TError = ErrorType<HTTPValidationError>>(
+ loginId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChatgptLoginStatusApiV1AdminAutomationModelConfigChatgptLoginLoginIdGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getChatgptLoginStatusApiV1AdminAutomationModelConfigChatgptLoginLoginIdGet>>,
+          TError,
+          Awaited<ReturnType<typeof getChatgptLoginStatusApiV1AdminAutomationModelConfigChatgptLoginLoginIdGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetChatgptLoginStatusApiV1AdminAutomationModelConfigChatgptLoginLoginIdGet<TData = Awaited<ReturnType<typeof getChatgptLoginStatusApiV1AdminAutomationModelConfigChatgptLoginLoginIdGet>>, TError = ErrorType<HTTPValidationError>>(
+ loginId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChatgptLoginStatusApiV1AdminAutomationModelConfigChatgptLoginLoginIdGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getChatgptLoginStatusApiV1AdminAutomationModelConfigChatgptLoginLoginIdGet>>,
+          TError,
+          Awaited<ReturnType<typeof getChatgptLoginStatusApiV1AdminAutomationModelConfigChatgptLoginLoginIdGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetChatgptLoginStatusApiV1AdminAutomationModelConfigChatgptLoginLoginIdGet<TData = Awaited<ReturnType<typeof getChatgptLoginStatusApiV1AdminAutomationModelConfigChatgptLoginLoginIdGet>>, TError = ErrorType<HTTPValidationError>>(
+ loginId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChatgptLoginStatusApiV1AdminAutomationModelConfigChatgptLoginLoginIdGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取 ChatGPT 登录进度
+ */
+
+export function useGetChatgptLoginStatusApiV1AdminAutomationModelConfigChatgptLoginLoginIdGet<TData = Awaited<ReturnType<typeof getChatgptLoginStatusApiV1AdminAutomationModelConfigChatgptLoginLoginIdGet>>, TError = ErrorType<HTTPValidationError>>(
+ loginId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChatgptLoginStatusApiV1AdminAutomationModelConfigChatgptLoginLoginIdGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetChatgptLoginStatusApiV1AdminAutomationModelConfigChatgptLoginLoginIdGetQueryOptions(loginId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 获取 ChatGPT 套餐可用模型
+ */
+export type getChatgptModelsApiV1AdminAutomationModelConfigChatgptModelsGetResponse200 = {
+  data: ChatGPTModelOptionRead[]
+  status: 200
+}
+
+export type getChatgptModelsApiV1AdminAutomationModelConfigChatgptModelsGetResponseSuccess = (getChatgptModelsApiV1AdminAutomationModelConfigChatgptModelsGetResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getChatgptModelsApiV1AdminAutomationModelConfigChatgptModelsGetResponse = (getChatgptModelsApiV1AdminAutomationModelConfigChatgptModelsGetResponseSuccess)
+
+export const getGetChatgptModelsApiV1AdminAutomationModelConfigChatgptModelsGetUrl = () => {
+
+
+
+
+  return `/api/v1/admin/automation/model-config/chatgpt/models`
+}
+
+export const getChatgptModelsApiV1AdminAutomationModelConfigChatgptModelsGet = async ( options?: RequestInit): Promise<getChatgptModelsApiV1AdminAutomationModelConfigChatgptModelsGetResponse> => {
+
+  return customInstance<getChatgptModelsApiV1AdminAutomationModelConfigChatgptModelsGetResponse>(getGetChatgptModelsApiV1AdminAutomationModelConfigChatgptModelsGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetChatgptModelsApiV1AdminAutomationModelConfigChatgptModelsGetQueryKey = () => {
+    return [
+    `/api/v1/admin/automation/model-config/chatgpt/models`
+    ] as const;
+    }
+
+
+export const getGetChatgptModelsApiV1AdminAutomationModelConfigChatgptModelsGetQueryOptions = <TData = Awaited<ReturnType<typeof getChatgptModelsApiV1AdminAutomationModelConfigChatgptModelsGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChatgptModelsApiV1AdminAutomationModelConfigChatgptModelsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetChatgptModelsApiV1AdminAutomationModelConfigChatgptModelsGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getChatgptModelsApiV1AdminAutomationModelConfigChatgptModelsGet>>> = ({ signal }) => getChatgptModelsApiV1AdminAutomationModelConfigChatgptModelsGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getChatgptModelsApiV1AdminAutomationModelConfigChatgptModelsGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetChatgptModelsApiV1AdminAutomationModelConfigChatgptModelsGetQueryResult = NonNullable<Awaited<ReturnType<typeof getChatgptModelsApiV1AdminAutomationModelConfigChatgptModelsGet>>>
+export type GetChatgptModelsApiV1AdminAutomationModelConfigChatgptModelsGetQueryError = ErrorType<unknown>
+
+
+export function useGetChatgptModelsApiV1AdminAutomationModelConfigChatgptModelsGet<TData = Awaited<ReturnType<typeof getChatgptModelsApiV1AdminAutomationModelConfigChatgptModelsGet>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChatgptModelsApiV1AdminAutomationModelConfigChatgptModelsGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getChatgptModelsApiV1AdminAutomationModelConfigChatgptModelsGet>>,
+          TError,
+          Awaited<ReturnType<typeof getChatgptModelsApiV1AdminAutomationModelConfigChatgptModelsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetChatgptModelsApiV1AdminAutomationModelConfigChatgptModelsGet<TData = Awaited<ReturnType<typeof getChatgptModelsApiV1AdminAutomationModelConfigChatgptModelsGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChatgptModelsApiV1AdminAutomationModelConfigChatgptModelsGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getChatgptModelsApiV1AdminAutomationModelConfigChatgptModelsGet>>,
+          TError,
+          Awaited<ReturnType<typeof getChatgptModelsApiV1AdminAutomationModelConfigChatgptModelsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetChatgptModelsApiV1AdminAutomationModelConfigChatgptModelsGet<TData = Awaited<ReturnType<typeof getChatgptModelsApiV1AdminAutomationModelConfigChatgptModelsGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChatgptModelsApiV1AdminAutomationModelConfigChatgptModelsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取 ChatGPT 套餐可用模型
+ */
+
+export function useGetChatgptModelsApiV1AdminAutomationModelConfigChatgptModelsGet<TData = Awaited<ReturnType<typeof getChatgptModelsApiV1AdminAutomationModelConfigChatgptModelsGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChatgptModelsApiV1AdminAutomationModelConfigChatgptModelsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetChatgptModelsApiV1AdminAutomationModelConfigChatgptModelsGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 诊断模型主备来源
+ */
+export type postModelConfigDiagnoseApiV1AdminAutomationModelConfigDiagnosePostResponse200 = {
+  data: AgentModelDiagnosticRead
+  status: 200
+}
+
+export type postModelConfigDiagnoseApiV1AdminAutomationModelConfigDiagnosePostResponseSuccess = (postModelConfigDiagnoseApiV1AdminAutomationModelConfigDiagnosePostResponse200) & {
+  headers: Headers;
+};
+;
+
+export type postModelConfigDiagnoseApiV1AdminAutomationModelConfigDiagnosePostResponse = (postModelConfigDiagnoseApiV1AdminAutomationModelConfigDiagnosePostResponseSuccess)
+
+export const getPostModelConfigDiagnoseApiV1AdminAutomationModelConfigDiagnosePostUrl = () => {
+
+
+
+
+  return `/api/v1/admin/automation/model-config/diagnose`
+}
+
+export const postModelConfigDiagnoseApiV1AdminAutomationModelConfigDiagnosePost = async ( options?: RequestInit): Promise<postModelConfigDiagnoseApiV1AdminAutomationModelConfigDiagnosePostResponse> => {
+
+  return customInstance<postModelConfigDiagnoseApiV1AdminAutomationModelConfigDiagnosePostResponse>(getPostModelConfigDiagnoseApiV1AdminAutomationModelConfigDiagnosePostUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getPostModelConfigDiagnoseApiV1AdminAutomationModelConfigDiagnosePostMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postModelConfigDiagnoseApiV1AdminAutomationModelConfigDiagnosePost>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof postModelConfigDiagnoseApiV1AdminAutomationModelConfigDiagnosePost>>, TError,void, TContext> => {
+
+const mutationKey = ['postModelConfigDiagnoseApiV1AdminAutomationModelConfigDiagnosePost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postModelConfigDiagnoseApiV1AdminAutomationModelConfigDiagnosePost>>, void> = () => {
+
+
+          return  postModelConfigDiagnoseApiV1AdminAutomationModelConfigDiagnosePost(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostModelConfigDiagnoseApiV1AdminAutomationModelConfigDiagnosePostMutationResult = NonNullable<Awaited<ReturnType<typeof postModelConfigDiagnoseApiV1AdminAutomationModelConfigDiagnosePost>>>
+
+    export type PostModelConfigDiagnoseApiV1AdminAutomationModelConfigDiagnosePostMutationError = ErrorType<unknown>
+
+    /**
+ * @summary 诊断模型主备来源
+ */
+export const usePostModelConfigDiagnoseApiV1AdminAutomationModelConfigDiagnosePost = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postModelConfigDiagnoseApiV1AdminAutomationModelConfigDiagnosePost>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof postModelConfigDiagnoseApiV1AdminAutomationModelConfigDiagnosePost>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getPostModelConfigDiagnoseApiV1AdminAutomationModelConfigDiagnosePostMutationOptions(options), queryClient);
+    }
+    /**
  * @summary 获取 Agent 工作流
  */
 export type getWorkflowsApiV1AdminAutomationWorkflowsGetResponse200 = {
@@ -18513,31 +19308,31 @@ export const usePostWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestR
       return useMutation(getPostWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostMutationOptions(options), queryClient);
     }
     /**
- * @summary 获取 Agent 运行记录
+ * @summary 获取 Agent 总览
  */
-export type getRunsApiV1AdminAutomationRunsGetResponse200 = {
-  data: AgentRunRead[]
+export type getOverviewApiV1AdminAutomationOverviewGetResponse200 = {
+  data: AgentOverviewRead
   status: 200
 }
 
-export type getRunsApiV1AdminAutomationRunsGetResponseSuccess = (getRunsApiV1AdminAutomationRunsGetResponse200) & {
+export type getOverviewApiV1AdminAutomationOverviewGetResponseSuccess = (getOverviewApiV1AdminAutomationOverviewGetResponse200) & {
   headers: Headers;
 };
 ;
 
-export type getRunsApiV1AdminAutomationRunsGetResponse = (getRunsApiV1AdminAutomationRunsGetResponseSuccess)
+export type getOverviewApiV1AdminAutomationOverviewGetResponse = (getOverviewApiV1AdminAutomationOverviewGetResponseSuccess)
 
-export const getGetRunsApiV1AdminAutomationRunsGetUrl = () => {
-
-
+export const getGetOverviewApiV1AdminAutomationOverviewGetUrl = () => {
 
 
-  return `/api/v1/admin/automation/runs`
+
+
+  return `/api/v1/admin/automation/overview`
 }
 
-export const getRunsApiV1AdminAutomationRunsGet = async ( options?: RequestInit): Promise<getRunsApiV1AdminAutomationRunsGetResponse> => {
+export const getOverviewApiV1AdminAutomationOverviewGet = async ( options?: RequestInit): Promise<getOverviewApiV1AdminAutomationOverviewGetResponse> => {
 
-  return customInstance<getRunsApiV1AdminAutomationRunsGetResponse>(getGetRunsApiV1AdminAutomationRunsGetUrl(),
+  return customInstance<getOverviewApiV1AdminAutomationOverviewGetResponse>(getGetOverviewApiV1AdminAutomationOverviewGetUrl(),
   {
     ...options,
     method: 'GET'
@@ -18550,23 +19345,147 @@ export const getRunsApiV1AdminAutomationRunsGet = async ( options?: RequestInit)
 
 
 
-export const getGetRunsApiV1AdminAutomationRunsGetQueryKey = () => {
+export const getGetOverviewApiV1AdminAutomationOverviewGetQueryKey = () => {
     return [
-    `/api/v1/admin/automation/runs`
+    `/api/v1/admin/automation/overview`
     ] as const;
     }
 
 
-export const getGetRunsApiV1AdminAutomationRunsGetQueryOptions = <TData = Awaited<ReturnType<typeof getRunsApiV1AdminAutomationRunsGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getRunsApiV1AdminAutomationRunsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+export const getGetOverviewApiV1AdminAutomationOverviewGetQueryOptions = <TData = Awaited<ReturnType<typeof getOverviewApiV1AdminAutomationOverviewGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOverviewApiV1AdminAutomationOverviewGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetRunsApiV1AdminAutomationRunsGetQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetOverviewApiV1AdminAutomationOverviewGetQueryKey();
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRunsApiV1AdminAutomationRunsGet>>> = ({ signal }) => getRunsApiV1AdminAutomationRunsGet({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getOverviewApiV1AdminAutomationOverviewGet>>> = ({ signal }) => getOverviewApiV1AdminAutomationOverviewGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getOverviewApiV1AdminAutomationOverviewGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetOverviewApiV1AdminAutomationOverviewGetQueryResult = NonNullable<Awaited<ReturnType<typeof getOverviewApiV1AdminAutomationOverviewGet>>>
+export type GetOverviewApiV1AdminAutomationOverviewGetQueryError = ErrorType<unknown>
+
+
+export function useGetOverviewApiV1AdminAutomationOverviewGet<TData = Awaited<ReturnType<typeof getOverviewApiV1AdminAutomationOverviewGet>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOverviewApiV1AdminAutomationOverviewGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getOverviewApiV1AdminAutomationOverviewGet>>,
+          TError,
+          Awaited<ReturnType<typeof getOverviewApiV1AdminAutomationOverviewGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetOverviewApiV1AdminAutomationOverviewGet<TData = Awaited<ReturnType<typeof getOverviewApiV1AdminAutomationOverviewGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOverviewApiV1AdminAutomationOverviewGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getOverviewApiV1AdminAutomationOverviewGet>>,
+          TError,
+          Awaited<ReturnType<typeof getOverviewApiV1AdminAutomationOverviewGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetOverviewApiV1AdminAutomationOverviewGet<TData = Awaited<ReturnType<typeof getOverviewApiV1AdminAutomationOverviewGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOverviewApiV1AdminAutomationOverviewGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取 Agent 总览
+ */
+
+export function useGetOverviewApiV1AdminAutomationOverviewGet<TData = Awaited<ReturnType<typeof getOverviewApiV1AdminAutomationOverviewGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOverviewApiV1AdminAutomationOverviewGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetOverviewApiV1AdminAutomationOverviewGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 获取 Agent 运行记录
+ */
+export type getRunsApiV1AdminAutomationRunsGetResponse200 = {
+  data: AgentRunCollectionRead
+  status: 200
+}
+
+export type getRunsApiV1AdminAutomationRunsGetResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type getRunsApiV1AdminAutomationRunsGetResponseSuccess = (getRunsApiV1AdminAutomationRunsGetResponse200) & {
+  headers: Headers;
+};
+export type getRunsApiV1AdminAutomationRunsGetResponseError = (getRunsApiV1AdminAutomationRunsGetResponse422) & {
+  headers: Headers;
+};
+
+export type getRunsApiV1AdminAutomationRunsGetResponse = (getRunsApiV1AdminAutomationRunsGetResponseSuccess | getRunsApiV1AdminAutomationRunsGetResponseError)
+
+export const getGetRunsApiV1AdminAutomationRunsGetUrl = (params?: GetRunsApiV1AdminAutomationRunsGetParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/admin/automation/runs?${stringifiedParams}` : `/api/v1/admin/automation/runs`
+}
+
+export const getRunsApiV1AdminAutomationRunsGet = async (params?: GetRunsApiV1AdminAutomationRunsGetParams, options?: RequestInit): Promise<getRunsApiV1AdminAutomationRunsGetResponse> => {
+
+  return customInstance<getRunsApiV1AdminAutomationRunsGetResponse>(getGetRunsApiV1AdminAutomationRunsGetUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetRunsApiV1AdminAutomationRunsGetQueryKey = (params?: GetRunsApiV1AdminAutomationRunsGetParams,) => {
+    return [
+    `/api/v1/admin/automation/runs`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetRunsApiV1AdminAutomationRunsGetQueryOptions = <TData = Awaited<ReturnType<typeof getRunsApiV1AdminAutomationRunsGet>>, TError = ErrorType<HTTPValidationError>>(params?: GetRunsApiV1AdminAutomationRunsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getRunsApiV1AdminAutomationRunsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRunsApiV1AdminAutomationRunsGetQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRunsApiV1AdminAutomationRunsGet>>> = ({ signal }) => getRunsApiV1AdminAutomationRunsGet(params, { signal, ...requestOptions });
 
 
 
@@ -18576,11 +19495,11 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetRunsApiV1AdminAutomationRunsGetQueryResult = NonNullable<Awaited<ReturnType<typeof getRunsApiV1AdminAutomationRunsGet>>>
-export type GetRunsApiV1AdminAutomationRunsGetQueryError = ErrorType<unknown>
+export type GetRunsApiV1AdminAutomationRunsGetQueryError = ErrorType<HTTPValidationError>
 
 
-export function useGetRunsApiV1AdminAutomationRunsGet<TData = Awaited<ReturnType<typeof getRunsApiV1AdminAutomationRunsGet>>, TError = ErrorType<unknown>>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getRunsApiV1AdminAutomationRunsGet>>, TError, TData>> & Pick<
+export function useGetRunsApiV1AdminAutomationRunsGet<TData = Awaited<ReturnType<typeof getRunsApiV1AdminAutomationRunsGet>>, TError = ErrorType<HTTPValidationError>>(
+ params: undefined |  GetRunsApiV1AdminAutomationRunsGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getRunsApiV1AdminAutomationRunsGet>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof getRunsApiV1AdminAutomationRunsGet>>,
           TError,
@@ -18589,8 +19508,8 @@ export function useGetRunsApiV1AdminAutomationRunsGet<TData = Awaited<ReturnType
       >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetRunsApiV1AdminAutomationRunsGet<TData = Awaited<ReturnType<typeof getRunsApiV1AdminAutomationRunsGet>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getRunsApiV1AdminAutomationRunsGet>>, TError, TData>> & Pick<
+export function useGetRunsApiV1AdminAutomationRunsGet<TData = Awaited<ReturnType<typeof getRunsApiV1AdminAutomationRunsGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: GetRunsApiV1AdminAutomationRunsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getRunsApiV1AdminAutomationRunsGet>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof getRunsApiV1AdminAutomationRunsGet>>,
           TError,
@@ -18599,20 +19518,20 @@ export function useGetRunsApiV1AdminAutomationRunsGet<TData = Awaited<ReturnType
       >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetRunsApiV1AdminAutomationRunsGet<TData = Awaited<ReturnType<typeof getRunsApiV1AdminAutomationRunsGet>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getRunsApiV1AdminAutomationRunsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+export function useGetRunsApiV1AdminAutomationRunsGet<TData = Awaited<ReturnType<typeof getRunsApiV1AdminAutomationRunsGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: GetRunsApiV1AdminAutomationRunsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getRunsApiV1AdminAutomationRunsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary 获取 Agent 运行记录
  */
 
-export function useGetRunsApiV1AdminAutomationRunsGet<TData = Awaited<ReturnType<typeof getRunsApiV1AdminAutomationRunsGet>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getRunsApiV1AdminAutomationRunsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+export function useGetRunsApiV1AdminAutomationRunsGet<TData = Awaited<ReturnType<typeof getRunsApiV1AdminAutomationRunsGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: GetRunsApiV1AdminAutomationRunsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getRunsApiV1AdminAutomationRunsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getGetRunsApiV1AdminAutomationRunsGetQueryOptions(options)
+  const queryOptions = getGetRunsApiV1AdminAutomationRunsGetQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -18857,6 +19776,182 @@ export function useGetRunStepsApiV1AdminAutomationRunsRunIdStepsGet<TData = Awai
 
 
 /**
+ * @summary 取消 Agent 运行
+ */
+export type postRunCancelApiV1AdminAutomationRunsRunIdCancelPostResponse200 = {
+  data: AgentRunRead
+  status: 200
+}
+
+export type postRunCancelApiV1AdminAutomationRunsRunIdCancelPostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type postRunCancelApiV1AdminAutomationRunsRunIdCancelPostResponseSuccess = (postRunCancelApiV1AdminAutomationRunsRunIdCancelPostResponse200) & {
+  headers: Headers;
+};
+export type postRunCancelApiV1AdminAutomationRunsRunIdCancelPostResponseError = (postRunCancelApiV1AdminAutomationRunsRunIdCancelPostResponse422) & {
+  headers: Headers;
+};
+
+export type postRunCancelApiV1AdminAutomationRunsRunIdCancelPostResponse = (postRunCancelApiV1AdminAutomationRunsRunIdCancelPostResponseSuccess | postRunCancelApiV1AdminAutomationRunsRunIdCancelPostResponseError)
+
+export const getPostRunCancelApiV1AdminAutomationRunsRunIdCancelPostUrl = (runId: string,) => {
+
+
+
+
+  return `/api/v1/admin/automation/runs/${runId}/cancel`
+}
+
+export const postRunCancelApiV1AdminAutomationRunsRunIdCancelPost = async (runId: string, options?: RequestInit): Promise<postRunCancelApiV1AdminAutomationRunsRunIdCancelPostResponse> => {
+
+  return customInstance<postRunCancelApiV1AdminAutomationRunsRunIdCancelPostResponse>(getPostRunCancelApiV1AdminAutomationRunsRunIdCancelPostUrl(runId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getPostRunCancelApiV1AdminAutomationRunsRunIdCancelPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postRunCancelApiV1AdminAutomationRunsRunIdCancelPost>>, TError,{runId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof postRunCancelApiV1AdminAutomationRunsRunIdCancelPost>>, TError,{runId: string}, TContext> => {
+
+const mutationKey = ['postRunCancelApiV1AdminAutomationRunsRunIdCancelPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postRunCancelApiV1AdminAutomationRunsRunIdCancelPost>>, {runId: string}> = (props) => {
+          const {runId} = props ?? {};
+
+          return  postRunCancelApiV1AdminAutomationRunsRunIdCancelPost(runId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostRunCancelApiV1AdminAutomationRunsRunIdCancelPostMutationResult = NonNullable<Awaited<ReturnType<typeof postRunCancelApiV1AdminAutomationRunsRunIdCancelPost>>>
+
+    export type PostRunCancelApiV1AdminAutomationRunsRunIdCancelPostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 取消 Agent 运行
+ */
+export const usePostRunCancelApiV1AdminAutomationRunsRunIdCancelPost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postRunCancelApiV1AdminAutomationRunsRunIdCancelPost>>, TError,{runId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof postRunCancelApiV1AdminAutomationRunsRunIdCancelPost>>,
+        TError,
+        {runId: string},
+        TContext
+      > => {
+      return useMutation(getPostRunCancelApiV1AdminAutomationRunsRunIdCancelPostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 重试 Agent 运行
+ */
+export type postRunRetryApiV1AdminAutomationRunsRunIdRetryPostResponse200 = {
+  data: AgentRunRead
+  status: 200
+}
+
+export type postRunRetryApiV1AdminAutomationRunsRunIdRetryPostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type postRunRetryApiV1AdminAutomationRunsRunIdRetryPostResponseSuccess = (postRunRetryApiV1AdminAutomationRunsRunIdRetryPostResponse200) & {
+  headers: Headers;
+};
+export type postRunRetryApiV1AdminAutomationRunsRunIdRetryPostResponseError = (postRunRetryApiV1AdminAutomationRunsRunIdRetryPostResponse422) & {
+  headers: Headers;
+};
+
+export type postRunRetryApiV1AdminAutomationRunsRunIdRetryPostResponse = (postRunRetryApiV1AdminAutomationRunsRunIdRetryPostResponseSuccess | postRunRetryApiV1AdminAutomationRunsRunIdRetryPostResponseError)
+
+export const getPostRunRetryApiV1AdminAutomationRunsRunIdRetryPostUrl = (runId: string,) => {
+
+
+
+
+  return `/api/v1/admin/automation/runs/${runId}/retry`
+}
+
+export const postRunRetryApiV1AdminAutomationRunsRunIdRetryPost = async (runId: string, options?: RequestInit): Promise<postRunRetryApiV1AdminAutomationRunsRunIdRetryPostResponse> => {
+
+  return customInstance<postRunRetryApiV1AdminAutomationRunsRunIdRetryPostResponse>(getPostRunRetryApiV1AdminAutomationRunsRunIdRetryPostUrl(runId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getPostRunRetryApiV1AdminAutomationRunsRunIdRetryPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postRunRetryApiV1AdminAutomationRunsRunIdRetryPost>>, TError,{runId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof postRunRetryApiV1AdminAutomationRunsRunIdRetryPost>>, TError,{runId: string}, TContext> => {
+
+const mutationKey = ['postRunRetryApiV1AdminAutomationRunsRunIdRetryPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postRunRetryApiV1AdminAutomationRunsRunIdRetryPost>>, {runId: string}> = (props) => {
+          const {runId} = props ?? {};
+
+          return  postRunRetryApiV1AdminAutomationRunsRunIdRetryPost(runId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostRunRetryApiV1AdminAutomationRunsRunIdRetryPostMutationResult = NonNullable<Awaited<ReturnType<typeof postRunRetryApiV1AdminAutomationRunsRunIdRetryPost>>>
+
+    export type PostRunRetryApiV1AdminAutomationRunsRunIdRetryPostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 重试 Agent 运行
+ */
+export const usePostRunRetryApiV1AdminAutomationRunsRunIdRetryPost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postRunRetryApiV1AdminAutomationRunsRunIdRetryPost>>, TError,{runId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof postRunRetryApiV1AdminAutomationRunsRunIdRetryPost>>,
+        TError,
+        {runId: string},
+        TContext
+      > => {
+      return useMutation(getPostRunRetryApiV1AdminAutomationRunsRunIdRetryPostMutationOptions(options), queryClient);
+    }
+    /**
  * @summary 获取待审批项目
  */
 export type getApprovalsApiV1AdminAutomationApprovalsGetResponse200 = {

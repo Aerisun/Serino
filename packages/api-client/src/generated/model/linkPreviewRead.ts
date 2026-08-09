@@ -4,34 +4,36 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { LinkPreviewReadCardType } from './linkPreviewReadCardType';
+import type { LinkPreviewReadImageMode } from './linkPreviewReadImageMode';
 
 export interface LinkPreviewRead {
   /** Original normalized URL */
-  url: unknown;
+  url: string;
   /** Resolved URL after redirects or canonical resolution */
-  resolved_url: unknown;
+  resolved_url: string;
   /** Resolved hostname */
-  hostname: unknown;
+  hostname: string;
   /** Resolved page title */
-  title?: unknown;
+  title?: string | null;
   /** Resolved page description */
-  description?: unknown;
+  description?: string | null;
   /** Resolved site name */
-  site_name?: unknown;
+  site_name?: string | null;
   /** Preview image URL */
-  image_url?: unknown;
+  image_url?: string | null;
   /** Preview image width if declared */
-  image_width?: unknown;
+  image_width?: number | null;
   /** Preview image height if declared */
-  image_height?: unknown;
+  image_height?: number | null;
   /** Semantic source type used to render the preview card */
-  card_type?: unknown;
+  card_type?: LinkPreviewReadCardType;
   /** Whether the image is a content cover or a compact identity thumbnail */
-  image_mode?: unknown;
+  image_mode?: LinkPreviewReadImageMode;
   /** Site icon URL */
-  icon_url?: unknown;
+  icon_url?: string | null;
   /** Whether preview metadata was successfully fetched */
-  available?: unknown;
+  available?: boolean;
   /** Optional fetch error detail */
-  error?: unknown;
+  error?: string | null;
 }

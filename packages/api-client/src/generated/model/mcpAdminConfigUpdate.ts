@@ -8,4 +8,8 @@
 export interface McpAdminConfigUpdate {
   /** Whether MCP public access is enabled */
   public_access?: boolean | null;
+  /** Per-key MCP capability preset: readonly, basic_management, or full_management */
+  selected_preset?: string | null;
+  /** Explicit per-key MCP capability allowlist; an empty list disables all capabilities */
+  enabled_capability_ids?: string[] | null;
 }

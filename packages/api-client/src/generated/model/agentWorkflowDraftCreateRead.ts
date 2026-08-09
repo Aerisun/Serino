@@ -4,10 +4,11 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { AgentWorkflowRead } from './agentWorkflowRead';
 
 export interface AgentWorkflowDraftCreateRead {
-  ok?: unknown;
-  summary: unknown;
-  draft_cleared?: unknown;
-  workflow: unknown;
+  ok?: boolean;
+  summary: string;
+  draft_cleared?: boolean;
+  workflow: AgentWorkflowRead;
 }

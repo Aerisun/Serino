@@ -4,8 +4,9 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { FriendRead } from './friendRead';
 
 export interface FriendCollectionRead {
   /** List of friend links */
-  items: unknown;
+  items: FriendRead[];
 }

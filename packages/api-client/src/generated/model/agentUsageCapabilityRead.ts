@@ -4,20 +4,40 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { AgentUsageCapabilityReadExamplesItem } from './agentUsageCapabilityReadExamplesItem';
+import type { AgentUsageCapabilityReadInvocation } from './agentUsageCapabilityReadInvocation';
 
 export interface AgentUsageCapabilityRead {
   /** Stable capability identifier */
-  id: unknown;
+  id: string;
   /** Capability name */
-  name: unknown;
+  name: string;
   /** Capability kind: tool or resource */
-  kind: unknown;
+  kind: string;
   /** Human-readable capability description */
-  description: unknown;
+  description: string;
   /** Scopes required to access this capability */
-  required_scopes?: unknown;
+  required_scopes?: string[];
   /** How to invoke this capability */
-  invocation?: unknown;
+  invocation?: AgentUsageCapabilityReadInvocation;
   /** Optional few-shot examples */
-  examples?: unknown;
+  examples?: AgentUsageCapabilityReadExamplesItem[];
+  /** Capability intent, such as read or write */
+  intent?: string;
+  /** Localized capability label */
+  label?: string;
+  /** English capability label */
+  label_en?: string;
+  /** Localized operator guidance */
+  help_text?: string;
+  /** English operator guidance */
+  help_text_en?: string;
+  /** Concise guidance for agent tool selection */
+  ai_usage_hint?: string;
+  /** Capability domain */
+  domain?: string;
+  /** Localized capability group label */
+  group_label?: string;
+  /** Operational risk level */
+  risk_level?: string;
 }

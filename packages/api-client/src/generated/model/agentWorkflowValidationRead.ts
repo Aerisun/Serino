@@ -4,8 +4,9 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { AgentWorkflowValidationIssueRead } from './agentWorkflowValidationIssueRead';
 
 export interface AgentWorkflowValidationRead {
-  ok?: unknown;
-  issues?: unknown;
+  ok?: boolean;
+  issues?: AgentWorkflowValidationIssueRead[];
 }

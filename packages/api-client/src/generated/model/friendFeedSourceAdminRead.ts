@@ -7,23 +7,23 @@
 
 export interface FriendFeedSourceAdminRead {
   /** Unique feed source identifier */
-  id: unknown;
+  id: string;
   /** Associated friend ID */
-  friend_id: unknown;
+  friend_id: string;
   /** RSS/Atom feed URL */
-  feed_url: unknown;
+  feed_url: string;
   /** Last RSS fetch/check timestamp */
-  last_fetched_at: unknown;
+  last_fetched_at: string | null;
   /** Whether actively crawled */
-  is_enabled: unknown;
+  is_enabled: boolean;
   /** Current RSS status for this source */
-  rss_status: unknown;
+  rss_status: string;
   /** HTTP ETag for conditional requests */
-  etag?: unknown;
+  etag?: string | null;
   /** Last crawl error message */
-  last_error?: unknown;
+  last_error?: string | null;
   /** Creation timestamp */
-  created_at: unknown;
+  created_at: string;
   /** Last update timestamp */
-  updated_at: unknown;
+  updated_at: string;
 }

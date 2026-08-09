@@ -4,10 +4,12 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { AgentWorkflowCatalogRead } from './agentWorkflowCatalogRead';
+import type { AgentWorkflowRead } from './agentWorkflowRead';
 
 export interface SurfaceDraftApplyRead {
-  ok?: unknown;
-  summary?: unknown;
-  workflow: unknown;
-  catalog?: unknown;
+  ok?: boolean;
+  summary?: string;
+  workflow: AgentWorkflowRead;
+  catalog?: AgentWorkflowCatalogRead | null;
 }

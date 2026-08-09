@@ -4,26 +4,27 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { SiteAdminIdentityAdminReadProvider } from './siteAdminIdentityAdminReadProvider';
 
 export interface SiteAdminIdentityAdminRead {
   /** Admin identity id */
-  id: unknown;
+  id: string;
   /** Bound site user id */
-  site_user_id: unknown;
+  site_user_id: string;
   /** Bound auth provider */
-  provider: unknown;
+  provider: SiteAdminIdentityAdminReadProvider;
   /** Provider identifier used for the binding */
-  identifier: unknown;
+  identifier: string;
   /** Normalized email used by the binding */
-  email: unknown;
+  email: string;
   /** Underlying site user display name */
-  site_user_display_name: unknown;
+  site_user_display_name: string;
   /** Underlying site user avatar */
-  site_user_avatar_url: unknown;
+  site_user_avatar_url: string;
   /** Provider-side display name if present */
-  provider_display_name?: unknown;
+  provider_display_name?: string | null;
   /** Creation time */
-  created_at: unknown;
+  created_at: string;
   /** Last update time */
-  updated_at: unknown;
+  updated_at: string;
 }

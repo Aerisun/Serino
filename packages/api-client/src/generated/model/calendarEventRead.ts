@@ -7,13 +7,13 @@
 
 export interface CalendarEventRead {
   /** Event date in YYYY-MM-DD format */
-  date: unknown;
+  date: string;
   /** Event type: post, diary, thought, or excerpt */
-  type: unknown;
+  type: string;
   /** Event title */
-  title: unknown;
+  title: string;
   /** Content slug */
-  slug: unknown;
+  slug: string;
   /** Frontend URL path */
-  href: unknown;
+  href: string;
 }

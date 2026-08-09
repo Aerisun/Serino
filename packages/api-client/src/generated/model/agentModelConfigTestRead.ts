@@ -6,8 +6,8 @@
  */
 
 export interface AgentModelConfigTestRead {
-  ok?: unknown;
-  model: unknown;
-  endpoint: unknown;
-  summary: unknown;
+  ok?: boolean;
+  model: string;
+  endpoint: string;
+  summary: string;
 }

@@ -7,9 +7,9 @@
 
 export interface ActivityHeatmapStatsRead {
   /** Total contributions in the period */
-  total_contributions: unknown;
+  total_contributions: number;
   /** Highest weekly contribution count */
-  peak_week: unknown;
+  peak_week: number;
   /** Average contributions per week */
-  average_per_week: unknown;
+  average_per_week: number;
 }

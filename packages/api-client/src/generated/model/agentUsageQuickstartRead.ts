@@ -4,12 +4,14 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { AgentUsageQuickstartReadEnvironment } from './agentUsageQuickstartReadEnvironment';
+import type { AgentUsageQuickstartStepRead } from './agentUsageQuickstartStepRead';
 
 export interface AgentUsageQuickstartRead {
   /** What the quickstart achieves */
-  summary: unknown;
+  summary: string;
   /** Environment variables used by commands */
-  environment?: unknown;
+  environment?: AgentUsageQuickstartReadEnvironment;
   /** Ordered quickstart steps */
-  steps?: unknown;
+  steps?: AgentUsageQuickstartStepRead[];
 }

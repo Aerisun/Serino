@@ -7,25 +7,25 @@
 
 export interface ContentNotificationDeliveryAdminRead {
   /** Delivery id */
-  id: unknown;
+  id: string;
   /** Subscriber email */
-  subscriber_email: unknown;
+  subscriber_email: string;
   /** Content type */
-  content_type: unknown;
+  content_type: string;
   /** Content slug */
-  content_slug: unknown;
+  content_slug: string;
   /** Content title */
-  content_title: unknown;
+  content_title: string;
   /** Public content URL */
-  content_url: unknown;
+  content_url: string;
   /** Delivery status */
-  status: unknown;
+  status: string;
   /** Delivery error detail */
-  error_message?: unknown;
+  error_message?: string | null;
   /** Delivery time */
-  sent_at?: unknown;
+  sent_at?: string | null;
   /** Creation time */
-  created_at: unknown;
+  created_at: string;
   /** Last update time */
-  updated_at: unknown;
+  updated_at: string;
 }

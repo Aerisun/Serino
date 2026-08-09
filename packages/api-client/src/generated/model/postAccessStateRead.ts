@@ -6,14 +6,14 @@
  */
 
 export interface PostAccessStateRead {
-  authenticated: unknown;
-  approval_enabled: unknown;
-  requires_approval: unknown;
-  has_access: unknown;
-  owner_name: unknown;
-  post_title: unknown;
-  mail_feedback_available?: unknown;
-  access_expires_at?: unknown;
-  remaining_seconds?: unknown;
-  pending_request_id?: unknown;
+  authenticated: boolean;
+  approval_enabled: boolean;
+  requires_approval: boolean;
+  has_access: boolean;
+  owner_name: string;
+  post_title: string;
+  mail_feedback_available?: boolean;
+  access_expires_at?: string | null;
+  remaining_seconds?: number | null;
+  pending_request_id?: string | null;
 }

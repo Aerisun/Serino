@@ -7,13 +7,13 @@
 
 export interface FriendRead {
   /** Friend site name */
-  name: unknown;
+  name: string;
   /** Short description */
-  description: unknown;
+  description: string | null;
   /** Avatar image URL */
-  avatar: unknown;
+  avatar: string | null;
   /** Friend site URL */
-  url: unknown;
+  url: string;
   /** Website status */
-  status: unknown;
+  status: string;
 }

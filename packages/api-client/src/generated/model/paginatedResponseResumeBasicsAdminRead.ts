@@ -4,14 +4,15 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { ResumeBasicsAdminRead } from './resumeBasicsAdminRead';
 
 export interface PaginatedResponseResumeBasicsAdminRead {
   /** Page of result items */
-  items: unknown;
+  items: ResumeBasicsAdminRead[];
   /** Total number of items matching the query */
-  total: unknown;
+  total: number;
   /** Current page number (1-based) */
-  page: unknown;
+  page: number;
   /** Number of items per page */
-  page_size: unknown;
+  page_size: number;
 }

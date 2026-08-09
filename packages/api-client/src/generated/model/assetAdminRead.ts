@@ -4,27 +4,29 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { AssetAdminReadScope } from './assetAdminReadScope';
+import type { AssetAdminReadVisibility } from './assetAdminReadVisibility';
 
 export interface AssetAdminRead {
-  id: unknown;
-  file_name: unknown;
-  resource_key: unknown;
-  public_slug: unknown;
-  visibility: unknown;
-  scope: unknown;
-  category: unknown;
-  note: unknown;
-  storage_path: unknown;
-  internal_url: unknown;
-  public_url: unknown;
-  mime_type: unknown;
-  byte_size: unknown;
-  sha256: unknown;
-  storage_provider: unknown;
-  remote_status: unknown;
-  mirror_status: unknown;
-  mirror_last_error: unknown;
-  oss_acceleration_enabled_at_upload: unknown;
-  created_at: unknown;
-  updated_at: unknown;
+  id: string;
+  file_name: string;
+  resource_key: string;
+  public_slug: string | null;
+  visibility: AssetAdminReadVisibility;
+  scope: AssetAdminReadScope;
+  category: string;
+  note: string | null;
+  storage_path: string;
+  internal_url: string;
+  public_url: string | null;
+  mime_type: string | null;
+  byte_size: number | null;
+  sha256: string | null;
+  storage_provider: string;
+  remote_status: string;
+  mirror_status: string;
+  mirror_last_error: string | null;
+  oss_acceleration_enabled_at_upload: boolean;
+  created_at: string;
+  updated_at: string;
 }

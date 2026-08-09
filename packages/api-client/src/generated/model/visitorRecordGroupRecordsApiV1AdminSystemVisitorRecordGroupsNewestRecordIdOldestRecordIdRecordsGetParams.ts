@@ -19,4 +19,5 @@ path?: string | null;
 ip?: string | null;
 date_from?: string | null;
 date_to?: string | null;
+include_bots?: boolean;
 };

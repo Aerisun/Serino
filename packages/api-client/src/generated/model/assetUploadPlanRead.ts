@@ -4,14 +4,17 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { AssetAdminRead } from './assetAdminRead';
+import type { AssetUploadPlanReadMode } from './assetUploadPlanReadMode';
+import type { AssetUploadPlanReadUploadHeaders } from './assetUploadPlanReadUploadHeaders';
 
 export interface AssetUploadPlanRead {
-  mode: unknown;
-  asset_id?: unknown;
-  resource_key?: unknown;
-  upload_url?: unknown;
-  upload_method?: unknown;
-  upload_headers?: unknown;
-  expires_at?: unknown;
-  asset?: unknown;
+  mode: AssetUploadPlanReadMode;
+  asset_id?: string | null;
+  resource_key?: string | null;
+  upload_url?: string | null;
+  upload_method?: 'PUT' | null;
+  upload_headers?: AssetUploadPlanReadUploadHeaders;
+  expires_at?: string | null;
+  asset?: AssetAdminRead | null;
 }

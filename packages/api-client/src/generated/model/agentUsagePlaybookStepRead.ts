@@ -4,16 +4,17 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { AgentUsagePlaybookStepReadPayload } from './agentUsagePlaybookStepReadPayload';
 
 export interface AgentUsagePlaybookStepRead {
   /** Step sequence number */
-  order: unknown;
+  order: number;
   /** Short step title */
-  title: unknown;
+  title: string;
   /** Action category such as mcp_call or curl */
-  action_type: unknown;
+  action_type: string;
   /** Machine-readable action payload */
-  payload?: unknown;
+  payload?: AgentUsagePlaybookStepReadPayload;
   /** How to determine the step succeeded */
-  success_criteria: unknown;
+  success_criteria: string;
 }

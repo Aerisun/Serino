@@ -7,13 +7,13 @@
 
 export interface AgentUsageAuthRead {
   /** Authentication type */
-  type: unknown;
+  type: string;
   /** HTTP header used for authentication */
-  header: unknown;
+  header: string;
   /** Expected header value format */
-  format: unknown;
+  format: string;
   /** Authentication header example */
-  example: unknown;
+  example: string;
   /** Additional auth notes */
-  notes?: unknown;
+  notes?: string[];
 }

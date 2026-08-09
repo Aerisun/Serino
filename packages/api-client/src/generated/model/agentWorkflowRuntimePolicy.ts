@@ -4,7 +4,7 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { AgentWorkflowRuntimePolicyRetryPolicy } from './agentWorkflowRuntimePolicyRetryPolicy';
+import type { AgentWorkflowRetryPolicy } from './agentWorkflowRetryPolicy';
 
 export interface AgentWorkflowRuntimePolicy {
   /** @maxLength 80 */
@@ -15,6 +15,6 @@ export interface AgentWorkflowRuntimePolicy {
      * @maximum 500
      */
   max_steps?: number;
-  retry_policy?: AgentWorkflowRuntimePolicyRetryPolicy;
+  retry_policy?: AgentWorkflowRetryPolicy;
   default_model?: string | null;
 }

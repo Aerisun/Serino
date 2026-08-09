@@ -4,8 +4,13 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { ChatGPTModelConfigUpdate } from './chatGPTModelConfigUpdate';
+import type { OpenAICompatibleModelConfigUpdate } from './openAICompatibleModelConfigUpdate';
 
 export interface AgentModelConfigUpdate {
+  primary_source?: 'chatgpt_oauth' | 'openai_compatible' | null;
+  chatgpt_oauth?: ChatGPTModelConfigUpdate | null;
+  openai_compatible?: OpenAICompatibleModelConfigUpdate | null;
   enabled?: boolean | null;
   provider?: string | null;
   base_url?: string | null;
@@ -14,4 +19,5 @@ export interface AgentModelConfigUpdate {
   temperature?: number | null;
   timeout_seconds?: number | null;
   advisory_prompt?: string | null;
+  clear_api_key?: boolean;
 }

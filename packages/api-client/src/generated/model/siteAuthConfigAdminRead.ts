@@ -7,27 +7,27 @@
 
 export interface SiteAuthConfigAdminRead {
   /** Visitor auth config id */
-  id: unknown;
+  id: string;
   /** Whether email login is enabled */
-  email_login_enabled: unknown;
+  email_login_enabled: boolean;
   /** OAuth providers enabled for visitor binding */
-  visitor_oauth_providers?: unknown;
+  visitor_oauth_providers?: string[];
   /** Auth methods reserved for admin-side usage */
-  admin_auth_methods?: unknown;
+  admin_auth_methods?: string[];
   /** Admin-elevated auth methods that are allowed to enter the admin console */
-  admin_console_auth_methods?: unknown;
+  admin_console_auth_methods?: string[];
   /** Whether email can be used as an admin identity */
-  admin_email_enabled: unknown;
+  admin_email_enabled: boolean;
   /** Google OAuth client id */
-  google_client_id: unknown;
+  google_client_id: string;
   /** Google OAuth client secret */
-  google_client_secret: unknown;
+  google_client_secret: string;
   /** GitHub OAuth client id */
-  github_client_id: unknown;
+  github_client_id: string;
   /** GitHub OAuth client secret */
-  github_client_secret: unknown;
+  github_client_secret: string;
   /** Creation time */
-  created_at: unknown;
+  created_at: string;
   /** Last update time */
-  updated_at: unknown;
+  updated_at: string;
 }

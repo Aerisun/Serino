@@ -6,8 +6,8 @@
  */
 
 export interface PostAccessGrantedRead {
-  slug: unknown;
-  title: unknown;
-  access_expires_at: unknown;
-  remaining_seconds: unknown;
+  slug: string;
+  title: string;
+  access_expires_at: string;
+  remaining_seconds: number;
 }

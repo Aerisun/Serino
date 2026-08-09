@@ -4,14 +4,15 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { NavChildRead } from './navChildRead';
 
 export interface NavItemRead {
   /** Navigation item label */
-  label: unknown;
+  label: string;
   /** Interaction trigger type */
-  trigger: unknown;
+  trigger: string;
   /** Navigation URL */
-  href?: unknown;
+  href?: string | null;
   /** Nested child navigation items */
-  children?: unknown;
+  children?: NavChildRead[];
 }

@@ -6,8 +6,8 @@
  */
 
 export interface AdminSessionRead {
-  id: unknown;
-  created_at: unknown;
-  expires_at: unknown;
-  is_current?: unknown;
+  id: string;
+  created_at: string;
+  expires_at: string;
+  is_current?: boolean;
 }

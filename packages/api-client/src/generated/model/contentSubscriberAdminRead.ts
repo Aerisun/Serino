@@ -4,32 +4,33 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { ContentSubscriberAdminReadAuthMode } from './contentSubscriberAdminReadAuthMode';
 
 export interface ContentSubscriberAdminRead {
   /** Subscriber email */
-  email: unknown;
+  email: string;
   /** Whether subscription is active */
-  is_active: unknown;
+  is_active: boolean;
   /** Subscribed content types */
-  content_types?: unknown;
+  content_types?: string[];
   /** Whether the initiating visitor is email-only, bound account user, or unknown */
-  auth_mode: unknown;
+  auth_mode: ContentSubscriberAdminReadAuthMode;
   /** Initiating visitor email */
-  initiator_email?: unknown;
+  initiator_email?: string | null;
   /** Initiating visitor display name */
-  display_name?: unknown;
+  display_name?: string | null;
   /** Initiating visitor avatar */
-  avatar_url?: unknown;
+  avatar_url?: string | null;
   /** Initiating visitor primary auth provider */
-  primary_auth_provider?: unknown;
+  primary_auth_provider?: string | null;
   /** Initiating visitor OAuth providers */
-  oauth_providers?: unknown;
+  oauth_providers?: string[];
   /** Number of successful deliveries */
-  sent_count?: unknown;
+  sent_count?: number;
   /** Last successful delivery time */
-  last_sent_at?: unknown;
+  last_sent_at?: string | null;
   /** Creation time */
-  created_at: unknown;
+  created_at: string;
   /** Last update time */
-  updated_at: unknown;
+  updated_at: string;
 }

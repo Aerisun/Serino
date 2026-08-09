@@ -4,22 +4,23 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { AgentUsagePlaybookStepRead } from './agentUsagePlaybookStepRead';
 
 export interface AgentUsagePlaybookRead {
   /** Stable playbook identifier */
-  id: unknown;
+  id: string;
   /** Playbook title */
-  title: unknown;
+  title: string;
   /** Playbook purpose */
-  description: unknown;
+  description: string;
   /** Whether current API key can execute this playbook end-to-end */
-  available: unknown;
+  available: boolean;
   /** Operational risk level */
-  risk_level: unknown;
+  risk_level: string;
   /** Scopes required by this playbook */
-  required_scopes?: unknown;
+  required_scopes?: string[];
   /** Ordered steps */
-  steps?: unknown;
+  steps?: AgentUsagePlaybookStepRead[];
   /** Post-run checks */
-  verification?: unknown;
+  verification?: string[];
 }

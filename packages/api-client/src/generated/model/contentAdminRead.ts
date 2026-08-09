@@ -7,41 +7,41 @@
 
 export interface ContentAdminRead {
   /** Unique content identifier */
-  id: unknown;
+  id: string;
   /** URL-friendly unique identifier */
-  slug: unknown;
+  slug: string;
   /** Display title */
-  title: unknown;
+  title: string;
   /** Brief summary or excerpt */
-  summary: unknown;
+  summary: string | null;
   /** Full content body in Markdown */
-  body: unknown;
+  body: string;
   /** List of tag names */
-  tags: unknown;
+  tags: string[];
   /** Visibility level */
-  visibility: unknown;
+  visibility: string;
   /** Publication timestamp */
-  published_at: unknown;
+  published_at: string | null;
   /** Creation timestamp */
-  created_at: unknown;
+  created_at: string;
   /** Last update timestamp */
-  updated_at: unknown;
+  updated_at: string;
   /** Content category */
-  category?: unknown;
+  category?: string | null;
   /** Author mood (diary-specific) */
-  mood?: unknown;
+  mood?: string | null;
   /** Weather description (diary-specific) */
-  weather?: unknown;
+  weather?: string | null;
   /** Associated poem text */
-  poem?: unknown;
+  poem?: string | null;
   /** Original author name */
-  author_name?: unknown;
+  author_name?: string | null;
   /** Source URL or reference */
-  source?: unknown;
+  source?: string | null;
   /** Total page views */
-  view_count?: unknown;
+  view_count?: number;
   /** Whether pinned to top */
-  is_pinned?: unknown;
+  is_pinned?: boolean;
   /** Sort order among pinned items */
-  pin_order?: unknown;
+  pin_order?: number;
 }

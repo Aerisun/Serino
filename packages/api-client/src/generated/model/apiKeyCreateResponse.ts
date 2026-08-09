@@ -4,8 +4,9 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { ApiKeyAdminRead } from './apiKeyAdminRead';
 
 export interface ApiKeyCreateResponse {
-  item: unknown;
-  raw_key: unknown;
+  item: ApiKeyAdminRead;
+  raw_key: string;
 }

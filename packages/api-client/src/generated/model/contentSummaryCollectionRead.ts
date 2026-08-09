@@ -4,12 +4,13 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { ContentSummaryRead } from './contentSummaryRead';
 
 export interface ContentSummaryCollectionRead {
   /** List of content summaries */
-  items: unknown;
+  items: ContentSummaryRead[];
   /** Total number of matching entries */
-  total?: unknown;
+  total?: number;
   /** Whether more entries are available */
-  has_more?: unknown;
+  has_more?: boolean;
 }

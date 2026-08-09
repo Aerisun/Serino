@@ -7,25 +7,25 @@
 
 export interface GuestbookEntryRead {
   /** Unique guestbook entry identifier */
-  id: unknown;
+  id: string;
   /** Guest display name */
-  name: unknown;
+  name: string;
   /** Guest personal website URL */
-  website: unknown;
+  website: string | null;
   /** Guestbook message body */
-  body: unknown;
+  body: string;
   /** Moderation status */
-  status: unknown;
+  status: string;
   /** Entry creation timestamp */
-  created_at: unknown;
+  created_at: string;
   /** Avatar identifier or key */
-  avatar?: unknown;
+  avatar?: string | null;
   /** Full avatar image URL */
-  avatar_url?: unknown;
+  avatar_url?: string | null;
   /** Whether the guestbook author is the site owner */
-  is_author?: unknown;
+  is_author?: boolean;
   /** Whether the current user owns this entry */
-  owned_by_current_user?: unknown;
+  owned_by_current_user?: boolean;
   /** Whether the current user can delete this entry */
-  can_delete?: unknown;
+  can_delete?: boolean;
 }

@@ -4,10 +4,11 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { CommentRead } from './commentRead';
 
 export interface CommentCreateResponse {
   /** Created comment */
-  item: unknown;
+  item: CommentRead;
   /** Whether the comment was auto-approved */
-  accepted: unknown;
+  accepted: boolean;
 }

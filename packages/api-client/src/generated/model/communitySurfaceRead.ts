@@ -7,11 +7,11 @@
 
 export interface CommunitySurfaceRead {
   /** Surface identifier */
-  key: unknown;
+  key: string;
   /** Display label */
-  label: unknown;
+  label: string;
   /** URL path pattern */
-  path: unknown;
+  path: string;
   /** Whether comments are enabled */
-  enabled: unknown;
+  enabled: boolean;
 }

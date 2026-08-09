@@ -4,9 +4,11 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { AgentWorkflowExpressionCatalogReadHelpersItem } from './agentWorkflowExpressionCatalogReadHelpersItem';
+import type { AgentWorkflowExpressionCatalogReadVariablesItem } from './agentWorkflowExpressionCatalogReadVariablesItem';
 
 export interface AgentWorkflowExpressionCatalogRead {
-  helpers?: unknown;
-  variables?: unknown;
-  examples?: unknown;
+  helpers?: AgentWorkflowExpressionCatalogReadHelpersItem[];
+  variables?: AgentWorkflowExpressionCatalogReadVariablesItem[];
+  examples?: string[];
 }

@@ -4,7 +4,8 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { PostAccessGrantedRead } from './postAccessGrantedRead';
 
 export interface PostAccessGrantedListRead {
-  items: unknown;
+  items: PostAccessGrantedRead[];
 }

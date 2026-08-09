@@ -77,8 +77,9 @@ export default defineConfig({
       client: "zod",
       override: {
         zod: {
-          coerce: {
-            date: true,
+          version: 3,
+          dateTimeOptions: {
+            offset: true,
           },
         },
       },

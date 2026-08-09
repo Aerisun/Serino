@@ -7,13 +7,13 @@
 
 export interface ActivityHeatmapWeekRead {
   /** Week start date in YYYY-MM-DD format */
-  week_start: unknown;
+  week_start: string;
   /** Total contributions in this week */
-  total: unknown;
+  total: number;
   /** Daily contribution counts (7 values, Mon-Sun) */
-  days: unknown;
+  days: number[];
   /** Month label for display */
-  month_label: unknown;
+  month_label: string;
   /** Week label for display */
-  label: unknown;
+  label: string;
 }
