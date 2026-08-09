@@ -98,6 +98,17 @@ afterEach(() => {
 });
 
 describe("AdminLayout navigation", () => {
+  it("shows diagnostics as the first item under system", () => {
+    renderLayout();
+
+    const mobileNav = screen.getAllByRole("navigation")[0];
+    const systemGroup = within(mobileNav).getByText("系统").parentElement;
+    const systemLinks = within(systemGroup as HTMLElement).getAllByRole("link");
+
+    expect(systemLinks[0].textContent?.trim()).toBe("系统诊断");
+    expect(systemLinks[0].getAttribute("href")).toBe("/system/diagnostics");
+  });
+
   it("shows backups as the fourth item under management", () => {
     renderLayout();
 

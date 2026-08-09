@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useHref } from "react-router-dom";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useHref, useSearchParams } from "react-router-dom";
 import {
   useListAssetsEndpointApiV1AdminAssetsGet as useListAssetsApiV1AdminAssetsGet,
   useDeleteAssetEndpointApiV1AdminAssetsAssetIdDelete as useDeleteAssetApiV1AdminAssetsAssetIdDelete,
@@ -44,12 +44,19 @@ import { uploadManagedAsset, type AssetScope } from "@/lib/managedAssetUpload";
 import {
   getObjectStorageConfig,
   listObjectStorageSyncRecords,
+  retryObjectStorageSyncRecord,
   type ObjectStorageSyncRecordRead,
 } from "@/pages/more/objectStorageApi";
 import { toast } from "sonner";
 import type { AssetAdminRead } from "@serino/api-client/models";
 
 type AssetViewMode = AssetScope | "oss_sync";
+
+function assetViewModeFromQuery(value: string | null): AssetViewMode {
+  return value === "article" || value === "visitor" || value === "system" || value === "oss_sync"
+    ? value
+    : "user";
+}
 
 const CATEGORY_OPTIONS: Record<AssetScope, readonly string[]> = {
   user: ["general"],
@@ -61,8 +68,11 @@ const CATEGORY_OPTIONS: Record<AssetScope, readonly string[]> = {
 export default function AssetsPage() {
   const { t } = useI18n();
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [page, setPage] = useState(1);
-  const [viewMode, setViewMode] = useState<AssetViewMode>("user");
+  const [viewMode, setViewMode] = useState<AssetViewMode>(() =>
+    assetViewModeFromQuery(searchParams.get("view")),
+  );
   const [scope, setScope] = useState<AssetScope>("user");
   const [search, setSearch] = useState("");
   const [searchDebounced, setSearchDebounced] = useState("");
@@ -93,11 +103,23 @@ export default function AssetsPage() {
     };
   }, []);
 
-  const { data: raw, isLoading } = useListAssetsApiV1AdminAssetsGet({
-    page,
-    q: searchDebounced || undefined,
-    scope: isSyncView ? undefined : viewMode,
-  });
+  useEffect(() => {
+    const nextViewMode = assetViewModeFromQuery(searchParams.get("view"));
+    setViewMode((current) => (current === nextViewMode ? current : nextViewMode));
+  }, [searchParams]);
+
+  const { data: raw, isLoading } = useListAssetsApiV1AdminAssetsGet(
+    {
+      page,
+      q: searchDebounced || undefined,
+      scope: isSyncView ? undefined : viewMode,
+    },
+    {
+      query: {
+        enabled: !isSyncView,
+      },
+    },
+  );
   const data = raw?.data && "items" in raw.data ? raw.data : undefined;
   const { data: objectStorageConfig } = useQuery({
     queryKey: ["admin", "object-storage-config"],
@@ -109,6 +131,24 @@ export default function AssetsPage() {
     queryFn: () => listObjectStorageSyncRecords({ page, q: searchDebounced }),
     enabled: isSyncView,
     refetchOnWindowFocus: false,
+  });
+  const retrySyncRecord = useMutation({
+    mutationFn: ({
+      recordType,
+      recordId,
+    }: {
+      recordType: ObjectStorageSyncRecordRead["record_type"];
+      recordId: string;
+    }) => retryObjectStorageSyncRecord(recordType, recordId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["admin", "object-storage-sync-records"],
+      });
+      toast.success(t("assets.syncRetryQueued"));
+    },
+    onError: (error) => {
+      toast.error(extractApiErrorMessage(error, t("assets.syncRetryFailed")));
+    },
   });
 
   const del = useDeleteAssetApiV1AdminAssetsAssetIdDelete({
@@ -156,6 +196,15 @@ export default function AssetsPage() {
 
   const handleViewModeChange = (value: AssetViewMode) => {
     setViewMode(value);
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      if (value === "user") {
+        next.delete("view");
+      } else {
+        next.set("view", value);
+      }
+      return next;
+    }, { replace: true });
     if (value !== "oss_sync") {
       setScope(value);
       setCategory(CATEGORY_OPTIONS[value][0]);
@@ -581,6 +630,31 @@ export default function AssetsPage() {
                 header: t("assets.syncRetries"),
                 accessor: (row) => row.retry_count,
               },
+              {
+                header: t("common.actions"),
+                accessor: (row) =>
+                  row.status === "failed" ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={
+                        retrySyncRecord.isPending &&
+                        retrySyncRecord.variables?.recordId === row.id
+                      }
+                      onClick={() =>
+                        retrySyncRecord.mutate({
+                          recordType: row.record_type,
+                          recordId: row.id,
+                        })
+                      }
+                    >
+                      {t("assets.syncRetry")}
+                    </Button>
+                  ) : (
+                    <span className="text-muted-foreground">-</span>
+                  ),
+              },
             ]}
             data={syncRecords?.items ?? []}
             total={syncRecords?.total ?? 0}
@@ -606,6 +680,16 @@ export default function AssetsPage() {
                     {formatDate(row.updated_at)}
                   </div>
                 </div>
+                {row.last_error ? (
+                  <div className="space-y-1 sm:col-span-2">
+                    <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                      {t("assets.syncLastError")}
+                    </div>
+                    <div className="break-words rounded-md border border-red-500/15 bg-red-500/[0.05] px-3 py-2 text-red-700 dark:text-red-300">
+                      {row.last_error}
+                    </div>
+                  </div>
+                ) : null}
               </div>
             )}
           />

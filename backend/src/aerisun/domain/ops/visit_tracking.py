@@ -44,8 +44,9 @@ _SYSTEM_RESOURCE_EXACT_PATHS = {
     "/bootstrap.js",
     "/robots.txt",
     "/sitemap.xml",
+    "/mcp/install",
 }
-_SYSTEM_RESOURCE_PREFIXES = ("/assets/", "/favicon")
+_SYSTEM_RESOURCE_PREFIXES = ("/assets/", "/favicon", "/mcp/install/")
 _SYSTEM_RESOURCE_EXTENSIONS = (
     ".js",
     ".css",

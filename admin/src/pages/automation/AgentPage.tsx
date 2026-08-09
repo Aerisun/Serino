@@ -28,7 +28,7 @@ export default function AgentPage() {
   const { t } = useI18n();
   const { section } = useParams();
 
-  if (!section) {
+  if (!section || section === "overview") {
     return <Navigate to="/agent/workflows" replace />;
   }
 

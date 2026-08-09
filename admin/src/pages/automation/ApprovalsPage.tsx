@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   getGetApprovalsApiV1AdminAutomationApprovalsGetQueryKey,
+  getGetOverviewApiV1AdminAutomationOverviewGetQueryKey,
   getGetRunsApiV1AdminAutomationRunsGetQueryKey,
   useGetApprovalsApiV1AdminAutomationApprovalsGet,
   usePostApprovalDecisionApiV1AdminAutomationApprovalsApprovalIdDecisionPost,
@@ -12,6 +13,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { AdminSurface } from "@/components/AdminSurface";
 import { DataTable } from "@/components/DataTable";
 import { Button } from "@/components/ui/Button";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { StatusBadge } from "@/components/StatusBadge";
 import { useI18n } from "@/i18n";
 import { extractApiErrorMessage } from "@/lib/api-error";
@@ -19,9 +21,16 @@ import { formatDate } from "@/lib/utils";
 import { toast } from "sonner";
 import type { AgentRunApprovalRead } from "@serino/api-client/models";
 import type { AgentRunRead } from "@serino/api-client/models";
+import { getAutomationRunItems } from "./automation-run-view";
+import { AutomationQueryError } from "./AutomationQueryError";
 
 interface ApprovalsPanelProps {
   runDetailBasePath?: string;
+}
+
+interface PendingDecision {
+  approvalId: string;
+  action: "approve" | "reject";
 }
 
 function humanizeApprovalType(value: string, lang: "zh" | "en") {
@@ -83,11 +92,12 @@ export function ApprovalsPanel({
   const { t, lang } = useI18n();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [busyId, setBusyId] = useState<string | null>(null);
-  const { data: raw, isLoading } = useGetApprovalsApiV1AdminAutomationApprovalsGet();
-  const { data: runsRaw } = useGetRunsApiV1AdminAutomationRunsGet();
+  const [pendingDecision, setPendingDecision] = useState<PendingDecision | null>(null);
+  const [reason, setReason] = useState("");
+  const { data: raw, isLoading, isError, refetch } = useGetApprovalsApiV1AdminAutomationApprovalsGet();
+  const { data: runsRaw } = useGetRunsApiV1AdminAutomationRunsGet({ limit: 100 });
   const items = (raw?.data ?? []) as AgentRunApprovalRead[];
-  const runs = (runsRaw?.data ?? []) as AgentRunRead[];
+  const runs = getAutomationRunItems(runsRaw?.data) as AgentRunRead[];
   const detailBasePath = runDetailBasePath.replace(/\/$/, "");
   const workflowNameMap = useMemo(
     () => new Map(runs.map((item) => [item.id, item.workflow_key])),
@@ -99,25 +109,29 @@ export function ApprovalsPanel({
       onSuccess: (_res, vars) => {
         queryClient.invalidateQueries({ queryKey: getGetApprovalsApiV1AdminAutomationApprovalsGetQueryKey() });
         queryClient.invalidateQueries({ queryKey: getGetRunsApiV1AdminAutomationRunsGetQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetOverviewApiV1AdminAutomationOverviewGetQueryKey() });
         toast.success(t("common.operationSuccess"));
-        setBusyId(null);
+        setPendingDecision(null);
+        setReason("");
         const row = items.find((item) => item.id === vars.approvalId);
         if (row?.run_id) navigate(`${detailBasePath}/${row.run_id}`);
       },
       onError: (error: any) => {
         toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
-        setBusyId(null);
       },
     },
   });
 
   const submitDecision = (approvalId: string, action: "approve" | "reject") => {
-    setBusyId(approvalId);
-    decide.mutate({ approvalId, data: { action } });
+    setReason("");
+    setPendingDecision({ approvalId, action });
   };
 
   return (
     <AdminSurface eyebrow="Approval" title={t("automation.approvals")} description={t("automation.approvalsDescription")}>
+      {isError ? (
+        <AutomationQueryError lang={lang} onRetry={() => void refetch()} />
+      ) : (
       <DataTable
         columns={[
           {
@@ -159,10 +173,10 @@ export function ApprovalsPanel({
             header: t("common.actions"),
             accessor: (row) => (
               <div className="flex flex-wrap gap-2">
-                <Button size="sm" onClick={() => submitDecision(row.id, "approve")} disabled={busyId === row.id || decide.isPending}>
+                <Button size="sm" onClick={() => submitDecision(row.id, "approve")} disabled={decide.isPending}>
                   {lang === "zh" ? "通过" : "Approve"}
                 </Button>
-                <Button size="sm" variant="destructive" onClick={() => submitDecision(row.id, "reject")} disabled={busyId === row.id || decide.isPending}>
+                <Button size="sm" variant="destructive" onClick={() => submitDecision(row.id, "reject")} disabled={decide.isPending}>
                   {lang === "zh" ? "拒绝" : "Reject"}
                 </Button>
               </div>
@@ -173,6 +187,45 @@ export function ApprovalsPanel({
         data={items}
         isLoading={isLoading}
       />
+      )}
+
+      <ConfirmDialog
+        open={pendingDecision !== null}
+        title={pendingDecision?.action === "reject"
+          ? (lang === "zh" ? "确认拒绝这项审批？" : "Reject this approval?")
+          : (lang === "zh" ? "确认通过这项审批？" : "Approve this request?")}
+        description={lang === "zh"
+          ? "决定会立即恢复对应工作流，请确认审批内容与目标无误。"
+          : "This decision resumes the workflow immediately. Verify the request and target first."}
+        confirmLabel={pendingDecision?.action === "reject"
+          ? (lang === "zh" ? "确认拒绝" : "Reject")
+          : (lang === "zh" ? "确认通过" : "Approve")}
+        variant={pendingDecision?.action === "reject" ? "destructive" : "default"}
+        isPending={decide.isPending}
+        onCancel={() => {
+          setPendingDecision(null);
+          setReason("");
+        }}
+        onConfirm={() => {
+          if (!pendingDecision) return;
+          decide.mutate({
+            approvalId: pendingDecision.approvalId,
+            data: { action: pendingDecision.action, reason: reason.trim() || null },
+          });
+        }}
+      >
+        <label className="grid gap-2 text-sm">
+          <span className="font-medium">{lang === "zh" ? "处理说明（可选）" : "Decision note (optional)"}</span>
+          <textarea
+            value={reason}
+            onChange={(event) => setReason(event.target.value)}
+            rows={3}
+            maxLength={500}
+            className="w-full resize-y rounded-[var(--admin-radius-md)] admin-glass-input px-3 py-2 text-sm outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            placeholder={lang === "zh" ? "记录通过或拒绝的原因" : "Record why this was approved or rejected"}
+          />
+        </label>
+      </ConfirmDialog>
     </AdminSurface>
   );
 }

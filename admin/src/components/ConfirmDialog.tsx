@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/Dialog";
 import { AlertTriangle } from "lucide-react";
 import { useI18n } from "@/i18n";
+import type { ReactNode } from "react";
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -18,6 +19,7 @@ interface ConfirmDialogProps {
   confirmLabel?: string;
   variant?: "default" | "destructive";
   isPending?: boolean;
+  children?: ReactNode;
 }
 
 export function ConfirmDialog({
@@ -29,6 +31,7 @@ export function ConfirmDialog({
   confirmLabel,
   variant = "default",
   isPending = false,
+  children,
 }: ConfirmDialogProps) {
   const { t } = useI18n();
 
@@ -54,6 +57,7 @@ export function ConfirmDialog({
             </DialogHeader>
           </div>
         </div>
+        {children ? <div className="border-b border-border/60 px-6 py-4">{children}</div> : null}
         <div className="flex justify-end gap-2 px-6 py-4">
           <Button
             variant="outline"

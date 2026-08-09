@@ -1,11 +1,11 @@
-import { useState } from "react";
-import { useGetApprovalsApiV1AdminAutomationApprovalsGet, useGetRunsApiV1AdminAutomationRunsGet } from "@serino/api-client/admin";
+import { useGetOverviewApiV1AdminAutomationOverviewGet } from "@serino/api-client/admin";
 import { AdminSegmentedFilter } from "@/components/ui/AdminSegmentedFilter";
 import { useI18n } from "@/i18n";
 import { cn } from "@/lib/utils";
 import { AgentRunsPanel } from "./AgentRunsPage";
 import { ApprovalsPanel } from "./ApprovalsPage";
-import { isAutomationRunLiveStatus } from "./automation-query-shared";
+import { summarizeAutomationOverview } from "./automation-run-view";
+import { useSearchParams } from "react-router-dom";
 
 type ActivityView = "runs" | "approvals";
 
@@ -13,7 +13,7 @@ const COPY = {
   zh: {
     approvals: "待审批",
     active: "进行中",
-    runs: "最近运行",
+    runs: "运行总数",
     failed: "失败",
     approvalsList: "审批列表",
     runsList: "运行记录",
@@ -21,7 +21,7 @@ const COPY = {
   en: {
     approvals: "Pending approvals",
     active: "Active",
-    runs: "Recent runs",
+    runs: "Total runs",
     failed: "Failed",
     approvalsList: "Approvals",
     runsList: "Runs",
@@ -30,20 +30,19 @@ const COPY = {
 
 export function AgentActivitySection() {
   const { lang } = useI18n();
-  const [view, setView] = useState<ActivityView>("runs");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const view: ActivityView = searchParams.get("view") === "approvals" ? "approvals" : "runs";
   const copy = COPY[lang];
-  const { data: approvalsRaw } = useGetApprovalsApiV1AdminAutomationApprovalsGet();
-  const { data: runsRaw } = useGetRunsApiV1AdminAutomationRunsGet();
-  const approvals = approvalsRaw?.data ?? [];
-  const runs = runsRaw?.data ?? [];
-  const activeRuns = runs.filter((item) => isAutomationRunLiveStatus(item.status)).length;
-  const failedRuns = runs.filter((item) => item.status === "failed").length;
+  const { data: overviewRaw } = useGetOverviewApiV1AdminAutomationOverviewGet({
+    query: { refetchOnWindowFocus: true },
+  });
+  const summary = summarizeAutomationOverview(overviewRaw?.data);
 
   const metrics = [
-    { key: "approvals", label: copy.approvals, value: approvals.length },
-    { key: "active", label: copy.active, value: activeRuns },
-    { key: "runs", label: copy.runs, value: runs.length },
-    { key: "failed", label: copy.failed, value: failedRuns },
+    { key: "approvals", label: copy.approvals, value: summary.approvals },
+    { key: "active", label: copy.active, value: summary.active },
+    { key: "runs", label: copy.runs, value: summary.runs },
+    { key: "failed", label: copy.failed, value: summary.failed },
   ] as const;
 
   return (
@@ -51,10 +50,13 @@ export function AgentActivitySection() {
       <div className="flex flex-col gap-3 md:flex-row md:items-center">
         <AdminSegmentedFilter
           value={view}
-          onValueChange={(next) => setView(next as ActivityView)}
+          onValueChange={(next) => {
+            const nextView = next as ActivityView;
+            setSearchParams(nextView === "approvals" ? { view: "approvals" } : {}, { replace: true });
+          }}
           items={[
-            { value: "approvals", label: copy.approvalsList, badge: approvals.length },
-            { value: "runs", label: copy.runsList, badge: runs.length },
+            { value: "approvals", label: copy.approvalsList, badge: summary.approvals },
+            { value: "runs", label: copy.runsList, badge: summary.runs },
           ]}
           width="content"
           className="!border-none !bg-transparent !p-0 !shadow-none !rounded-none [&::before]:hidden md:mr-4 md:shrink-0"

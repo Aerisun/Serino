@@ -6,6 +6,7 @@ import { AppleSwitch } from "@/components/ui/AppleSwitch";
 import { useI18n } from "@/i18n";
 import { toast } from "sonner";
 import { McpApiKeysSection } from "./McpApiKeysSection";
+import { McpInstallGuide } from "./McpInstallGuide";
 
 const MCP_SETTINGS_QUERY_KEY = ["admin", "mcp-config", "settings"];
 
@@ -100,11 +101,7 @@ export function McpSettingsSection() {
             value={config.endpoint}
             hint={t("integrations.mcpEndpointHint")}
           />
-          <ReadonlyField
-            label={t("integrations.usageUrl")}
-            value={config.usage_url}
-            hint={t("integrations.usageUrlHint")}
-          />
+          <McpInstallGuide endpoint={config.endpoint} usageUrl={config.usage_url} />
         </div>
       </AdminSurface>
 

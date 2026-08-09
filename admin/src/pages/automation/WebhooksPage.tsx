@@ -23,8 +23,11 @@ import { toast } from "sonner";
 import { Plus, Trash2, Pencil, CheckCircle2 } from "lucide-react";
 import { connectTelegramWebhook, testWebhookSubscription } from "@/pages/automation/api";
 import { DeliveriesPanel } from "./DeliveriesPage";
+import { DeadLettersPanel } from "./DeadLettersPage";
+import { AutomationQueryError } from "./AutomationQueryError";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
-type WebhookView = "webhooks" | "deliveries";
+type WebhookView = "webhooks" | "deliveries" | "dead_letters";
 const DEFAULT_EVENT_TYPES = ["comment.pending", "guestbook.pending"] as const;
 const DEFAULT_TIMEOUT_SECONDS = 10;
 const DEFAULT_MAX_ATTEMPTS = 6;
@@ -273,10 +276,11 @@ export function WebhooksPanel() {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<WebhookSubscriptionRead | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<WebhookSubscriptionRead | null>(null);
   const [form, setForm] = useState<WebhookFormState>(EMPTY_FORM);
   const [telegramConnectState, setTelegramConnectState] = useState<TelegramConnectState>(EMPTY_TELEGRAM_CONNECT_STATE);
   const telegramConnectRequestIdRef = useRef(0);
-  const { data: raw, isLoading } = useGetWebhooksApiV1AdminAutomationWebhooksGet();
+  const { data: raw, isLoading, isError, refetch } = useGetWebhooksApiV1AdminAutomationWebhooksGet();
   const { data: workflows } = useQuery({
     queryKey: ["admin", "agent", "workflows"],
     queryFn: getAgentWorkflows,
@@ -310,6 +314,7 @@ export function WebhooksPanel() {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetWebhooksApiV1AdminAutomationWebhooksGetQueryKey() });
         toast.success(t("common.operationSuccess"));
+        setPendingDelete(null);
         setOpen(false);
         setEditing(null);
         resetForm();
@@ -674,6 +679,9 @@ export function WebhooksPanel() {
             </div>
           </DialogContent>
         </Dialog>
+        {isError ? (
+          <AutomationQueryError lang={lang} onRetry={() => void refetch()} />
+        ) : (
         <DataTable<WebhookSubscriptionRow>
           columns={[
             { header: t("common.name"), accessor: "name" },
@@ -722,7 +730,12 @@ export function WebhooksPanel() {
                   <Button variant="ghost" size="icon" onClick={() => openEdit(row)}>
                     <Pencil className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" onClick={() => deleteWebhook.mutate({ subscriptionId: row.id })}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label={lang === "zh" ? `删除 ${row.name}` : `Delete ${row.name}`}
+                    onClick={() => setPendingDelete(row)}
+                  >
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
@@ -758,6 +771,24 @@ export function WebhooksPanel() {
             );
           }}
         />
+        )}
+
+        <ConfirmDialog
+          open={pendingDelete !== null}
+          title={lang === "zh" ? "确认删除 Webhook？" : "Delete this webhook?"}
+          description={pendingDelete
+            ? (lang === "zh"
+              ? `删除“${pendingDelete.name}”后，关联工作流将无法继续向这个目标发送通知。`
+              : `Deleting “${pendingDelete.name}” stops linked workflows from notifying this target.`)
+            : undefined}
+          confirmLabel={lang === "zh" ? "确认删除" : "Delete"}
+          variant="destructive"
+          isPending={deleteWebhook.isPending}
+          onCancel={() => setPendingDelete(null)}
+          onConfirm={() => {
+            if (pendingDelete) deleteWebhook.mutate({ subscriptionId: pendingDelete.id });
+          }}
+        />
       </AdminSurface>
     </>
   );
@@ -771,10 +802,12 @@ export function WebhookManagementSwitcher() {
     ? {
         webhooks: "Webhook 配置",
         deliveries: "投递记录",
+        deadLetters: "失败待处理",
       }
     : {
         webhooks: "Webhook Config",
         deliveries: "Deliveries",
+        deadLetters: "Dead letters",
       };
 
   return (
@@ -785,10 +818,17 @@ export function WebhookManagementSwitcher() {
         items={[
           { value: "webhooks", label: viewCopy.webhooks },
           { value: "deliveries", label: viewCopy.deliveries },
+          { value: "dead_letters", label: viewCopy.deadLetters },
         ]}
         width="content"
       />
-      {view === "webhooks" ? <WebhooksPanel /> : <DeliveriesPanel />}
+      {view === "webhooks" ? (
+        <WebhooksPanel />
+      ) : view === "deliveries" ? (
+        <DeliveriesPanel />
+      ) : (
+        <DeadLettersPanel />
+      )}
     </div>
   );
 }

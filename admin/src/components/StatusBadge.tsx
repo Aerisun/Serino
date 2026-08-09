@@ -15,6 +15,8 @@ const statusVariantMap: Record<string, string> = {
   inactive: "secondary",
   queued: "warning",
   running: "info",
+  awaiting_approval: "approval",
+  interrupted: "warning",
   retrying: "warning",
   paused: "secondary",
   completed: "success",
@@ -27,6 +29,10 @@ const statusVariantMap: Record<string, string> = {
   approvalNoRss: "approval",
   private: "info",
   unlisted: "outline",
+  healthy: "success",
+  warning: "warning",
+  skipped: "secondary",
+  unknown: "secondary",
 };
 
 export function StatusBadge({ status }: { status: string }) {

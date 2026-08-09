@@ -47,7 +47,7 @@ export interface ObjectStorageHealthRead {
 
 export interface ObjectStorageSyncRecordRead {
   id: string;
-  record_type: "mirror" | "remote_delete" | "remote_upload";
+  record_type: "mirror" | "local_delete" | "remote_delete" | "remote_upload";
   status: string;
   object_key: string;
   asset_id?: string | null;
@@ -130,4 +130,14 @@ export function listObjectStorageSyncRecords(params: {
     search.set("q", params.q.trim());
   }
   return requestJson<ObjectStorageSyncRecordListRead>(`/api/v1/admin/object-storage/sync-records?${search.toString()}`);
+}
+
+export function retryObjectStorageSyncRecord(
+  recordType: ObjectStorageSyncRecordRead["record_type"],
+  recordId: string,
+): Promise<ObjectStorageSyncRecordRead> {
+  return requestJson<ObjectStorageSyncRecordRead>(
+    `/api/v1/admin/object-storage/sync-records/${recordType}/${recordId}/retry`,
+    { method: "POST" },
+  );
 }

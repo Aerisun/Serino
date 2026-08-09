@@ -40,21 +40,27 @@ const api = vi.hoisted(() => ({
   clipboardWrite: vi.fn(),
   toastSuccess: vi.fn(),
   toastError: vi.fn(),
+  listAssetsHook: vi.fn(),
+  syncRecords: [] as any[],
+  retrySyncRecord: vi.fn(),
 }));
 
 vi.mock("@serino/api-client/admin", () => ({
   getListAssetsEndpointApiV1AdminAssetsGetQueryKey: () => ["assets"],
-  useListAssetsEndpointApiV1AdminAssetsGet: () => ({
-    data: {
+  useListAssetsEndpointApiV1AdminAssetsGet: (...args: unknown[]) => {
+    api.listAssetsHook(...args);
+    return {
       data: {
-        items: api.assets,
-        total: api.assets.length,
-        page: 1,
-        page_size: 20,
+        data: {
+          items: api.assets,
+          total: api.assets.length,
+          page: 1,
+          page_size: 20,
+        },
       },
-    },
-    isLoading: false,
-  }),
+      isLoading: false,
+    };
+  },
   useDeleteAssetEndpointApiV1AdminAssetsAssetIdDelete: () => ({
     mutate: api.deleteMutate,
     isPending: false,
@@ -73,10 +79,11 @@ vi.mock("@/pages/more/objectStorageApi", () => ({
     }),
   listObjectStorageSyncRecords: () =>
     Promise.resolve({
-      items: [],
-      total: 0,
+      items: api.syncRecords,
+      total: api.syncRecords.length,
       page_size: 20,
     }),
+  retryObjectStorageSyncRecord: (...args: unknown[]) => api.retrySyncRecord(...args),
 }));
 
 vi.mock("@/lib/managedAssetUpload", () => ({
@@ -100,7 +107,7 @@ vi.mock("sonner", () => ({
   },
 }));
 
-function renderAssetsPage() {
+function renderAssetsPage(initialEntry = "/assets") {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
@@ -109,7 +116,10 @@ function renderAssetsPage() {
   });
 
   return render(
-    <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
+    <MemoryRouter
+      initialEntries={[initialEntry]}
+      future={{ v7_relativeSplatPath: true, v7_startTransition: true }}
+    >
       <QueryClientProvider client={queryClient}>
         <LanguageProvider>
           <AssetsPage />
@@ -142,6 +152,8 @@ beforeEach(() => {
   window.open = vi.fn();
   window.confirm = vi.fn();
   api.updateMutateAsync.mockResolvedValue({ data: api.assets[0] });
+  api.syncRecords = [];
+  api.retrySyncRecord.mockResolvedValue({ status: "retrying" });
   api.clipboardWrite = vi.spyOn(navigator.clipboard, "writeText").mockResolvedValue(undefined);
   api.assets[0].file_name = "asset-file.webp";
   api.assets[0].note = "首页封面";
@@ -156,6 +168,40 @@ afterEach(() => {
 });
 
 describe("AssetsPage public slug", () => {
+  it("opens the OSS sync view from a diagnostic deep link", () => {
+    renderAssetsPage("/assets?view=oss_sync");
+
+    expect(screen.getByRole("button", { name: "OSS 同步记录" }).getAttribute("aria-pressed")).toBe("true");
+    expect(api.listAssetsHook.mock.calls[0]?.[1]?.query?.enabled).toBe(false);
+  });
+
+  it("queues a failed OSS sync record for retry from the diagnostic destination", async () => {
+    api.syncRecords = [
+      {
+        id: "failed-local-delete",
+        record_type: "local_delete",
+        status: "failed",
+        object_key: "/data/media/obsolete.png",
+        retry_count: 3,
+        last_error: "permission denied",
+        created_at: "2026-08-09T04:20:00+08:00",
+        updated_at: "2026-08-09T04:21:00+08:00",
+      },
+    ];
+    const user = userEvent.setup();
+    renderAssetsPage("/assets?view=oss_sync");
+
+    await user.click(await screen.findByRole("button", { name: "重试" }));
+
+    await waitFor(() => {
+      expect(api.retrySyncRecord).toHaveBeenCalledWith("local_delete", "failed-local-delete");
+    });
+    expect(api.invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ["admin", "object-storage-sync-records"],
+    });
+    expect(api.toastSuccess).toHaveBeenCalledWith("已加入重试队列");
+  });
+
   it("shows the four resource folders with user resources selected first", () => {
     renderAssetsPage();
 

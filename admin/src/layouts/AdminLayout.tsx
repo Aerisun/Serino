@@ -29,6 +29,7 @@ import {
   User,
   Info,
   SlidersHorizontal,
+  Stethoscope,
 } from "lucide-react";
 import { useTheme } from "@serino/theme";
 import { cn } from "@/lib/utils";
@@ -85,6 +86,11 @@ const navGroups = [
   {
     labelKey: "nav.system",
     items: [
+      {
+        to: "/system/diagnostics",
+        icon: Stethoscope,
+        labelKey: "nav.diagnostics",
+      },
       {
         to: "/system/audit-log",
         icon: ClipboardList,

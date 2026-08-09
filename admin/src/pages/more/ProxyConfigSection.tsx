@@ -20,6 +20,7 @@ import type {
   OutboundProxyHealthRead,
 } from "@serino/api-client/models";
 import { useI18n } from "@/i18n";
+import { extractApiErrorMessage } from "@/lib/api-error";
 import {
   getPersistedConfigCheckStatus,
   setPersistedConfigCheckStatus,
@@ -44,8 +45,8 @@ const COPY = {
     unconfigured: "未设置代理端口",
     webhookProxyOn: "Webhook 走代理",
     webhookProxyOff: "Webhook 不走代理",
-    oauthProxyOn: "OAuth 走代理",
-    oauthProxyOff: "OAuth 不走代理",
+    oauthProxyOn: "OAuth 与 ChatGPT 走代理",
+    oauthProxyOff: "OAuth 与 ChatGPT 不走代理",
     proxyPort: "代理端口",
     proxyPortTitle: "本机 HTTP/HTTPS 代理监听端口",
     proxyPortHint:
@@ -54,19 +55,20 @@ const COPY = {
     proxyPortInvalid: "请输入 1 到 65535 之间的端口号，或者清空以关闭代理。",
     webhookToggle: "Webhook 走代理",
     webhookToggleHint:
-      "开启后，Webhook 测试、实际投递，以及 Telegram 连接这类 webhook 相关出站请求都会优先走本机代理。",
+      "Webhook 测试、实际投递，以及 Telegram 连接这类相关出站请求都会优先走本机代理。",
     webhookToggleDisabled:
       "请先填写可用的代理端口，再决定是否让 Webhook 走代理。",
-    oauthToggle: "OAuth 走代理",
+    oauthToggle: "OAuth 与 ChatGPT 走代理",
     oauthToggleHint:
-      "开启后，Google / GitHub 的授权换 token、读取用户资料等出站请求都会优先走这份代理配置。",
+      "Google / GitHub 认证以及 ChatGPT OAuth 登录、令牌刷新和 Codex 模型请求都会走这份代理配置。",
     oauthToggleDisabled:
-      "请先填写可用的代理端口，再决定是否让 Google / GitHub 认证走代理。",
+      "请先填写可用的代理端口，再启用 OAuth 与 ChatGPT 代理。",
     scopeNote:
-      "现在这份配置已经支持 Webhook 和 OAuth 两个作用域，后面如果还要让大模型 API 走代理，也可以继续沿用这套结构。",
+      "ChatGPT OAuth 来源依赖 OAuth 代理；关闭前需要先在模型配置中停用 ChatGPT OAuth。",
     test: "端口测试",
     testing: "测试中...",
     saveSuccess: "代理设置已保存",
+    saveFailed: "代理设置保存失败",
     testSuccess: "代理端口测试通过",
     testFailed: "代理端口测试失败",
     lastTest: "最近一次测试",
@@ -85,8 +87,8 @@ const COPY = {
     unconfigured: "No proxy port configured",
     webhookProxyOn: "Webhook uses proxy",
     webhookProxyOff: "Webhook bypasses proxy",
-    oauthProxyOn: "OAuth uses proxy",
-    oauthProxyOff: "OAuth bypasses proxy",
+    oauthProxyOn: "OAuth and ChatGPT use proxy",
+    oauthProxyOff: "OAuth and ChatGPT bypass proxy",
     proxyPort: "Proxy Port",
     proxyPortTitle: "Local HTTP/HTTPS proxy listening port",
     proxyPortHint:
@@ -99,16 +101,17 @@ const COPY = {
       "When enabled, webhook tests, actual deliveries, and Telegram webhook connect requests will prefer the local proxy.",
     webhookToggleDisabled:
       "Configure a valid proxy port first, then decide whether webhook traffic should use it.",
-    oauthToggle: "Use Proxy For OAuth",
+    oauthToggle: "Use Proxy For OAuth & ChatGPT",
     oauthToggleHint:
-      "When enabled, Google / GitHub token exchange and user profile requests will prefer this proxy configuration.",
+      "Routes Google / GitHub auth plus ChatGPT OAuth sign-in, token refresh, and Codex model traffic through this proxy.",
     oauthToggleDisabled:
-      "Configure a valid proxy port first, then decide whether Google / GitHub auth traffic should use it.",
+      "Configure a valid proxy port before enabling OAuth and ChatGPT proxying.",
     scopeNote:
-      "This config now covers webhook and OAuth traffic. If model APIs need the proxy later, we can extend the same scope-based structure.",
+      "The ChatGPT OAuth source depends on this OAuth proxy. Disable that model source before turning this proxy off.",
     test: "Health Check",
     testing: "Testing...",
     saveSuccess: "Proxy settings saved",
+    saveFailed: "Failed to save proxy settings",
     testSuccess: "Proxy port health check passed",
     testFailed: "Proxy port health check failed",
     lastTest: "Latest Check",
@@ -218,8 +221,8 @@ export function ProxyConfigSection() {
       await queryClient.invalidateQueries({ queryKey: QUERY_KEY });
       toast.success(copy.saveSuccess);
     },
-    onError: (error: Error) => {
-      toast.error(error.message);
+    onError: (error: unknown) => {
+      toast.error(extractApiErrorMessage(error, copy.saveFailed));
     },
   });
 
@@ -242,14 +245,14 @@ export function ProxyConfigSection() {
       }
       toast.error(copy.testFailed);
     },
-    onError: (error: Error, variables) => {
+    onError: (error: unknown, variables) => {
       setLastCheckOk(false);
       setPersistedConfigCheckStatus(
         PROXY_CONFIG_STATUS_STORAGE_KEY,
         JSON.stringify(variables),
         false,
       );
-      toast.error(error.message);
+      toast.error(extractApiErrorMessage(error, copy.testFailed));
     },
   });
 
@@ -304,12 +307,20 @@ export function ProxyConfigSection() {
       setHealthResult(null);
       return false;
     }
-    const result = await test.mutateAsync(nextPayload);
-    return Boolean(result.ok);
+    try {
+      const result = await test.mutateAsync(nextPayload);
+      return Boolean(result.ok);
+    } catch {
+      return false;
+    }
   };
 
   const handleSave = async () => {
-    await save.mutateAsync(payload);
+    try {
+      await save.mutateAsync(payload);
+    } catch {
+      return;
+    }
     if (payload.proxy_port != null) {
       await runHealthCheck(payload);
       return;

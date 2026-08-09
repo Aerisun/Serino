@@ -12,6 +12,7 @@ import { useI18n } from "@/i18n";
 import { extractApiErrorMessage } from "@/lib/api-error";
 import { formatDate } from "@/lib/utils";
 import { toast } from "sonner";
+import { AutomationQueryError } from "./AutomationQueryError";
 
 const HTTP_ERROR_PATTERN = /http\s+(\d{3})/i;
 
@@ -92,7 +93,12 @@ function workflowKeyFromDelivery(row: WebhookDeliveryRead) {
 export function DeliveriesPanel() {
   const { lang, t } = useI18n();
   const queryClient = useQueryClient();
-  const { data: deliveriesRaw, isLoading: deliveriesLoading } = useGetDeliveriesApiV1AdminAutomationDeliveriesGet();
+  const {
+    data: deliveriesRaw,
+    isLoading: deliveriesLoading,
+    isError: deliveriesError,
+    refetch: refetchDeliveries,
+  } = useGetDeliveriesApiV1AdminAutomationDeliveriesGet();
   const { data: workflows } = useQuery({
     queryKey: ["admin", "agent", "workflows"],
     queryFn: getAgentWorkflows,
@@ -113,6 +119,9 @@ export function DeliveriesPanel() {
 
   return (
     <AdminSurface eyebrow="Deliveries" title={t("automation.deliveries")} description={t("automation.deliveriesDescription")}>
+      {deliveriesError ? (
+        <AutomationQueryError lang={lang} onRetry={() => void refetchDeliveries()} />
+      ) : (
       <DataTable<WebhookDeliveryRead>
         columns={[
           {
@@ -142,6 +151,7 @@ export function DeliveriesPanel() {
         data={deliveries}
         isLoading={deliveriesLoading}
       />
+      )}
     </AdminSurface>
   );
 }

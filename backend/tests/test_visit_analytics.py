@@ -119,6 +119,9 @@ class TestVisitTracking:
             "/assets/",
             "/assets/app.js",
             "/assets/icons/site.webmanifest",
+            "/mcp/install",
+            "/mcp/install/codex.sh",
+            "/mcp/install/claude-marketplace.json",
         ):
             assert classify_visit_path(path) == "system_resource"
             assert is_trackable_page_visit_path(path) is False

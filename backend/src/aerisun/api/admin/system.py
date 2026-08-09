@@ -715,6 +715,7 @@ def visitor_record_groups(
     include_total: bool = Query(default=True),
     resolve_geo: bool = Query(default=True),
     warm_geo: bool = Query(default=True),
+    include_bots: bool = Query(default=True),
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> dict[str, Any]:
@@ -728,6 +729,7 @@ def visitor_record_groups(
         date_to=date_to,
         include_total=include_total,
         resolve_geo=resolve_geo,
+        include_bots=include_bots,
     )
     if not resolve_geo and warm_geo:
         ip_addresses = sorted({item.ip_address for item in result["items"]})
@@ -750,6 +752,7 @@ def visitor_record_group_records(
     ip: str | None = Query(default=None),
     date_from: str | None = Query(default=None),
     date_to: str | None = Query(default=None),
+    include_bots: bool = Query(default=True),
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> dict[str, Any]:
@@ -763,6 +766,7 @@ def visitor_record_group_records(
         ip=ip,
         date_from=date_from,
         date_to=date_to,
+        include_bots=include_bots,
     )
 
 

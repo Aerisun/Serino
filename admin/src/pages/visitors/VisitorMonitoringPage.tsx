@@ -1,7 +1,6 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import {
-  getVisitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetQueryOptions,
   useSystemInfoApiV1AdminSystemInfoGet,
   useVisitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGet,
   useVisitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGet,
@@ -11,6 +10,7 @@ import { Activity, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, MonitorSma
 import { PageHeader } from "@/components/PageHeader";
 import { DataTable } from "@/components/DataTable";
 import { SummaryMetricCard } from "@/components/dashboard/SummaryMetricCard";
+import { AppleSwitch } from "@/components/ui/AppleSwitch";
 import { Button } from "@/components/ui/Button";
 import { TableCell, TableRow } from "@/components/ui/Table";
 import { useI18n } from "@/i18n";
@@ -73,7 +73,6 @@ type PaginatedResponse<T> = {
 
 const PAGE_SIZE = 20;
 const DETAIL_PAGE_SIZE = 20;
-const VISITOR_GROUP_PREFETCH_PAGES = 3;
 const VISITOR_GROUP_STALE_MS = 30_000;
 const GEO_REFRESH_DELAY_MS = 1_600;
 const GEO_REFRESH_MAX_ATTEMPTS = 2;
@@ -253,12 +252,14 @@ function VisitorGroupRecordRows({
   colSpan,
   frontendUrl,
   deviceTypeLabel,
+  includeBots,
   t,
 }: {
   group: VisitorRecordGroup;
   colSpan: number;
   frontendUrl: string;
   deviceTypeLabel: (value?: string | null) => string;
+  includeBots: boolean;
   t: (key: string) => string;
 }) {
   const [page, setPage] = useState(1);
@@ -270,6 +271,13 @@ function VisitorGroupRecordRows({
       {
         page,
         page_size: DETAIL_PAGE_SIZE,
+        include_bots: includeBots,
+      },
+      {
+        query: {
+          gcTime: 5 * 60_000,
+          staleTime: VISITOR_GROUP_STALE_MS,
+        },
       },
     );
   const data = recordsQuery.data?.data as PaginatedResponse<VisitorRecord> | undefined;
@@ -375,8 +383,8 @@ function VisitorGroupRecordRows({
 
 export default function VisitorMonitoringPage() {
   const { t } = useI18n();
-  const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
+  const [filterBots, setFilterBots] = useState(true);
   const geoRefreshAttemptsRef = useRef<Record<string, number>>({});
 
   const { data: systemInfo } = useSystemInfoApiV1AdminSystemInfoGet();
@@ -384,6 +392,7 @@ export default function VisitorMonitoringPage() {
   const { data: dashboardStats } = useQuery(dashboardStatsQueryOptions());
   const stats = dashboardStats as EnhancedDashboardStats | undefined;
   const visitors = stats?.visitors;
+  const includeBots = !filterBots;
 
   const groupQueryParams = useMemo(
     () => ({
@@ -391,13 +400,13 @@ export default function VisitorMonitoringPage() {
       page_size: PAGE_SIZE,
       include_total: false,
       resolve_geo: false,
+      include_bots: includeBots,
     }),
-    [page],
+    [includeBots, page],
   );
   const groupsQuery = useVisitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGet(groupQueryParams, {
     query: {
       gcTime: 5 * 60_000,
-      placeholderData: keepPreviousData,
       staleTime: VISITOR_GROUP_STALE_MS,
     },
   });
@@ -409,28 +418,9 @@ export default function VisitorMonitoringPage() {
   const hasMissingGeo = groups.some(
     (group) => !group.newest_record.location || !group.oldest_record.location,
   );
-  const geoRefreshKey = `${page}:${groups.map((group) => group.id).join("|")}`;
-
-  useEffect(() => {
-    if (!groupsData || groupsFetching) return;
-    for (let offset = 1; offset <= VISITOR_GROUP_PREFETCH_PAGES; offset += 1) {
-      const nextPage = page + offset;
-      void queryClient.prefetchQuery(
-        getVisitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetQueryOptions(
-          {
-            ...groupQueryParams,
-            page: nextPage,
-          },
-          {
-            query: {
-              gcTime: 5 * 60_000,
-              staleTime: VISITOR_GROUP_STALE_MS,
-            },
-          },
-        ),
-      );
-    }
-  }, [groupQueryParams, groupsData, groupsFetching, page, queryClient]);
+  const geoRefreshKey = `${includeBots ? "all" : "humans"}:${page}:${groups
+    .map((group) => group.id)
+    .join("|")}`;
 
   useEffect(() => {
     if (!groups.length || !hasMissingGeo || groupsFetching) return;
@@ -506,6 +496,15 @@ export default function VisitorMonitoringPage() {
           <h3 className="text-sm font-semibold tracking-[0.01em] text-foreground/92">
             {t("dashboard.visitorsRecordsTitle")}
           </h3>
+          <AppleSwitch
+            className="w-auto"
+            checked={filterBots}
+            onCheckedChange={(checked) => {
+              setPage(1);
+              setFilterBots(checked);
+            }}
+            label={t("dashboard.visitorsFilterBots")}
+          />
         </div>
         <DataTable
           isLoading={groupsQuery.isLoading && groups.length === 0}
@@ -541,10 +540,12 @@ export default function VisitorMonitoringPage() {
           renderExpandedRows={(row, { colSpan }) =>
             isGroupedVisit(row) ? (
               <VisitorGroupRecordRows
+                key={`${row.id}:${includeBots ? "all" : "humans"}`}
                 group={row}
                 colSpan={colSpan}
                 frontendUrl={frontendUrl}
                 deviceTypeLabel={deviceTypeLabel}
+                includeBots={includeBots}
                 t={t}
               />
             ) : (

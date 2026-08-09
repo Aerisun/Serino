@@ -256,9 +256,12 @@ vi.mock("@tanstack/react-query", async () => {
   };
 });
 
-function pageElement(queryClient: QueryClient) {
+function pageElement(queryClient: QueryClient, initialEntry = "/system/backups") {
   return (
-    <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
+    <MemoryRouter
+      initialEntries={[initialEntry]}
+      future={{ v7_relativeSplatPath: true, v7_startTransition: true }}
+    >
       <QueryClientProvider client={queryClient}>
         <LanguageProvider>
           <BackupsPage />
@@ -268,17 +271,17 @@ function pageElement(queryClient: QueryClient) {
   );
 }
 
-function renderPage() {
+function renderPage(initialEntry = "/system/backups") {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
       mutations: { retry: false },
     },
   });
-  const view = render(pageElement(queryClient));
+  const view = render(pageElement(queryClient, initialEntry));
   return {
     ...view,
-    rerenderPage: () => view.rerender(pageElement(queryClient)),
+    rerenderPage: () => view.rerender(pageElement(queryClient, initialEntry)),
   };
 }
 
@@ -374,6 +377,17 @@ afterEach(() => {
 });
 
 describe("BackupsPage usability", () => {
+  it("opens run records from a diagnostic deep link", () => {
+    renderPage("/system/backups?section=records&records=runs");
+
+    expect(
+      screen
+        .getByRole("button", { name: /^记录队列/ })
+        .getAttribute("aria-pressed"),
+    ).toBe("true");
+    expect(screen.getByRole("button", { name: "存档点" }).getAttribute("aria-pressed")).toBe("true");
+  });
+
   it("keeps recovery password disabled until backup machine detection is safe", async () => {
     const user = userEvent.setup();
     renderPage();

@@ -1,9 +1,10 @@
-import { type ReactNode } from "react";
+import { type ReactNode, useId } from "react";
 import { cn } from "@/lib/utils";
 
 interface AppleSwitchProps {
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
+  ariaLabel?: string;
   leading?: ReactNode;
   switchLeading?: ReactNode;
   expandableContent?: ReactNode;
@@ -19,6 +20,7 @@ interface AppleSwitchProps {
 export function AppleSwitch({
   checked,
   onCheckedChange,
+  ariaLabel,
   leading,
   switchLeading,
   expandableContent,
@@ -30,6 +32,8 @@ export function AppleSwitch({
   disabled = false,
   expandableDivider = true,
 }: AppleSwitchProps) {
+  const labelId = useId();
+
   return (
     <div
       className={cn(
@@ -46,7 +50,10 @@ export function AppleSwitch({
             {label || description ? (
               <div className="min-w-0 space-y-1">
                 {label ? (
-                  <div className="text-sm font-medium tracking-tight text-foreground/92">
+                  <div
+                    id={labelId}
+                    className="text-sm font-medium tracking-tight text-foreground/92"
+                  >
                     {label}
                   </div>
                 ) : null}
@@ -67,6 +74,8 @@ export function AppleSwitch({
             type="button"
             role="switch"
             aria-checked={checked}
+            aria-label={ariaLabel}
+            aria-labelledby={!ariaLabel && label ? labelId : undefined}
             onClick={() => onCheckedChange(!checked)}
             disabled={disabled}
             className={cn(

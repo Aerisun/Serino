@@ -435,9 +435,8 @@ function getModerationBody(item: ModerationRecord) {
 
 function getModerationSource(item: ModerationRecord, lang: "zh" | "en" = "zh") {
   if ("source" in item && item.source) return item.source;
-  const target = getModerationContentTarget(item);
-  if (target) {
-    return optionLabel(PAGE_KEY_LABELS, target.contentType, lang);
+  if ("content_type" in item && item.content_type) {
+    return optionLabel(PAGE_KEY_LABELS, item.content_type, lang);
   }
   if ("website" in item) return optionLabel(PAGE_KEY_LABELS, "guestbook", lang);
   return "-";

@@ -58,6 +58,7 @@ const AgentRunDetailPage = lazyAdminPage(() => import("@/pages/automation/AgentR
 const AdminNotFoundPage = lazyPage(() => import("@/pages/AdminNotFoundPage"));
 const AuditLogPage = lazyAdminPage(() => import("@/pages/system/AuditLogPage"));
 const BackupsPage = lazyAdminPage(() => import("@/pages/system/BackupsPage"));
+const DiagnosticsPage = lazyAdminPage(() => import("@/pages/system/DiagnosticsPage"));
 const SystemInfoPage = lazyAdminPage(() => import("@/pages/system/SystemInfoPage"));
 
 const queryClient = new QueryClient({
@@ -149,6 +150,7 @@ function ProtectedRoutes() {
           element={<RoutePage page={AgentRunDetailPage} />}
         />
         <Route path="agent/:section?" element={<RoutePage page={AgentPage} />} />
+        <Route path="system/diagnostics" element={<RoutePage page={DiagnosticsPage} />} />
         <Route path="system/audit-log" element={<RoutePage page={AuditLogPage} />} />
         <Route path="system/backups" element={<RoutePage page={BackupsPage} />} />
         <Route path="system/info" element={<RoutePage page={SystemInfoPage} />} />

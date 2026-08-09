@@ -11,6 +11,7 @@ import {
   Image as ImageIcon,
   Lightbulb,
   Link2,
+  Loader2,
   MessageSquare,
   MessagesSquare,
   Quote,
@@ -40,6 +41,7 @@ import {
   dashboardStatsQueryOptions,
 } from "@/pages/dashboard/dashboardQueries";
 import { moderationAttentionCountQueryOptions } from "@/pages/moderation/moderationQueries";
+import { systemDiagnosticsQueryOptions } from "@/pages/system/diagnosticsQueries";
 
 const CONTENT_TYPE_ROUTES: Record<string, string> = {
   post: "/posts",
@@ -191,6 +193,9 @@ export default function DashboardPage() {
 
   const { data: dashboardStats, isLoading } = useQuery(dashboardStatsQueryOptions());
   const { data: moderationAttention } = useQuery(moderationAttentionCountQueryOptions());
+  const { data: diagnostics } = useQuery(
+    systemDiagnosticsQueryOptions({ includeItems: false, pollWhileRunning: true }),
+  );
   const { data: backupConfigRaw } =
     useGetBackupSyncConfigApiV1AdminSystemBackupSyncConfigGet();
   const stats = dashboardStats as EnhancedDashboardStats | undefined;
@@ -208,6 +213,17 @@ export default function DashboardPage() {
   const latestBackupAt = backupEnabled
     ? formatBackupCommitTime(backupCommits[0]) ?? t("dashboard.heroSnapshotEmpty")
     : null;
+  const diagnosticStatus = diagnostics?.overall_status === "healthy" && !diagnostics?.is_stale
+      ? "healthy"
+      : diagnostics?.overall_status === "attention" || diagnostics?.is_stale
+        ? "attention"
+        : "unknown";
+  const diagnosticLabel =
+    diagnosticStatus === "healthy"
+      ? t("dashboard.diagnosticsHealthy")
+      : diagnosticStatus === "attention"
+        ? t("dashboard.diagnosticsAttention")
+        : t("dashboard.diagnosticsUnknown");
 
   const recentContent = useMemo(
     () => (stats?.recent_content ?? []) as RecentContentItem[],
@@ -253,6 +269,28 @@ export default function DashboardPage() {
                 {backupEnabled ? (
                   <span>{t("dashboard.heroLastBackup")} {latestBackupAt}</span>
                 ) : null}
+                <button
+                  type="button"
+                  onClick={() => navigate("/system/diagnostics")}
+                  className="admin-transition-fast inline-flex items-center gap-1.5 rounded-full px-1 py-0.5 font-medium text-foreground/75 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <span
+                    data-diagnostic-dot
+                    className={cn(
+                      "h-2 w-2 rounded-full",
+                      diagnosticStatus === "healthy" && "bg-emerald-500",
+                      diagnosticStatus === "attention" && "bg-red-500",
+                      diagnosticStatus === "unknown" && "bg-muted-foreground/60",
+                    )}
+                  />
+                  {diagnosticLabel}
+                  {diagnostics?.is_running ? (
+                    <span className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-300">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      {t("dashboard.diagnosticsRunning")}
+                    </span>
+                  ) : null}
+                </button>
               </p>
             </div>
           </section>

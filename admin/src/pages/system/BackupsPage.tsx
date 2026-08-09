@@ -1,5 +1,6 @@
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "react-router-dom";
 import {
   getGetBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetQueryKey,
   getListBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGetQueryKey,
@@ -160,10 +161,15 @@ const emptyForm: BackupSyncConfigUpdate = {
 export default function BackupsPage() {
   const { t } = useI18n();
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [form, setForm] = useState<BackupSyncConfigUpdate>(emptyForm);
-  const [section, setSection] = useState<BackupsSection>("settings");
+  const [section, setSection] = useState<BackupsSection>(() =>
+    searchParams.get("section") === "records" ? "records" : "settings",
+  );
   const [recordsSection, setRecordsSection] =
-    useState<BackupRecordsSection>("commits");
+    useState<BackupRecordsSection>(() =>
+      searchParams.get("records") === "runs" ? "runs" : "commits",
+    );
   const [credentialInfo, setCredentialInfo] =
     useState<BackupCredentialEnsureRead | null>(null);
   const [isEnsuringCredential, setIsEnsuringCredential] = useState(false);
@@ -215,6 +221,43 @@ export default function BackupsPage() {
     | undefined;
   const runs = (runsRaw?.data as BackupRunRead[] | undefined) ?? [];
   const commits = (commitsRaw?.data as BackupCommitRead[] | undefined) ?? [];
+
+  useEffect(() => {
+    const nextSection = searchParams.get("section") === "records" ? "records" : "settings";
+    const nextRecordsSection = searchParams.get("records") === "runs" ? "runs" : "commits";
+    setSection((current) => (current === nextSection ? current : nextSection));
+    setRecordsSection((current) =>
+      current === nextRecordsSection ? current : nextRecordsSection,
+    );
+  }, [searchParams]);
+
+  const handleSectionChange = (value: BackupsSection) => {
+    setSection(value);
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      if (value === "records") {
+        next.set("section", "records");
+      } else {
+        next.delete("section");
+        next.delete("records");
+      }
+      return next;
+    }, { replace: true });
+  };
+
+  const handleRecordsSectionChange = (value: BackupRecordsSection) => {
+    setRecordsSection(value);
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      next.set("section", "records");
+      if (value === "runs") {
+        next.set("records", "runs");
+      } else {
+        next.delete("records");
+      }
+      return next;
+    }, { replace: true });
+  };
 
   const invalidateAll = async () => {
     await Promise.all([
@@ -1059,7 +1102,7 @@ export default function BackupsPage() {
               <AdminSectionTabs
                 items={sectionItems}
                 value={section}
-                onValueChange={(value) => setSection(value as BackupsSection)}
+                onValueChange={(value) => handleSectionChange(value as BackupsSection)}
                 className="w-fit"
               />
             </div>
@@ -1069,7 +1112,7 @@ export default function BackupsPage() {
 
       <Tabs
         value={section}
-        onValueChange={(value) => setSection(value as BackupsSection)}
+        onValueChange={(value) => handleSectionChange(value as BackupsSection)}
       >
         <TabsContent value="settings" className="mt-0 space-y-6">
           <Card>
@@ -1546,7 +1589,7 @@ export default function BackupsPage() {
               ]}
               value={recordsSection}
               onValueChange={(value) =>
-                setRecordsSection(value as BackupRecordsSection)
+                handleRecordsSectionChange(value as BackupRecordsSection)
               }
               size="sm"
               className="w-fit"
@@ -1570,7 +1613,7 @@ export default function BackupsPage() {
           <Tabs
             value={recordsSection}
             onValueChange={(value) =>
-              setRecordsSection(value as BackupRecordsSection)
+              handleRecordsSectionChange(value as BackupRecordsSection)
             }
           >
             <TabsContent value="commits" className="mt-0">

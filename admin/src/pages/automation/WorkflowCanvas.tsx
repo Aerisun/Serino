@@ -102,7 +102,7 @@ function WorkflowCanvasNodeCard({
   return (
     <div
       className={cn(
-        "min-w-[210px] rounded-[22px] border p-3 shadow-[0_18px_48px_rgba(15,23,42,0.12)] backdrop-blur-sm",
+        "w-[240px] min-w-[240px] max-w-[240px] overflow-hidden rounded-[22px] border p-3 shadow-[0_18px_48px_rgba(15,23,42,0.12)] backdrop-blur-sm",
         toneClasses(tone),
         issueLevel === "error" && "border-rose-400/80 ring-2 ring-rose-300/60",
         issueLevel === "warning" && "border-amber-400/80 ring-2 ring-amber-300/50",
@@ -124,7 +124,7 @@ function WorkflowCanvasNodeCard({
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/30 bg-white/20">
           <Icon className="h-4 w-4" />
         </div>
-        <div className="min-w-0 space-y-1">
+        <div className="min-w-0 flex-1 space-y-1">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="outline" className="w-fit px-2 py-0.5 text-[10px]">
               {nodeTypeLabel}
@@ -135,9 +135,9 @@ function WorkflowCanvasNodeCard({
               </Badge>
             ) : null}
           </div>
-          <div className="font-semibold text-foreground">{data.label}</div>
+          <div className="break-words font-semibold text-foreground">{data.label}</div>
           {nodeSummary && nodeSummary !== "-" ? (
-            <div className="line-clamp-3 text-xs leading-5 text-muted-foreground">
+            <div className="line-clamp-3 break-words text-xs leading-5 text-muted-foreground">
               {nodeSummary}
             </div>
           ) : null}

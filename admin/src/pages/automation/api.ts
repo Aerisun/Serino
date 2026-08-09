@@ -1,11 +1,18 @@
 import {
+  deleteChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountDelete,
   deleteWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyDelete,
   deleteWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftDelete,
+  getChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountGet,
+  getChatgptLoginStatusApiV1AdminAutomationModelConfigChatgptLoginLoginIdGet,
+  getChatgptModelsApiV1AdminAutomationModelConfigChatgptModelsGet,
   getModelConfigApiV1AdminAutomationModelConfigGet,
+  getProxyConfigApiV1AdminProxyConfigGet,
   getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGet,
   getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGet,
   getWorkflowsApiV1AdminAutomationWorkflowsGet,
+  postChatgptLoginApiV1AdminAutomationModelConfigChatgptLoginPost,
   postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPost,
+  postModelConfigDiagnoseApiV1AdminAutomationModelConfigDiagnosePost,
   postModelConfigTestApiV1AdminAutomationModelConfigTestPost,
   postWorkflowApiV1AdminAutomationWorkflowsPost,
   postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPost,
@@ -41,8 +48,20 @@ type RequireGraphShape<T extends { version?: unknown; nodes?: unknown; edges?: u
   "version" | "nodes" | "edges" | "viewport"
 >;
 
-export type AgentModelConfig = Required<ApiModels.AgentModelConfigRead>;
+export type AgentModelConfig = RequireKeys<
+  ApiModels.AgentModelConfigRead,
+  "schema_version" | "primary_source" | "chatgpt_oauth" | "openai_compatible" | "is_ready"
+> & {
+  chatgpt_oauth: Required<ApiModels.ChatGPTModelConfigRead>;
+  openai_compatible: Required<ApiModels.OpenAICompatibleModelConfigRead>;
+};
 export type AgentModelConfigTestResult = RequireKeys<ApiModels.AgentModelConfigTestRead, "ok">;
+export type ChatGPTAccount = Required<ApiModels.ChatGPTAccountRead>;
+export type ChatGPTDeviceLogin = ApiModels.ChatGPTDeviceLoginRead;
+export type ChatGPTLoginStatus = ApiModels.ChatGPTLoginStatusRead;
+export type ChatGPTModelOption = RequireKeys<ApiModels.ChatGPTModelOptionRead, "is_default">;
+export type AgentModelDiagnostic = RequireKeys<ApiModels.AgentModelDiagnosticRead, "items">;
+export type OutboundProxyConfig = Required<ApiModels.OutboundProxyConfigRead>;
 export type AgentRunRead = ApiModels.AgentRunRead;
 export type AgentRunStepRead = ApiModels.AgentRunStepRead;
 export type AgentWorkflowGraphViewport = ApiModels.AgentWorkflowGraphViewport;
@@ -117,6 +136,8 @@ export interface AgentWorkflowRunInput {
   target_id?: string | null;
   context_payload?: Record<string, unknown>;
   input_payload?: Record<string, unknown>;
+  idempotency_key?: string | null;
+  execution_mode?: "live" | "dry_run";
   execute_immediately?: boolean;
 }
 
@@ -161,6 +182,12 @@ export function getAgentModelConfig() {
   return getModelConfigApiV1AdminAutomationModelConfigGet().then((response) => response.data as AgentModelConfig);
 }
 
+export function getOutboundProxyConfig() {
+  return getProxyConfigApiV1AdminProxyConfigGet().then(
+    (response) => response.data as OutboundProxyConfig,
+  );
+}
+
 export function updateAgentModelConfig(data: AgentModelConfigUpdate) {
   return putModelConfigApiV1AdminAutomationModelConfigPut(data).then((response) => response.data as AgentModelConfig);
 }
@@ -168,6 +195,40 @@ export function updateAgentModelConfig(data: AgentModelConfigUpdate) {
 export function testAgentModelConfig(data: AgentModelConfigUpdate) {
   return postModelConfigTestApiV1AdminAutomationModelConfigTestPost(data).then(
     (response) => response.data as AgentModelConfigTestResult,
+  );
+}
+
+export function getChatGPTAccount() {
+  return getChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountGet().then(
+    (response) => response.data as ChatGPTAccount,
+  );
+}
+
+export function startChatGPTLogin() {
+  return postChatgptLoginApiV1AdminAutomationModelConfigChatgptLoginPost().then(
+    (response) => response.data as ChatGPTDeviceLogin,
+  );
+}
+
+export function getChatGPTLoginStatus(loginId: string) {
+  return getChatgptLoginStatusApiV1AdminAutomationModelConfigChatgptLoginLoginIdGet(loginId).then(
+    (response) => response.data as ChatGPTLoginStatus,
+  );
+}
+
+export async function logoutChatGPTAccount() {
+  await deleteChatgptAccountApiV1AdminAutomationModelConfigChatgptAccountDelete();
+}
+
+export function getChatGPTModels() {
+  return getChatgptModelsApiV1AdminAutomationModelConfigChatgptModelsGet().then(
+    (response) => response.data as ChatGPTModelOption[],
+  );
+}
+
+export function diagnoseAgentModelConfig() {
+  return postModelConfigDiagnoseApiV1AdminAutomationModelConfigDiagnosePost().then(
+    (response) => response.data as AgentModelDiagnostic,
   );
 }
 

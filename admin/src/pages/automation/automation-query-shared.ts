@@ -4,7 +4,7 @@ const LIVE_AUTOMATION_RUN_STATUSES = new Set([
   "queued",
   "running",
   "awaiting_approval",
-  "retrying",
+  "interrupted",
 ]);
 
 export function isAutomationRunLiveStatus(status: string | null | undefined) {

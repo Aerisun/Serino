@@ -2,8 +2,9 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation } from "react-router-dom";
 import DashboardPage from "../src/pages/DashboardPage";
 import { LanguageProvider } from "../src/i18n";
 
@@ -29,11 +30,32 @@ const api = vi.hoisted(() => ({
         updated_at: "2026-07-02T00:01:00+08:00",
       },
     ] as any[],
+    diagnostics: {
+      execution_status: "completed",
+      overall_status: "healthy",
+      is_running: false,
+      is_stale: false,
+      healthy_count: 8,
+      warning_count: 0,
+      failed_count: 0,
+      skipped_count: 0,
+      issue_count: 0,
+      items: [],
+      completed_at: "2026-07-02T00:02:00+08:00",
+    } as any,
   },
   adminApiRequest: vi.fn(),
 }));
 
 vi.mock("@serino/api-client/admin", () => ({
+  getSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGet: () =>
+    api.state.diagnostics
+      ? Promise.resolve({
+          data: api.state.diagnostics,
+          status: 200,
+          headers: new Headers(),
+        })
+      : Promise.reject(new Error("diagnostics unavailable")),
   useGetBackupSyncConfigApiV1AdminSystemBackupSyncConfigGet: () => ({
     data: { data: { enabled: api.state.backupEnabled } },
     isLoading: false,
@@ -43,6 +65,10 @@ vi.mock("@serino/api-client/admin", () => ({
     isLoading: false,
   }),
 }));
+
+function LocationProbe() {
+  return <span data-testid="location">{useLocation().pathname}</span>;
+}
 
 vi.mock("@/lib/adminApi", () => ({
   adminApiRequest: (...args: unknown[]) => api.adminApiRequest(...args),
@@ -108,6 +134,7 @@ function renderPage() {
       <QueryClientProvider client={queryClient}>
         <LanguageProvider>
           <DashboardPage />
+          <LocationProbe />
         </LanguageProvider>
       </QueryClientProvider>
     </MemoryRouter>,
@@ -118,6 +145,19 @@ beforeEach(() => {
   api.state.backupEnabled = true;
   api.state.unreadTotal = 0;
   api.state.commits = [api.state.commits[0]];
+  api.state.diagnostics = {
+    execution_status: "completed",
+    overall_status: "healthy",
+    is_running: false,
+    is_stale: false,
+    healthy_count: 8,
+    warning_count: 0,
+    failed_count: 0,
+    skipped_count: 0,
+    issue_count: 0,
+    items: [],
+    completed_at: "2026-07-02T00:02:00+08:00",
+  };
   api.adminApiRequest.mockResolvedValue(dashboardStats());
   localStorage.clear();
 });
@@ -155,5 +195,52 @@ describe("DashboardPage backup summary", () => {
 
     expect(screen.queryByText(/最近一次备份/)).toBeNull();
     expect(screen.queryByText(/最近快照/)).toBeNull();
+  });
+
+  it("shows a green all-clear result beside the latest backup", async () => {
+    renderPage();
+
+    const status = await screen.findByRole("button", { name: "检查一切正常" });
+
+    expect(status.querySelector("[data-diagnostic-dot]")?.className).toContain("bg-emerald-500");
+  });
+
+  it("opens diagnostics from the red problem action", async () => {
+    api.state.diagnostics = {
+      ...api.state.diagnostics,
+      overall_status: "attention",
+      warning_count: 1,
+      issue_count: 1,
+    };
+    const user = userEvent.setup();
+    renderPage();
+
+    const status = await screen.findByRole("button", { name: "处理问题" });
+    expect(status.querySelector("[data-diagnostic-dot]")?.className).toContain("bg-red-500");
+
+    await user.click(status);
+    expect(screen.getByTestId("location").textContent).toBe("/system/diagnostics");
+  });
+
+  it("keeps the previous red result visible while showing a separate running indicator", async () => {
+    api.state.diagnostics = {
+      ...api.state.diagnostics,
+      execution_status: "running",
+      overall_status: "attention",
+      is_running: true,
+      warning_count: 1,
+      issue_count: 1,
+    };
+    renderPage();
+
+    const status = await screen.findByRole("button", { name: /处理问题.*正在检查/ });
+    expect(status.querySelector("[data-diagnostic-dot]")?.className).toContain("bg-red-500");
+  });
+
+  it("keeps a neutral diagnostics entry when the summary cannot be loaded", async () => {
+    api.state.diagnostics = null;
+    renderPage();
+
+    expect(await screen.findByRole("button", { name: "尚未检查" })).toBeTruthy();
   });
 });

@@ -3,7 +3,7 @@ import { AdminSurface } from "@/components/AdminSurface";
 import { DirtySaveButton, PendingSaveBadge } from "@/components/ui/DirtySaveButton";
 import { cn } from "@/lib/utils";
 
-type ConfigStatusTone = "pending" | "available" | "invalid" | "checking";
+type ConfigStatusTone = "pending" | "available" | "warning" | "invalid" | "checking";
 
 interface ConfigSettingsCardProps {
   eyebrow?: ReactNode;
@@ -97,6 +97,12 @@ function ConfigCardStatusIndicator({
               "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300",
             dot: "bg-amber-500 animate-pulse shadow-[0_0_0_4px_rgba(245,158,11,0.14),0_0_16px_rgba(245,158,11,0.45)]",
           }
+        : tone === "warning"
+          ? {
+              shell:
+                "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+              dot: "bg-amber-500 shadow-[0_0_0_4px_rgba(245,158,11,0.14),0_0_16px_rgba(245,158,11,0.45)]",
+            }
         : {
             shell:
               "border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-300",
