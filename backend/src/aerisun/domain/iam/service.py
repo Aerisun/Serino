@@ -7,7 +7,7 @@ import bcrypt
 from sqlalchemy.orm import Session
 
 from aerisun.core.settings import get_settings
-from aerisun.core.time import shanghai_now
+from aerisun.core.time import normalize_shanghai_datetime, shanghai_now
 from aerisun.domain.exceptions import (
     AuthenticationFailed,
     PermissionDenied,
@@ -29,6 +29,7 @@ from aerisun.domain.iam.schemas import (
 SESSION_TTL_HOURS = 24
 API_KEY_PREFIX_LEN = 4
 API_KEY_SUFFIX_LEN = 3
+API_KEY_USAGE_WRITE_INTERVAL = timedelta(minutes=5)
 
 
 def _canonicalize_stored_api_key_scope(scope: str) -> str | None:
@@ -207,8 +208,14 @@ def validate_api_key(session: Session, token: str, required_scopes: tuple[str, .
         if repaired:
             session.commit()
         raise PermissionDenied(f"Missing required scopes: {', '.join(missing)}")
-    key.last_used_at = shanghai_now()
-    session.commit()
+    now = shanghai_now()
+    should_update_usage = key.last_used_at is None or (
+        now - normalize_shanghai_datetime(key.last_used_at) >= API_KEY_USAGE_WRITE_INTERVAL
+    )
+    if should_update_usage:
+        key.last_used_at = now
+    if repaired or should_update_usage:
+        session.commit()
     return key
 
 

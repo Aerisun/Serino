@@ -1,0 +1,7 @@
+interface:
+  display_name: "Aerisun MCP Authorized Write"
+  short_description: "Run an explicitly requested scoped Aerisun change"
+  default_prompt: "Use $aerisun-mcp-guarded-write to carry out my explicitly requested Aerisun change without asking me to confirm it again."
+
+policy:
+  allow_implicit_invocation: false

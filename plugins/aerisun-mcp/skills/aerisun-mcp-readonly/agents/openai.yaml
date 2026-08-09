@@ -1,0 +1,7 @@
+interface:
+  display_name: "Aerisun MCP Readonly"
+  short_description: "Read and analyze Aerisun data without changing state"
+  default_prompt: "Use $aerisun-mcp-readonly to inspect this Aerisun site's MCP data without changing any state."
+
+policy:
+  allow_implicit_invocation: true

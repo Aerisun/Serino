@@ -1,0 +1,18 @@
+{
+  "name": "aerisun-mcp",
+  "version": "0.1.0",
+  "description": "Connect Claude Code to one Aerisun site's scoped MCP catalog with focused read and authorized-write skills.",
+  "author": {
+    "name": "Aerisun",
+    "url": "https://github.com/Aerisun"
+  },
+  "homepage": "https://github.com/Aerisun/Serino",
+  "repository": "https://github.com/Aerisun/Serino",
+  "license": "MIT",
+  "keywords": [
+    "aerisun",
+    "mcp",
+    "skills",
+    "content"
+  ]
+}

@@ -4,14 +4,18 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 from pathlib import Path
 from typing import Any
 from urllib import error, request
 
 ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = ROOT.parents[1]
 DEFAULT_ENV_FILE = ROOT / ".env"
 DEFAULT_OUTPUT_DIR = ROOT / "runtime"
-SKILLS_DIR = ROOT / "skills"
+SKILLS_DIR = PROJECT_ROOT / "plugins" / "aerisun-mcp" / "skills"
+USAGE_SCHEMA_VERSION = "2026-07-28-usage-v3"
+SCOPE_RE = re.compile(r"^[a-z][a-z0-9_-]*:[a-z][a-z0-9_-]*$")
 
 
 def load_env_file(path: Path) -> dict[str, str]:
@@ -87,9 +91,7 @@ def resolve_settings(values: dict[str, str]) -> dict[str, Any]:
         "meta_url": meta_url,
         "api_key": api_key,
         "require_readonly": bool_value(values, "AERISUN_MCP_REQUIRE_READONLY", True),
-        "confirm_before_write": bool_value(values, "AERISUN_MCP_CONFIRM_BEFORE_WRITE", True),
         "allowed_write_tools": list_value(values, "AERISUN_MCP_ALLOWED_WRITE_TOOLS"),
-        "allowed_write_resources": list_value(values, "AERISUN_MCP_ALLOWED_WRITE_RESOURCES"),
     }
 
 
@@ -111,6 +113,14 @@ def fetch_json(url: str, api_key: str) -> dict[str, Any]:
         raise SystemExit(f"HTTP {exc.code} for {url}: {detail}") from exc
     except error.URLError as exc:
         raise SystemExit(f"Failed to reach {url}: {exc.reason}") from exc
+
+
+def validate_usage_document(usage: dict[str, Any]) -> None:
+    actual_version = usage.get("schema_version")
+    if actual_version != USAGE_SCHEMA_VERSION:
+        raise SystemExit(f"Unsupported Aerisun usage schema {actual_version!r}; required {USAGE_SCHEMA_VERSION}")
+    if not isinstance(usage.get("mcp"), dict):
+        raise SystemExit("Invalid Aerisun usage document: mcp catalog is missing")
 
 
 def write_json(path: Path, data: dict[str, Any]) -> None:
@@ -151,37 +161,51 @@ def build_skill_manifest() -> list[dict[str, Any]]:
             {
                 "name": frontmatter.get("name") or skill_dir.name,
                 "description": frontmatter.get("description", ""),
-                "skill_path": str(skill_file.relative_to(ROOT)),
-                "agent_path": str(agent_file.relative_to(ROOT)) if agent_file.exists() else None,
+                "skill_path": str(skill_file.relative_to(PROJECT_ROOT)),
+                "agent_path": (
+                    str(agent_file.relative_to(PROJECT_ROOT)) if agent_file.exists() else None
+                ),
                 "has_agent_config": agent_file.exists(),
             }
         )
     return skills
 
 
-def is_read_only_tool_name(name: str) -> bool:
-    normalized = name.strip().lower()
-    prefixes = (
-        "get",
-        "list",
-        "read",
-        "search",
-        "fetch",
-        "inspect",
-        "describe",
-        "query",
-        "preview",
+def has_canonical_scopes(capability: dict[str, Any]) -> bool:
+    required_scopes = capability.get("required_scopes")
+    return (
+        bool(required_scopes)
+        and isinstance(required_scopes, list)
+        and all(isinstance(scope, str) and bool(SCOPE_RE.fullmatch(scope)) for scope in required_scopes)
     )
-    return normalized.startswith(prefixes)
+
+
+def is_read_only_capability(capability: dict[str, Any]) -> bool:
+    if capability.get("intent") != "read" or not has_canonical_scopes(capability):
+        return False
+
+    required_scopes = capability.get("required_scopes")
+    return all(scope == "agent:connect" or scope.endswith(":read") for scope in required_scopes)
 
 
 def build_openai_tool_templates(settings: dict[str, Any], usage: dict[str, Any]) -> dict[str, Any]:
     mcp = usage.get("mcp", {})
-    discovered_tools = [
-        item.get("name", "").strip() for item in mcp.get("tools", []) if isinstance(item, dict) and item.get("name")
-    ]
-    read_only_tools = [name for name in discovered_tools if is_read_only_tool_name(name)]
-    guarded_write_tools = sorted(set(read_only_tools + settings["allowed_write_tools"]))
+    discovered_tools = {
+        item["name"].strip(): item
+        for item in mcp.get("tools", [])
+        if isinstance(item, dict) and isinstance(item.get("name"), str) and item["name"].strip()
+    }
+    read_only_tools = [name for name, item in discovered_tools.items() if is_read_only_capability(item)]
+    allowed_write_tools = (
+        []
+        if settings["require_readonly"]
+        else [
+            name
+            for name in settings["allowed_write_tools"]
+            if name in discovered_tools and has_canonical_scopes(discovered_tools[name])
+        ]
+    )
+    guarded_write_tools = sorted(set(read_only_tools + allowed_write_tools))
 
     return {
         "readonly": {
@@ -198,7 +222,7 @@ def build_openai_tool_templates(settings: dict[str, Any], usage: dict[str, Any])
             "type": "mcp",
             "server_label": "aerisun-guarded-write",
             "server_url": settings["endpoint"],
-            "require_approval": "always" if settings["confirm_before_write"] else "never",
+            "require_approval": "never",
             "allowed_tools": guarded_write_tools,
             "headers": {
                 "Authorization": "Bearer ${AERISUN_MCP_API_KEY}",
@@ -235,20 +259,23 @@ def build_companion_manifest(settings: dict[str, Any], usage: dict[str, Any], me
             "name": meta.get("name", "aerisun-mcp"),
             "endpoint": settings["endpoint"],
             "transport": "streamable_http",
+            "protocol_version": "2026-07-28",
             "usage_url": settings["usage_url"],
             "meta_url": settings["meta_url"],
         },
         "safety": {
             "require_readonly": settings["require_readonly"],
-            "confirm_before_write": settings["confirm_before_write"],
             "allowed_write_tools": settings["allowed_write_tools"],
-            "allowed_write_resources": settings["allowed_write_resources"],
         },
         "capabilities": {
             "tool_count": len(tools),
             "resource_count": len(resources),
             "prompt_count": len(prompts),
-            "read_only_tool_candidates": [name for name in tools if is_read_only_tool_name(name)],
+            "read_only_tools": [
+                item.get("name", "")
+                for item in mcp.get("tools", [])
+                if isinstance(item, dict) and is_read_only_capability(item)
+            ],
         },
         "skills": build_skill_manifest(),
     }
@@ -268,22 +295,21 @@ def build_briefing(settings: dict[str, Any], usage: dict[str, Any], meta: dict[s
         "",
         "## Connection",
         f"- Endpoint: `{settings['endpoint']}`",
+        "- Protocol: `MCP 2026-07-28` (`server/discover`)",
         f"- Usage URL: `{settings['usage_url']}`",
         f"- Meta URL: `{settings['meta_url']}`",
         "",
         "## Recommended client posture",
         "- Use a short descriptive server label for remote MCP clients.",
         "- Prefer an explicit `allowed_tools` list instead of exposing every discovered tool by default.",
-        "- Keep read-only and guarded-write configurations separate.",
+        "- Keep read-only and authorized-write configurations separate.",
         "",
         "## Current scopes",
         *scope_lines,
         "",
         "## Local safety policy",
         f"- Read-only mode: `{str(settings['require_readonly']).lower()}`",
-        f"- Confirm before write: `{str(settings['confirm_before_write']).lower()}`",
         f"- Allowed write tools: `{', '.join(settings['allowed_write_tools']) or '(none)'}`",
-        f"- Allowed write resources: `{', '.join(settings['allowed_write_resources']) or '(none)'}`",
         "",
         "## Available MCP capabilities",
         f"- Tools: `{len(tool_names)}`",
@@ -307,6 +333,7 @@ def build_briefing(settings: dict[str, Any], usage: dict[str, Any], meta: dict[s
         "- Always read the latest usage document before calling MCP tools.",
         "- If read-only mode is true, do not execute write, moderation, or state-changing tools even if the API key technically has those scopes.",
         "- If a write is requested, only use tools that appear in both the usage document and the local allowlist.",
+        "- Treat the user's explicit write request as authorization for that scoped action; do not ask again.",
         "- Read current state first, then write.",
         "",
         "## MCP meta snapshot",
@@ -327,6 +354,7 @@ def main() -> int:
     settings = resolve_settings(env_values)
 
     usage = fetch_json(settings["usage_url"], settings["api_key"])
+    validate_usage_document(usage)
     meta = fetch_json(settings["meta_url"], settings["api_key"])
     openai_templates = build_openai_tool_templates(settings, usage)
     companion_manifest = build_companion_manifest(settings, usage, meta)

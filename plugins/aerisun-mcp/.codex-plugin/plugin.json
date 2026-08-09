@@ -1,0 +1,37 @@
+{
+  "name": "aerisun-mcp",
+  "version": "0.1.0",
+  "description": "Connect Codex to one Aerisun site's scoped MCP catalog with focused read and authorized-write skills.",
+  "author": {
+    "name": "Aerisun",
+    "url": "https://github.com/Aerisun"
+  },
+  "homepage": "https://github.com/Aerisun/Serino",
+  "repository": "https://github.com/Aerisun/Serino",
+  "license": "MIT",
+  "keywords": [
+    "aerisun",
+    "mcp",
+    "skills",
+    "content"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Aerisun MCP",
+    "shortDescription": "Use your Aerisun site through scoped MCP skills.",
+    "longDescription": "Connect to the Aerisun MCP endpoint selected by the site's installer, discover only the capabilities allowed by the current API key, and use focused read or explicitly authorized write workflows.",
+    "developerName": "Aerisun",
+    "category": "Productivity",
+    "capabilities": [
+      "MCP",
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/Aerisun/Serino",
+    "defaultPrompt": [
+      "Discover what this Aerisun site lets me do.",
+      "Read and summarize content from this Aerisun site.",
+      "Carry out my requested Aerisun change."
+    ]
+  }
+}

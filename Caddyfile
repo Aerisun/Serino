@@ -28,6 +28,14 @@ http://127.0.0.1:8081 {
 			reverse_proxy {$AERISUN_API_UPSTREAM:api:8000}
 		}
 
+		# MCP + Skills 域名安装入口
+		@mcpInstallRoutes {
+			path /mcp/install /mcp/install/*
+		}
+		handle @mcpInstallRoutes {
+			reverse_proxy {$AERISUN_API_UPSTREAM:api:8000}
+		}
+
 		# 资源文件
 		@mediaRoutes {
 			path /media /media/*

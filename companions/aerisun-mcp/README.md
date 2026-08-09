@@ -1,12 +1,13 @@
 # Aerisun MCP Companion
 
-这个 companion 用来把 Aerisun 的 MCP 接入能力安全地交给 AI 使用。
+这个 companion 是 Aerisun MCP 2026-07-28 的可选本地诊断工具。日常使用请直接从你的 Aerisun 域名安装共享插件；无需复制文件，也不依赖 companion 运行。
 
-它包含三类东西：
+- 域名安装入口：`https://你的域名/mcp/install`
+- Codex 安装脚本：`https://你的域名/mcp/install/codex.sh`
+- Claude Code 安装脚本：`https://你的域名/mcp/install/claude.sh`
+- 共用 Skills：`plugins/aerisun-mcp/skills/`
 
-- `skills/`：给 AI 的 skill 集合，按“连接准备 / 只读使用 / 受控写入”拆分
-- `.env` / `.env.example`：本地保存 MCP API Key 和安全策略
-- `scripts/`：验证连接、拉取 usage 文档、生成 AI 可直接消费的运行时文件
+companion 只负责在仓库开发或排障时拉取 usage 文档、运行连接检查和生成不含密钥的快照。
 
 ## 目录
 
@@ -19,13 +20,33 @@ companions/aerisun-mcp/
   scripts/
     init_env.sh
     prepare_ai_bundle.py
+
+plugins/aerisun-mcp/
+  .codex-plugin/plugin.json
+  .claude-plugin/plugin.json
   skills/
     aerisun-mcp-bootstrap/
     aerisun-mcp-readonly/
     aerisun-mcp-guarded-write/
 ```
 
-## 快速开始
+## 日常安装
+
+执行对应域名脚本，随后在隐藏提示中粘贴一次 API Key：
+
+```bash
+curl -fsSL https://你的域名/mcp/install/codex.sh | sh
+```
+
+或：
+
+```bash
+curl -fsSL https://你的域名/mcp/install/claude.sh | sh
+```
+
+安装器会安装共享 Skills，把客户端连接到这个域名的 `/api/mcp/`，并将 Key 写入仅当前用户可读的客户端私有凭据，同时安装 `~/.local/bin/serino-mcp-key`。以后运行这个本地命令即可离线更新 Key，无需再次请求站点安装脚本。
+
+## 本地诊断
 
 1. 初始化本地环境文件：
 
@@ -55,23 +76,25 @@ companions/aerisun-mcp/
      --api-key "$AERISUN_MCP_API_KEY"
    ```
 
-5. 把下面这些东西交给 AI：
+5. 排障时可以把下面这些不含密钥的内容交给 AI：
 
-   - `companions/aerisun-mcp/skills/`
+   - `plugins/aerisun-mcp/skills/`
    - `companions/aerisun-mcp/runtime/briefing.md`
    - `companions/aerisun-mcp/runtime/companion-manifest.json`
    - `companions/aerisun-mcp/runtime/usage.json`
    - `companions/aerisun-mcp/runtime/mcp-client.template.json`
    - `companions/aerisun-mcp/runtime/openai.responses-mcp-tools.template.json`
-   - 本地 `.env` 文件
+
+   在 MCP 客户端的安全环境变量或密钥设置中配置 API Key；不要把 `.env` 文件作为上下文交给 AI。
 
 ## 安全模型
 
-- 真实 API Key 只放在本地 `.env`，不会写进仓库跟踪文件。
+- 日常客户端的真实 API Key 只放在权限为 `0600` 的用户私有凭据；companion 排障 Key 只放在本地 `.env`，两者都不会写进仓库跟踪文件。
 - `prepare_ai_bundle.py` 默认不会把明文密钥写入任何生成文件。
 - companion 默认开启 `AERISUN_MCP_REQUIRE_READONLY=true`。
-- 即使关闭只读模式，写入能力也仍然需要 `AERISUN_MCP_ALLOWED_WRITE_TOOLS` 或 `AERISUN_MCP_ALLOWED_WRITE_RESOURCES` 白名单。
-- `aerisun-mcp-guarded-write` skill 默认要求先读取当前状态，再执行写入，并优先遵守显式确认。
+- 即使关闭只读模式，写入工具也仍然需要 `AERISUN_MCP_ALLOWED_WRITE_TOOLS` 白名单。
+- `aerisun-mcp-guarded-write` Skill 将用户明确提出的写入请求视为该项操作的授权，不再重复确认。
+- 客户端必须先调用 `ClientSession.discover()`，再列出或调用能力。
 
 ## 运行时输出
 

@@ -86,7 +86,8 @@ list_serino_reserved_caddy_routes() {
     $'prefix\t/fonts' \
     $'prefix\t/posts' \
     $'prefix\t/diary' \
-    $'prefix\t/feeds'
+    $'prefix\t/feeds' \
+    $'prefix\t/mcp/install'
   printf '%s\n' \
     $'exact\t/manifest.webmanifest' \
     $'exact\t/bootstrap.js' \

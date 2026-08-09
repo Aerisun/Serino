@@ -1485,7 +1485,12 @@ def trigger_workflow_run(
     payload: AgentWorkflowRunCreateWrite | dict[str, Any],
 ) -> dict[str, Any]:
     from aerisun.domain.automation.runtime_registry import get_automation_runtime
-    from aerisun.domain.automation.service import create_workflow_run as _create_workflow_run
+    from aerisun.domain.automation.service import (
+        create_workflow_run as _create_workflow_run,
+    )
+    from aerisun.domain.automation.service import (
+        full_access_run_principal,
+    )
 
     return _encode(
         _create_workflow_run(
@@ -1494,6 +1499,7 @@ def trigger_workflow_run(
             workflow_key=workflow_key,
             payload=_validated_model(payload, AgentWorkflowRunCreateWrite),
             trigger_kind="manual",
+            principal=full_access_run_principal("mcp"),
         )
     )
 
@@ -1505,7 +1511,12 @@ def test_workflow_run(
     payload: AgentWorkflowRunCreateWrite | dict[str, Any],
 ) -> dict[str, Any]:
     from aerisun.domain.automation.runtime_registry import get_automation_runtime
-    from aerisun.domain.automation.service import test_workflow_run as _test_workflow_run
+    from aerisun.domain.automation.service import (
+        full_access_run_principal,
+    )
+    from aerisun.domain.automation.service import (
+        test_workflow_run as _test_workflow_run,
+    )
 
     return _encode(
         _test_workflow_run(
@@ -1513,6 +1524,7 @@ def test_workflow_run(
             get_automation_runtime(),
             workflow_key=workflow_key,
             payload=_validated_model(payload, AgentWorkflowRunCreateWrite),
+            principal=full_access_run_principal("mcp"),
         )
     )
 

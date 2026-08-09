@@ -1,0 +1,7 @@
+interface:
+  display_name: "Aerisun MCP Bootstrap"
+  short_description: "Discover this Aerisun site's allowed MCP capabilities"
+  default_prompt: "Use $aerisun-mcp-bootstrap to verify Aerisun MCP access and discover the capabilities available to the current API key."
+
+policy:
+  allow_implicit_invocation: true

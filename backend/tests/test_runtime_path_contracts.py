@@ -2068,6 +2068,9 @@ printf 'upstream=%s\\n' "$(normalize_caddy_route_upstream 'http://127.0.0.1:9000
 if caddy_route_conflicts_with_serino '/api/v1'; then
   printf 'reserved=/api/v1\\n'
 fi
+if caddy_route_conflicts_with_serino '/mcp/install'; then
+  printf 'reserved=/mcp/install\\n'
+fi
 if ! caddy_route_conflicts_with_serino '/postscript'; then
   printf 'available=/postscript\\n'
 fi
@@ -2079,13 +2082,14 @@ render_caddy_route_config '/files' 'http://127.0.0.1:9000'
         .splitlines()
     )
 
-    assert output[:4] == [
+    assert output[:5] == [
         "path=/files",
         "upstream=http://127.0.0.1:9000",
         "reserved=/api/v1",
+        "reserved=/mcp/install",
         "available=/postscript",
     ]
-    rendered = "\n".join(output[4:])
+    rendered = "\n".join(output[5:])
     assert "# serino-route-path: /files" in rendered
     assert "# serino-route-upstream: http://127.0.0.1:9000" in rendered
     assert "path /files /files/*" in rendered

@@ -30,7 +30,7 @@ from aerisun.api.admin.scopes import (
 )
 from aerisun.domain.agent.capability_ids import build_capability_id
 from aerisun.domain.agent.schemas import AgentUsageCapabilityRead, McpPresetRead
-from aerisun.domain.exceptions import ResourceNotFound
+from aerisun.domain.exceptions import ResourceNotFound, ValidationError
 from aerisun.domain.site_config import repository as site_repo
 
 if TYPE_CHECKING:
@@ -38,6 +38,8 @@ if TYPE_CHECKING:
 
 CUSTOM_MCP_PRESET = "custom"
 DEFAULT_MCP_PRESET = "readonly"
+MCP_PRESET_KEYS = frozenset({DEFAULT_MCP_PRESET, "basic_management", "full_management"})
+MCP_CONFIG_FIELDS = frozenset({"selected_preset", "enabled_capability_ids"})
 
 
 @dataclass(slots=True)
@@ -169,12 +171,48 @@ def resolve_mcp_config(
     scoped_scopes = list(api_key.scopes or []) if api_key is not None else list(available_scopes or [])
     scoped_capabilities = filter_capabilities_for_scopes(capabilities, scoped_scopes)
     presets = build_mcp_presets(scoped_capabilities)
-    selected_preset = _scope_preset(set(scoped_scopes))
     preset_map = _preset_map(presets)
-    enabled_capability_ids = [item.id for item in scoped_capabilities]
-    is_customized = selected_preset == CUSTOM_MCP_PRESET or (
-        set(enabled_capability_ids) != set(preset_map[selected_preset].capability_ids)
-    )
+
+    stored_config = api_key.mcp_config if api_key is not None else {}
+    if stored_config == {}:
+        selected_preset = _scope_preset(set(scoped_scopes))
+        enabled_capability_ids = [item.id for item in scoped_capabilities]
+        is_customized = selected_preset == CUSTOM_MCP_PRESET or (
+            set(enabled_capability_ids) != set(preset_map[selected_preset].capability_ids)
+        )
+    elif not isinstance(stored_config, dict) or len(stored_config) != 1:
+        selected_preset = CUSTOM_MCP_PRESET
+        enabled_capability_ids = []
+        is_customized = True
+    elif "selected_preset" in stored_config:
+        configured_preset = stored_config["selected_preset"]
+        if not isinstance(configured_preset, str) or configured_preset not in MCP_PRESET_KEYS:
+            selected_preset = CUSTOM_MCP_PRESET
+            enabled_capability_ids = []
+            is_customized = True
+        else:
+            selected_preset = configured_preset
+            enabled_capability_ids = list(preset_map[configured_preset].capability_ids)
+            is_customized = False
+    elif "enabled_capability_ids" in stored_config:
+        configured_ids = stored_config["enabled_capability_ids"]
+        known_ids = {item.id for item in capabilities}
+        if (
+            not isinstance(configured_ids, list)
+            or not all(isinstance(item, str) for item in configured_ids)
+            or any(item not in known_ids for item in configured_ids)
+        ):
+            enabled_capability_ids = []
+        else:
+            configured_id_set = set(configured_ids)
+            enabled_capability_ids = [item.id for item in scoped_capabilities if item.id in configured_id_set]
+        selected_preset = CUSTOM_MCP_PRESET
+        is_customized = True
+    else:
+        selected_preset = CUSTOM_MCP_PRESET
+        enabled_capability_ids = []
+        is_customized = True
+
     return McpResolvedConfig(
         public_access=bool(feature_flags.get("mcp_public_access", False)),
         enabled_capability_ids=enabled_capability_ids,
@@ -190,16 +228,46 @@ def update_mcp_flags(
     public_access: bool | None,
     capabilities: list[AgentUsageCapabilityRead],
     api_key: ApiKey | None = None,
+    mcp_config_update: dict[str, object] | None = None,
 ) -> McpResolvedConfig:
     profile, feature_flags = _read_site_feature_flags(session)
-    current = resolve_mcp_config(
-        session,
-        capabilities,
-        api_key=api_key,
-        available_scopes=list(api_key.scopes or []) if api_key is not None else None,
+    next_public_access = (
+        bool(feature_flags.get("mcp_public_access", False)) if public_access is None else bool(public_access)
     )
 
-    next_public_access = current.public_access if public_access is None else bool(public_access)
+    config_update = dict(mcp_config_update or {})
+    if config_update:
+        if api_key is None:
+            raise ValidationError("api_key_id is required when updating per-key MCP capabilities")
+        if set(config_update) - MCP_CONFIG_FIELDS:
+            raise ValidationError("Unknown MCP configuration fields")
+        if len(config_update) != 1:
+            raise ValidationError("selected_preset and enabled_capability_ids are mutually exclusive")
+
+        if "selected_preset" in config_update:
+            selected_preset = config_update["selected_preset"]
+            if not isinstance(selected_preset, str) or selected_preset not in MCP_PRESET_KEYS:
+                raise ValidationError(f"Unknown MCP preset: {selected_preset}")
+            api_key.mcp_config = {"selected_preset": selected_preset}
+        else:
+            configured_ids = config_update["enabled_capability_ids"]
+            if not isinstance(configured_ids, list) or not all(isinstance(item, str) for item in configured_ids):
+                raise ValidationError("enabled_capability_ids must be a list of capability IDs")
+
+            known_ids = {item.id for item in capabilities}
+            requested_ids = set(configured_ids)
+            unknown_ids = sorted(requested_ids - known_ids)
+            if unknown_ids:
+                raise ValidationError(f"Unknown capability IDs: {', '.join(unknown_ids)}")
+
+            scoped_capabilities = filter_capabilities_for_scopes(capabilities, list(api_key.scopes or []))
+            reachable_ids = {item.id for item in scoped_capabilities}
+            unreachable_ids = sorted(requested_ids - reachable_ids)
+            if unreachable_ids:
+                raise ValidationError("Capability IDs not available to this API key: " + ", ".join(unreachable_ids))
+
+            canonical_ids = [item.id for item in capabilities if item.id in requested_ids]
+            api_key.mcp_config = {"enabled_capability_ids": canonical_ids}
 
     feature_flags["mcp_public_access"] = next_public_access
     profile.feature_flags = feature_flags

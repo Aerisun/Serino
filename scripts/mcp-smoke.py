@@ -29,22 +29,10 @@ backend_src = Path(__file__).resolve().parent.parent / "backend" / "src"
 sys.path.insert(0, str(backend_src))
 
 from mcp import ClientSession  # noqa: E402
-from mcp.client.streamable_http import streamablehttp_client  # noqa: E402
+from mcp.client.streamable_http import create_mcp_http_client, streamable_http_client  # noqa: E402
 
-READLIKE_PREFIXES = (
-    "get",
-    "list",
-    "read",
-    "search",
-    "fetch",
-    "inspect",
-    "describe",
-    "query",
-    "preview",
-    "validate",
-    "check",
-    "export",
-)
+MCP_PROTOCOL_VERSION = "2026-07-28"
+SCOPE_RE = re.compile(r"^[a-z][a-z0-9_-]*:[a-z][a-z0-9_-]*$")
 PLACEHOLDER_RE = re.compile(
     r"^(<.*>|abc-123|content-id|friend-id|id-[0-9]+|api-key-id|revision-id|run-id|workflow-key|[a-z][a-z0-9_-]*-[0-9]+)$"
 )
@@ -117,12 +105,19 @@ def _example_arguments(capability: dict[str, Any]) -> dict[str, Any] | None:
     return None
 
 
-def _is_readlike_tool(capability: dict[str, Any]) -> bool:
-    name = str(capability.get("name") or "")
-    scopes = capability.get("required_scopes") or []
-    if any(str(scope).endswith(":write") for scope in scopes):
+def _is_read_capability(capability: dict[str, Any]) -> bool:
+    if capability.get("intent") != "read":
         return False
-    return name.startswith(READLIKE_PREFIXES)
+
+    scopes = capability.get("required_scopes")
+    if not scopes or not isinstance(scopes, list):
+        return False
+    return all(
+        isinstance(scope, str)
+        and bool(SCOPE_RE.fullmatch(scope))
+        and (scope == "agent:connect" or scope.endswith(":read"))
+        for scope in scopes
+    )
 
 
 def _tool_text(result: Any) -> str:
@@ -158,22 +153,35 @@ def _usage_endpoint_map(usage: dict[str, Any]) -> dict[str, str]:
     }
 
 
+def _usage_capabilities(usage: dict[str, Any] | None, kind: str) -> list[dict[str, Any]]:
+    if not usage:
+        return []
+    mcp = usage.get("mcp")
+    if not isinstance(mcp, dict):
+        return []
+    capabilities = mcp.get(kind)
+    if not isinstance(capabilities, list):
+        return []
+    return [item for item in capabilities if isinstance(item, dict)]
+
+
+def _capability_names(capabilities: list[dict[str, Any]]) -> set[str]:
+    return {item["name"] for item in capabilities if isinstance(item.get("name"), str) and item["name"]}
+
+
 def _select_tool_examples(
     usage: dict[str, Any],
     *,
-    mode: str,
     max_tool_calls: int,
 ) -> tuple[list[tuple[str, dict[str, Any]]], list[Outcome]]:
     selected: list[tuple[str, dict[str, Any]]] = []
     skipped: list[Outcome] = []
 
-    for capability in usage.get("mcp", {}).get("tools", []) or []:
-        if not isinstance(capability, dict):
-            continue
+    for capability in _usage_capabilities(usage, "tools"):
         name = str(capability.get("name") or "")
         if not name:
             continue
-        if mode == "readonly-examples" and not _is_readlike_tool(capability):
+        if not _is_read_capability(capability):
             continue
 
         arguments = _example_arguments(capability)
@@ -188,6 +196,12 @@ def _select_tool_examples(
     return selected, skipped
 
 
+def _has_trusted_read_examples(usage: dict[str, Any] | None) -> bool:
+    if not usage:
+        return False
+    return any(_is_read_capability(capability) for capability in _usage_capabilities(usage, "tools"))
+
+
 async def _run_mcp_checks(
     *,
     mcp_url: str,
@@ -200,10 +214,22 @@ async def _run_mcp_checks(
     headers = {"Authorization": f"Bearer {api_key}"}
 
     async with (
-        streamablehttp_client(mcp_url, headers=headers) as (read_stream, write_stream, _),
+        create_mcp_http_client(headers=headers) as http_client,
+        streamable_http_client(mcp_url, http_client=http_client) as (read_stream, write_stream),
         ClientSession(read_stream, write_stream) as session,
     ):
-        await session.initialize()
+        discovery = await session.discover()
+        supported_versions = list(discovery.supported_versions)
+        discovery_status = "OK" if MCP_PROTOCOL_VERSION in supported_versions else "FAIL"
+        outcomes.append(
+            Outcome(
+                "server/discover",
+                discovery_status,
+                f"supported_versions={supported_versions}",
+            )
+        )
+        if discovery_status == "FAIL":
+            return outcomes
 
         tools_result = await session.list_tools()
         resources_result = await session.list_resources()
@@ -213,42 +239,50 @@ async def _run_mcp_checks(
         outcomes.append(Outcome("resources/list", "OK", f"{len(resource_names)} resources"))
 
         if usage:
-            usage_tool_names = [item.get("name") for item in usage.get("mcp", {}).get("tools", [])]
-            usage_resource_names = [item.get("name") for item in usage.get("mcp", {}).get("resources", [])]
-            missing_tools = sorted(set(usage_tool_names) - set(tool_names))
-            missing_resources = sorted(set(usage_resource_names) - set(resource_names))
-            status = "OK" if not missing_tools and not missing_resources else "FAIL"
-            detail = f"missing_tools={missing_tools[:5]} missing_resources={missing_resources[:5]}"
+            usage_tools = _usage_capabilities(usage, "tools")
+            usage_resources = _usage_capabilities(usage, "resources")
+            usage_tool_names = _capability_names(usage_tools)
+            usage_resource_names = _capability_names(usage_resources)
+            protocol_tool_names = set(tool_names)
+            protocol_resource_names = set(resource_names)
+            missing_tools = sorted(usage_tool_names - protocol_tool_names)
+            extra_tools = sorted(protocol_tool_names - usage_tool_names)
+            missing_resources = sorted(usage_resource_names - protocol_resource_names)
+            extra_resources = sorted(protocol_resource_names - usage_resource_names)
+            status = "OK" if not any((missing_tools, extra_tools, missing_resources, extra_resources)) else "FAIL"
+            detail = (
+                f"missing_tools={missing_tools[:5]} extra_tools={extra_tools[:5]} "
+                f"missing_resources={missing_resources[:5]} extra_resources={extra_resources[:5]}"
+            )
             outcomes.append(Outcome("usage-vs-mcp", status, detail if status == "FAIL" else "catalogs match"))
+            if status == "FAIL":
+                return outcomes
 
-        if mode == "discovery":
+        if mode == "discovery" or not _has_trusted_read_examples(usage):
             return outcomes
 
+        trusted_resource_names = {
+            item["name"]
+            for item in _usage_capabilities(usage, "resources")
+            if isinstance(item.get("name"), str) and _is_read_capability(item)
+        }
         for uri in resource_names:
+            if uri not in trusted_resource_names:
+                continue
             try:
                 result = await session.read_resource(uri)
                 outcomes.append(Outcome(f"resource:{uri}", "OK", _resource_text(result)))
             except Exception as exc:
                 outcomes.append(Outcome(f"resource:{uri}", "FAIL", _format_exception(exc)))
 
-        if not usage:
-            sample_tools = [
-                ("list_posts", {"limit": 1, "offset": 0}),
-                ("list_diary_entries", {"limit": 1, "offset": 0}),
-                ("get_system_info", {}),
-                ("list_audit_logs", {"page": 1, "page_size": 1}),
-            ]
-            tool_calls = [(name, args) for name, args in sample_tools if name in tool_names]
-            skipped: list[Outcome] = []
-        else:
-            tool_calls, skipped = _select_tool_examples(usage, mode=mode, max_tool_calls=max_tool_calls)
-            tool_calls = [(name, args) for name, args in tool_calls if name in tool_names]
-            outcomes.extend(skipped)
+        tool_calls, skipped = _select_tool_examples(usage, max_tool_calls=max_tool_calls)
+        tool_calls = [(name, args) for name, args in tool_calls if name in tool_names]
+        outcomes.extend(skipped)
 
         for name, arguments in tool_calls:
             try:
                 result = await session.call_tool(name, arguments)
-                is_error = bool(getattr(result, "isError", False))
+                is_error = result.is_error
                 outcomes.append(Outcome(f"tool:{name}", "FAIL" if is_error else "OK", _tool_text(result)))
             except Exception as exc:
                 outcomes.append(Outcome(f"tool:{name}", "FAIL", _format_exception(exc)))
@@ -281,9 +315,9 @@ def main() -> int:
     parser.add_argument("--api-key", required=True, help="Bearer API key used for MCP access")
     parser.add_argument(
         "--mode",
-        choices=("discovery", "readonly-examples", "all-examples"),
+        choices=("discovery", "readonly-examples"),
         default="readonly-examples",
-        help="How far to go after MCP discovery. all-examples may execute writes.",
+        help="Only inspect discovery/catalogs, or also run usage-declared read-only examples.",
     )
     parser.add_argument(
         "--max-tool-calls",

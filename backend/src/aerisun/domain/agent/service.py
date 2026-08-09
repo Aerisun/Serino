@@ -85,6 +85,14 @@ def _build_usage_endpoints(base_url: str) -> list[AgentUsageEndpointRead]:
             required_headers=["Authorization: Bearer <API_KEY>"],
             expected_status=[200],
         ),
+        AgentUsageEndpointRead(
+            id="mcp_install",
+            url=_absolute_url(base_url, "/mcp/install"),
+            method="GET",
+            description="Install Aerisun MCP and its skills in Codex or Claude Code",
+            required_headers=[],
+            expected_status=[200],
+        ),
     ]
 
 
@@ -92,7 +100,7 @@ def _build_quickstart(base_url: str) -> AgentUsageQuickstartRead:
     usage_url = _absolute_url(base_url, "/api/agent/usage")
     mcp_url = _mcp_streamable_url(base_url)
     return AgentUsageQuickstartRead(
-        summary="Validate auth, confirm capabilities, and execute one safe MCP read call.",
+        summary="Validate auth, discover MCP 2026-07-28 capabilities, and execute one safe read call.",
         environment={
             "BASE": base_url or "http://localhost:8000",
             "KEY": "<API_KEY>",
@@ -118,7 +126,7 @@ def _build_quickstart(base_url: str) -> AgentUsageQuickstartRead:
                 title="Run first read call",
                 goal="Call one safe read-only tool over MCP",
                 command=(
-                    "Initialize MCP client session, call tools/list, then call "
+                    "Call ClientSession.discover() for MCP 2026-07-28, call tools/list, then call "
                     "list_diary_entries(limit=1, offset=0) against $MCP_ENDPOINT"
                 ),
                 expected_result="MCP call succeeds with isError=false",
@@ -310,7 +318,7 @@ def _build_troubleshooting(missing_scopes: list[str]) -> list[AgentUsageTroubles
             symptom="Internal server error while using MCP",
             likely_causes=[
                 "Server not running latest code",
-                "MCP session manager lifecycle not initialized",
+                "MCP transport lifecycle is unavailable",
                 "Transient upstream/database failure",
             ],
             fixes=[
@@ -325,10 +333,17 @@ def _build_troubleshooting(missing_scopes: list[str]) -> list[AgentUsageTroubles
 def _build_mcp_templates() -> list[AgentUsageMcpTemplateRead]:
     return [
         AgentUsageMcpTemplateRead(
-            id="initialize-list-call",
-            description="Minimal session flow for first successful MCP call",
+            id="discover-list-call",
+            description="MCP 2026-07-28 discovery flow for the first successful call",
             sequence=[
-                {"step": 1, "operation": "initialize", "arguments": {}},
+                {
+                    "step": 1,
+                    "operation": "server/discover",
+                    "arguments": {
+                        "client_api": "ClientSession.discover()",
+                        "protocol_version": "2026-07-28",
+                    },
+                },
                 {"step": 2, "operation": "list_tools", "arguments": {}},
                 {
                     "step": 3,
@@ -489,7 +504,7 @@ def build_agent_usage(
     mcp_endpoint = _mcp_streamable_url(base_url)
 
     return AgentUsageRead(
-        schema_version="2026-03-usage-v2",
+        schema_version="2026-07-28-usage-v3",
         generated_at=shanghai_now(),
         name="Aerisun Agent Usage",
         objective=(
@@ -525,7 +540,8 @@ def build_agent_usage(
             resources=resources,
             call_templates=_build_mcp_templates(),
             usage_hints=[
-                "Call list_tools once after initialize and cache tool signatures for the session.",
+                "Call server/discover through ClientSession.discover() for MCP 2026-07-28 before other requests.",
+                "Call list_tools once after discovery and cache tool signatures for the session.",
                 "Use list_admin_content to collect IDs before destructive actions.",
                 "Prefer update_admin_content(visibility=private) over delete for reversible workflows.",
                 "Use export_content before import_content or other bulk content changes.",
@@ -602,10 +618,15 @@ def save_mcp_admin_config(
     api_key = session.get(ApiKey, api_key_id) if api_key_id else None
     if api_key_id and api_key is None:
         raise ResourceNotFound("API key not found")
+    updates = payload.model_dump(exclude_unset=True)
+    mcp_config_update = {
+        field: updates[field] for field in ("selected_preset", "enabled_capability_ids") if field in updates
+    }
     update_mcp_flags(
         session,
         public_access=payload.public_access,
         capabilities=capabilities,
         api_key=api_key,
+        mcp_config_update=mcp_config_update,
     )
     return build_mcp_admin_config(session, site_url, api_key_id)

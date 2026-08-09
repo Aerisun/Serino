@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from pydantic import Field
+from pydantic import ConfigDict, Field
 
 from aerisun.core.schemas import ModelBase
 
@@ -16,6 +16,15 @@ class AgentUsageCapabilityRead(ModelBase):
     required_scopes: list[str] = Field(default_factory=list, description="Scopes required to access this capability")
     invocation: dict[str, Any] = Field(default_factory=dict, description="How to invoke this capability")
     examples: list[dict[str, Any]] = Field(default_factory=list, description="Optional few-shot examples")
+    intent: str = Field(default="read", description="Capability intent, such as read or write")
+    label: str = Field(default="", description="Localized capability label")
+    label_en: str = Field(default="", description="English capability label")
+    help_text: str = Field(default="", description="Localized operator guidance")
+    help_text_en: str = Field(default="", description="English operator guidance")
+    ai_usage_hint: str = Field(default="", description="Concise guidance for agent tool selection")
+    domain: str = Field(default="", description="Capability domain")
+    group_label: str = Field(default="", description="Localized capability group label")
+    risk_level: str = Field(default="low", description="Operational risk level")
 
 
 class AgentUsageAuthRead(ModelBase):
@@ -183,4 +192,14 @@ class McpAdminConfigRead(ModelBase):
 
 
 class McpAdminConfigUpdate(ModelBase):
+    model_config = ConfigDict(from_attributes=True, extra="forbid")
+
     public_access: bool | None = Field(default=None, description="Whether MCP public access is enabled")
+    selected_preset: str | None = Field(
+        default=None,
+        description="Per-key MCP capability preset: readonly, basic_management, or full_management",
+    )
+    enabled_capability_ids: list[str] | None = Field(
+        default=None,
+        description="Explicit per-key MCP capability allowlist; an empty list disables all capabilities",
+    )

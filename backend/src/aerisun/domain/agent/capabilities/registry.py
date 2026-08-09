@@ -303,6 +303,15 @@ class AgentCapabilityDefinition:
                 "output_schema": self.output_schema,
             },
             examples=list(self.examples),
+            intent=self.intent,
+            label=self.resolved_label,
+            label_en=self.resolved_label_en,
+            help_text=self.help_text,
+            help_text_en=self.help_text_en,
+            ai_usage_hint=self.ai_usage_hint,
+            domain=self.domain,
+            group_label=self.group_label,
+            risk_level=self.risk_level,
         )
 
 

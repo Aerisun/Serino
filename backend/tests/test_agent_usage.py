@@ -154,10 +154,14 @@ class TestAgentUsage:
         response = client.get("/api/agent/usage", headers={"Authorization": f"Bearer {raw_key}"})
         assert response.status_code == 200
         data = response.json()
-        assert data["schema_version"] == "2026-03-usage-v2"
+        assert data["schema_version"] == "2026-07-28-usage-v3"
+        rendered_templates = repr(data["mcp"]["call_templates"]).lower()
+        assert "server/discover" in rendered_templates
+        assert "initialize" not in rendered_templates
         endpoint_map = {item["id"]: item for item in data["endpoints"]}
         assert endpoint_map["usage_document"]["url"].endswith("/api/agent/usage")
         assert endpoint_map["mcp_streamable_http"]["url"].endswith("/api/mcp/")
+        assert endpoint_map["mcp_install"]["url"].endswith("/mcp/install")
         assert data["scope_guide"]["available_on_current_key"] == [AGENT_CONNECT, CONTENT_READ]
         assert data["quickstart"]["steps"][0]["order"] == 1
         assert any(item["id"] == "list-content" for item in data["playbooks"])
