@@ -26,6 +26,31 @@ describe("Markdown paragraph indentation", () => {
     expect(thought).toContain("markdown-indent-enabled");
   });
 
+  it("keeps the friends application copy flush by default while allowing an explicit document opt-in", () => {
+    const friendsPage = fs.readFileSync(
+      new URL("../src/pages/Friends.tsx", import.meta.url),
+      "utf8",
+    );
+    const applicationCopy = renderToStaticMarkup(
+      createElement(MarkdownRenderer, {
+        content: "友链申请说明",
+        indentParagraphs: false,
+      }),
+    );
+    const optedInApplicationCopy = renderToStaticMarkup(
+      createElement(MarkdownRenderer, {
+        content: "@indent\n\n友链申请说明",
+        indentParagraphs: false,
+      }),
+    );
+
+    expect(friendsPage).toMatch(
+      /<ArticleMarkdownRenderer\s+content=\{applicationMarkdown\}[^>]*indentParagraphs=\{false\}/s,
+    );
+    expect(applicationCopy).not.toContain("markdown-indent-enabled");
+    expect(optedInApplicationCopy).toContain("markdown-indent-enabled");
+  });
+
   it("renders concise directives as force-indent paragraph overrides", () => {
     const authored = renderMarkdown(
       ":indent 强制缩进而且不需要结束标记\n第二行仍属于同一段落\n\n:noindent **加粗开头也能强制不缩进**",
