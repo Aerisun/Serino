@@ -8,6 +8,7 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
+from aerisun.core.redaction import redact_sensitive_data
 from aerisun.domain.automation import repository as repo
 from aerisun.domain.automation._helpers import (
     backend_capability_catalog,
@@ -288,9 +289,9 @@ def continue_surface_draft(
                     "Readonly queries belong to mounted tools, not action surfaces. "
                     "graph_mutation may include graph to fully replace the workflow graph when surface references must be updated. "
                     "Current workflow:\n"
-                    f"{json.dumps(workflow.model_dump(mode='json'), ensure_ascii=False)}\n\n"
+                    f"{json.dumps(redact_sensitive_data(workflow.model_dump(mode='json')), ensure_ascii=False)}\n\n"
                     "Current surfaces:\n"
-                    f"{json.dumps({'query_surfaces': [item.model_dump(mode='json') for item in pack.query_surfaces], 'action_surfaces': [item.model_dump(mode='json') for item in pack.action_surfaces], 'human_catalog': compiled_catalog.model_dump(mode='json')}, ensure_ascii=False)}\n\n"
+                    f"{json.dumps(redact_sensitive_data({'query_surfaces': [item.model_dump(mode='json') for item in pack.query_surfaces], 'action_surfaces': [item.model_dump(mode='json') for item in pack.action_surfaces], 'human_catalog': compiled_catalog.model_dump(mode='json')}), ensure_ascii=False)}\n\n"
                     "Current validation issues:\n"
                     f"{json.dumps(validation.model_dump(mode='json'), ensure_ascii=False)}\n\n"
                     "Available capabilities:\n"

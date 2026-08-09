@@ -4,19 +4,32 @@ import json
 import queue
 import threading
 import time
+from datetime import datetime
+from typing import Literal
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Response, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session, get_session_factory
 from aerisun.domain.automation.ai_contract_context import build_ai_contract_context
 from aerisun.domain.automation.catalog import build_workflow_catalog, derive_ai_output_schema
+from aerisun.domain.automation.model_management import (
+    diagnose_agent_model_config,
+    list_chatgpt_models,
+    logout_chatgpt_account,
+    read_chatgpt_account,
+    read_chatgpt_login_status,
+    start_chatgpt_device_login,
+)
 from aerisun.domain.automation.schemas import (
     AgentModelConfigRead,
     AgentModelConfigTestRead,
     AgentModelConfigUpdate,
+    AgentModelDiagnosticRead,
+    AgentOverviewRead,
     AgentRunApprovalRead,
+    AgentRunCollectionRead,
     AgentRunRead,
     AgentRunStepRead,
     AgentWorkflowCatalogRead,
@@ -31,6 +44,10 @@ from aerisun.domain.automation.schemas import (
     AgentWorkflowUpdate,
     AgentWorkflowValidationRead,
     ApprovalDecisionWrite,
+    ChatGPTAccountRead,
+    ChatGPTDeviceLoginRead,
+    ChatGPTLoginStatusRead,
+    ChatGPTModelOptionRead,
     DeriveAiSchemaRequest,
     DeriveAiSchemaResponse,
     SurfaceDraftApplyRead,
@@ -46,6 +63,7 @@ from aerisun.domain.automation.schemas import (
 )
 from aerisun.domain.automation.service import (
     apply_surface_draft,
+    cancel_workflow_run,
     clear_agent_workflow_draft,
     clear_surface_draft,
     connect_telegram_webhook,
@@ -55,17 +73,20 @@ from aerisun.domain.automation.service import (
     create_webhook_subscription,
     create_workflow_run,
     delete_webhook_subscription,
+    full_access_run_principal,
+    get_agent_overview,
     get_agent_workflow_catalog,
     get_agent_workflow_draft,
     get_run_detail,
     get_surface_draft,
     list_pending_approvals,
-    list_runs,
+    list_run_collection,
     list_webhook_dead_letters,
     list_webhook_deliveries,
     list_webhook_subscriptions,
     replay_dead_letter,
     resolve_approval,
+    retry_workflow_run,
     test_agent_model_config,
     test_webhook_subscription,
     test_workflow_run,
@@ -77,6 +98,7 @@ from aerisun.domain.automation.settings import (
     delete_agent_workflow,
     get_agent_model_config,
     list_agent_workflows,
+    public_agent_workflow,
     update_agent_model_config,
     update_agent_workflow,
 )
@@ -133,12 +155,86 @@ def post_model_config_test(
     return test_agent_model_config(session, payload)
 
 
+@router.get(
+    "/model-config/chatgpt/account",
+    response_model=ChatGPTAccountRead,
+    summary="获取 ChatGPT OAuth 账号状态",
+)
+def get_chatgpt_account(
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> ChatGPTAccountRead:
+    return read_chatgpt_account(session)
+
+
+@router.post(
+    "/model-config/chatgpt/login",
+    response_model=ChatGPTDeviceLoginRead,
+    summary="开始 ChatGPT 设备码登录",
+)
+def post_chatgpt_login(
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> ChatGPTDeviceLoginRead:
+    return start_chatgpt_device_login(session)
+
+
+@router.get(
+    "/model-config/chatgpt/login/{login_id}",
+    response_model=ChatGPTLoginStatusRead,
+    summary="获取 ChatGPT 登录进度",
+)
+def get_chatgpt_login_status(
+    login_id: str,
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> ChatGPTLoginStatusRead:
+    return read_chatgpt_login_status(session, login_id)
+
+
+@router.delete(
+    "/model-config/chatgpt/account",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="退出 ChatGPT OAuth 账号",
+)
+def delete_chatgpt_account(
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> Response:
+    logout_chatgpt_account(session)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get(
+    "/model-config/chatgpt/models",
+    response_model=list[ChatGPTModelOptionRead],
+    summary="获取 ChatGPT 套餐可用模型",
+)
+def get_chatgpt_models(
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> list[ChatGPTModelOptionRead]:
+    return list_chatgpt_models(session)
+
+
+@router.post(
+    "/model-config/diagnose",
+    response_model=AgentModelDiagnosticRead,
+    summary="诊断模型主备来源",
+)
+def post_model_config_diagnose(
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> AgentModelDiagnosticRead:
+    return diagnose_agent_model_config(session)
+
+
 @router.get("/workflows", response_model=list[AgentWorkflowRead], summary="获取 Agent 工作流")
 def get_workflows(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> list[AgentWorkflowRead]:
-    return list_agent_workflows(session)
+    return [public_agent_workflow(item) for item in list_agent_workflows(session)]
 
 
 @router.get("/workflow-catalog", response_model=AgentWorkflowCatalogRead, summary="获取工作流 v2 目录")
@@ -225,7 +321,7 @@ def post_workflow(
         before_snapshot=before_snapshot,
         after_snapshot=after_snapshot,
     )
-    return result
+    return public_agent_workflow(result)
 
 
 @router.post("/workflows/validate", response_model=AgentWorkflowValidationRead, summary="校验工作流定义")
@@ -304,7 +400,7 @@ def put_workflow(
         before_snapshot=before_snapshot,
         after_snapshot=after_snapshot,
     )
-    return result
+    return public_agent_workflow(result)
 
 
 @router.post("/workflows/{workflow_key}/runs", response_model=AgentWorkflowRunCreateRead, summary="手动触发工作流")
@@ -322,6 +418,7 @@ def post_workflow_run(
         workflow_key=workflow_key,
         payload=payload,
         trigger_kind="manual",
+        principal=full_access_run_principal("admin", _admin.id),
     )
 
 
@@ -339,6 +436,7 @@ def post_workflow_test_run(
         get_automation_runtime(),
         workflow_key=workflow_key,
         payload=payload,
+        principal=full_access_run_principal("admin", _admin.id),
     )
 
 
@@ -361,12 +459,38 @@ def delete_workflow(
     )
 
 
-@router.get("/runs", response_model=list[AgentRunRead], summary="获取 Agent 运行记录")
-def get_runs(
+@router.get("/overview", response_model=AgentOverviewRead, summary="获取 Agent 总览")
+def get_overview(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
-) -> list[AgentRunRead]:
-    return list_runs(session)
+) -> AgentOverviewRead:
+    return get_agent_overview(session)
+
+
+@router.get("/runs", response_model=AgentRunCollectionRead, summary="获取 Agent 运行记录")
+def get_runs(
+    status_filter: list[str] | None = Query(default=None, alias="status"),
+    workflow_key: str | None = Query(default=None, max_length=120),
+    execution_mode: Literal["live", "dry_run"] | None = Query(default=None),
+    search: str | None = Query(default=None, max_length=200),
+    created_from: datetime | None = Query(default=None),
+    created_to: datetime | None = Query(default=None),
+    cursor: str | None = Query(default=None, max_length=512),
+    limit: int = Query(default=25, ge=1, le=100),
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> AgentRunCollectionRead:
+    return list_run_collection(
+        session,
+        statuses=status_filter,
+        workflow_key=workflow_key,
+        execution_mode=execution_mode,
+        search=search,
+        created_from=created_from,
+        created_to=created_to,
+        cursor=cursor,
+        limit=limit,
+    )
 
 
 @router.get("/runs/{run_id}", response_model=AgentRunRead, summary="获取单个 Agent 运行记录")
@@ -387,6 +511,24 @@ def get_run_steps(
 ) -> list[AgentRunStepRead]:
     _run, steps = get_run_detail(session, run_id)
     return steps
+
+
+@router.post("/runs/{run_id}/cancel", response_model=AgentRunRead, summary="取消 Agent 运行")
+def post_run_cancel(
+    run_id: str,
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> AgentRunRead:
+    return cancel_workflow_run(session, run_id=run_id)
+
+
+@router.post("/runs/{run_id}/retry", response_model=AgentRunRead, summary="重试 Agent 运行")
+def post_run_retry(
+    run_id: str,
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> AgentRunRead:
+    return retry_workflow_run(session, run_id=run_id)
 
 
 @router.get("/approvals", response_model=list[AgentRunApprovalRead], summary="获取待审批项目")
@@ -622,7 +764,8 @@ def post_workflow_draft_create(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> AgentWorkflowDraftCreateRead:
-    return create_agent_workflow_from_draft(session, payload)
+    result = create_agent_workflow_from_draft(session, payload)
+    return result.model_copy(update={"workflow": public_agent_workflow(result.workflow)})
 
 
 @router.delete("/workflow-draft", status_code=status.HTTP_204_NO_CONTENT, summary="清空 Agent 工作流草稿")

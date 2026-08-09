@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import logging
 import threading
+from copy import deepcopy
 from typing import Any
 
 from sqlalchemy.orm import Session
 
+from aerisun.core.redaction import redact_sensitive_data, restore_redacted_placeholders, sanitize_url
 from aerisun.domain.automation import compat
 from aerisun.domain.automation.packs import (
     delete_workflow_pack,
@@ -17,6 +19,7 @@ from aerisun.domain.automation.packs import (
 )
 from aerisun.domain.automation.schemas import (
     AgentModelConfigRead,
+    AgentModelConfigResolved,
     AgentModelConfigUpdate,
     AgentWorkflowCreate,
     AgentWorkflowGraph,
@@ -25,7 +28,12 @@ from aerisun.domain.automation.schemas import (
     AgentWorkflowSummaryRead,
     AgentWorkflowTriggerBinding,
     AgentWorkflowUpdate,
+    ChatGPTModelConfigRead,
+    ChatGPTModelConfigResolved,
+    OpenAICompatibleModelConfigRead,
+    OpenAICompatibleModelConfigResolved,
 )
+from aerisun.domain.automation.secrets import decrypt_secret, encrypt_secret
 from aerisun.domain.exceptions import ResourceNotFound, StateConflict, ValidationError
 from aerisun.domain.site_config import repository as site_repo
 
@@ -55,18 +63,27 @@ LEGACY_NODE_TYPE_ALIASES = compat.LEGACY_NODE_TYPE_ALIASES
 LEGACY_TRIGGER_TYPE_ALIASES = compat.LEGACY_TRIGGER_TYPE_ALIASES
 
 DEFAULT_AGENT_MODEL_CONFIG: dict[str, Any] = {
-    "enabled": False,
-    "provider": "openai_compatible",
-    "base_url": "",
-    "model": "",
-    "api_key": "",
-    "temperature": 0.2,
-    "timeout_seconds": 60,
-    "advisory_prompt": (
-        "You are assisting a website automation workflow for a Chinese content/admin site. "
-        "Return strict JSON that matches the requested schema and never wrap it in markdown. "
-        "If the event is risky, destructive, or lacks enough context, route the workflow toward approval."
-    ),
+    "schema_version": 2,
+    "primary_source": "openai_compatible",
+    "chatgpt_oauth": {
+        "enabled": False,
+        "model": "",
+        "timeout_seconds": 60,
+    },
+    "openai_compatible": {
+        "enabled": False,
+        "provider": "openai_compatible",
+        "base_url": "",
+        "model": "",
+        "api_key": "",
+        "temperature": 0.2,
+        "timeout_seconds": 60,
+        "advisory_prompt": (
+            "You are assisting a website automation workflow for a Chinese content/admin site. "
+            "Return strict JSON that matches the requested schema and never wrap it in markdown. "
+            "If the event is risky, destructive, or lacks enough context, route the workflow toward approval."
+        ),
+    },
 }
 
 
@@ -192,23 +209,163 @@ def _workflow_to_read(raw: dict[str, Any]) -> AgentWorkflowRead:
     )
 
 
-def get_agent_model_config(session: Session) -> AgentModelConfigRead:
+def _normalized_agent_model_config(raw: object) -> dict[str, Any]:
+    data = deepcopy(DEFAULT_AGENT_MODEL_CONFIG)
+    if not isinstance(raw, dict):
+        return data
+
+    if int(raw.get("schema_version") or 0) >= 2:
+        if raw.get("primary_source") in {"chatgpt_oauth", "openai_compatible"}:
+            data["primary_source"] = raw["primary_source"]
+        for source in ("chatgpt_oauth", "openai_compatible"):
+            source_data = raw.get(source)
+            if isinstance(source_data, dict):
+                data[source].update(source_data)
+        return data
+
+    legacy_keys = {
+        "enabled",
+        "provider",
+        "base_url",
+        "model",
+        "api_key",
+        "temperature",
+        "timeout_seconds",
+        "advisory_prompt",
+    }
+    data["openai_compatible"].update({key: raw[key] for key in legacy_keys if key in raw})
+    return data
+
+
+def get_agent_model_config_resolved(session: Session) -> AgentModelConfigResolved:
     raw = _feature_flags(session).get(AGENT_MODEL_CONFIG_FLAG_KEY)
-    data = dict(DEFAULT_AGENT_MODEL_CONFIG)
-    if isinstance(raw, dict):
-        data.update(raw)
-    config = AgentModelConfigRead.model_validate(data)
-    is_ready = bool(config.base_url.strip() and config.model.strip() and config.api_key.strip())
-    return config.model_copy(update={"is_ready": is_ready})
+    data = _normalized_agent_model_config(raw)
+    api_data = dict(data["openai_compatible"])
+    api_data["api_key"] = decrypt_secret(str(api_data.get("api_key") or ""), purpose="agent-model-api-key")
+    api_config = OpenAICompatibleModelConfigResolved.model_validate(api_data)
+    api_config = api_config.model_copy(
+        update={
+            "is_ready": bool(api_config.base_url.strip() and api_config.model.strip() and api_config.api_key.strip())
+        }
+    )
+    chatgpt_config = ChatGPTModelConfigResolved.model_validate(data["chatgpt_oauth"])
+    chatgpt_config = chatgpt_config.model_copy(update={"is_ready": bool(chatgpt_config.model.strip())})
+    return AgentModelConfigResolved(
+        schema_version=2,
+        primary_source=data["primary_source"],
+        chatgpt_oauth=chatgpt_config,
+        openai_compatible=api_config,
+        is_ready=(chatgpt_config.enabled and chatgpt_config.is_ready) or (api_config.enabled and api_config.is_ready),
+    )
 
 
-def resolve_agent_model_config(session: Session, payload: AgentModelConfigUpdate) -> AgentModelConfigRead:
-    current = get_agent_model_config(session)
-    next_data = current.model_dump(exclude={"is_ready"})
-    next_data.update(payload.model_dump(exclude_unset=True))
-    config = AgentModelConfigRead.model_validate(next_data)
-    is_ready = bool(config.base_url.strip() and config.model.strip() and config.api_key.strip())
-    return config.model_copy(update={"is_ready": is_ready})
+def agent_model_runtime_config(config: AgentModelConfigResolved) -> dict[str, Any]:
+    """Build the secret-bearing, in-memory router config used by model calls."""
+
+    return {
+        "schema_version": 2,
+        "primary_source": config.primary_source,
+        "advisory_prompt": config.openai_compatible.advisory_prompt,
+        "chatgpt_oauth": config.chatgpt_oauth.model_dump(exclude={"is_ready"}),
+        "openai_compatible": config.openai_compatible.model_dump(exclude={"is_ready"}),
+    }
+
+
+def _public_agent_model_config(
+    config: AgentModelConfigResolved,
+    *,
+    chatgpt_connected: bool = False,
+    chatgpt_account_email: str | None = None,
+    chatgpt_plan_type: str | None = None,
+) -> AgentModelConfigRead:
+    api_config = config.openai_compatible
+    chatgpt_config = config.chatgpt_oauth
+    public_chatgpt = ChatGPTModelConfigRead(
+        **chatgpt_config.model_dump(exclude={"is_ready"}),
+        connected=chatgpt_connected,
+        account_email=chatgpt_account_email,
+        plan_type=chatgpt_plan_type,
+        is_ready=chatgpt_config.is_ready,
+    )
+    public_api = OpenAICompatibleModelConfigRead(
+        **api_config.model_dump(exclude={"api_key", "is_ready", "base_url"}),
+        base_url=sanitize_url(api_config.base_url),
+        api_key_configured=bool(api_config.api_key.strip()),
+        is_ready=api_config.is_ready,
+    )
+    return AgentModelConfigRead(
+        schema_version=2,
+        primary_source=config.primary_source,
+        chatgpt_oauth=public_chatgpt,
+        openai_compatible=public_api,
+        is_ready=(public_chatgpt.enabled and public_chatgpt.is_ready) or (public_api.enabled and public_api.is_ready),
+    )
+
+
+def get_agent_model_config(session: Session) -> AgentModelConfigRead:
+    return _public_agent_model_config(get_agent_model_config_resolved(session))
+
+
+def resolve_agent_model_config(session: Session, payload: AgentModelConfigUpdate) -> AgentModelConfigResolved:
+    current = get_agent_model_config_resolved(session)
+    next_data: dict[str, Any] = {
+        "schema_version": 2,
+        "primary_source": payload.primary_source or current.primary_source,
+        "chatgpt_oauth": current.chatgpt_oauth.model_dump(exclude={"is_ready"}),
+        "openai_compatible": current.openai_compatible.model_dump(exclude={"is_ready"}),
+    }
+
+    if payload.chatgpt_oauth is not None:
+        next_data["chatgpt_oauth"].update(payload.chatgpt_oauth.model_dump(exclude_unset=True))
+
+    clear_api_key = payload.clear_api_key
+    if payload.openai_compatible is not None:
+        api_updates = payload.openai_compatible.model_dump(exclude_unset=True, exclude={"clear_api_key"})
+        if not str(api_updates.get("api_key") or "").strip():
+            api_updates.pop("api_key", None)
+        next_data["openai_compatible"].update(api_updates)
+        clear_api_key = clear_api_key or payload.openai_compatible.clear_api_key
+
+    legacy_updates = payload.model_dump(
+        exclude_unset=True,
+        include={
+            "enabled",
+            "provider",
+            "base_url",
+            "model",
+            "api_key",
+            "temperature",
+            "timeout_seconds",
+            "advisory_prompt",
+        },
+    )
+    if "enabled" not in legacy_updates and any(key in legacy_updates for key in ("base_url", "model", "api_key")):
+        legacy_updates["enabled"] = True
+    if not str(legacy_updates.get("api_key") or "").strip():
+        legacy_updates.pop("api_key", None)
+    next_data["openai_compatible"].update(legacy_updates)
+    if clear_api_key:
+        next_data["openai_compatible"]["api_key"] = ""
+
+    api_config = OpenAICompatibleModelConfigResolved.model_validate(next_data["openai_compatible"])
+    api_config = api_config.model_copy(
+        update={
+            "is_ready": bool(api_config.base_url.strip() and api_config.model.strip() and api_config.api_key.strip())
+        }
+    )
+    chatgpt_config = ChatGPTModelConfigResolved.model_validate(next_data["chatgpt_oauth"])
+    chatgpt_config = chatgpt_config.model_copy(update={"is_ready": bool(chatgpt_config.model.strip())})
+    if chatgpt_config.enabled:
+        from aerisun.domain.outbound_proxy.service import require_outbound_proxy_scope
+
+        require_outbound_proxy_scope(session, scope="oauth")
+    return AgentModelConfigResolved(
+        schema_version=2,
+        primary_source=next_data["primary_source"],
+        chatgpt_oauth=chatgpt_config,
+        openai_compatible=api_config,
+        is_ready=(chatgpt_config.enabled and chatgpt_config.is_ready) or (api_config.enabled and api_config.is_ready),
+    )
 
 
 def update_agent_model_config(session: Session, payload: AgentModelConfigUpdate) -> AgentModelConfigRead:
@@ -216,7 +373,17 @@ def update_agent_model_config(session: Session, payload: AgentModelConfigUpdate)
     with _feature_flags_lock:
         profile = _get_site_profile(session)
         feature_flags = dict(profile.feature_flags or {})
-        feature_flags[AGENT_MODEL_CONFIG_FLAG_KEY] = config.model_dump(exclude={"is_ready"})
+        stored_config = {
+            "schema_version": 2,
+            "primary_source": config.primary_source,
+            "chatgpt_oauth": config.chatgpt_oauth.model_dump(exclude={"is_ready"}),
+            "openai_compatible": config.openai_compatible.model_dump(exclude={"is_ready"}),
+        }
+        stored_config["openai_compatible"]["api_key"] = encrypt_secret(
+            config.openai_compatible.api_key,
+            purpose="agent-model-api-key",
+        )
+        feature_flags[AGENT_MODEL_CONFIG_FLAG_KEY] = stored_config
         profile.feature_flags = feature_flags
         session.commit()
         session.refresh(profile)
@@ -305,6 +472,11 @@ def get_agent_workflow(session: Session, workflow_key: str) -> AgentWorkflowRead
     return workflow
 
 
+def public_agent_workflow(workflow: AgentWorkflowRead) -> AgentWorkflowRead:
+    redacted = redact_sensitive_data(workflow.model_dump(mode="json"))
+    return AgentWorkflowRead.model_validate(redacted)
+
+
 def _payload_to_workflow_dict(
     payload: AgentWorkflowCreate | AgentWorkflowUpdate, *, existing: AgentWorkflowRead | None
 ) -> dict[str, Any]:
@@ -321,6 +493,8 @@ def _payload_to_workflow_dict(
             "summary": AgentWorkflowSummaryRead().model_dump(mode="json"),
         }
     )
+    if existing is not None:
+        data = restore_redacted_placeholders(data, base)
     base.update(
         {
             key: value

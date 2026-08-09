@@ -13,7 +13,7 @@ from aerisun.core.time import shanghai_now
 from aerisun.domain.agent.service import build_workflow_planning_usage_context
 from aerisun.domain.automation.models import AgentRun
 from aerisun.domain.automation.schemas import AgentWorkflowRead
-from aerisun.domain.automation.settings import get_agent_model_config
+from aerisun.domain.automation.settings import agent_model_runtime_config, get_agent_model_config_resolved
 from aerisun.domain.exceptions import ValidationError
 
 logger = logging.getLogger(__name__)
@@ -24,14 +24,13 @@ def now_utc() -> datetime:
 
 
 def ensure_workflow_ai_model(session: Session) -> dict[str, Any]:
-    config = get_agent_model_config(session)
-    if not config.enabled:
+    resolved = get_agent_model_config_resolved(session)
+    sources = (resolved.chatgpt_oauth, resolved.openai_compatible)
+    if not any(source.enabled for source in sources):
         raise ValidationError("Agent model is disabled")
-    if not config.is_ready:
+    if not any(source.enabled and source.is_ready for source in sources):
         raise ValidationError("Agent model config is not ready")
-    if config.provider != "openai_compatible":
-        raise ValidationError(f"Unsupported model provider: {config.provider}")
-    return config.model_dump(exclude={"is_ready"})
+    return agent_model_runtime_config(resolved)
 
 
 def planning_model_config(
@@ -40,6 +39,16 @@ def planning_model_config(
     minimum_timeout_seconds: int,
 ) -> dict[str, Any]:
     next_config = dict(model_config)
+    if int(next_config.get("schema_version") or 0) >= 2:
+        for source in ("chatgpt_oauth", "openai_compatible"):
+            source_config = next_config.get(source)
+            if not isinstance(source_config, dict):
+                continue
+            next_source_config = dict(source_config)
+            current_timeout = int(float(next_source_config.get("timeout_seconds") or 20))
+            next_source_config["timeout_seconds"] = max(current_timeout, minimum_timeout_seconds)
+            next_config[source] = next_source_config
+        return next_config
     current_timeout = int(float(next_config.get("timeout_seconds") or 20))
     next_config["timeout_seconds"] = max(current_timeout, minimum_timeout_seconds)
     return next_config

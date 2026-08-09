@@ -237,7 +237,7 @@ def legacy_default_graph(
                 "source": "approval-review",
                 "target": "apply-operation",
                 "source_handle": "approval",
-                "target_handle": "mount_1",
+                "target_handle": "mount_approval",
                 "label": "",
                 "type": "default",
                 "config": {"kind": "control"},
@@ -344,7 +344,7 @@ def normalize_graph_payload(raw: dict[str, Any] | None) -> dict[str, Any]:
                         edge["target_handle"] = candidate
                         assigned_mounts.append(candidate)
                         break
-        elif source_type == "approval.review":
+        elif source_type == "approval.review" and target_type == "ai.task":
             edge["source_handle"] = "approval"
             requested_handle = edge["target_handle"]
             assigned_mounts = ai_mount_slots_by_target.setdefault(edge["target"], [])
@@ -359,6 +359,11 @@ def normalize_graph_payload(raw: dict[str, Any] | None) -> dict[str, Any]:
                         edge["target_handle"] = candidate
                         assigned_mounts.append(candidate)
                         break
+            edge["config"].pop("match", None)
+            edge["config"].pop("match_value", None)
+        elif source_type == "approval.review":
+            edge["source_handle"] = "approval"
+            edge["target_handle"] = "mount_approval"
             edge["config"].pop("match", None)
             edge["config"].pop("match_value", None)
         elif source_type == "apply.action" and target_type == "ai.task":
@@ -450,7 +455,7 @@ def normalize_runtime_policy_payload(raw: Any) -> dict[str, Any]:
     base = AgentWorkflowRuntimePolicy().model_dump(mode="json")
     if isinstance(raw, dict):
         base.update(raw)
-    return base
+    return AgentWorkflowRuntimePolicy.model_validate(base).model_dump(mode="json")
 
 
 def legacy_to_v2_workflow(raw: dict[str, Any]) -> dict[str, Any]:

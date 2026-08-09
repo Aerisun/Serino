@@ -4,7 +4,11 @@ import ast
 import hashlib
 import json
 import logging
+import re
 import sqlite3
+import threading
+import time
+from collections.abc import Callable
 from contextlib import suppress
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -15,14 +19,17 @@ from jsonschema import ValidationError as JsonSchemaValidationError
 from jsonschema import validate as validate_jsonschema
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import END, START, StateGraph
+from langgraph.runtime import Runtime
 from langgraph.types import Command, interrupt
 
 from aerisun.core.db import get_session_factory
+from aerisun.core.redaction import redact_sensitive_data
 from aerisun.core.time import format_beijing_iso_datetime, shanghai_now
 from aerisun.domain.agent.capabilities.registry import get_capability_definition
 from aerisun.domain.automation import repository as repo
 from aerisun.domain.automation.ai_contract_context import build_ai_contract_context
 from aerisun.domain.automation.catalog import derive_ai_output_schema
+from aerisun.domain.automation.codex_app_server import get_codex_app_server_client
 from aerisun.domain.automation.compat import normalize_node_type
 from aerisun.domain.automation.compiler import (
     AI_TASK_MOUNT_PORT_IDS,
@@ -40,22 +47,25 @@ from aerisun.domain.automation.operations import (
     execute_operation,
     get_operation_definition,
     list_operation_definitions,
+    stricter_risk_level,
 )
+from aerisun.domain.automation.secrets import protect_sensitive_data, reveal_sensitive_data
 from aerisun.domain.automation.tool_surface import (
     execute_action_surface,
     execute_tool_surface,
-    get_action_surface,
     get_action_surface_invocation,
     get_tool_surface,
     list_action_surface_invocations,
     list_action_surfaces,
+    prepare_action_surface_invocation,
 )
-from aerisun.domain.exceptions import StateConflict, ValidationError
+from aerisun.domain.exceptions import PermissionDenied, StateConflict, ValidationError
 
 logger = logging.getLogger(__name__)
 
 AI_TASK_INPUT_PORT_IDS = ("input_1", "input_2", "input_3")
 FINAL_OUTPUT_TOOL_NAME = "submit_final_output"
+RUNTIME_STATE_SECRET_PURPOSE = "automation-runtime-state"
 
 _JSONSCHEMA_TYPE_MAP: dict[str, type | tuple[type, ...]] = {
     "string": str,
@@ -70,6 +80,9 @@ _JSONSCHEMA_TYPE_MAP: dict[str, type | tuple[type, ...]] = {
 class WorkflowExecutionState(TypedDict, total=False):
     run_id: str
     workflow_key: str
+    execution_mode: str
+    requested_by: dict[str, Any]
+    authorization_scopes: list[str]
     trigger_kind: str
     trigger_event: str
     target_type: str
@@ -84,6 +97,11 @@ class WorkflowExecutionState(TypedDict, total=False):
     approval_token: dict[str, Any]
     result_payload: dict[str, Any]
     execution_trace: list[dict[str, Any]]
+
+
+class WorkflowExecutionContext(TypedDict, total=False):
+    node_boundary_hook: Callable[[str], None]
+    model_config: dict[str, Any]
 
 
 class _NativeToolCallingUnsupportedError(Exception):
@@ -143,14 +161,65 @@ class AutomationRuntime:
         self._graph_cache[cache_key] = compiled
         return compiled
 
-    def invoke(self, state: dict[str, Any], *, thread_id: str) -> dict[str, Any]:
+    @staticmethod
+    def _execution_config(*, thread_id: str, workflow_config: dict[str, Any]) -> dict[str, Any]:
+        runtime_policy = dict(workflow_config.get("runtime_policy") or {})
+        try:
+            max_steps = int(runtime_policy.get("max_steps") or 80)
+        except (TypeError, ValueError):
+            max_steps = 80
+        return {
+            "configurable": {"thread_id": thread_id},
+            "recursion_limit": min(max(max_steps, 1), 500),
+        }
+
+    def invoke(
+        self,
+        state: dict[str, Any],
+        *,
+        thread_id: str,
+        node_boundary_hook: Callable[[str], None] | None = None,
+        model_config: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         workflow_config = dict(state.get("workflow_config") or {})
         graph = self._graph_for_workflow_config(workflow_config)
-        return graph.invoke(state, config={"configurable": {"thread_id": thread_id}})
+        context = WorkflowExecutionContext()
+        if node_boundary_hook is not None:
+            context["node_boundary_hook"] = node_boundary_hook
+        if model_config is not None:
+            context["model_config"] = dict(model_config)
+        return graph.invoke(
+            state,
+            config=self._execution_config(
+                thread_id=thread_id,
+                workflow_config=workflow_config,
+            ),
+            context=context or None,
+        )
 
-    def resume(self, *, thread_id: str, resume_value: Any, workflow_config: dict[str, Any]) -> dict[str, Any]:
+    def resume(
+        self,
+        *,
+        thread_id: str,
+        resume_value: Any,
+        workflow_config: dict[str, Any],
+        node_boundary_hook: Callable[[str], None] | None = None,
+        model_config: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         graph = self._graph_for_workflow_config(workflow_config)
-        return graph.invoke(Command(resume=resume_value), config={"configurable": {"thread_id": thread_id}})
+        context = WorkflowExecutionContext()
+        if node_boundary_hook is not None:
+            context["node_boundary_hook"] = node_boundary_hook
+        if model_config is not None:
+            context["model_config"] = dict(model_config)
+        return graph.invoke(
+            Command(resume=resume_value),
+            config=self._execution_config(
+                thread_id=thread_id,
+                workflow_config=workflow_config,
+            ),
+            context=context or None,
+        )
 
     def get_state(self, *, thread_id: str, workflow_config: dict[str, Any], checkpoint_id: str | None = None):
         graph = self._graph_for_workflow_config(workflow_config)
@@ -174,6 +243,62 @@ def _copy_artifacts(state: WorkflowExecutionState) -> dict[str, Any]:
 
 def _copy_trace(state: WorkflowExecutionState) -> list[dict[str, Any]]:
     return list(state.get("execution_trace") or [])
+
+
+def _is_dry_run(state: WorkflowExecutionState) -> bool:
+    return str(state.get("execution_mode") or "live").strip().lower() == "dry_run"
+
+
+def _authorized_scopes(state: WorkflowExecutionState) -> set[str] | None:
+    raw = state.get("authorization_scopes")
+    if not isinstance(raw, (list, tuple, set, frozenset)):
+        return None
+    return {str(item).strip() for item in raw if str(item).strip()}
+
+
+def _require_execution_scopes(
+    state: WorkflowExecutionState,
+    *,
+    required_scopes: list[str] | tuple[str, ...],
+    capability_name: str,
+) -> None:
+    authorized = _authorized_scopes(state)
+    if authorized is None or "*" in authorized:
+        return
+    missing = sorted({str(item).strip() for item in required_scopes if str(item).strip()} - authorized)
+    if missing:
+        raise PermissionDenied(f"Execution principal lacks required scopes for {capability_name}: {', '.join(missing)}")
+
+
+def _simulated_execution_payload(
+    *,
+    kind: str,
+    capability: str,
+    arguments: dict[str, Any],
+    label: str = "",
+    requires_approval: bool = False,
+    extra_execution: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    safe_arguments = redact_sensitive_data(arguments)
+    if not isinstance(safe_arguments, dict):
+        safe_arguments = {}
+    return {
+        "status": "simulated",
+        "simulated": True,
+        "applied": False,
+        "execution_summary": f"已模拟“{label or capability}”，未执行真实写入。",
+        "execution_result": {
+            "status": "simulated",
+            "simulated": True,
+        },
+        "execution": {
+            "kind": kind,
+            "capability": capability,
+            "arguments": safe_arguments,
+            "would_require_approval": requires_approval,
+            **dict(extra_execution or {}),
+        },
+    }
 
 
 def _set_node_output(state: WorkflowExecutionState, *, node_id: str, value: dict[str, Any]) -> dict[str, Any]:
@@ -293,7 +418,12 @@ def _approval_mount_sources_for_node(state: WorkflowExecutionState, *, node_id: 
         edge = dict(item.get("edge") or {})
         if item.get("kind") != EDGE_KIND_CONTROL:
             continue
-        if str(edge.get("target_handle") or "").strip() not in AI_TASK_MOUNT_PORT_IDS:
+        target_handle = str(edge.get("target_handle") or "").strip()
+        target_type = normalize_node_type(str((nodes_by_id.get(node_id) or {}).get("type") or ""))
+        if target_type == "ai.task":
+            if target_handle not in AI_TASK_MOUNT_PORT_IDS:
+                continue
+        elif target_handle != "mount_approval":
             continue
         source_id = str(edge.get("source") or "").strip()
         if not source_id or source_id in seen:
@@ -466,7 +596,9 @@ def _ensure_mounted_approval_tokens(state: WorkflowExecutionState, *, node_id: s
 
 
 def _public_payload(payload: dict[str, Any]) -> dict[str, Any]:
-    return {key: value for key, value in payload.items() if not str(key).startswith("__")}
+    public = {key: value for key, value in payload.items() if not str(key).startswith("__")}
+    redacted = redact_sensitive_data(public)
+    return dict(redacted) if isinstance(redacted, dict) else {}
 
 
 def _condition_environment(state: WorkflowExecutionState) -> dict[str, Any]:
@@ -584,11 +716,14 @@ def _evaluate_condition_expression(expression: str, state: WorkflowExecutionStat
     return _eval_expr(tree.body, _condition_environment(state))
 
 
-def _chat_completions_url(base_url: str) -> str:
-    normalized = base_url.rstrip("/")
+_VERSIONED_MODEL_API_ROOT_RE = re.compile(r"/v\d+$", re.IGNORECASE)
+
+
+def build_model_chat_completions_url(base_url: str) -> str:
+    normalized = base_url.strip().rstrip("/")
     if normalized.endswith("/chat/completions"):
         return normalized
-    if normalized.endswith("/v1"):
+    if _VERSIONED_MODEL_API_ROOT_RE.search(normalized):
         return f"{normalized}/chat/completions"
     return f"{normalized}/v1/chat/completions"
 
@@ -764,13 +899,14 @@ def _is_retryable_http_status(status_code: int) -> bool:
     return status_code in {408, 409, 425, 429, 500, 502, 503, 504}
 
 
-def _invoke_model_turn(
+def _invoke_openai_compatible_turn(
     model_config: dict[str, Any],
     *,
     messages: list[dict[str, Any]],
     tools: list[dict[str, Any]] | None = None,
     tool_choice: str | None = None,
     require_json_object: bool = False,
+    max_output_tokens: int | None = None,
 ) -> _ModelTurnResult:
     provider = str(model_config.get("provider") or "openai_compatible").strip() or "openai_compatible"
     base_url = str(model_config.get("base_url") or "").strip()
@@ -781,7 +917,7 @@ def _invoke_model_turn(
     if not (base_url and model_name and api_key):
         raise ValidationError("Model config is incomplete")
 
-    endpoint = _chat_completions_url(base_url)
+    endpoint = build_model_chat_completions_url(base_url)
     configured_timeout_seconds = float(model_config.get("timeout_seconds") or 20)
     timeout_seconds = _effective_model_timeout_seconds(
         configured_timeout_seconds=configured_timeout_seconds,
@@ -793,6 +929,8 @@ def _invoke_model_turn(
         "temperature": float(model_config.get("temperature") or 0.2),
         "messages": messages,
     }
+    if max_output_tokens is not None:
+        request_payload["max_tokens"] = max(1, int(max_output_tokens))
     if tools:
         request_payload["tools"] = tools
         request_payload["tool_choice"] = str(tool_choice or "auto")
@@ -856,8 +994,251 @@ def _invoke_model_turn(
     }
 
 
-def _invoke_model_json(model_config: dict[str, Any], *, messages: list[dict[str, Any]]) -> dict[str, Any]:
-    turn = _invoke_model_turn(model_config, messages=messages, require_json_object=True)
+_MODEL_SOURCE_LABELS = {
+    "chatgpt_oauth": "ChatGPT OAuth",
+    "openai_compatible": "OpenAI-compatible API",
+}
+_MODEL_SOURCE_HEALTH_LOCK = threading.Lock()
+_MODEL_SOURCE_HEALTH: dict[str, dict[str, Any]] = {}
+
+
+def _model_source_fingerprint(source: str, config: dict[str, Any]) -> str:
+    relevant = {
+        "source": source,
+        "enabled": config.get("enabled"),
+        "model": config.get("model"),
+        "base_url": config.get("base_url"),
+        "api_key": config.get("api_key"),
+    }
+    return hashlib.sha256(json.dumps(relevant, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()
+
+
+def reset_model_source_health(source: str | None = None) -> None:
+    with _MODEL_SOURCE_HEALTH_LOCK:
+        if source is None:
+            _MODEL_SOURCE_HEALTH.clear()
+        else:
+            _MODEL_SOURCE_HEALTH.pop(source, None)
+
+
+def get_model_source_health() -> dict[str, dict[str, Any]]:
+    now = time.monotonic()
+    with _MODEL_SOURCE_HEALTH_LOCK:
+        return {
+            source: {
+                "failure_count": int(state.get("failure_count") or 0),
+                "cooldown_remaining_seconds": max(0.0, float(state.get("retry_at") or 0) - now),
+                "last_error": state.get("last_error"),
+            }
+            for source, state in _MODEL_SOURCE_HEALTH.items()
+        }
+
+
+def record_model_source_probe(
+    source: str,
+    config: dict[str, Any],
+    *,
+    error: Exception | None = None,
+) -> None:
+    if source not in _MODEL_SOURCE_LABELS:
+        return
+    if error is None:
+        _mark_model_source_success(source, config)
+    else:
+        _mark_model_source_failure(source, config, error)
+
+
+def _model_source_is_available(source: str, config: dict[str, Any]) -> bool:
+    fingerprint = _model_source_fingerprint(source, config)
+    with _MODEL_SOURCE_HEALTH_LOCK:
+        state = _MODEL_SOURCE_HEALTH.get(source)
+        if state is None or state.get("fingerprint") != fingerprint:
+            _MODEL_SOURCE_HEALTH[source] = {
+                "fingerprint": fingerprint,
+                "failure_count": 0,
+                "retry_at": 0.0,
+                "last_error": None,
+            }
+            return True
+        return float(state.get("retry_at") or 0) <= time.monotonic()
+
+
+def _mark_model_source_success(source: str, config: dict[str, Any]) -> None:
+    with _MODEL_SOURCE_HEALTH_LOCK:
+        _MODEL_SOURCE_HEALTH[source] = {
+            "fingerprint": _model_source_fingerprint(source, config),
+            "failure_count": 0,
+            "retry_at": 0.0,
+            "last_error": None,
+        }
+
+
+def _mark_model_source_failure(source: str, config: dict[str, Any], exc: Exception) -> None:
+    fingerprint = _model_source_fingerprint(source, config)
+    with _MODEL_SOURCE_HEALTH_LOCK:
+        current = _MODEL_SOURCE_HEALTH.get(source)
+        previous_count = (
+            int(current.get("failure_count") or 0)
+            if current is not None and current.get("fingerprint") == fingerprint
+            else 0
+        )
+        failure_count = previous_count + 1
+        cooldown_seconds = min(30 * (2 ** (failure_count - 1)), 300)
+        _MODEL_SOURCE_HEALTH[source] = {
+            "fingerprint": fingerprint,
+            "failure_count": failure_count,
+            "retry_at": time.monotonic() + cooldown_seconds,
+            "last_error": str(redact_sensitive_data(str(exc)))[:500],
+        }
+
+
+def _is_model_router_config(model_config: dict[str, Any]) -> bool:
+    return int(model_config.get("schema_version") or 0) >= 2 and any(
+        isinstance(model_config.get(source), dict) for source in _MODEL_SOURCE_LABELS
+    )
+
+
+def _model_source_ready(source: str, config: dict[str, Any]) -> bool:
+    if config.get("enabled") is not True:
+        return False
+    if source == "chatgpt_oauth":
+        return bool(str(config.get("model") or "").strip())
+    return bool(
+        str(config.get("base_url") or "").strip()
+        and str(config.get("model") or "").strip()
+        and str(config.get("api_key") or "").strip()
+    )
+
+
+def _ordered_model_sources(model_config: dict[str, Any]) -> list[tuple[str, dict[str, Any]]]:
+    primary = str(model_config.get("primary_source") or "openai_compatible")
+    if primary not in _MODEL_SOURCE_LABELS:
+        primary = "openai_compatible"
+    order = [primary, *(source for source in _MODEL_SOURCE_LABELS if source != primary)]
+    candidates: list[tuple[str, dict[str, Any]]] = []
+    for source in order:
+        raw = model_config.get(source)
+        if isinstance(raw, dict) and _model_source_ready(source, raw):
+            candidates.append((source, dict(raw)))
+    return candidates
+
+
+def _invoke_chatgpt_turn(
+    model_config: dict[str, Any],
+    *,
+    messages: list[dict[str, Any]],
+    tools: list[dict[str, Any]] | None = None,
+    tool_choice: str | None = None,
+    require_json_object: bool = False,
+    max_output_tokens: int | None = None,
+) -> _ModelTurnResult:
+    del tool_choice, require_json_object, max_output_tokens
+    if tools:
+        raise _NativeToolCallingUnsupportedError(
+            "ChatGPT OAuth uses the structured legacy tool protocol for Serino workflows."
+        )
+    timeout_seconds = _effective_model_timeout_seconds(
+        configured_timeout_seconds=float(model_config.get("timeout_seconds") or 60),
+        messages=messages,
+        tools=None,
+    )
+    parsed = get_codex_app_server_client().run_json(
+        model=str(model_config.get("model") or ""),
+        messages=messages,
+        output_schema={"type": "object", "additionalProperties": True},
+        timeout_seconds=timeout_seconds,
+    )
+    raw_content = json.dumps(parsed, ensure_ascii=False, separators=(",", ":"))
+    return {
+        "raw_content": raw_content,
+        "parsed_content": parsed,
+        "tool_calls": [],
+        "assistant_message": {"role": "assistant", "content": raw_content},
+    }
+
+
+def _invoke_model_turn(
+    model_config: dict[str, Any],
+    *,
+    messages: list[dict[str, Any]],
+    tools: list[dict[str, Any]] | None = None,
+    tool_choice: str | None = None,
+    require_json_object: bool = False,
+    max_output_tokens: int | None = None,
+) -> _ModelTurnResult:
+    if not _is_model_router_config(model_config):
+        return _invoke_openai_compatible_turn(
+            model_config,
+            messages=messages,
+            tools=tools,
+            tool_choice=tool_choice,
+            require_json_object=require_json_object,
+            max_output_tokens=max_output_tokens,
+        )
+
+    candidates = _ordered_model_sources(model_config)
+    if not candidates:
+        raise ValidationError("没有已启用且配置完整的模型来源。")
+    primary = str(model_config.get("primary_source") or "openai_compatible")
+    failures: list[str] = []
+    attempted = False
+    for source, source_config in candidates:
+        label = _MODEL_SOURCE_LABELS[source]
+        if not _model_source_is_available(source, source_config):
+            failures.append(f"{label}: 暂时熔断")
+            continue
+        attempted = True
+        try:
+            if source == "chatgpt_oauth":
+                turn = _invoke_chatgpt_turn(
+                    source_config,
+                    messages=messages,
+                    tools=tools,
+                    tool_choice=tool_choice,
+                    require_json_object=require_json_object,
+                    max_output_tokens=max_output_tokens,
+                )
+            else:
+                turn = _invoke_openai_compatible_turn(
+                    source_config,
+                    messages=messages,
+                    tools=tools,
+                    tool_choice=tool_choice,
+                    require_json_object=require_json_object,
+                    max_output_tokens=max_output_tokens,
+                )
+            if require_json_object and turn["parsed_content"] is None:
+                raise ValidationError("Model content is not a valid JSON object.")
+        except _NativeToolCallingUnsupportedError:
+            raise
+        except Exception as exc:
+            _mark_model_source_failure(source, source_config, exc)
+            failures.append(f"{label}: {str(redact_sensitive_data(str(exc)))[:300]}")
+            logger.warning("Model source failed; trying failover source: %s", label)
+            continue
+
+        _mark_model_source_success(source, source_config)
+        if source != primary:
+            logger.warning("Model request completed through failover source: %s", label)
+        return turn
+
+    if not attempted:
+        failures.append("所有可用来源都处于短暂熔断期")
+    raise ValidationError("模型主备来源均不可用：" + "; ".join(failures))
+
+
+def _invoke_model_json(
+    model_config: dict[str, Any],
+    *,
+    messages: list[dict[str, Any]],
+    max_output_tokens: int | None = None,
+) -> dict[str, Any]:
+    turn = _invoke_model_turn(
+        model_config,
+        messages=messages,
+        require_json_object=True,
+        max_output_tokens=max_output_tokens,
+    )
     if turn["parsed_content"] is None:
         preview = turn["raw_content"].strip().replace("\n", " ")[:200]
         extra = f" Raw content: {preview}" if preview else ""
@@ -882,10 +1263,50 @@ def probe_model_config(model_config: dict[str, Any]) -> dict[str, str]:
                 "content": "This is a connectivity test. Return JSON with summary='connection_ok', ok=true, route='ok'.",
             },
         ],
+        max_output_tokens=32,
     )
     return {
         "model": str(model_config.get("model") or ""),
-        "endpoint": _chat_completions_url(str(model_config.get("base_url") or "")),
+        "endpoint": build_model_chat_completions_url(str(model_config.get("base_url") or "")),
+        "summary": str(parsed.get("summary") or "connection_ok"),
+    }
+
+
+def probe_chatgpt_config(model_config: dict[str, Any]) -> dict[str, str]:
+    client = get_codex_app_server_client()
+    account = client.read_account(refresh_token=True)
+    if account is None:
+        raise ValidationError("ChatGPT 账号尚未登录。")
+    selected_model = str(model_config.get("model") or "").strip()
+    if not selected_model:
+        raise ValidationError("尚未选择 ChatGPT 模型。")
+    models = client.list_models()
+    if selected_model not in {item.model for item in models}:
+        raise ValidationError("当前 ChatGPT 套餐不提供已选择的模型。")
+    parsed = client.run_json(
+        model=selected_model,
+        messages=[
+            {
+                "role": "user",
+                "content": "Connectivity check. Return JSON with summary='connection_ok' and ok=true.",
+            }
+        ],
+        output_schema={
+            "type": "object",
+            "properties": {
+                "summary": {"type": "string"},
+                "ok": {"type": "boolean"},
+            },
+            "required": ["summary", "ok"],
+            "additionalProperties": False,
+        },
+        timeout_seconds=min(float(model_config.get("timeout_seconds") or 60), 60),
+    )
+    if parsed.get("ok") is not True:
+        raise ValidationError("ChatGPT 模型未通过最小响应检查。")
+    return {
+        "model": selected_model,
+        "endpoint": "codex-app-server://chatgpt",
         "summary": str(parsed.get("summary") or "connection_ok"),
     }
 
@@ -963,6 +1384,16 @@ def _resolve_argument_mappings(
 def _ai_model_config(state: WorkflowExecutionState, node_config: dict[str, Any]) -> dict[str, Any]:
     model_config = dict(state.get("model_config") or {})
     overrides = dict(node_config.get("model_overrides") or {})
+    if _is_model_router_config(model_config):
+        for source in _MODEL_SOURCE_LABELS:
+            source_config = model_config.get(source)
+            if not isinstance(source_config, dict):
+                continue
+            model_config[source] = {
+                **source_config,
+                **{key: value for key, value in overrides.items() if value is not None},
+            }
+        return model_config
     model_config.update({key: value for key, value in overrides.items() if value is not None})
     return model_config
 
@@ -1251,6 +1682,7 @@ def _build_ai_messages(
         "artifacts": dict(state.get("artifacts") or {}),
         "approval": dict(state.get("approval_result") or {}),
     }
+    effective_payload = redact_sensitive_data(effective_payload)
     return [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": json.dumps(effective_payload, ensure_ascii=False)},
@@ -1284,12 +1716,26 @@ def _normalize_operation_action(state: WorkflowExecutionState, node_config: dict
     return action.lower(), reason
 
 
+def _capability_policy(capability_name: str, *, declared_risk: str = "") -> tuple[str, bool]:
+    try:
+        capability = get_capability_definition(kind="tool", name=capability_name)
+    except Exception:
+        capability = None
+    if capability is None:
+        return stricter_risk_level(declared_risk, "low"), False
+    return (
+        stricter_risk_level(declared_risk, capability.risk_level),
+        capability.requires_approval,
+    )
+
+
 def _should_require_approval(
     state: WorkflowExecutionState,
     node_config: dict[str, Any],
     *,
     node_id: str,
     risk_level: str,
+    mandatory: bool = False,
 ) -> bool:
     approval_mounts = _approval_mount_sources_for_node(state, node_id=node_id)
     if approval_mounts:
@@ -1299,16 +1745,20 @@ def _should_require_approval(
             token = dict(approval_payload.get("token") or {})
             if not bool(token.get("granted")):
                 return True
+            if mandatory and bool(token.get("auto") or token.get("simulated")):
+                return True
         return False
 
+    token = dict(state.get("approval_token") or {})
+    if mandatory:
+        return not bool(token.get("granted")) or bool(token.get("auto") or token.get("simulated"))
     workflow_policy = dict((state.get("workflow_config") or {}).get("runtime_policy") or {})
-    if risk_level != "high":
+    if risk_level not in {"high", "critical"}:
         return False
     if bool(node_config.get("allow_without_approval")):
         return False
     if bool(workflow_policy.get("allow_high_risk_without_approval")):
         return False
-    token = dict(state.get("approval_token") or {})
     return not bool(token.get("granted"))
 
 
@@ -1343,17 +1793,6 @@ def _execute_apply_action_node(
     surface_key = str(node_config.get("surface_key") or "").strip()
     if not surface_key:
         raise ValidationError(f"Apply Action node {node_id} is missing surface_key")
-    surface = get_action_surface(surface_key, workflow_key=workflow_key)
-    mount_requires_approval = _should_require_approval(
-        state,
-        node_config,
-        node_id=node_id,
-        risk_level="low",
-    )
-    token_granted = bool(dict(state.get("approval_token") or {}).get("granted"))
-    if mount_requires_approval or (surface.requires_approval and not token_granted):
-        raise ValidationError(f"Action surface requires approval: {surface_key}")
-
     previous_node_id = _previous_node_id(state)
     input_payload = dict((state.get("node_outputs") or {}).get(previous_node_id) or {})
     bound_values = {
@@ -1362,6 +1801,65 @@ def _execute_apply_action_node(
         "approval": dict(state.get("approval_result") or {}),
         "state": state,
     }
+    surface, arguments = prepare_action_surface_invocation(
+        surface_key,
+        workflow_key=workflow_key,
+        run_id=run_id,
+        input_payload=input_payload,
+        bound_values=bound_values,
+        authorized_scopes=_authorized_scopes(state),
+    )
+    effective_risk, capability_requires_approval = _capability_policy(
+        surface.base_capability,
+        declared_risk=surface.risk_level,
+    )
+    requires_approval = _should_require_approval(
+        state,
+        node_config,
+        node_id=node_id,
+        risk_level=effective_risk,
+        mandatory=capability_requires_approval or surface.requires_approval,
+    )
+    if requires_approval and not _is_dry_run(state):
+        raise ValidationError(f"Action surface requires approval: {surface_key}")
+
+    node_info = _graph_node_payload(state, node_id=node_id)
+    if _is_dry_run(state):
+        payload = {
+            **_simulated_execution_payload(
+                kind="action_surface",
+                capability=surface.base_capability,
+                arguments=arguments,
+                label=surface.label,
+                requires_approval=requires_approval,
+                extra_execution={
+                    "surface_key": surface_key,
+                    "risk_level": effective_risk,
+                },
+            ),
+            "surface_key": surface_key,
+            "node": {
+                **node_info,
+                "description": surface.description,
+            },
+        }
+        action_value = str(arguments.get("action") or input_payload.get("action") or "").strip() or None
+        reason_value = str(arguments.get("reason") or input_payload.get("reason") or "").strip() or None
+        payload["action"] = action_value
+        payload["reason"] = reason_value
+        return {
+            "result_payload": payload,
+            "node_outputs": _set_node_output(state, node_id=node_id, value=payload),
+            "execution_trace": _append_trace(
+                state,
+                node_id=node_id,
+                status="simulated",
+                narrative=payload["execution_summary"],
+                input_payload={"config": node_config, "arguments": arguments},
+                output_payload=payload,
+            ),
+        }
+
     with get_session_factory()() as session:
         result = execute_action_surface(
             session,
@@ -1370,9 +1868,9 @@ def _execute_apply_action_node(
             run_id=run_id,
             input_payload=input_payload,
             bound_values=bound_values,
+            authorized_scopes=_authorized_scopes(state),
         )
         session.commit()
-    node_info = _graph_node_payload(state, node_id=node_id)
     execution_summary = f"执行动作“{surface.label}”已完成。"
     action_source = input_payload.get("action")
     if action_source is None and isinstance(result, dict):
@@ -1548,10 +2046,11 @@ def _build_native_model_tools(
 
 
 def _native_tool_result_message(tool_call_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    safe_payload = redact_sensitive_data(payload)
     return {
         "role": "tool",
         "tool_call_id": tool_call_id,
-        "content": json.dumps(payload, ensure_ascii=False),
+        "content": json.dumps(safe_payload, ensure_ascii=False),
     }
 
 
@@ -1771,12 +2270,16 @@ def _invoke_ai_task_round(
         action_keys=action_keys,
     )
     final_output_tool_schema = dict(final_output_schema or output_schema)
-    contract_context = build_ai_contract_context(
-        workflow_key=str(state.get("workflow_key") or ""),
-        workflow_config=dict(state.get("workflow_config") or {}),
-        ai_node_id=node_id,
-        node_config=node_config,
+    contract_context = redact_sensitive_data(
+        build_ai_contract_context(
+            workflow_key=str(state.get("workflow_key") or ""),
+            workflow_config=dict(state.get("workflow_config") or {}),
+            ai_node_id=node_id,
+            node_config=node_config,
+        )
     )
+    if not isinstance(contract_context, dict):
+        contract_context = {}
     tool_descriptions = list(contract_context.get("mounted_tools") or [])
     action_descriptions = list(contract_context.get("mounted_actions") or [])
     base_system_prompt_override = system_prompt_override
@@ -2103,18 +2606,49 @@ def _invoke_ai_task_round(
                         surface = get_action_surface_invocation(
                             tool_name, workflow_key=str(state.get("workflow_key") or "")
                         )
-                        if surface.requires_approval and not bool(
-                            dict(state.get("approval_token") or {}).get("granted")
-                        ):
+                        effective_risk, capability_requires_approval = _capability_policy(
+                            surface.base_capability,
+                            declared_risk=surface.risk_level,
+                        )
+                        requires_action_approval = _should_require_approval(
+                            state,
+                            {},
+                            node_id=node_id,
+                            risk_level=effective_risk,
+                            mandatory=capability_requires_approval or surface.requires_approval,
+                        )
+                        if requires_action_approval and not _is_dry_run(state):
                             raise ValidationError(f"Mounted action requires approval: {tool_name}")
-                        result = execute_action_surface(
-                            session,
+                        prepared_surface, prepared_arguments = prepare_action_surface_invocation(
                             tool_name,
                             workflow_key=str(state.get("workflow_key") or ""),
                             run_id=str(state.get("run_id") or ""),
                             input_payload=tool_args,
                             bound_values=bound_values,
+                            authorized_scopes=_authorized_scopes(state),
                         )
+                        if _is_dry_run(state):
+                            result = _simulated_execution_payload(
+                                kind="mounted_action",
+                                capability=prepared_surface.base_capability,
+                                arguments=prepared_arguments,
+                                label=prepared_surface.label,
+                                requires_approval=requires_action_approval,
+                                extra_execution={
+                                    "surface_key": tool_name,
+                                    "risk_level": effective_risk,
+                                },
+                            )
+                        else:
+                            result = execute_action_surface(
+                                session,
+                                tool_name,
+                                workflow_key=str(state.get("workflow_key") or ""),
+                                run_id=str(state.get("run_id") or ""),
+                                input_payload=tool_args,
+                                bound_values=bound_values,
+                                authorized_scopes=_authorized_scopes(state),
+                            )
                         current_batch_results.append({"name": tool_name, "kind": "action", "result": result})
                         if native_turn_protocol and tool_call_id:
                             native_tool_messages.append(
@@ -2131,6 +2665,7 @@ def _invoke_ai_task_round(
                             run_id=str(state.get("run_id") or ""),
                             agent_args=tool_args,
                             bound_values=bound_values,
+                            authorized_scopes=_authorized_scopes(state),
                         )
                         current_batch_results.append({"name": tool_name, "kind": "query", "result": result})
                         if native_turn_protocol and tool_call_id:
@@ -2207,7 +2742,7 @@ def _invoke_ai_task_round(
             messages.append(_legacy_assistant_echo(turn, parsed))
             followup_content = (
                 "Mounted capability call results:\n"
-                f"{json.dumps(current_batch_results, ensure_ascii=False)}\n\n"
+                f"{json.dumps(redact_sensitive_data(current_batch_results), ensure_ascii=False)}\n\n"
                 "You may now decide the next mounted capability call, or return the final JSON response if everything is ready."
             )
             if legacy_followup_notes:
@@ -2617,7 +3152,23 @@ def _execute_approval_node(
     if mode == "never":
         should_require = False
 
-    if should_require:
+    if should_require and _is_dry_run(state):
+        decision = {
+            "action": latest_ai.get("action") or latest_ai.get("route") or "approve",
+            "simulated": True,
+        }
+        token = {
+            "granted": True,
+            "approval_type": str(node_config.get("approval_type") or "manual_review"),
+            "simulated": True,
+        }
+        payload = {
+            "decision": decision,
+            "token": token,
+            "simulated": True,
+            "would_require_approval": True,
+        }
+    elif should_require:
         response = interrupt(
             {
                 "kind": "approval",
@@ -2645,6 +3196,7 @@ def _execute_approval_node(
             "auto": True,
         }
         payload = {"decision": decision, "token": token}
+    narrative = "审批节点已模拟通过，未创建真实审批。" if payload.get("simulated") else "审批节点已完成。"
     return {
         "approval_result": decision,
         "approval_token": token,
@@ -2653,7 +3205,7 @@ def _execute_approval_node(
             state,
             node_id=node_id,
             status="completed",
-            narrative="审批节点已完成。",
+            narrative=narrative,
             input_payload={"config": node_config},
             output_payload=payload,
         ),
@@ -2727,9 +3279,6 @@ def _execute_operation_node(
     if not operation_key:
         raise ValidationError(f"Operation node {node_id} is missing operation_key")
     definition = get_operation_definition(operation_type=operation_type, key=operation_key)
-    risk_level = str(node_config.get("risk_level") or definition.risk_level).strip().lower() or "low"
-    if _should_require_approval(state, node_config, node_id=node_id, risk_level=risk_level):
-        raise ValidationError(f"High-risk operation requires approval: {operation_key}")
 
     defaults = _operation_defaults(state, node_config)
     arguments = _resolve_argument_mappings(state, list(node_config.get("argument_mappings") or []), defaults=defaults)
@@ -2740,6 +3289,67 @@ def _execute_operation_node(
             executed_operation_key = "moderate_comment"
         elif str(arguments.get("entry_id") or "").strip():
             executed_operation_key = "moderate_guestbook_entry"
+    required_scopes = set(definition.required_scopes)
+    try:
+        executed_capability = get_capability_definition(kind="tool", name=executed_operation_key)
+    except Exception:
+        executed_capability = None
+    capability_risk = executed_capability.risk_level if executed_capability is not None else definition.risk_level
+    risk_level = stricter_risk_level(
+        str(node_config.get("risk_level") or ""),
+        definition.risk_level,
+        capability_risk,
+    )
+    requires_approval = _should_require_approval(
+        state,
+        node_config,
+        node_id=node_id,
+        risk_level=risk_level,
+        mandatory=bool(executed_capability and executed_capability.requires_approval),
+    )
+    if executed_capability is not None:
+        required_scopes.update(executed_capability.required_scopes)
+    _require_execution_scopes(
+        state,
+        required_scopes=sorted(required_scopes),
+        capability_name=executed_operation_key,
+    )
+    if _is_dry_run(state):
+        node_info = _graph_node_payload(state, node_id=node_id)
+        payload = {
+            **_simulated_execution_payload(
+                kind="operation",
+                capability=executed_operation_key,
+                arguments=arguments,
+                label=definition.label,
+                requires_approval=requires_approval,
+                extra_execution={
+                    "operation_type": operation_type,
+                    "operation_key": operation_key,
+                    "risk_level": risk_level,
+                },
+            ),
+            "action": arguments.get("action"),
+            "reason": arguments.get("reason"),
+            "node": {
+                **node_info,
+                "description": definition.description,
+            },
+        }
+        return {
+            "result_payload": payload,
+            "node_outputs": _set_node_output(state, node_id=node_id, value=payload),
+            "execution_trace": _append_trace(
+                state,
+                node_id=node_id,
+                status="simulated",
+                narrative=payload["execution_summary"],
+                input_payload={"config": node_config, "arguments": arguments},
+                output_payload=payload,
+            ),
+        }
+    if requires_approval:
+        raise ValidationError(f"High-risk operation requires approval: {operation_key}")
     action = str(arguments.get("action") or "").strip().lower()
     fallback_mode = str(node_config.get("fallback_mode") or "").strip()
     if (
@@ -2829,7 +3439,11 @@ def _execute_operation_node(
 
 
 def _queue_webhook_deliveries(
-    state: WorkflowExecutionState, node_config: dict[str, Any], *, node_id: str
+    state: WorkflowExecutionState,
+    node_config: dict[str, Any],
+    *,
+    node_id: str,
+    simulate: bool = False,
 ) -> dict[str, Any]:
     linked_ids = node_config.get("linked_subscription_ids")
     subscription_ids = [item for item in linked_ids if isinstance(item, str)] if isinstance(linked_ids, list) else []
@@ -2861,33 +3475,56 @@ def _queue_webhook_deliveries(
         },
     )
     delivery_count = 0
+    simulated_delivery_count = 0
     with get_session_factory()() as session:
         for subscription_id in subscription_ids:
             subscription = repo.get_webhook_subscription(session, subscription_id)
             if subscription is None or subscription.status != "active":
                 continue
+            if simulate:
+                simulated_delivery_count += 1
+                continue
             repo.create_webhook_delivery(session, subscription=subscription, event=event)
             delivery_count += 1
-        session.commit()
+        if not simulate:
+            session.commit()
     return {
-        "status": "completed",
+        "status": "simulated" if simulate else "completed",
+        "simulated": simulate,
         "delivery_count": delivery_count,
+        "simulated_delivery_count": simulated_delivery_count,
         "event_type": event.event_type,
         "formatted_text": formatted_text,
+        "execution": {
+            "kind": "notification",
+            "capability": "webhook_delivery",
+            "subscription_ids": subscription_ids,
+        },
     }
 
 
 def _execute_notification_webhook_node(
     state: WorkflowExecutionState, *, node_id: str, node_config: dict[str, Any]
 ) -> WorkflowExecutionState:
-    payload = _queue_webhook_deliveries(state, node_config, node_id=node_id)
+    _require_execution_scopes(
+        state,
+        required_scopes=["network:write"],
+        capability_name="webhook_delivery",
+    )
+    simulated = _is_dry_run(state)
+    payload = _queue_webhook_deliveries(
+        state,
+        node_config,
+        node_id=node_id,
+        simulate=simulated,
+    )
     return {
         "node_outputs": _set_node_output(state, node_id=node_id, value=payload),
         "execution_trace": _append_trace(
             state,
             node_id=node_id,
-            status="completed",
-            narrative="Webhook 通知节点已完成。",
+            status="simulated" if simulated else "completed",
+            narrative="Webhook 通知节点已模拟，未创建真实投递。" if simulated else "Webhook 通知节点已完成。",
             input_payload={"config": node_config},
             output_payload=payload,
         ),
@@ -3096,6 +3733,17 @@ def _outgoing_edges(edges: list[dict[str, Any]]) -> dict[str, list[dict[str, Any
     return adjacency
 
 
+def _run_node_boundary_hook(
+    runtime: Runtime[WorkflowExecutionContext],
+    *,
+    node_id: str,
+) -> None:
+    context = runtime.context or {}
+    hook = context.get("node_boundary_hook")
+    if hook is not None:
+        hook(node_id)
+
+
 def _build_runtime_graph(checkpointer: SqliteSaver, graph_payload: dict[str, Any]):
     nodes = _graph_nodes(graph_payload)
     edges = _graph_edges(graph_payload)
@@ -3103,20 +3751,32 @@ def _build_runtime_graph(checkpointer: SqliteSaver, graph_payload: dict[str, Any
     adjacency = _outgoing_edges(edges)
     nodes_by_id = {str(item.get("id") or ""): item for item in nodes if str(item.get("id") or "").strip()}
 
-    builder = StateGraph(WorkflowExecutionState)
+    builder = StateGraph(WorkflowExecutionState, context_schema=WorkflowExecutionContext)
 
     for node_id, node in nodes_by_id.items():
         node_type = str(node.get("type") or "").strip()
         node_config = dict(node.get("config") or {})
 
         def make_executor(*, captured_node_id: str, captured_node_type: str, captured_node_config: dict[str, Any]):
-            def executor(state: WorkflowExecutionState) -> WorkflowExecutionState:
-                return _execute_graph_node(
-                    state,
+            def executor(
+                state: WorkflowExecutionState,
+                runtime: Runtime[WorkflowExecutionContext],
+            ) -> WorkflowExecutionState:
+                _run_node_boundary_hook(runtime, node_id=captured_node_id)
+                context = runtime.context or {}
+                effective_state = reveal_sensitive_data(state, purpose=RUNTIME_STATE_SECRET_PURPOSE)
+                if context.get("model_config") is not None:
+                    effective_state["model_config"] = dict(context["model_config"])
+                updates = _execute_graph_node(
+                    effective_state,
                     node_id=captured_node_id,
                     node_type=captured_node_type,
-                    node_config=captured_node_config,
+                    node_config=reveal_sensitive_data(
+                        captured_node_config,
+                        purpose=RUNTIME_STATE_SECRET_PURPOSE,
+                    ),
                 )
+                return protect_sensitive_data(updates, purpose=RUNTIME_STATE_SECRET_PURPOSE)
 
             return executor
 
@@ -3125,7 +3785,18 @@ def _build_runtime_graph(checkpointer: SqliteSaver, graph_payload: dict[str, Any
             make_executor(captured_node_id=node_id, captured_node_type=node_type, captured_node_config=node_config),
         )
 
-    builder.add_node("__finalize__", _finalize_result_node)
+    def finalize(
+        state: WorkflowExecutionState,
+        runtime: Runtime[WorkflowExecutionContext],
+    ) -> WorkflowExecutionState:
+        _run_node_boundary_hook(runtime, node_id="__finalize__")
+        effective_state = reveal_sensitive_data(state, purpose=RUNTIME_STATE_SECRET_PURPOSE)
+        return protect_sensitive_data(
+            _finalize_result_node(effective_state),
+            purpose=RUNTIME_STATE_SECRET_PURPOSE,
+        )
+
+    builder.add_node("__finalize__", finalize)
     builder.add_edge(START, start_node)
 
     for node_id, node in nodes_by_id.items():
@@ -3153,11 +3824,17 @@ def _build_runtime_graph(checkpointer: SqliteSaver, graph_payload: dict[str, Any
         ):
             def route(state: WorkflowExecutionState) -> str:
                 return _resolve_next_node(
-                    state,
+                    reveal_sensitive_data(state, purpose=RUNTIME_STATE_SECRET_PURPOSE),
                     node_id=captured_node_id,
                     node_type=captured_node_type,
-                    node_config=captured_node_config,
-                    outgoing_edges=captured_outgoing,
+                    node_config=reveal_sensitive_data(
+                        captured_node_config,
+                        purpose=RUNTIME_STATE_SECRET_PURPOSE,
+                    ),
+                    outgoing_edges=reveal_sensitive_data(
+                        captured_outgoing,
+                        purpose=RUNTIME_STATE_SECRET_PURPOSE,
+                    ),
                 )
 
             return route

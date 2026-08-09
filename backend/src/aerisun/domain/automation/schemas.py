@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, model_validator
 
+from aerisun.core.redaction import redact_sensitive_data, safe_exception_detail
 from aerisun.core.schemas import ModelBase
+from aerisun.core.time import normalize_shanghai_datetime, shanghai_now
 
 
 class ApprovalDecisionWrite(BaseModel):
@@ -13,7 +15,33 @@ class ApprovalDecisionWrite(BaseModel):
     reason: str | None = None
 
 
-class AgentModelConfigRead(ModelBase):
+AgentModelSource = Literal["chatgpt_oauth", "openai_compatible"]
+
+
+class ChatGPTModelConfigResolved(ModelBase):
+    enabled: bool = False
+    model: str = ""
+    timeout_seconds: int = Field(default=60, ge=5, le=300)
+    is_ready: bool = False
+
+
+class ChatGPTModelConfigRead(ModelBase):
+    enabled: bool = False
+    model: str = ""
+    timeout_seconds: int = Field(default=60, ge=5, le=300)
+    connected: bool = False
+    account_email: str | None = None
+    plan_type: str | None = None
+    is_ready: bool = False
+
+
+class ChatGPTModelConfigUpdate(BaseModel):
+    enabled: bool | None = None
+    model: str | None = None
+    timeout_seconds: int | None = Field(default=None, ge=5, le=300)
+
+
+class OpenAICompatibleModelConfigResolved(ModelBase):
     enabled: bool = False
     provider: str = "openai_compatible"
     base_url: str = ""
@@ -25,7 +53,52 @@ class AgentModelConfigRead(ModelBase):
     is_ready: bool = False
 
 
+class OpenAICompatibleModelConfigRead(ModelBase):
+    enabled: bool = False
+    provider: str = "openai_compatible"
+    base_url: str = ""
+    model: str = ""
+    api_key_configured: bool = False
+    temperature: float = Field(default=0.2, ge=0, le=2)
+    timeout_seconds: int = Field(default=20, ge=5, le=300)
+    advisory_prompt: str = ""
+    is_ready: bool = False
+
+
+class OpenAICompatibleModelConfigUpdate(BaseModel):
+    enabled: bool | None = None
+    base_url: str | None = None
+    model: str | None = None
+    api_key: str | None = None
+    temperature: float | None = Field(default=None, ge=0, le=2)
+    timeout_seconds: int | None = Field(default=None, ge=5, le=300)
+    advisory_prompt: str | None = None
+    clear_api_key: bool = False
+
+
+class AgentModelConfigResolved(ModelBase):
+    schema_version: int = 2
+    primary_source: AgentModelSource = "openai_compatible"
+    chatgpt_oauth: ChatGPTModelConfigResolved = Field(default_factory=ChatGPTModelConfigResolved)
+    openai_compatible: OpenAICompatibleModelConfigResolved = Field(default_factory=OpenAICompatibleModelConfigResolved)
+    is_ready: bool = False
+
+
+class AgentModelConfigRead(ModelBase):
+    schema_version: int = 2
+    primary_source: AgentModelSource = "openai_compatible"
+    chatgpt_oauth: ChatGPTModelConfigRead = Field(default_factory=ChatGPTModelConfigRead)
+    openai_compatible: OpenAICompatibleModelConfigRead = Field(default_factory=OpenAICompatibleModelConfigRead)
+    is_ready: bool = False
+
+
 class AgentModelConfigUpdate(BaseModel):
+    primary_source: AgentModelSource | None = None
+    chatgpt_oauth: ChatGPTModelConfigUpdate | None = None
+    openai_compatible: OpenAICompatibleModelConfigUpdate | None = None
+
+    # Legacy flat fields remain accepted so existing MCP clients and local
+    # configuration helpers upgrade without a flag day.
     enabled: bool | None = None
     provider: str | None = None
     base_url: str | None = None
@@ -34,6 +107,7 @@ class AgentModelConfigUpdate(BaseModel):
     temperature: float | None = Field(default=None, ge=0, le=2)
     timeout_seconds: int | None = Field(default=None, ge=5, le=300)
     advisory_prompt: str | None = None
+    clear_api_key: bool = False
 
 
 class AgentModelConfigTestRead(ModelBase):
@@ -41,6 +115,47 @@ class AgentModelConfigTestRead(ModelBase):
     model: str
     endpoint: str
     summary: str
+
+
+class ChatGPTAccountRead(ModelBase):
+    connected: bool = False
+    email: str | None = None
+    plan_type: str | None = None
+    error: str | None = None
+
+
+class ChatGPTDeviceLoginRead(ModelBase):
+    login_id: str
+    verification_url: str
+    user_code: str
+
+
+class ChatGPTLoginStatusRead(ModelBase):
+    status: Literal["pending", "completed", "failed"]
+    account: ChatGPTAccountRead | None = None
+    error: str | None = None
+
+
+class ChatGPTModelOptionRead(ModelBase):
+    model: str
+    display_name: str
+    is_default: bool = False
+
+
+class AgentModelSourceDiagnosticRead(ModelBase):
+    source: AgentModelSource
+    status: Literal["healthy", "failed", "skipped"]
+    model: str = ""
+    summary: str
+    detail: str | None = None
+
+
+class AgentModelDiagnosticRead(ModelBase):
+    status: Literal["healthy", "warning", "failed", "skipped"]
+    primary_source: AgentModelSource
+    active_source: AgentModelSource | None = None
+    summary: str
+    items: list[AgentModelSourceDiagnosticRead] = Field(default_factory=list)
 
 
 class AgentWorkflowGraphViewport(BaseModel):
@@ -88,11 +203,19 @@ class AgentWorkflowTriggerBinding(BaseModel):
     config: dict[str, Any] = Field(default_factory=dict)
 
 
+class AgentWorkflowRetryPolicy(BaseModel):
+    max_attempts: int = Field(default=3, ge=1, le=100)
+    initial_seconds: float = Field(default=5, ge=0, le=3600)
+    multiplier: float = Field(default=2, ge=1, le=10)
+    max_seconds: float = Field(default=300, ge=0, le=86400)
+    jitter_ratio: float = Field(default=0.1, ge=0, le=0.5)
+
+
 class AgentWorkflowRuntimePolicy(BaseModel):
     approval_mode: str = Field(default="risk_based", max_length=80)
     allow_high_risk_without_approval: bool = False
     max_steps: int = Field(default=80, ge=1, le=500)
-    retry_policy: dict[str, Any] = Field(default_factory=dict)
+    retry_policy: AgentWorkflowRetryPolicy = Field(default_factory=AgentWorkflowRetryPolicy)
     default_model: str | None = Field(default=None, max_length=160)
 
 
@@ -771,6 +894,8 @@ class AgentWorkflowRunCreateWrite(BaseModel):
     target_id: str | None = Field(default=None, max_length=120)
     context_payload: dict[str, Any] = Field(default_factory=dict)
     input_payload: dict[str, Any] = Field(default_factory=dict)
+    idempotency_key: str | None = Field(default=None, min_length=1, max_length=255)
+    execution_mode: Literal["live", "dry_run"] = "live"
     execute_immediately: bool = True
 
 
@@ -794,6 +919,7 @@ class WebhookSubscriptionCreate(BaseModel):
     secret: str | None = None
     timeout_seconds: int = 10
     max_attempts: int = 6
+    allow_private_network: bool = False
     status: str = "active"
     headers: dict[str, Any] = Field(default_factory=dict)
 
@@ -805,8 +931,10 @@ class WebhookSubscriptionUpdate(BaseModel):
     secret: str | None = None
     timeout_seconds: int | None = None
     max_attempts: int | None = None
+    allow_private_network: bool | None = None
     status: str | None = None
     headers: dict[str, Any] | None = None
+    clear_secret: bool = False
 
 
 class TelegramWebhookConnectWrite(BaseModel):
@@ -827,6 +955,12 @@ class AgentRunRead(ModelBase):
     id: str
     workflow_key: str
     status: str
+    execution_mode: str = "live"
+    workflow_fingerprint: str | None = None
+    idempotency_key: str | None = None
+    requested_by_type: str = "system"
+    requested_by_id: str | None = None
+    authorization_scopes: list[str] = Field(default_factory=list)
     trigger_kind: str
     trigger_event: str | None = None
     target_type: str | None = None
@@ -839,10 +973,45 @@ class AgentRunRead(ModelBase):
     result_payload: dict[str, Any] = Field(default_factory=dict)
     error_code: str | None = None
     error_message: str | None = None
+    available_at: datetime | None = None
+    attempt_count: int = 0
+    max_attempts: int = 3
+    lease_owner: str | None = None
+    lease_expires_at: datetime | None = None
+    heartbeat_at: datetime | None = None
+    cancel_requested_at: datetime | None = None
+    retry_of_run_id: str | None = None
     started_at: datetime | None = None
     finished_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
+    duration_ms: int | None = None
+    can_cancel: bool = False
+    can_retry: bool = False
+
+    @field_validator("input_payload", "context_payload", "result_payload", mode="before")
+    @classmethod
+    def redact_payloads(cls, value: Any) -> dict[str, Any]:
+        redacted = redact_sensitive_data(value or {})
+        return dict(redacted) if isinstance(redacted, dict) else {}
+
+    @field_validator("error_message", mode="before")
+    @classmethod
+    def redact_error_message(cls, value: Any) -> str | None:
+        return safe_exception_detail(str(value)) if value is not None else None
+
+    @model_validator(mode="after")
+    def derive_lifecycle_metadata(self) -> AgentRunRead:
+        terminal = self.status in {"completed", "failed", "cancelled"}
+        self.can_cancel = not terminal and self.cancel_requested_at is None
+        self.can_retry = terminal
+        if self.started_at is None:
+            self.duration_ms = None
+            return self
+        started_at = normalize_shanghai_datetime(self.started_at)
+        finished_at = normalize_shanghai_datetime(self.finished_at) if self.finished_at else shanghai_now()
+        self.duration_ms = max(0, round((finished_at - started_at).total_seconds() * 1000))
+        return self
 
 
 class AgentRunStepRead(ModelBase):
@@ -860,6 +1029,12 @@ class AgentRunStepRead(ModelBase):
     finished_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
+
+    @field_validator("input_payload", "output_payload", "error_payload", mode="before")
+    @classmethod
+    def redact_payloads(cls, value: Any) -> dict[str, Any]:
+        redacted = redact_sensitive_data(value or {})
+        return dict(redacted) if isinstance(redacted, dict) else {}
 
 
 class AgentRunApprovalRead(ModelBase):
@@ -879,9 +1054,33 @@ class AgentRunApprovalRead(ModelBase):
     created_at: datetime
     updated_at: datetime
 
+    @field_validator("request_payload", "response_payload", mode="before")
+    @classmethod
+    def redact_payloads(cls, value: Any) -> dict[str, Any]:
+        redacted = redact_sensitive_data(value or {})
+        return dict(redacted) if isinstance(redacted, dict) else {}
+
 
 class AgentRunCollectionRead(BaseModel):
     items: list[AgentRunRead] = Field(default_factory=list)
+    total: int = 0
+    limit: int = 25
+    has_more: bool = False
+    next_cursor: str | None = None
+
+
+class AgentOverviewRead(BaseModel):
+    model_ready: bool = False
+    total_workflow_count: int = 0
+    enabled_workflow_count: int = 0
+    total_run_count: int = 0
+    queued_run_count: int = 0
+    running_run_count: int = 0
+    awaiting_approval_count: int = 0
+    pending_approval_count: int = 0
+    recent_failed_run_count: int = 0
+    recent_failure_window_hours: int = 24
+    generated_at: datetime
 
 
 class WebhookSubscriptionRead(ModelBase):
@@ -889,10 +1088,13 @@ class WebhookSubscriptionRead(ModelBase):
     name: str
     status: str
     target_url: str
-    secret: str | None = None
+    target_url_configured: bool = True
+    provider: str = "generic"
+    secret_configured: bool = False
     event_types: list[str] = Field(default_factory=list)
     timeout_seconds: int
     max_attempts: int
+    allow_private_network: bool = False
     backoff_policy: dict[str, Any] = Field(default_factory=dict)
     headers: dict[str, Any] = Field(default_factory=dict)
     last_delivery_at: datetime | None = None
@@ -923,6 +1125,23 @@ class WebhookDeliveryRead(ModelBase):
     created_at: datetime
     updated_at: datetime
 
+    @field_validator("payload", "headers", mode="before")
+    @classmethod
+    def redact_payloads(cls, value: Any) -> dict[str, Any]:
+        redacted = redact_sensitive_data(value or {})
+        return dict(redacted) if isinstance(redacted, dict) else {}
+
+    @field_validator("target_url", mode="before")
+    @classmethod
+    def redact_target_url(cls, value: Any) -> str:
+        redacted = redact_sensitive_data(str(value or ""))
+        return str(redacted)
+
+    @field_validator("last_response_body", "last_error", mode="before")
+    @classmethod
+    def redact_delivery_details(cls, value: Any) -> str | None:
+        return safe_exception_detail(str(value)) if value is not None else None
+
 
 class WebhookDeadLetterRead(ModelBase):
     id: str
@@ -937,3 +1156,14 @@ class WebhookDeadLetterRead(ModelBase):
     dead_lettered_at: datetime
     created_at: datetime
     updated_at: datetime
+
+    @field_validator("payload", mode="before")
+    @classmethod
+    def redact_payload(cls, value: Any) -> dict[str, Any]:
+        redacted = redact_sensitive_data(value or {})
+        return dict(redacted) if isinstance(redacted, dict) else {}
+
+    @field_validator("last_error", mode="before")
+    @classmethod
+    def redact_error(cls, value: Any) -> str | None:
+        return safe_exception_detail(str(value)) if value is not None else None

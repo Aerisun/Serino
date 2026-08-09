@@ -4,7 +4,7 @@ from dataclasses import asdict, dataclass
 from datetime import datetime
 from typing import Any, Literal
 
-from sqlalchemy import JSON, DateTime, Index, Integer, String, Text
+from sqlalchemy import JSON, Boolean, DateTime, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from aerisun.core.base import Base, TimestampMixin, utcnow, uuid_str
@@ -33,13 +33,48 @@ class AgentRun(Base, TimestampMixin):
     __tablename__ = "agent_runs"
     __table_args__ = (
         Index("ix_agent_runs_status_created_at", "status", "created_at"),
+        Index("ix_agent_runs_claimable", "status", "available_at", "created_at"),
+        Index("ix_agent_runs_lease_expires_at", "status", "lease_expires_at"),
         Index("ix_agent_runs_target", "target_type", "target_id"),
         Index("ix_agent_runs_workflow_key_created_at", "workflow_key", "created_at"),
+        Index(
+            "uq_agent_runs_workflow_idempotency",
+            "workflow_key",
+            "idempotency_key",
+            unique=True,
+        ),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
     workflow_key: Mapped[str] = mapped_column(String(120), nullable=False)
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="queued")
+    execution_mode: Mapped[str] = mapped_column(
+        String(24),
+        nullable=False,
+        default="live",
+        server_default="live",
+    )
+    workflow_snapshot: Mapped[dict[str, Any]] = mapped_column(
+        JSON,
+        nullable=False,
+        default=dict,
+        server_default="{}",
+    )
+    workflow_fingerprint: Mapped[str | None] = mapped_column(String(64))
+    idempotency_key: Mapped[str | None] = mapped_column(String(255))
+    requested_by_type: Mapped[str] = mapped_column(
+        String(40),
+        nullable=False,
+        default="system",
+        server_default="system",
+    )
+    requested_by_id: Mapped[str | None] = mapped_column(String(120))
+    authorization_scopes: Mapped[list[str]] = mapped_column(
+        JSON,
+        nullable=False,
+        default=lambda: ["*"],
+        server_default='["*"]',
+    )
     trigger_kind: Mapped[str] = mapped_column(String(40), nullable=False, default="event")
     trigger_event: Mapped[str | None] = mapped_column(String(120))
     target_type: Mapped[str | None] = mapped_column(String(80))
@@ -52,6 +87,14 @@ class AgentRun(Base, TimestampMixin):
     result_payload: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
     error_code: Mapped[str | None] = mapped_column(String(80))
     error_message: Mapped[str | None] = mapped_column(Text)
+    available_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    attempt_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    max_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=3, server_default="3")
+    lease_owner: Mapped[str | None] = mapped_column(String(255))
+    lease_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    heartbeat_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    cancel_requested_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    retry_of_run_id: Mapped[str | None] = mapped_column(String(36))
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
@@ -59,7 +102,7 @@ class AgentRun(Base, TimestampMixin):
 class AgentRunStep(Base, TimestampMixin):
     __tablename__ = "agent_run_steps"
     __table_args__ = (
-        Index("ix_agent_run_steps_run_id_sequence_no", "run_id", "sequence_no"),
+        Index("uq_agent_run_steps_run_sequence", "run_id", "sequence_no", unique=True),
         Index("ix_agent_run_steps_run_id_status", "run_id", "status"),
     )
 
@@ -164,6 +207,12 @@ class WebhookSubscription(Base, TimestampMixin):
     event_types: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
     timeout_seconds: Mapped[int] = mapped_column(Integer, nullable=False, default=10)
     max_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=6)
+    allow_private_network: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default="0",
+    )
     backoff_policy: Mapped[dict[str, Any]] = mapped_column(
         JSON,
         default=lambda: {"initial_seconds": 30, "multiplier": 4, "max_seconds": 7200},

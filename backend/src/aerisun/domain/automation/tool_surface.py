@@ -7,12 +7,15 @@ import json
 from pathlib import Path
 from typing import Any
 
+from jsonschema import ValidationError as JsonSchemaValidationError
+from jsonschema import validate as validate_jsonschema
 from sqlalchemy.orm import Session
 
 from aerisun.core.settings import get_settings
 from aerisun.domain.agent.capabilities.registry import (
     AgentCapabilityDefinition,
     execute_capability,
+    get_capability_definition,
     list_capability_definitions,
 )
 from aerisun.domain.automation.packs import (
@@ -26,7 +29,7 @@ from aerisun.domain.automation.schemas import (
     QuerySurfaceSpec,
     ToolSurfaceRead,
 )
-from aerisun.domain.exceptions import ResourceNotFound, ValidationError
+from aerisun.domain.exceptions import PermissionDenied, ResourceNotFound, ValidationError
 
 ACTION_BUNDLE_ENTRY_SEPARATOR = "#"
 QUERY_SURFACE_CAPABILITY_ALIASES = {
@@ -614,6 +617,30 @@ def build_action_surface_catalog(workflow_key: str) -> list[dict[str, Any]]:
     return [item.model_dump(mode="json") for item in list_action_surfaces(workflow_key)]
 
 
+def _effective_required_scopes(base_capability: str, declared_scopes: list[str]) -> list[str]:
+    required = {str(item).strip() for item in declared_scopes if str(item).strip()}
+    try:
+        capability = get_capability_definition(kind="tool", name=base_capability)
+    except Exception:
+        capability = None
+    if capability is not None:
+        required.update(capability.required_scopes)
+    return sorted(required)
+
+
+def _require_authorized_scopes(
+    *,
+    required_scopes: list[str],
+    authorized_scopes: set[str] | None,
+    capability_name: str,
+) -> None:
+    if authorized_scopes is None or "*" in authorized_scopes:
+        return
+    missing = sorted(set(required_scopes) - authorized_scopes)
+    if missing:
+        raise PermissionDenied(f"Execution principal lacks required scopes for {capability_name}: {', '.join(missing)}")
+
+
 def execute_tool_surface(
     session: Session,
     key: str,
@@ -622,9 +649,15 @@ def execute_tool_surface(
     run_id: str,
     agent_args: dict[str, Any] | None = None,
     bound_values: dict[str, Any] | None = None,
+    authorized_scopes: set[str] | None = None,
 ) -> Any:
     spec = _query_specs(workflow_key).get(key)
     if spec is not None:
+        _require_authorized_scopes(
+            required_scopes=_effective_required_scopes(spec.base_capability, list(spec.required_scopes)),
+            authorized_scopes=authorized_scopes,
+            capability_name=spec.base_capability,
+        )
         merged: dict[str, Any] = dict(spec.fixed_args)
         for arg_name, binding in spec.bound_args.items():
             if binding.source == "literal":
@@ -688,6 +721,11 @@ def execute_tool_surface(
     except Exception:
         cap = None
     if cap is not None:
+        _require_authorized_scopes(
+            required_scopes=list(cap.required_scopes),
+            authorized_scopes=authorized_scopes,
+            capability_name=cap.name,
+        )
         payload = _autofill_common_surface_arguments(
             dict(agent_args or {}),
             arg_names=list(dict(cap.input_schema.get("properties") or {}).keys()),
@@ -700,21 +738,27 @@ def execute_tool_surface(
     raise ResourceNotFound(f"Unknown tool surface: {key}")
 
 
-def execute_action_surface(
-    session: Session,
+def prepare_action_surface_invocation(
     key: str,
     *,
     workflow_key: str,
     run_id: str,
     input_payload: dict[str, Any] | None,
     bound_values: dict[str, Any] | None = None,
-) -> Any:
+    authorized_scopes: set[str] | None = None,
+) -> tuple[ActionSurfaceRead, dict[str, Any]]:
     try:
         surface = get_action_surface_invocation(key, workflow_key=workflow_key)
     except ResourceNotFound as exc:
         raise ResourceNotFound(f"Unknown action surface: {key}") from exc
     if surface.surface_mode == "bundle":
         raise ValidationError(f"Action surface {surface.key} is a bundle. Choose one bundled action entry instead.")
+
+    _require_authorized_scopes(
+        required_scopes=_effective_required_scopes(surface.base_capability, list(surface.required_scopes)),
+        authorized_scopes=authorized_scopes,
+        capability_name=surface.base_capability,
+    )
 
     merged: dict[str, Any] = dict(surface.fixed_args)
     input_payload = dict(input_payload or {})
@@ -769,6 +813,34 @@ def execute_action_surface(
         bound_values=bound_values,
     )
     merged = _normalize_surface_payload(merged)
+
+    if surface.input_schema:
+        try:
+            validate_jsonschema(instance=merged, schema=surface.input_schema)
+        except JsonSchemaValidationError as exc:
+            raise ValidationError(f"Action surface {key} arguments are invalid: {exc.message}") from exc
+
+    return surface, merged
+
+
+def execute_action_surface(
+    session: Session,
+    key: str,
+    *,
+    workflow_key: str,
+    run_id: str,
+    input_payload: dict[str, Any] | None,
+    bound_values: dict[str, Any] | None = None,
+    authorized_scopes: set[str] | None = None,
+) -> Any:
+    surface, merged = prepare_action_surface_invocation(
+        key,
+        workflow_key=workflow_key,
+        run_id=run_id,
+        input_payload=input_payload,
+        bound_values=bound_values,
+        authorized_scopes=authorized_scopes,
+    )
 
     raw = execute_capability(session, kind="tool", name=surface.base_capability, **merged)
     return _project(raw, surface.output_projection) if surface.output_projection else raw

@@ -12,6 +12,14 @@ from aerisun.domain.agent.capabilities.registry import (
     list_capability_definitions,
 )
 
+RISK_LEVEL_RANK = {"low": 0, "medium": 1, "high": 2, "critical": 3}
+
+
+def stricter_risk_level(*levels: str) -> str:
+    normalized = [str(level or "").strip().lower() for level in levels]
+    known = [level for level in normalized if level in RISK_LEVEL_RANK]
+    return max(known, key=RISK_LEVEL_RANK.__getitem__) if known else "low"
+
 
 @dataclass(frozen=True, slots=True)
 class AutomationOperationDefinition:

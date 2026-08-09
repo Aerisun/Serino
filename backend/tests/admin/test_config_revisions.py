@@ -163,8 +163,9 @@ def test_sensitive_config_previews_are_masked_and_restore_works(client, admin_he
 
     latest_model_revision = _list_revisions(client, admin_headers, resource_key="automation.model_config")[0]
     model_detail = _get_revision_detail(client, admin_headers, str(latest_model_revision["id"]))
-    assert model_detail["after_preview"]["api_key"].startswith("******")
-    assert model_detail["after_preview"]["api_key"].endswith("alue")
+    assert "api_key" not in model_detail["after_preview"]["openai_compatible"]
+    assert model_detail["after_preview"]["openai_compatible"]["api_key_configured"] is True
+    assert "api_key_configured" not in model_detail["sensitive_fields"]
 
     restore_response = client.post(
         f"{BASE}/config-revisions/{latest_model_revision['id']}/restore",
@@ -174,7 +175,8 @@ def test_sensitive_config_previews_are_masked_and_restore_works(client, admin_he
     assert restore_response.status_code == 200
     restored_config = client.get(f"{AUTOMATION_BASE}/model-config", headers=admin_headers)
     assert restored_config.status_code == 200
-    assert restored_config.json()["api_key"] == ""
+    assert "api_key" not in restored_config.json()["openai_compatible"]
+    assert restored_config.json()["openai_compatible"]["api_key_configured"] is True
 
     visitors = client.put(
         f"{VISITORS_BASE}/config",

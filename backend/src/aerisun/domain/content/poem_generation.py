@@ -6,7 +6,7 @@ import re
 from sqlalchemy.orm import Session
 
 from aerisun.domain.automation.runtime import invoke_model_json
-from aerisun.domain.automation.settings import get_agent_model_config
+from aerisun.domain.automation.settings import agent_model_runtime_config, get_agent_model_config_resolved
 from aerisun.domain.content.schemas import PoemGenerationRequest, PoemGenerationResponse
 from aerisun.domain.exceptions import ValidationError
 
@@ -52,11 +52,9 @@ def generate_diary_poem(session: Session, payload: PoemGenerationRequest) -> Poe
     if draft_markdown is None:
         raise ValidationError("请先在 Markdown 编辑框里写一点草稿，再生成诗句。")
 
-    model_config = get_agent_model_config(session)
+    model_config = get_agent_model_config_resolved(session)
     if not model_config.is_ready:
-        raise ValidationError("请先在 Agent 模型配置中填写可用的 Base URL、模型和 API Key。")
-    if model_config.provider != "openai_compatible":
-        raise ValidationError(f"暂不支持当前模型提供方：{model_config.provider}")
+        raise ValidationError("请先在模型配置中启用并完善至少一个模型来源。")
 
     plain_text = _strip_markdown_text(draft_markdown)
     if not plain_text:
@@ -75,7 +73,7 @@ def generate_diary_poem(session: Session, payload: PoemGenerationRequest) -> Poe
     }
 
     parsed = invoke_model_json(
-        model_config.model_dump(exclude={"is_ready"}),
+        agent_model_runtime_config(model_config),
         messages=[
             {
                 "role": "system",

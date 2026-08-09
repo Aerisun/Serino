@@ -9,7 +9,7 @@ from alembic.script import ScriptDirectory
 from aerisun.core.db import dispose_engine, run_database_migrations
 from aerisun.core.settings import get_settings
 
-CURRENT_SCHEMA_HEAD = "0019_asset_storage_layout"
+CURRENT_SCHEMA_HEAD = "0023_agent_run_principal"
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
 
@@ -98,6 +98,10 @@ def test_active_alembic_history_is_reset_to_single_production_baseline_head() ->
         "0017_post_requires_approval.py",
         "0018_post_access_requests.py",
         "0019_asset_storage_layout.py",
+        "0020_agent_run_coordination.py",
+        "0021_system_diagnostics.py",
+        "0022_webhook_network_policy.py",
+        "0023_agent_run_principal.py",
     ]
     assert not (BACKEND_ROOT / "alembic" / "legacy_versions").exists()
 
@@ -139,4 +143,160 @@ def test_run_database_migrations_creates_baseline_schema_and_journal(tmp_path, m
     assert "admin_email_password_hash" not in _get_columns(db_path, "site_auth_config")
     assert "status" not in _get_columns(db_path, "posts")
     assert "first_archived_at" not in _get_columns(db_path, "posts")
+    assert {
+        "execution_mode",
+        "workflow_snapshot",
+        "workflow_fingerprint",
+        "idempotency_key",
+        "available_at",
+        "attempt_count",
+        "max_attempts",
+        "lease_owner",
+        "lease_expires_at",
+        "heartbeat_at",
+        "cancel_requested_at",
+        "retry_of_run_id",
+        "requested_by_type",
+        "requested_by_id",
+        "authorization_scopes",
+    } <= _get_columns(db_path, "agent_runs")
+    assert {
+        "ix_agent_runs_claimable",
+        "ix_agent_runs_lease_expires_at",
+        "uq_agent_runs_workflow_idempotency",
+    } <= _get_indexes(db_path, "agent_runs")
+    assert "uq_agent_run_steps_run_sequence" in _get_indexes(db_path, "agent_run_steps")
+    assert "system_diagnostic_state" in tables
+    assert {
+        "run_id",
+        "execution_status",
+        "overall_status",
+        "trigger_kind",
+        "healthy_count",
+        "warning_count",
+        "failed_count",
+        "skipped_count",
+        "results_json",
+        "started_at",
+        "completed_at",
+        "last_error",
+    } <= _get_columns(db_path, "system_diagnostic_state")
+    assert "ix_system_diagnostic_state_execution_status" in _get_indexes(
+        db_path,
+        "system_diagnostic_state",
+    )
+    assert "allow_private_network" in _get_columns(db_path, "webhook_subscriptions")
     assert _get_alembic_revision(db_path) == CURRENT_SCHEMA_HEAD
+
+
+def test_agent_run_coordination_migration_upgrades_legacy_schema_and_rows(tmp_path, monkeypatch) -> None:
+    db_path = tmp_path / "legacy-agent-runs.db"
+    connection = sqlite3.connect(db_path)
+    try:
+        connection.executescript(
+            """
+            CREATE TABLE alembic_version (version_num VARCHAR(32) NOT NULL);
+            INSERT INTO alembic_version (version_num) VALUES ('0019_asset_storage_layout');
+            CREATE TABLE agent_runs (
+                id VARCHAR(36) PRIMARY KEY NOT NULL,
+                workflow_key VARCHAR(120) NOT NULL,
+                status VARCHAR(32) NOT NULL,
+                trigger_kind VARCHAR(40) NOT NULL,
+                trigger_event VARCHAR(120),
+                target_type VARCHAR(80),
+                target_id VARCHAR(64),
+                thread_id VARCHAR(64) NOT NULL UNIQUE,
+                latest_checkpoint_id VARCHAR(120),
+                checkpoint_ns VARCHAR(120),
+                input_payload JSON NOT NULL,
+                context_payload JSON NOT NULL,
+                result_payload JSON NOT NULL,
+                error_code VARCHAR(80),
+                error_message TEXT,
+                started_at DATETIME,
+                finished_at DATETIME,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL
+            );
+            CREATE TABLE agent_run_steps (
+                id VARCHAR(36) PRIMARY KEY NOT NULL,
+                run_id VARCHAR(36) NOT NULL,
+                sequence_no INTEGER NOT NULL,
+                node_key VARCHAR(120) NOT NULL,
+                step_kind VARCHAR(40) NOT NULL,
+                status VARCHAR(32) NOT NULL,
+                narrative TEXT NOT NULL,
+                input_payload JSON NOT NULL,
+                output_payload JSON NOT NULL,
+                error_payload JSON NOT NULL,
+                started_at DATETIME,
+                finished_at DATETIME,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL
+            );
+            INSERT INTO agent_runs (
+                id, workflow_key, status, trigger_kind, thread_id,
+                input_payload, context_payload, result_payload, created_at, updated_at
+            ) VALUES (
+                'legacy-run', 'legacy-workflow', 'completed', 'manual', 'legacy-thread',
+                '{}', '{}', '{}', '2026-08-01 00:00:00', '2026-08-01 00:00:00'
+            );
+            INSERT INTO agent_run_steps (
+                id, run_id, sequence_no, node_key, step_kind, status, narrative,
+                input_payload, output_payload, error_payload, created_at, updated_at
+            ) VALUES
+                (
+                    'legacy-step-a', 'legacy-run', 1, 'first', 'node_completed', 'completed', 'first',
+                    '{}', '{}', '{}', '2026-08-01 00:00:01', '2026-08-01 00:00:01'
+                ),
+                (
+                    'legacy-step-b', 'legacy-run', 1, 'second', 'node_completed', 'completed', 'second',
+                    '{}', '{}', '{}', '2026-08-01 00:00:02', '2026-08-01 00:00:02'
+                );
+            """
+        )
+        connection.commit()
+    finally:
+        connection.close()
+
+    _configure_test_database(monkeypatch, tmp_path, db_path)
+    run_database_migrations()
+
+    assert _get_alembic_revision(db_path) == CURRENT_SCHEMA_HEAD
+    assert {
+        "execution_mode",
+        "workflow_snapshot",
+        "workflow_fingerprint",
+        "idempotency_key",
+        "available_at",
+        "attempt_count",
+        "max_attempts",
+        "lease_owner",
+        "lease_expires_at",
+        "heartbeat_at",
+        "cancel_requested_at",
+        "retry_of_run_id",
+    } <= _get_columns(db_path, "agent_runs")
+    assert {
+        "ix_agent_runs_claimable",
+        "ix_agent_runs_lease_expires_at",
+        "uq_agent_runs_workflow_idempotency",
+    } <= _get_indexes(db_path, "agent_runs")
+    assert "uq_agent_run_steps_run_sequence" in _get_indexes(db_path, "agent_run_steps")
+
+    connection = sqlite3.connect(db_path)
+    try:
+        row = connection.execute(
+            """
+            SELECT execution_mode, workflow_snapshot, attempt_count, max_attempts,
+                   requested_by_type, requested_by_id, authorization_scopes
+            FROM agent_runs WHERE id = 'legacy-run'
+            """
+        ).fetchone()
+        step_sequences = connection.execute(
+            "SELECT sequence_no FROM agent_run_steps WHERE run_id = 'legacy-run' ORDER BY sequence_no"
+        ).fetchall()
+    finally:
+        connection.close()
+    assert row == ("live", "{}", 0, 3, "system", None, '["*"]')
+    assert step_sequences == [(1,), (2,)]

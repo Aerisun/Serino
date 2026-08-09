@@ -7,6 +7,7 @@ import hashlib
 import hmac
 import json
 import logging
+import re
 import time
 from datetime import datetime, timedelta
 from typing import Any
@@ -16,6 +17,8 @@ from uuid import uuid4
 import httpx
 from sqlalchemy.orm import Session
 
+from aerisun.core.outbound_url import validate_webhook_target_url
+from aerisun.core.redaction import is_sensitive_key, redact_sensitive_data, safe_exception_detail, sanitize_url
 from aerisun.core.time import shanghai_now
 from aerisun.domain.automation import repository as repo
 from aerisun.domain.automation.models import AutomationEvent, WebhookDelivery, WebhookSubscription
@@ -27,31 +30,77 @@ from aerisun.domain.automation.schemas import (
     WebhookSubscriptionRead,
     WebhookSubscriptionUpdate,
 )
+from aerisun.domain.automation.secrets import (
+    decrypt_secret,
+    encrypt_secret,
+    protect_sensitive_data,
+    reveal_sensitive_data,
+)
 from aerisun.domain.exceptions import ResourceNotFound, ValidationError
 from aerisun.domain.outbound_proxy.service import get_outbound_proxy_request_options
 
 logger = logging.getLogger(__name__)
 
+WEBHOOK_DESTINATION_PURPOSE = "automation-webhook-destination"
+WEBHOOK_SECRET_PURPOSE = "automation-webhook-secret"
+WEBHOOK_HEADERS_PURPOSE = "automation-webhook-headers"
+
+
+def _subscription_to_read(item: WebhookSubscription) -> WebhookSubscriptionRead:
+    target_url = decrypt_secret(item.target_url, purpose=WEBHOOK_DESTINATION_PURPOSE)
+    secret = decrypt_secret(item.secret, purpose=WEBHOOK_SECRET_PURPOSE)
+    headers = reveal_sensitive_data(item.headers or {}, purpose=WEBHOOK_HEADERS_PURPOSE)
+    public_headers = redact_sensitive_data(headers)
+    return WebhookSubscriptionRead.model_validate(
+        {
+            "id": item.id,
+            "name": item.name,
+            "status": item.status,
+            "target_url": sanitize_url(target_url),
+            "target_url_configured": bool(target_url.strip()),
+            "provider": _detect_webhook_provider(target_url),
+            "secret_configured": bool(secret.strip()),
+            "event_types": list(item.event_types or []),
+            "timeout_seconds": item.timeout_seconds,
+            "max_attempts": item.max_attempts,
+            "allow_private_network": item.allow_private_network,
+            "backoff_policy": dict(item.backoff_policy or {}),
+            "headers": dict(public_headers) if isinstance(public_headers, dict) else {},
+            "last_delivery_at": item.last_delivery_at,
+            "last_success_at": item.last_success_at,
+            "last_test_status": item.last_test_status,
+            "last_test_error": safe_exception_detail(item.last_test_error) if item.last_test_error else None,
+            "last_tested_at": item.last_tested_at,
+            "created_at": item.created_at,
+            "updated_at": item.updated_at,
+        }
+    )
+
 
 def list_webhook_subscriptions(session: Session) -> list[WebhookSubscriptionRead]:
-    return [WebhookSubscriptionRead.model_validate(item) for item in repo.list_webhook_subscriptions(session)]
+    return [_subscription_to_read(item) for item in repo.list_webhook_subscriptions(session)]
 
 
 def create_webhook_subscription(session: Session, payload: WebhookSubscriptionCreate) -> WebhookSubscriptionRead:
+    target_url = validate_webhook_target_url(
+        payload.target_url,
+        allow_private_network=payload.allow_private_network,
+    )
     item = repo.create_webhook_subscription(
         session,
         name=payload.name,
         status=payload.status,
-        target_url=payload.target_url,
-        secret=payload.secret,
+        target_url=encrypt_secret(target_url, purpose=WEBHOOK_DESTINATION_PURPOSE),
+        secret=encrypt_secret(payload.secret, purpose=WEBHOOK_SECRET_PURPOSE),
         event_types=payload.event_types,
         timeout_seconds=payload.timeout_seconds,
         max_attempts=payload.max_attempts,
-        headers=payload.headers,
+        allow_private_network=payload.allow_private_network,
+        headers=protect_sensitive_data(payload.headers, purpose=WEBHOOK_HEADERS_PURPOSE),
     )
     session.commit()
     session.refresh(item)
-    return WebhookSubscriptionRead.model_validate(item)
+    return _subscription_to_read(item)
 
 
 def test_webhook_subscription(
@@ -68,6 +117,7 @@ def test_webhook_subscription(
         event_types=payload.event_types,
         timeout_seconds=payload.timeout_seconds,
         max_attempts=payload.max_attempts,
+        allow_private_network=payload.allow_private_network,
         headers=payload.headers,
     )
     event = AutomationEvent(
@@ -96,9 +146,9 @@ def test_webhook_subscription(
         result = {
             "ok": False,
             "provider": _detect_webhook_provider(target_url),
-            "target_url": target_url,
+            "target_url": sanitize_url(target_url),
             "status_code": None,
-            "summary": str(exc),
+            "summary": safe_exception_detail(exc, known_secrets=(payload.secret or "", payload.target_url)),
             "response_body": None,
         }
         _save_webhook_test_result(
@@ -114,10 +164,13 @@ def test_webhook_subscription(
     result = {
         "ok": ok,
         "provider": _detect_webhook_provider(target_url),
-        "target_url": target_url,
+        "target_url": sanitize_url(target_url),
         "status_code": response.status_code,
         "summary": summary,
-        "response_body": response.text[:2000],
+        "response_body": safe_exception_detail(
+            response.text[:2000],
+            known_secrets=(payload.secret or "", payload.target_url),
+        ),
     }
     _save_webhook_test_result(
         session,
@@ -294,7 +347,7 @@ def connect_telegram_webhook(
                 status="network_error",
                 bot_username=username,
                 chat_id=chat_id,
-                target_url=target_url,
+                target_url=sanitize_url(target_url),
                 summary=f"Could not send verification message: {send_error}",
             )
         send_payload = _safe_json_response(send_response)
@@ -306,7 +359,7 @@ def connect_telegram_webhook(
                 status="send_test_failed",
                 bot_username=username,
                 chat_id=chat_id,
-                target_url=target_url,
+                target_url=sanitize_url(target_url),
                 summary=f"chat_id found but sendMessage failed: {detail}",
             )
 
@@ -315,7 +368,7 @@ def connect_telegram_webhook(
         status="connected",
         bot_username=username,
         chat_id=chat_id,
-        target_url=target_url,
+        target_url=sanitize_url(target_url),
         summary="Telegram is connected. chat_id has been detected and verified.",
     )
 
@@ -329,12 +382,36 @@ def update_webhook_subscription(
     item = repo.get_webhook_subscription(session, subscription_id)
     if item is None:
         raise ResourceNotFound("Webhook subscription not found")
-    updates = payload.model_dump(exclude_unset=True)
+    updates = payload.model_dump(exclude_unset=True, exclude={"clear_secret"})
+    if updates.get("secret") is None:
+        updates.pop("secret", None)
+    if payload.clear_secret:
+        updates["secret"] = ""
+    effective_allow_private_network = bool(updates.get("allow_private_network", item.allow_private_network))
+    effective_target_url = str(updates.get("target_url") or "").strip()
+    if "target_url" not in updates:
+        effective_target_url = decrypt_secret(
+            item.target_url,
+            purpose=WEBHOOK_DESTINATION_PURPOSE,
+        )
+    validate_webhook_target_url(
+        effective_target_url,
+        allow_private_network=effective_allow_private_network,
+    )
+    if "target_url" in updates:
+        updates["target_url"] = encrypt_secret(
+            str(updates["target_url"] or ""),
+            purpose=WEBHOOK_DESTINATION_PURPOSE,
+        )
+    if "secret" in updates:
+        updates["secret"] = encrypt_secret(str(updates["secret"] or ""), purpose=WEBHOOK_SECRET_PURPOSE)
+    if "headers" in updates:
+        updates["headers"] = protect_sensitive_data(updates["headers"] or {}, purpose=WEBHOOK_HEADERS_PURPOSE)
     for key, value in updates.items():
         setattr(item, key, value)
     session.commit()
     session.refresh(item)
-    return WebhookSubscriptionRead.model_validate(item)
+    return _subscription_to_read(item)
 
 
 def delete_webhook_subscription(session: Session, *, subscription_id: str) -> None:
@@ -360,15 +437,16 @@ def replay_dead_letter(session: Session, *, dead_letter_id: str) -> WebhookDeliv
     subscription = repo.get_webhook_subscription(session, dead_letter.subscription_id)
     if subscription is None:
         raise ResourceNotFound("Webhook subscription not found")
+    dead_letter_payload = reveal_sensitive_data(dead_letter.payload or {}, purpose="automation-webhook-payload")
     delivery = repo.create_webhook_delivery(
         session,
         subscription=subscription,
         event=AutomationEvent(
             event_type=dead_letter.event_type,
             event_id=dead_letter.event_id,
-            target_type=str(dead_letter.payload.get("target_type") or "unknown"),
-            target_id=str(dead_letter.payload.get("target_id") or "unknown"),
-            payload=dict(dead_letter.payload),
+            target_type=str(dead_letter_payload.get("target_type") or "unknown"),
+            target_id=str(dead_letter_payload.get("target_id") or "unknown"),
+            payload=dict(dead_letter_payload),
         ),
     )
     repo.delete_webhook_dead_letter(session, dead_letter)
@@ -415,6 +493,15 @@ def _deliver_once(session: Session, delivery: WebhookDelivery, *, now: datetime)
         session.commit()
         return
 
+    known_secrets = [
+        decrypt_secret(subscription.secret, purpose=WEBHOOK_SECRET_PURPOSE),
+        *[str(value) for key, value in headers.items() if is_sensitive_key(key)],
+        *[str(value) for _key, value in parse_qsl(urlparse(target_url).query, keep_blank_values=True)],
+    ]
+    telegram_match = re.search(r"(?i)/bot([^/]+)", urlparse(target_url).path)
+    if telegram_match:
+        known_secrets.append(telegram_match.group(1))
+
     delivery.status = "delivering"
     delivery.last_attempt_at = now
     delivery.attempt_count += 1
@@ -424,7 +511,10 @@ def _deliver_once(session: Session, delivery: WebhookDelivery, *, now: datetime)
     try:
         response = httpx.post(target_url, json=payload, headers=headers, timeout=timeout, **request_options)
         delivery.last_response_status = response.status_code
-        delivery.last_response_body = response.text[:2000]
+        delivery.last_response_body = safe_exception_detail(
+            response.text[:2000],
+            known_secrets=known_secrets,
+        )
         if response.status_code < 400:
             delivery.status = "succeeded"
             delivery.delivered_at = shanghai_now()
@@ -442,7 +532,7 @@ def _deliver_once(session: Session, delivery: WebhookDelivery, *, now: datetime)
             repo.create_dead_letter(session, delivery=delivery, reason=f"http_{response.status_code}")
         session.commit()
     except httpx.HTTPError as exc:
-        delivery.last_error = str(exc)
+        delivery.last_error = safe_exception_detail(exc, known_secrets=known_secrets)
         _schedule_retry_or_dead_letter(
             session,
             delivery,
@@ -483,7 +573,7 @@ def _safe_json_response(response: httpx.Response) -> dict[str, Any]:
 
 
 def _format_telegram_network_error(error: Exception) -> str:
-    message = str(error)
+    message = safe_exception_detail(error)
     lower_message = message.lower()
     if "handshake" in lower_message and "timed out" in lower_message:
         return (
@@ -595,19 +685,26 @@ def _build_webhook_request(
 ) -> tuple[str, dict[str, Any], dict[str, str]]:
     if isinstance(delivery, AutomationEvent):
         event = delivery
-        target_url = str(subscription.target_url or "").strip()
-        headers_data = dict(subscription.headers or {})
+        target_url = decrypt_secret(subscription.target_url, purpose=WEBHOOK_DESTINATION_PURPOSE).strip()
+        headers_data = dict(reveal_sensitive_data(subscription.headers or {}, purpose=WEBHOOK_HEADERS_PURPOSE))
     else:
-        event = AutomationEvent(**dict(delivery.payload or {}))
-        target_url = str(delivery.target_url or "").strip()
-        headers_data = dict(delivery.headers or {})
+        event = AutomationEvent(
+            **dict(reveal_sensitive_data(delivery.payload or {}, purpose="automation-webhook-payload"))
+        )
+        target_url = decrypt_secret(delivery.target_url, purpose=WEBHOOK_DESTINATION_PURPOSE).strip()
+        headers_data = dict(reveal_sensitive_data(delivery.headers or {}, purpose=WEBHOOK_HEADERS_PURPOSE))
 
     provider = _detect_webhook_provider(target_url)
+    validate_webhook_target_url(
+        target_url,
+        allow_private_network=bool(getattr(subscription, "allow_private_network", False)),
+    )
     headers = {str(key): str(value) for key, value in headers_data.items()}
     headers.setdefault("Content-Type", "application/json")
 
     if provider == "feishu":
-        url = _sign_feishu_url(target_url, str(subscription.secret or "").strip())
+        secret = decrypt_secret(subscription.secret, purpose=WEBHOOK_SECRET_PURPOSE).strip()
+        url = _sign_feishu_url(target_url, secret)
         payload = {
             "msg_type": "text",
             "content": {"text": _render_webhook_text(event, max_length=28000)},

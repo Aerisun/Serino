@@ -47,6 +47,7 @@ from aerisun.domain.automation.service import (
 from aerisun.domain.automation.settings import (
     create_agent_workflow,
     delete_agent_workflow,
+    get_agent_model_config,
     get_agent_workflow,
     update_agent_model_config,
     update_agent_workflow,
@@ -176,38 +177,130 @@ def test_admin_agent_model_config_roundtrip(client, admin_headers) -> None:
     response = client.get(f"{ADMIN_BASE}/model-config", headers=admin_headers)
 
     assert response.status_code == 200
-    assert response.json()["enabled"] is False
-    assert response.json()["provider"] == "openai_compatible"
+    assert response.json()["schema_version"] == 2
+    assert response.json()["primary_source"] == "openai_compatible"
+    assert response.json()["chatgpt_oauth"]["enabled"] is False
+    assert response.json()["chatgpt_oauth"]["connected"] is False
+    assert response.json()["openai_compatible"]["enabled"] is False
     assert response.json()["is_ready"] is False
+
+    proxy_response = client.put(
+        "/api/v1/admin/proxy-config",
+        headers=admin_headers,
+        json={"proxy_port": 7890, "oauth_enabled": True},
+    )
+    assert proxy_response.status_code == 200
 
     update_response = client.put(
         f"{ADMIN_BASE}/model-config",
         headers=admin_headers,
         json={
-            "enabled": True,
-            "provider": "openai_compatible",
-            "base_url": "https://api.openai.com/v1",
-            "model": "gpt-4.1-mini",
-            "api_key": "secret-key",
-            "temperature": 0.3,
-            "timeout_seconds": 15,
-            "advisory_prompt": "Return strict JSON only.",
+            "primary_source": "chatgpt_oauth",
+            "chatgpt_oauth": {
+                "enabled": True,
+                "model": "gpt-5.6-sol",
+                "timeout_seconds": 45,
+            },
+            "openai_compatible": {
+                "enabled": True,
+                "base_url": "https://api.openai.com/v1",
+                "model": "gpt-4.1-mini",
+                "api_key": "secret-key",
+                "temperature": 0.3,
+                "timeout_seconds": 15,
+                "advisory_prompt": "Return strict JSON only.",
+            },
         },
     )
 
     assert update_response.status_code == 200
     payload = update_response.json()
-    assert payload["enabled"] is True
-    assert payload["base_url"] == "https://api.openai.com/v1"
-    assert payload["model"] == "gpt-4.1-mini"
-    assert payload["api_key"] == "secret-key"
-    assert payload["temperature"] == 0.3
-    assert payload["timeout_seconds"] == 15
+    assert payload["primary_source"] == "chatgpt_oauth"
+    assert payload["chatgpt_oauth"]["enabled"] is True
+    assert payload["chatgpt_oauth"]["model"] == "gpt-5.6-sol"
+    assert payload["openai_compatible"]["enabled"] is True
+    assert payload["openai_compatible"]["base_url"] == "https://api.openai.com/v1"
+    assert payload["openai_compatible"]["model"] == "gpt-4.1-mini"
+    assert "api_key" not in payload["openai_compatible"]
+    assert payload["openai_compatible"]["api_key_configured"] is True
+    assert payload["openai_compatible"]["temperature"] == 0.3
+    assert payload["openai_compatible"]["timeout_seconds"] == 15
     assert payload["is_ready"] is True
 
     reload_response = client.get(f"{ADMIN_BASE}/model-config", headers=admin_headers)
     assert reload_response.status_code == 200
-    assert reload_response.json()["model"] == "gpt-4.1-mini"
+    assert reload_response.json()["openai_compatible"]["model"] == "gpt-4.1-mini"
+
+
+def test_chatgpt_oauth_requires_the_configured_oauth_proxy(client, admin_headers) -> None:
+    model_payload = {
+        "primary_source": "chatgpt_oauth",
+        "chatgpt_oauth": {
+            "enabled": True,
+            "model": "gpt-5.6-sol",
+        },
+    }
+
+    blocked = client.put(
+        f"{ADMIN_BASE}/model-config",
+        headers=admin_headers,
+        json=model_payload,
+    )
+    assert blocked.status_code == 422
+    assert "代理设置" in blocked.json()["detail"]
+
+    proxy_response = client.put(
+        "/api/v1/admin/proxy-config",
+        headers=admin_headers,
+        json={"proxy_port": 7890, "oauth_enabled": True},
+    )
+    assert proxy_response.status_code == 200
+
+    enabled = client.put(
+        f"{ADMIN_BASE}/model-config",
+        headers=admin_headers,
+        json=model_payload,
+    )
+    assert enabled.status_code == 200
+    assert enabled.json()["chatgpt_oauth"]["enabled"] is True
+
+    proxy_disable = client.put(
+        "/api/v1/admin/proxy-config",
+        headers=admin_headers,
+        json={"oauth_enabled": False},
+    )
+    assert proxy_disable.status_code == 422
+    assert "ChatGPT OAuth" in proxy_disable.json()["detail"]
+
+
+def test_legacy_agent_model_config_is_exposed_as_the_api_source(seeded_session) -> None:
+    profile = site_repo.find_site_profile(seeded_session)
+    assert profile is not None
+    profile.feature_flags = {
+        **dict(profile.feature_flags or {}),
+        "agent_model_config": {
+            "enabled": True,
+            "provider": "openai_compatible",
+            "base_url": "https://legacy.example/v1",
+            "model": "legacy-model",
+            "api_key": "legacy-secret",
+            "temperature": 0.4,
+            "timeout_seconds": 35,
+            "advisory_prompt": "Legacy prompt",
+        },
+    }
+    seeded_session.commit()
+
+    config = get_agent_model_config(seeded_session)
+
+    assert config.schema_version == 2
+    assert config.primary_source == "openai_compatible"
+    assert config.chatgpt_oauth.enabled is False
+    assert config.openai_compatible.enabled is True
+    assert config.openai_compatible.base_url == "https://legacy.example/v1"
+    assert config.openai_compatible.model == "legacy-model"
+    assert config.openai_compatible.api_key_configured is True
+    assert config.is_ready is True
 
 
 def test_admin_agent_model_config_test_uses_payload(client, admin_headers, monkeypatch) -> None:
@@ -232,6 +325,7 @@ def test_admin_agent_model_config_test_uses_payload(client, admin_headers, monke
 
     def fake_post(url, *args, **kwargs):
         captured["url"] = str(url)
+        captured["json"] = kwargs.get("json")
         return FakeResponse()
 
     monkeypatch.setattr("aerisun.domain.automation.runtime.httpx.post", fake_post)
@@ -251,6 +345,8 @@ def test_admin_agent_model_config_test_uses_payload(client, admin_headers, monke
     assert response.json()["model"] == "gpt-4.1-mini"
     assert response.json()["summary"] == "connection_ok"
     assert captured["url"] == "https://api.openai.com/v1/chat/completions"
+    assert isinstance(captured["json"], dict)
+    assert captured["json"]["max_tokens"] == 32
 
 
 def test_admin_agent_model_config_test_auto_appends_v1_suffix(client, admin_headers, monkeypatch) -> None:
@@ -292,6 +388,47 @@ def test_admin_agent_model_config_test_auto_appends_v1_suffix(client, admin_head
     assert response.status_code == 200
     assert response.json()["ok"] is True
     assert captured["url"] == "https://xh.v1api.cc/v1/chat/completions"
+
+
+def test_admin_agent_model_config_test_preserves_versioned_api_root(client, admin_headers, monkeypatch) -> None:
+    captured: dict[str, object] = {}
+
+    class FakeResponse:
+        def raise_for_status(self) -> None:
+            return None
+
+        def json(self):
+            return {
+                "choices": [
+                    {
+                        "message": {
+                            "content": (
+                                '{"summary":"connection_ok","needs_approval":false,"proposed_action":"approve"}'
+                            )
+                        }
+                    }
+                ]
+            }
+
+    def fake_post(url, *args, **kwargs):
+        captured["url"] = str(url)
+        return FakeResponse()
+
+    monkeypatch.setattr("aerisun.domain.automation.runtime.httpx.post", fake_post)
+
+    response = client.post(
+        f"{ADMIN_BASE}/model-config/test",
+        headers=admin_headers,
+        json={
+            "base_url": "https://ark.cn-beijing.volces.com/api/v3",
+            "model": "doubao-seed-2-1-turbo-260628",
+            "api_key": "secret-key",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["ok"] is True
+    assert captured["url"] == "https://ark.cn-beijing.volces.com/api/v3/chat/completions"
 
 
 def test_admin_agent_model_config_test_rejects_empty_response_body(client, admin_headers, monkeypatch) -> None:
@@ -1513,6 +1650,9 @@ def test_admin_workflow_manual_run_endpoint_executes_v2_graph(client, admin_head
     assert run_response.status_code == 200
     payload = run_response.json()
     assert payload["run"]["status"] == "completed"
+    assert payload["run"]["requested_by_type"] == "admin"
+    assert payload["run"]["requested_by_id"]
+    assert "automation:write" in payload["run"]["authorization_scopes"]
     assert payload["run"]["result_payload"]["execution"]["capability"] == "noop"
     assert any(step["node_key"] == "noop" for step in payload["steps"])
 
@@ -1533,7 +1673,7 @@ def test_public_webhook_trigger_endpoint_runs_bound_workflow(client, admin_heade
                     "type": "trigger.webhook",
                     "label": "Incoming Hook",
                     "enabled": True,
-                    "config": {"path": "incoming/hook", "secret": "dev-secret"},
+                    "config": {"path": "incoming/hook", "secret": "dev-secret-123456"},
                 }
             ],
             "runtime_policy": {
@@ -1576,7 +1716,8 @@ def test_public_webhook_trigger_endpoint_runs_bound_workflow(client, admin_heade
     assert create_response.status_code == 201
 
     response = client.post(
-        "/api/v1/automation/webhook-triggers/webhook_noop_v2/incoming-hook?token=dev-secret",
+        "/api/v1/automation/webhook-triggers/webhook_noop_v2/incoming-hook",
+        headers={"X-Workflow-Token": "dev-secret-123456"},
         json={"target_id": "webhook-target", "payload": {"hello": "world"}},
     )
 
@@ -1584,6 +1725,7 @@ def test_public_webhook_trigger_endpoint_runs_bound_workflow(client, admin_heade
     payload = response.json()
     assert payload["accepted"] is True
     assert payload["run"]["status"] == "completed"
+    assert payload["run"]["requested_by_type"] == "workflow_webhook"
 
 
 def test_workflow_definition_is_persisted_as_pack(seeded_session) -> None:
@@ -2149,6 +2291,7 @@ def test_direct_mode_reprompts_until_required_mounted_action_is_called(
     seeded_session,
     tmp_path,
     monkeypatch,
+    admin_user,
 ) -> None:
     _set_ready_model_config(seeded_session)
 
@@ -2260,6 +2403,13 @@ def test_direct_mode_reprompts_until_required_mounted_action_is_called(
                         "config": {"surface_key": "safe_create_post"},
                     },
                     {
+                        "id": "approval",
+                        "type": "approval.review",
+                        "label": "Approval",
+                        "position": {"x": 180, "y": 120},
+                        "config": {"mode": "always", "approval_type": "content_write"},
+                    },
+                    {
                         "id": "ai",
                         "type": "ai.task",
                         "label": "AI",
@@ -2308,6 +2458,15 @@ def test_direct_mode_reprompts_until_required_mounted_action_is_called(
                         "target_handle": "mount_2",
                         "type": "default",
                         "config": {"kind": "action"},
+                    },
+                    {
+                        "id": "edge-approval-ai",
+                        "source": "approval",
+                        "target": "ai",
+                        "source_handle": "approval",
+                        "target_handle": "mount_3",
+                        "type": "default",
+                        "config": {"kind": "control"},
                     },
                 ],
             }
@@ -2374,6 +2533,16 @@ def test_direct_mode_reprompts_until_required_mounted_action_is_called(
                 input_payload={},
                 execute_immediately=True,
             ),
+        )
+        approvals = list_pending_approvals(seeded_session)
+        assert created.run.status == "awaiting_approval"
+        assert len(approvals) == 1
+        resolve_approval(
+            seeded_session,
+            runtime,
+            approval_id=approvals[0].id,
+            actor_id=admin_user.id,
+            decision_payload=ApprovalDecisionWrite(action="approve", reason="controlled test approval"),
         )
     finally:
         runtime.stop()
@@ -3051,6 +3220,7 @@ def test_ai_task_can_invoke_mounted_action_surface(
     admin_headers,
     tmp_path,
     monkeypatch,
+    admin_user,
 ) -> None:
     _set_ready_model_config(seeded_session)
 
@@ -3173,6 +3343,13 @@ def test_ai_task_can_invoke_mounted_action_surface(
                         "config": {"surface_key": "safe_update_content"},
                     },
                     {
+                        "id": "approval",
+                        "type": "approval.review",
+                        "label": "Approval",
+                        "position": {"x": 180, "y": 120},
+                        "config": {"mode": "always", "approval_type": "content_write"},
+                    },
+                    {
                         "id": "ai",
                         "type": "ai.task",
                         "label": "AI",
@@ -3209,6 +3386,15 @@ def test_ai_task_can_invoke_mounted_action_surface(
                         "target_handle": "mount_2",
                         "type": "default",
                         "config": {"kind": "action"},
+                    },
+                    {
+                        "id": "edge-approval-ai",
+                        "source": "approval",
+                        "target": "ai",
+                        "source_handle": "approval",
+                        "target_handle": "mount_3",
+                        "type": "default",
+                        "config": {"kind": "control"},
                     },
                 ],
             }
@@ -3252,6 +3438,16 @@ def test_ai_task_can_invoke_mounted_action_surface(
                 input_payload={},
                 execute_immediately=True,
             ),
+        )
+        approvals = list_pending_approvals(seeded_session)
+        assert created.run.status == "awaiting_approval"
+        assert len(approvals) == 1
+        resolve_approval(
+            seeded_session,
+            runtime,
+            approval_id=approvals[0].id,
+            actor_id=admin_user.id,
+            decision_payload=ApprovalDecisionWrite(action="approve", reason="controlled test approval"),
         )
     finally:
         runtime.stop()
@@ -3439,6 +3635,56 @@ def test_notification_webhook_mode_is_stripped_from_graph_config() -> None:
     assert node["type"] == "notification.webhook"
     assert "mode" not in node["config"]
     assert node["config"]["linked_subscription_ids"] == ["sub-1"]
+
+
+def test_legacy_default_graph_uses_the_operation_approval_mount() -> None:
+    graph = compat.legacy_default_graph(
+        trigger_event="engagement.pending",
+        target_type=None,
+        require_human_approval=False,
+        instructions="review content",
+    )
+
+    approval_edge = next(edge for edge in graph["edges"] if edge["id"] == "edge-approval-operation")
+
+    assert approval_edge["target_handle"] == "mount_approval"
+
+
+def test_graph_normalization_migrates_legacy_operation_approval_mount() -> None:
+    normalized = compat.normalize_graph_payload(
+        {
+            "version": 2,
+            "nodes": [
+                {
+                    "id": "approval",
+                    "type": "approval.review",
+                    "label": "Approval",
+                    "position": {"x": 0, "y": 0},
+                    "config": {},
+                },
+                {
+                    "id": "operation",
+                    "type": "operation.capability",
+                    "label": "Operation",
+                    "position": {"x": 280, "y": 0},
+                    "config": {"operation_key": "moderate_comment"},
+                },
+            ],
+            "edges": [
+                {
+                    "id": "approval-operation",
+                    "source": "approval",
+                    "target": "operation",
+                    "source_handle": "approval",
+                    "target_handle": "mount_1",
+                    "type": "default",
+                    "config": {"kind": "control"},
+                }
+            ],
+        }
+    )
+
+    assert normalized["edges"][0]["target_handle"] == "mount_approval"
 
 
 def test_ai_action_lifecycle_with_webhook_observe_formats_narrative(

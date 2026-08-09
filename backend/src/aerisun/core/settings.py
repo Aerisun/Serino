@@ -60,6 +60,8 @@ class Settings(BaseSettings):
     data_dir: Path = PROJECT_ROOT / ".store"
     media_dir: Path = PROJECT_ROOT / ".store" / "media"
     secrets_dir: Path = PROJECT_ROOT / ".store" / "secrets"
+    codex_home: Path = PROJECT_ROOT / ".store" / "secrets" / "codex"
+    codex_workspace_dir: Path = PROJECT_ROOT / ".store" / "codex-workspace"
     db_path: Path = PROJECT_ROOT / ".store" / "aerisun.db"
     waline_db_path: Path = PROJECT_ROOT / ".store" / "waline.db"
     workflow_db_path: Path = PROJECT_ROOT / ".store" / "langgraph.db"
@@ -95,6 +97,11 @@ class Settings(BaseSettings):
     oauth_github_client_id: str = ""
     oauth_github_client_secret: str = ""
     oauth_state_secret: str = ""
+
+    # Official Codex App Server (managed ChatGPT OAuth)
+    codex_executable: str = "codex"
+    codex_app_server_request_timeout_seconds: float = Field(default=10, ge=1, le=60)
+    codex_app_server_idle_timeout_seconds: float = Field(default=300, ge=30, le=3600)
 
     # IP geolocation
     ip_geo_enabled: bool = True
@@ -174,6 +181,8 @@ class Settings(BaseSettings):
         self.data_dir = under_store(self.data_dir)
         self.media_dir = under_store(self.media_dir, "media")
         self.secrets_dir = under_store(self.secrets_dir, "secrets")
+        self.codex_home = under_store(self.codex_home, "secrets", "codex")
+        self.codex_workspace_dir = under_store(self.codex_workspace_dir, "codex-workspace")
         self.db_path = under_store(self.db_path, "aerisun.db")
         self.waline_db_path = under_store(self.waline_db_path, "waline.db")
         self.workflow_db_path = under_store(self.workflow_db_path, "langgraph.db")
@@ -193,6 +202,8 @@ class Settings(BaseSettings):
         self.store_dir.expanduser().resolve().mkdir(parents=True, exist_ok=True)
         self.media_dir.expanduser().resolve().mkdir(parents=True, exist_ok=True)
         self.secrets_dir.expanduser().resolve().mkdir(parents=True, exist_ok=True)
+        self.codex_home.expanduser().resolve().mkdir(mode=0o700, parents=True, exist_ok=True)
+        self.codex_workspace_dir.expanduser().resolve().mkdir(mode=0o700, parents=True, exist_ok=True)
         self.backup_sync_tmp_dir.expanduser().resolve().mkdir(parents=True, exist_ok=True)
         self.db_path.expanduser().resolve().parent.mkdir(parents=True, exist_ok=True)
         self.waline_db_path.expanduser().resolve().parent.mkdir(parents=True, exist_ok=True)

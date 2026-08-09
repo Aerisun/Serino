@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+from contextlib import suppress
 from typing import Any
 
 from jsonschema import ValidationError as JsonSchemaValidationError
 from jsonschema import validate as validate_jsonschema
 from sqlalchemy.orm import Session
 
+from aerisun.domain.agent.capabilities.registry import get_capability_definition
 from aerisun.domain.automation.catalog import build_workflow_catalog, derive_ai_output_schema
 from aerisun.domain.automation.compat import normalize_node_type
 from aerisun.domain.automation.compiler import (
@@ -25,7 +27,7 @@ from aerisun.domain.automation.compiler import (
     validate_action_mount,
     validate_tool_mount,
 )
-from aerisun.domain.automation.operations import get_operation_definition
+from aerisun.domain.automation.operations import get_operation_definition, stricter_risk_level
 from aerisun.domain.automation.schemas import (
     AgentWorkflowCreate,
     AgentWorkflowRead,
@@ -371,8 +373,9 @@ def compile_workflow(
 
         if node_type.startswith("operation."):
             operation_key = str(config.get("operation_key") or config.get("capability") or "").strip()
+            operation = None
             try:
-                get_operation_definition(operation_type=node_type.split(".", 1)[1], key=operation_key)
+                operation = get_operation_definition(operation_type=node_type.split(".", 1)[1], key=operation_key)
             except Exception:
                 issues.append(
                     AgentWorkflowValidationIssueRead(
@@ -382,8 +385,23 @@ def compile_workflow(
                         node_id=node_id,
                     )
                 )
-            risk_level = str(config.get("risk_level") or "").strip().lower()
-            if risk_level == "high" and not has_approval:
+            declared_risk = str(config.get("risk_level") or "").strip().lower()
+            capability_risk = operation.risk_level if operation is not None else "low"
+            risk_level = stricter_risk_level(declared_risk, capability_risk)
+            if declared_risk and declared_risk != risk_level:
+                issues.append(
+                    AgentWorkflowValidationIssueRead(
+                        level="warning",
+                        code="workflow.risk_downgrade_ignored",
+                        message=(
+                            f"Operation node {node_id!r} declares risk {declared_risk!r}, but capability "
+                            f"{operation_key!r} requires {capability_risk!r}; the stricter risk is enforced."
+                        ),
+                        path=f"graph.nodes.{node_id}.config.risk_level",
+                        node_id=node_id,
+                    )
+                )
+            if risk_level in {"high", "critical"} and not has_approval:
                 issues.append(
                     AgentWorkflowValidationIssueRead(
                         level="warning",
@@ -407,6 +425,25 @@ def compile_workflow(
             else:
                 try:
                     surface = get_action_surface(surface_key, workflow_key=workflow_key)
+                    base_capability = None
+                    with suppress(KeyError):
+                        base_capability = get_capability_definition(kind="tool", name=surface.base_capability)
+                    effective_risk = stricter_risk_level(
+                        surface.risk_level,
+                        base_capability.risk_level if base_capability is not None else "low",
+                    )
+                    if str(surface.risk_level).strip().lower() != effective_risk:
+                        issues.append(
+                            AgentWorkflowValidationIssueRead(
+                                level="warning",
+                                code="action.risk_downgrade_ignored",
+                                message=(
+                                    f"Action surface {surface_key!r} declares risk {surface.risk_level!r}, but its "
+                                    f"base capability requires {effective_risk!r}; the stricter risk is enforced."
+                                ),
+                                node_id=node_id,
+                            )
+                        )
                     is_action_mount_source = any(
                         edge_kind(edge, nodes_by_id=nodes_by_id) == EDGE_KIND_ACTION
                         and str(edge.get("source") or "").strip() == node_id
@@ -420,12 +457,15 @@ def compile_workflow(
                                 node_id=node_id,
                             )
                         )
-                    if surface.requires_approval and not has_approval:
+                    requires_approval = surface.requires_approval or bool(
+                        base_capability is not None and base_capability.requires_approval
+                    )
+                    if requires_approval and not has_approval:
                         issues.append(
                             AgentWorkflowValidationIssueRead(
                                 level="warning",
                                 code="action.requires_approval",
-                                message=f"Action surface {surface_key!r} recommends approval but the graph has no approval.review node.",
+                                message=f"Action surface {surface_key!r} requires approval but the graph has no approval.review node.",
                                 node_id=node_id,
                             )
                         )

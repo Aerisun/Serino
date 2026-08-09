@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Body, Depends, Header, Query
+from fastapi import APIRouter, Body, Depends, Header
 from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session
@@ -22,8 +22,8 @@ def post_workflow_webhook_trigger(
     workflow_key: str,
     binding_id: str,
     body: dict[str, Any] | None = Body(default=None),
-    token: str | None = Query(default=None),
     x_workflow_token: str | None = Header(default=None),
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
     session: Session = Depends(get_session),
 ) -> AgentWorkflowWebhookTriggerRead:
     return trigger_webhook_workflow(
@@ -31,6 +31,7 @@ def post_workflow_webhook_trigger(
         get_automation_runtime(),
         workflow_key=workflow_key,
         binding_id=binding_id,
-        provided_secret=str(token or x_workflow_token or ""),
+        provided_secret=str(x_workflow_token or ""),
         body=body,
+        idempotency_key=idempotency_key,
     )

@@ -23,6 +23,7 @@ from aerisun.domain.automation.schemas import (
     WorkflowPackManifest,
     WorkflowPackRead,
 )
+from aerisun.domain.automation.secrets import protect_sensitive_data, reveal_sensitive_data
 from aerisun.domain.exceptions import ResourceNotFound, ValidationError
 
 PACKS_DIRNAME = "automation/packs"
@@ -30,6 +31,7 @@ MANIFEST_FILENAME = "manifest.yaml"
 GRAPH_FILENAME = "workflow.graph.json"
 README_FILENAME = "README.generated.md"
 SURFACES_DIRNAME = "surfaces"
+WORKFLOW_PACK_SECRET_PURPOSE = "automation-workflow-pack"
 
 
 def workflow_packs_root() -> Path:
@@ -284,7 +286,10 @@ def _load_surface_specs(pack_dir: Path) -> tuple[list[QuerySurfaceSpec], list[Ac
         return query_surfaces, action_surfaces
     seen: set[str] = set()
     for path in sorted(surfaces_dir.glob("*.surface.yaml")):
-        raw = _load_yaml_file(path)
+        raw = reveal_sensitive_data(
+            _load_yaml_file(path),
+            purpose=WORKFLOW_PACK_SECRET_PURPOSE,
+        )
         kind = str(raw.get("kind") or "").strip()
         if kind == "query_surface":
             spec = QuerySurfaceSpec.model_validate(raw)
@@ -306,8 +311,18 @@ def load_workflow_pack(workflow_key: str) -> WorkflowPackRead:
     pack_dir = workflow_pack_path(workflow_key)
     if not pack_dir.exists():
         raise ResourceNotFound("Workflow pack not found")
-    manifest = WorkflowPackManifest.model_validate(_load_yaml_file(_manifest_path(pack_dir)))
-    graph = AgentWorkflowGraph.model_validate(_load_json_file(_graph_path(pack_dir)))
+    manifest = WorkflowPackManifest.model_validate(
+        reveal_sensitive_data(
+            _load_yaml_file(_manifest_path(pack_dir)),
+            purpose=WORKFLOW_PACK_SECRET_PURPOSE,
+        )
+    )
+    graph = AgentWorkflowGraph.model_validate(
+        reveal_sensitive_data(
+            _load_json_file(_graph_path(pack_dir)),
+            purpose=WORKFLOW_PACK_SECRET_PURPOSE,
+        )
+    )
     query_surfaces, action_surfaces = _load_surface_specs(pack_dir)
     readme = _readme_path(pack_dir).read_text(encoding="utf-8") if _readme_path(pack_dir).exists() else ""
     return WorkflowPackRead(
@@ -401,21 +416,50 @@ def write_workflow_pack(
     pack = pack.model_copy(update={"readme": render_pack_readme(pack)})
 
     _manifest_path(staging).write_text(
-        yaml.safe_dump(manifest.model_dump(mode="json"), sort_keys=False, allow_unicode=True),
+        yaml.safe_dump(
+            protect_sensitive_data(
+                manifest.model_dump(mode="json"),
+                purpose=WORKFLOW_PACK_SECRET_PURPOSE,
+            ),
+            sort_keys=False,
+            allow_unicode=True,
+        ),
         encoding="utf-8",
     )
     _graph_path(staging).write_text(
-        json.dumps(pack.graph.model_dump(mode="json"), ensure_ascii=False, indent=2) + "\n",
+        json.dumps(
+            protect_sensitive_data(
+                pack.graph.model_dump(mode="json"),
+                purpose=WORKFLOW_PACK_SECRET_PURPOSE,
+            ),
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
         encoding="utf-8",
     )
     for spec in pack.query_surfaces:
         (surfaces_dir / f"{spec.key}.surface.yaml").write_text(
-            yaml.safe_dump(spec.model_dump(mode="json"), sort_keys=False, allow_unicode=True),
+            yaml.safe_dump(
+                protect_sensitive_data(
+                    spec.model_dump(mode="json"),
+                    purpose=WORKFLOW_PACK_SECRET_PURPOSE,
+                ),
+                sort_keys=False,
+                allow_unicode=True,
+            ),
             encoding="utf-8",
         )
     for spec in pack.action_surfaces:
         (surfaces_dir / f"{spec.key}.surface.yaml").write_text(
-            yaml.safe_dump(spec.model_dump(mode="json"), sort_keys=False, allow_unicode=True),
+            yaml.safe_dump(
+                protect_sensitive_data(
+                    spec.model_dump(mode="json"),
+                    purpose=WORKFLOW_PACK_SECRET_PURPOSE,
+                ),
+                sort_keys=False,
+                allow_unicode=True,
+            ),
             encoding="utf-8",
         )
     _readme_path(staging).write_text(pack.readme, encoding="utf-8")

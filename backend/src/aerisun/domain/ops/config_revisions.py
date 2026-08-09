@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from aerisun.core.data_storage_lock import data_storage_cleanup_pending, data_storage_locked
 from aerisun.core.time import format_beijing_iso_datetime
 from aerisun.domain.automation.schemas import AgentWorkflowRead
+from aerisun.domain.automation.secrets import protect_sensitive_data, reveal_sensitive_data
 from aerisun.domain.automation.settings import (
     AGENT_MODEL_CONFIG_FLAG_KEY,
     AGENT_WORKFLOWS_FLAG_KEY,
@@ -102,6 +103,8 @@ def _path_key(path: str) -> str:
 
 def is_sensitive_path(path: str) -> bool:
     field_name = _path_key(path)
+    if field_name.endswith("_configured"):
+        return False
     if field_name in _SENSITIVE_EXACT_FIELDS:
         return True
     return any(keyword in field_name for keyword in _SENSITIVE_KEYWORDS)
@@ -745,7 +748,12 @@ def _restore_object_storage_config_snapshot(session: Session, snapshot: dict[str
 
 def _capture_agent_model_config(session: Session) -> dict[str, Any]:
     config = get_agent_model_config_read(session)
-    return canonicalize_snapshot(config.model_dump(exclude={"is_ready"}))
+    payload = config.model_dump(exclude={"is_ready"})
+    payload["chatgpt_oauth"] = config.chatgpt_oauth.model_dump(
+        exclude={"connected", "account_email", "plan_type", "is_ready"}
+    )
+    payload["openai_compatible"] = config.openai_compatible.model_dump(exclude={"is_ready"})
+    return canonicalize_snapshot(payload)
 
 
 def _restore_agent_model_config(session: Session, snapshot: dict[str, Any]) -> None:
@@ -753,14 +761,35 @@ def _restore_agent_model_config(session: Session, snapshot: dict[str, Any]) -> N
     if profile is None:
         raise ResourceNotFound("Site profile not configured")
     feature_flags = dict(profile.feature_flags or {})
-    feature_flags[AGENT_MODEL_CONFIG_FLAG_KEY] = dict(snapshot or {})
+    current = dict(feature_flags.get(AGENT_MODEL_CONFIG_FLAG_KEY) or {})
+    restored = {key: value for key, value in dict(snapshot or {}).items() if key != "is_ready"}
+    restored_chatgpt = dict(restored.get("chatgpt_oauth") or {})
+    for key in ("connected", "account_email", "plan_type", "is_ready"):
+        restored_chatgpt.pop(key, None)
+    restored_api = dict(restored.get("openai_compatible") or {})
+    restored_api.pop("api_key_configured", None)
+    restored_api.pop("is_ready", None)
+    current_api = current.get("openai_compatible")
+    restored_api["api_key"] = (
+        current_api.get("api_key", "") if isinstance(current_api, dict) else current.get("api_key", "")
+    )
+    if restored_chatgpt.get("enabled") is True:
+        from aerisun.domain.outbound_proxy.service import require_outbound_proxy_scope
+
+        require_outbound_proxy_scope(session, scope="oauth")
+    restored["chatgpt_oauth"] = restored_chatgpt
+    restored["openai_compatible"] = restored_api
+    feature_flags[AGENT_MODEL_CONFIG_FLAG_KEY] = restored
     profile.feature_flags = feature_flags
     session.flush()
 
 
 def _capture_agent_workflows(session: Session) -> list[dict[str, Any]]:
     return canonicalize_snapshot(
-        [workflow.model_dump(exclude={"built_in"}) for workflow in list_agent_workflows(session)]
+        protect_sensitive_data(
+            [workflow.model_dump(exclude={"built_in"}) for workflow in list_agent_workflows(session)],
+            purpose="automation-config-revision",
+        )
     )
 
 
@@ -768,7 +797,8 @@ def _restore_agent_workflows(session: Session, snapshot: list[dict[str, Any]]) -
     profile = site_repo.find_site_profile(session)
     if profile is None:
         raise ResourceNotFound("Site profile not configured")
-    normalized = [AgentWorkflowRead.model_validate(item).model_dump(exclude={"built_in"}) for item in snapshot]
+    revealed = reveal_sensitive_data(snapshot, purpose="automation-config-revision")
+    normalized = [AgentWorkflowRead.model_validate(item).model_dump(exclude={"built_in"}) for item in revealed]
     feature_flags = dict(profile.feature_flags or {})
     feature_flags[AGENT_WORKFLOWS_FLAG_KEY] = normalized
     profile.feature_flags = feature_flags

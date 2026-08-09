@@ -1,3 +1,14 @@
+FROM node:24-bookworm-slim AS codex-runtime
+
+ARG CODEX_VERSION=0.147.0
+
+RUN npm install --global --omit=dev "@openai/codex@${CODEX_VERSION}" \
+    && codex --version \
+    && codex_binary="$(find /usr/local/lib/node_modules/@openai -type f -path '*/vendor/*/bin/codex' -print -quit)" \
+    && test -n "${codex_binary}" \
+    && install -D -m 0755 "${codex_binary}" /opt/codex/codex \
+    && /opt/codex/codex --version
+
 FROM python:3.13-slim
 
 ARG UV_VERSION=0.9.26
@@ -16,6 +27,8 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --no-cache-dir "uv==${UV_VERSION}"
+
+COPY --from=codex-runtime /opt/codex/codex /usr/local/bin/codex
 
 COPY pyproject.toml ./
 COPY uv.lock ./

@@ -80,7 +80,18 @@ def _resolve_outbound_proxy_config(
         raise ValidationError("开启 Webhook 代理前，请先设置代理端口")
     if config.oauth_enabled and config.proxy_port is None:
         raise ValidationError("开启 OAuth 代理前，请先设置代理端口")
+    if _chatgpt_oauth_source_enabled(session) and (config.proxy_port is None or not config.oauth_enabled):
+        raise ValidationError("ChatGPT OAuth 来源已启用，请先停用该来源再关闭 OAuth 代理。")
     return config
+
+
+def _chatgpt_oauth_source_enabled(session: Session) -> bool:
+    profile = _get_site_profile(session)
+    model_config = (profile.feature_flags or {}).get("agent_model_config")
+    if not isinstance(model_config, dict):
+        return False
+    chatgpt_config = model_config.get("chatgpt_oauth")
+    return isinstance(chatgpt_config, dict) and chatgpt_config.get("enabled") is True
 
 
 def _build_proxy_url(port: int) -> str:
@@ -282,10 +293,13 @@ def get_outbound_proxy_config(session: Session) -> OutboundProxyConfigRead:
 def restore_outbound_proxy_config(session: Session, snapshot: dict[str, Any]) -> None:
     profile = _get_site_profile(session)
     config = _normalize_outbound_proxy_config(snapshot)
+    if _chatgpt_oauth_source_enabled(session) and (config.proxy_port is None or not config.oauth_enabled):
+        raise ValidationError("ChatGPT OAuth 来源已启用，请先停用该来源再关闭 OAuth 代理。")
     feature_flags = dict(profile.feature_flags or {})
     feature_flags[OUTBOUND_PROXY_FLAG_KEY] = _serialize_outbound_proxy_config(config)
     profile.feature_flags = feature_flags
     session.flush()
+    _restart_codex_app_server()
 
 
 def update_outbound_proxy_config(
@@ -299,7 +313,26 @@ def update_outbound_proxy_config(
         feature_flags[OUTBOUND_PROXY_FLAG_KEY] = _serialize_outbound_proxy_config(config)
         profile.feature_flags = feature_flags
         session.commit()
+    _restart_codex_app_server()
     return get_outbound_proxy_config(session)
+
+
+def _restart_codex_app_server() -> None:
+    from aerisun.domain.automation.codex_app_server import close_codex_app_server_client
+
+    close_codex_app_server_client()
+
+
+def get_outbound_proxy_url(
+    session: Session,
+    *,
+    scope: OutboundProxyScope,
+    required: bool = False,
+) -> str | None:
+    config = require_outbound_proxy_scope(session, scope=scope) if required else get_outbound_proxy_config(session)
+    if config.proxy_port is None or not _scope_enabled(config, scope):
+        return None
+    return _select_proxy_url(config.proxy_port)
 
 
 def get_outbound_proxy_request_options(
@@ -307,11 +340,11 @@ def get_outbound_proxy_request_options(
     *,
     scope: OutboundProxyScope,
 ) -> dict[str, object]:
-    config = get_outbound_proxy_config(session)
-    if config.proxy_port is None or not _scope_enabled(config, scope):
+    proxy_url = get_outbound_proxy_url(session, scope=scope)
+    if proxy_url is None:
         return {}
     return {
-        "proxy": _select_proxy_url(config.proxy_port),
+        "proxy": proxy_url,
         "trust_env": False,
     }
 
@@ -319,6 +352,8 @@ def get_outbound_proxy_request_options(
 def test_outbound_proxy_config(
     session: Session,
     payload: OutboundProxyConfigUpdate | None = None,
+    *,
+    diagnostic: bool = False,
 ) -> OutboundProxyHealthRead:
     config = _resolve_outbound_proxy_config(session, payload)
     if config.proxy_port is None:
@@ -327,12 +362,18 @@ def test_outbound_proxy_config(
     proxy_urls = _proxy_candidate_urls(config.proxy_port)
     started_at = time.perf_counter()
     candidate_errors: list[tuple[str, str]] = []
+    socket_timeout = 1.0 if diagnostic else 3.0
+    http_timeout = (
+        httpx.Timeout(connect=3.0, read=5.0, write=3.0, pool=3.0)
+        if diagnostic
+        else httpx.Timeout(connect=5.0, read=8.0, write=5.0, pool=5.0)
+    )
 
     for proxy_url in proxy_urls:
         parts = urlsplit(proxy_url)
         host = parts.hostname or OUTBOUND_PROXY_HOST
         try:
-            with socket.create_connection((host, config.proxy_port), timeout=3.0):
+            with socket.create_connection((host, config.proxy_port), timeout=socket_timeout):
                 pass
         except OSError as exc:
             candidate_errors.append(("connect", _format_proxy_connection_error(host, config.proxy_port, exc)))
@@ -342,7 +383,7 @@ def test_outbound_proxy_config(
             response = httpx.get(
                 OUTBOUND_PROXY_HEALTHCHECK_URL,
                 proxy=proxy_url,
-                timeout=httpx.Timeout(connect=5.0, read=8.0, write=5.0, pool=5.0),
+                timeout=http_timeout,
                 follow_redirects=True,
                 trust_env=False,
             )

@@ -4,6 +4,9 @@ from contextlib import nullcontext
 
 import httpx
 
+from aerisun.domain.outbound_proxy.schemas import OutboundProxyConfigUpdate
+from aerisun.domain.outbound_proxy.service import test_outbound_proxy_config as run_outbound_proxy_config_test
+
 
 def test_admin_outbound_proxy_config_roundtrip(client, admin_headers) -> None:
     response = client.get("/api/v1/admin/proxy-config", headers=admin_headers)
@@ -52,6 +55,23 @@ def test_admin_outbound_proxy_config_accepts_proxy_url_port(client, admin_header
     assert response.status_code == 200
     assert response.json()["proxy_port"] == 7890
     assert response.json()["oauth_enabled"] is True
+
+
+def test_updating_proxy_restarts_the_managed_codex_app_server(client, admin_headers, monkeypatch) -> None:
+    restarts: list[None] = []
+    monkeypatch.setattr(
+        "aerisun.domain.automation.codex_app_server.close_codex_app_server_client",
+        lambda: restarts.append(None),
+    )
+
+    response = client.put(
+        "/api/v1/admin/proxy-config",
+        headers=admin_headers,
+        json={"proxy_port": 7890, "oauth_enabled": True},
+    )
+
+    assert response.status_code == 200
+    assert restarts == [None]
 
 
 def test_admin_outbound_proxy_config_rejects_enabling_webhook_without_port(client, admin_headers) -> None:
@@ -125,6 +145,37 @@ def test_admin_outbound_proxy_healthcheck_uses_local_proxy_port(client, admin_he
     assert captured["address"] == ("127.0.0.1", 7890)
     assert captured["proxy"] == "http://127.0.0.1:7890"
     assert captured["trust_env"] is False
+
+
+def test_outbound_proxy_diagnostic_profile_uses_short_timeouts(seeded_session, monkeypatch) -> None:
+    captured: dict[str, object] = {}
+
+    def fake_create_connection(address, timeout):
+        captured["address"] = address
+        captured["socket_timeout"] = timeout
+        return nullcontext()
+
+    class FakeResponse:
+        status_code = 200
+
+    def fake_get(url, *, proxy=None, timeout=None, follow_redirects=False, trust_env=True):
+        captured["http_timeout"] = timeout
+        return FakeResponse()
+
+    monkeypatch.setattr("aerisun.domain.outbound_proxy.service.socket.create_connection", fake_create_connection)
+    monkeypatch.setattr("aerisun.domain.outbound_proxy.service.httpx.get", fake_get)
+
+    result = run_outbound_proxy_config_test(
+        seeded_session,
+        OutboundProxyConfigUpdate(proxy_port=7890),
+        diagnostic=True,
+    )
+
+    assert result.ok is True
+    assert captured["socket_timeout"] == 1.0
+    timeout = captured["http_timeout"]
+    assert timeout.connect == 3.0
+    assert timeout.read == 5.0
 
 
 def test_admin_outbound_proxy_healthcheck_tries_host_gateway_when_localhost_unavailable(

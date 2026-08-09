@@ -51,9 +51,10 @@ def test_generate_diary_poem_uses_saved_model_config(client, admin_headers, monk
 
     model_config = captured["model_config"]
     assert isinstance(model_config, dict)
-    assert model_config["base_url"] == "https://model.example/v1"
-    assert model_config["model"] == "poem-model"
-    assert model_config["api_key"] == "secret-key"
+    assert model_config["primary_source"] == "openai_compatible"
+    assert model_config["openai_compatible"]["base_url"] == "https://model.example/v1"
+    assert model_config["openai_compatible"]["model"] == "poem-model"
+    assert model_config["openai_compatible"]["api_key"] == "secret-key"
 
     messages = captured["messages"]
     assert isinstance(messages, list)
@@ -70,7 +71,7 @@ def test_generate_diary_poem_requires_ready_model_config(client, admin_headers) 
     )
 
     assert response.status_code == 422
-    assert response.json()["detail"] == "请先在 Agent 模型配置中填写可用的 Base URL、模型和 API Key。"
+    assert response.json()["detail"] == "请先在模型配置中启用并完善至少一个模型来源。"
 
 
 def test_generate_diary_poem_rejects_empty_body(client, admin_headers, monkeypatch) -> None:

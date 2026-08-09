@@ -857,7 +857,7 @@ def _trigger_types() -> list[AgentWorkflowCatalogTriggerTypeRead]:
                     "target_type": {"type": ["string", "null"]},
                 },
             },
-            example_config={"path": "incoming/order-sync", "secret": "dev-secret"},
+            example_config={"path": "incoming/order-sync", "secret": "dev-secret-123456"},
         ),
         AgentWorkflowCatalogTriggerTypeRead(
             type="trigger.manual",

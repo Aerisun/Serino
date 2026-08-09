@@ -50,6 +50,8 @@ def test_public_visit_candidate_excludes_static_and_ai_entry_paths():
         "/sitemap.xml",
         "/feeds/posts.xml",
         "/assets/app.js",
+        "/mcp/install",
+        "/mcp/install/claude.sh",
     ):
         assert _is_public_visit_candidate(_request_for_path(path)) is False
 
