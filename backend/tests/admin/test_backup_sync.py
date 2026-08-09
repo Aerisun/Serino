@@ -16,6 +16,8 @@ from cryptography.hazmat.primitives.asymmetric import x25519
 
 from aerisun.core.settings import get_settings
 from aerisun.domain.exceptions import ValidationError
+from aerisun.domain.ops.backup_sync import probe_backup_write_access
+from aerisun.domain.ops.schemas import BackupSyncConfigUpdate
 
 BASE = "/api/v1/admin/system"
 RECOVERY_PASSPHRASE = "correct horse battery staple"
@@ -1464,6 +1466,64 @@ def test_backup_machine_connection_probe_is_fast_and_read_only(client, admin_hea
     assert payload["ok"] is False
     assert payload["remote_history_state"] == "unreachable"
     assert "临时命令" in payload["summary"]
+
+
+def test_backup_write_probe_keeps_every_sftp_operation_bounded(seeded_session, monkeypatch) -> None:
+    timeouts: list[tuple[str, int]] = []
+
+    def fake_probe_identity(self, *, timeout_seconds=3):
+        timeouts.append(("identity", timeout_seconds))
+        return True, None, None
+
+    def fake_begin_session(self, *, timeout_seconds=None):
+        timeouts.append(("begin", timeout_seconds))
+        return {"session_id": "probe", "site_slug": "test-site"}
+
+    def fake_probe_write_access(self, *, timeout_seconds=None):
+        timeouts.append(("write", timeout_seconds))
+
+    def forbidden_fetch(self):
+        raise AssertionError("bounded diagnostics must not call fetch_repo_identity")
+
+    monkeypatch.setattr(
+        "aerisun.domain.ops.backup_sync.SftpTransport.probe_repo_identity",
+        fake_probe_identity,
+    )
+    monkeypatch.setattr(
+        "aerisun.domain.ops.backup_sync.SftpTransport.begin_session",
+        fake_begin_session,
+    )
+    monkeypatch.setattr(
+        "aerisun.domain.ops.backup_sync.SftpTransport.probe_write_access",
+        fake_probe_write_access,
+    )
+    monkeypatch.setattr(
+        "aerisun.domain.ops.backup_sync.SftpTransport.fetch_repo_identity",
+        forbidden_fetch,
+    )
+
+    result = probe_backup_write_access(
+        seeded_session,
+        BackupSyncConfigUpdate(
+            enabled=True,
+            paused=False,
+            interval_minutes=60,
+            transport_mode="sftp",
+            site_slug="test-site",
+            remote_host="backup.example.com",
+            remote_port=22,
+            remote_path="/srv/serino-backups",
+            remote_username="serino-backup",
+            credential_ref="default",
+            encrypt_runtime_data=False,
+            max_retries=2,
+            retry_backoff_seconds=60,
+        ),
+    )
+
+    assert result.ok is True
+    assert result.remote_history_state == "empty"
+    assert timeouts == [("identity", 3), ("begin", 3), ("write", 3)]
 
 
 def test_ensure_backup_credentials_endpoint_creates_and_reuses_keys(client, admin_headers) -> None:

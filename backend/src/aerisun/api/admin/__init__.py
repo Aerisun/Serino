@@ -12,6 +12,7 @@ def _build_admin_router() -> APIRouter:
     from .automation import router as automation_router
     from .content import build_crud_router
     from .content_meta import router as content_meta_router
+    from .diagnostics import router as diagnostics_router
     from .diary import router as diary_router
     from .import_export import router as import_export_router
     from .moderation import router as moderation_router
@@ -70,6 +71,7 @@ def _build_admin_router() -> APIRouter:
     admin_router.include_router(social_router)
     admin_router.include_router(moderation_router)
     admin_router.include_router(assets_router)
+    admin_router.include_router(diagnostics_router)
     admin_router.include_router(system_router)
     admin_router.include_router(integrations_router)
     admin_router.include_router(automation_router)

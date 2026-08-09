@@ -921,6 +921,7 @@ def list_visitor_record_groups(
     date_to: str | None = None,
     include_total: bool = True,
     resolve_geo: bool = True,
+    include_bots: bool = True,
 ) -> dict:
     items, total = repo.find_visit_record_groups_paginated(
         session,
@@ -931,6 +932,7 @@ def list_visitor_record_groups(
         date_from=date_from,
         date_to=date_to,
         include_total=include_total,
+        include_bots=include_bots,
     )
     boundary_ids = {item.newest_record_id for item in items} | {item.oldest_record_id for item in items}
     boundary_records = repo.find_visit_records_by_ids(session, boundary_ids)
@@ -969,6 +971,7 @@ def list_visitor_record_group_records(
     ip: str | None = None,
     date_from: str | None = None,
     date_to: str | None = None,
+    include_bots: bool = True,
 ) -> dict:
     items, total = repo.find_visit_records_for_group_paginated(
         session,
@@ -980,6 +983,7 @@ def list_visitor_record_group_records(
         ip=ip,
         date_from=date_from,
         date_to=date_to,
+        include_bots=include_bots,
     )
     enriched_items = _enrich_visit_records(list(items))
     return {

@@ -187,6 +187,25 @@ class BackupBootstrapClaim(Base, TimestampMixin):
     result_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
 
 
+class SystemDiagnosticState(Base, TimestampMixin):
+    __tablename__ = "system_diagnostic_state"
+    __table_args__ = (Index("ix_system_diagnostic_state_execution_status", "execution_status"),)
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default="current")
+    run_id: Mapped[str | None] = mapped_column(String(36))
+    execution_status: Mapped[str] = mapped_column(String(32), nullable=False, default="never")
+    overall_status: Mapped[str] = mapped_column(String(32), nullable=False, default="unknown")
+    trigger_kind: Mapped[str | None] = mapped_column(String(32))
+    healthy_count: Mapped[int] = mapped_column(Integer(), nullable=False, default=0)
+    warning_count: Mapped[int] = mapped_column(Integer(), nullable=False, default=0)
+    failed_count: Mapped[int] = mapped_column(Integer(), nullable=False, default=0)
+    skipped_count: Mapped[int] = mapped_column(Integer(), nullable=False, default=0)
+    results_json: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list, nullable=False)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_error: Mapped[str | None] = mapped_column(Text)
+
+
 class TrafficDailySnapshot(Base, TimestampMixin):
     __tablename__ = "traffic_daily_snapshots"
     __table_args__ = (UniqueConstraint("snapshot_date", "url", name="uq_traffic_daily_snapshots_date_url"),)

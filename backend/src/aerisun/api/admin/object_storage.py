@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Literal
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
@@ -10,6 +12,7 @@ from aerisun.domain.media.object_storage import (
     get_object_storage_config_read,
     list_object_storage_sync_records,
     refresh_object_storage_health_status,
+    retry_object_storage_sync_record,
     test_object_storage_config,
     update_object_storage_config,
 )
@@ -74,3 +77,21 @@ def get_object_storage_sync_records(
     session: Session = Depends(get_session),
 ) -> dict[str, list[ObjectStorageSyncRecordRead] | int]:
     return list_object_storage_sync_records(session, page=page, page_size=page_size, q=q)
+
+
+@router.post(
+    "/sync-records/{record_type}/{record_id}/retry",
+    response_model=ObjectStorageSyncRecordRead,
+    summary="重试失败的 OSS 同步记录",
+)
+def post_object_storage_sync_record_retry(
+    record_type: Literal["mirror", "local_delete", "remote_delete", "remote_upload"],
+    record_id: str,
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> ObjectStorageSyncRecordRead:
+    return retry_object_storage_sync_record(
+        session,
+        record_type=record_type,
+        record_id=record_id,
+    )

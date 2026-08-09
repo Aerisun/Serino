@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import smtplib
 from types import SimpleNamespace
 from typing import ClassVar
 
@@ -21,6 +22,7 @@ from aerisun.domain.subscription.service import (
     dispatch_content_subscription_notifications,
     get_subscription_config_orm,
     send_diary_access_feedback_notification,
+    send_subscription_smtp_diagnostic_email,
 )
 
 ADMIN_BASE = "/api/v1/admin/subscriptions"
@@ -556,6 +558,199 @@ def test_admin_subscription_config_test_email_supports_microsoft_oauth2(
     assert len(FakeSMTP.messages) == 1
     assert len(FakeSMTP.auth_commands) == 1
     assert FakeSMTP.auth_commands[0].startswith("AUTH XOAUTH2 ")
+
+
+def test_subscription_smtp_diagnostic_authenticates_and_sends_one_test_email(
+    seeded_session,
+    monkeypatch,
+) -> None:
+    class FakeSMTP:
+        instances: ClassVar[list[FakeSMTP]] = []
+
+        def __init__(self, host: str, port: int, timeout: int) -> None:
+            self.host = host
+            self.port = port
+            self.timeout = timeout
+            self.events: list[object] = []
+            FakeSMTP.instances.append(self)
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb) -> None:
+            return None
+
+        def ehlo(self) -> None:
+            self.events.append("ehlo")
+
+        def starttls(self) -> None:
+            self.events.append("starttls")
+
+        def login(self, username: str, password: str) -> None:
+            self.events.append(("login", username, password))
+
+        def send_message(self, message) -> None:
+            self.events.append(("send", message))
+
+    monkeypatch.setattr("aerisun.domain.subscription.service.smtplib.SMTP", FakeSMTP)
+    config = get_subscription_config_orm(seeded_session)
+    config.smtp_host = "smtp.example.com"
+    config.smtp_port = 587
+    config.smtp_username = "mailer@example.com"
+    config.smtp_password = "secret"
+    config.smtp_from_email = "no-reply@example.com"
+    config.smtp_use_tls = True
+    config.smtp_use_ssl = False
+    config.smtp_test_passed = True
+    tested_at = utcnow()
+    config.smtp_tested_at = tested_at
+    seeded_session.commit()
+
+    result = send_subscription_smtp_diagnostic_email(config, timeout_seconds=10)
+
+    assert len(FakeSMTP.instances) == 1
+    instance = FakeSMTP.instances[0]
+    assert instance.timeout == 10
+    assert instance.events[:4] == [
+        "ehlo",
+        "starttls",
+        "ehlo",
+        ("login", "mailer@example.com", "secret"),
+    ]
+    assert len(instance.events) == 5
+    event, message = instance.events[4]
+    assert event == "send"
+    assert message["To"] == "do-not-reply@course.pku.edu.cn"
+    assert "SMTP" in message["Subject"]
+    assert result.recipient == "do-not-reply@course.pku.edu.cn"
+    assert config.smtp_test_passed is True
+    assert config.smtp_tested_at == tested_at
+
+
+def test_subscription_smtp_diagnostic_rejects_a_failed_send(seeded_session, monkeypatch) -> None:
+    class FakeSMTP:
+        def __init__(self, _host: str, _port: int, timeout: int) -> None:
+            self.timeout = timeout
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb) -> None:
+            return None
+
+        def ehlo(self) -> None:
+            return None
+
+        def starttls(self) -> None:
+            return None
+
+        def login(self, _username: str, _password: str) -> None:
+            return None
+
+        def send_message(self, _message) -> None:
+            raise smtplib.SMTPDataError(554, b"Message rejected")
+
+    monkeypatch.setattr("aerisun.domain.subscription.service.smtplib.SMTP", FakeSMTP)
+    config = get_subscription_config_orm(seeded_session)
+    config.smtp_host = "smtp.example.com"
+    config.smtp_port = 587
+    config.smtp_username = "mailer@example.com"
+    config.smtp_password = "secret"
+    config.smtp_from_email = "no-reply@example.com"
+    config.smtp_use_tls = True
+    config.smtp_use_ssl = False
+
+    try:
+        send_subscription_smtp_diagnostic_email(config)
+    except Exception as exc:
+        assert "SMTP" in str(exc)
+    else:  # pragma: no cover - assertion guard
+        raise AssertionError("SMTP send failure must fail diagnostics")
+
+
+def test_subscription_smtp_diagnostic_rejects_a_failed_ehlo_even_when_noop_succeeds(
+    seeded_session,
+    monkeypatch,
+) -> None:
+    class FakeSMTP:
+        def __init__(self, _host: str, _port: int, timeout: int) -> None:
+            self.timeout = timeout
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb) -> None:
+            return None
+
+        def ehlo(self):
+            return (550, b"EHLO rejected")
+
+        def send_message(self, _message) -> None:
+            return None
+
+    monkeypatch.setattr("aerisun.domain.subscription.service.smtplib.SMTP", FakeSMTP)
+    config = get_subscription_config_orm(seeded_session)
+    config.smtp_host = "smtp.example.com"
+    config.smtp_port = 25
+    config.smtp_username = ""
+    config.smtp_password = ""
+    config.smtp_from_email = "no-reply@example.com"
+    config.smtp_use_tls = False
+    config.smtp_use_ssl = False
+
+    try:
+        send_subscription_smtp_diagnostic_email(config)
+    except Exception as exc:
+        assert "EHLO" in str(exc)
+    else:  # pragma: no cover - assertion guard
+        raise AssertionError("SMTP EHLO failure must fail diagnostics")
+
+
+def test_microsoft_smtp_oauth_failure_does_not_log_provider_tokens(
+    seeded_session,
+    monkeypatch,
+    caplog,
+) -> None:
+    leaked_access_token = "provider-access-token-must-not-leak"
+    leaked_refresh_token = "provider-refresh-token-must-not-leak"
+    response = httpx.Response(
+        400,
+        json={
+            "error": "invalid_grant",
+            "error_description": f"request rejected near {leaked_access_token}",
+            "access_token": leaked_access_token,
+            "refresh_token": leaked_refresh_token,
+            "error_codes": [70000],
+        },
+    )
+    monkeypatch.setattr(
+        "aerisun.domain.subscription.service.httpx.post",
+        lambda *_args, **_kwargs: response,
+    )
+    config = get_subscription_config_orm(seeded_session)
+    config.smtp_auth_mode = "microsoft_oauth2"
+    config.smtp_host = "smtp.office365.com"
+    config.smtp_port = 587
+    config.smtp_username = "mailer@example.com"
+    config.smtp_oauth_tenant = "tenant"
+    config.smtp_oauth_client_id = "client"
+    config.smtp_oauth_client_secret = "client-secret"
+    config.smtp_oauth_refresh_token = "saved-refresh-token"
+    config.smtp_from_email = "mailer@example.com"
+    config.smtp_use_tls = True
+    config.smtp_use_ssl = False
+
+    try:
+        send_subscription_smtp_diagnostic_email(config)
+    except Exception:
+        pass
+    else:  # pragma: no cover - assertion guard
+        raise AssertionError("OAuth provider error must fail diagnostics")
+
+    assert "invalid_grant" in caplog.text
+    assert "70000" in caplog.text
+    assert leaked_access_token not in caplog.text
+    assert leaked_refresh_token not in caplog.text
 
 
 def test_admin_subscription_config_test_email_returns_readable_error(client, admin_headers, monkeypatch) -> None:

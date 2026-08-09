@@ -4,9 +4,16 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
+import socket
+from datetime import timedelta
+from uuid import uuid4
+from zoneinfo import ZoneInfo
 
 from aerisun.core.settings import Settings
 from aerisun.core.tasks import cleanup_expired_sessions
+from aerisun.core.time import shanghai_now
+from aerisun.domain.automation import repository as automation_repository
 from aerisun.domain.automation.runtime_registry import get_automation_runtime
 from aerisun.domain.automation.service import dispatch_due_webhooks, execute_due_runs
 from aerisun.domain.media.object_storage import (
@@ -17,6 +24,10 @@ from aerisun.domain.media.object_storage import (
     reconcile_object_storage_remote_sync,
 )
 from aerisun.domain.ops.backup_sync import dispatch_backup_sync
+from aerisun.domain.ops.diagnostics import (
+    run_scheduled_system_diagnostics,
+    run_system_diagnostics_if_stale,
+)
 from aerisun.domain.ops.service import record_daily_traffic_snapshot
 
 logger = logging.getLogger("aerisun.startup")
@@ -29,6 +40,7 @@ class TaskManager:
         self._settings = settings
         self._async_tasks: list[asyncio.Task] = []
         self._scheduler = None  # type: ignore[assignment]
+        self._workflow_worker_id = f"task-manager:{socket.gethostname()}:{os.getpid()}:{uuid4().hex}"
 
     async def start(self) -> None:
         self._async_tasks.append(asyncio.create_task(cleanup_expired_sessions()))
@@ -46,6 +58,30 @@ class TaskManager:
             replace_existing=True,
             max_instances=1,
             coalesce=True,
+        )
+        self._scheduler.add_job(
+            self._run_daily_system_diagnostics,
+            trigger="cron",
+            hour=4,
+            minute=20,
+            timezone=ZoneInfo("Asia/Shanghai"),
+            id="system_diagnostics_daily",
+            name="Daily system diagnostics",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+            misfire_grace_time=6 * 60 * 60,
+        )
+        self._scheduler.add_job(
+            self._run_startup_system_diagnostics,
+            trigger="date",
+            run_date=shanghai_now() + timedelta(seconds=60),
+            id="system_diagnostics_startup_catchup",
+            name="Startup system diagnostics catch-up",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+            misfire_grace_time=5 * 60,
         )
 
         if self._settings.feed_crawl_enabled:
@@ -161,12 +197,25 @@ class TaskManager:
         with get_session_factory()() as session:
             record_daily_traffic_snapshot(session)
 
+    def _run_daily_system_diagnostics(self) -> None:
+        run_scheduled_system_diagnostics()
+
+    def _run_startup_system_diagnostics(self) -> None:
+        run_system_diagnostics_if_stale()
+
     def _dispatch_workflow_runs(self) -> None:
         from aerisun.core.db import get_session_factory
 
         runtime = get_automation_runtime()
         with get_session_factory()() as session:
-            execute_due_runs(session, runtime)
+            automation_repository.recover_expired_agent_runs(session, now=shanghai_now())
+            session.commit()
+            execute_due_runs(
+                session,
+                runtime,
+                worker_id=self._workflow_worker_id,
+                recover_expired=False,
+            )
 
     def _dispatch_webhooks(self) -> None:
         from aerisun.core.db import get_session_factory
@@ -204,3 +253,6 @@ class TaskManager:
             await asyncio.gather(*self._async_tasks, return_exceptions=True)
         if self._scheduler is not None:
             self._scheduler.shutdown(wait=True)
+        from aerisun.domain.automation.codex_app_server import close_codex_app_server_client
+
+        close_codex_app_server_client()

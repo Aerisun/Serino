@@ -1,9 +1,52 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 from aerisun.core.settings import get_settings
 
 OBJECT_STORAGE_BASE = "/api/v1/admin/object-storage/config"
 SYSTEM_BASE = "/api/v1/admin/system"
+
+
+def test_object_storage_diagnostic_provider_uses_short_timeouts_and_one_attempt(monkeypatch) -> None:
+    import boto3
+
+    from aerisun.domain.media.object_storage import BitifulObjectStorageProvider
+
+    captured: dict[str, object] = {}
+
+    class FakeClient:
+        def head_bucket(self, *, Bucket: str) -> None:
+            captured["bucket"] = Bucket
+
+    def fake_client(service_name: str, **kwargs):
+        captured["service_name"] = service_name
+        captured.update(kwargs)
+        return FakeClient()
+
+    monkeypatch.setattr(boto3, "client", fake_client)
+    config = SimpleNamespace(
+        endpoint="https://s3.bitiful.example",
+        bucket="asset-bucket",
+        region="cn-east-1",
+        access_key="access-key",
+        secret_key="secret-key",
+    )
+
+    provider = BitifulObjectStorageProvider(
+        config,
+        connect_timeout_seconds=3,
+        read_timeout_seconds=5,
+        max_attempts=1,
+    )
+    result = provider.is_healthy()
+
+    boto_config = captured["config"]
+    assert boto_config.connect_timeout == 3
+    assert boto_config.read_timeout == 5
+    assert boto_config.retries["total_max_attempts"] == 1
+    assert captured["bucket"] == "asset-bucket"
+    assert result.ok is True
 
 
 def _list_revisions(client, admin_headers, *, resource_key: str) -> list[dict[str, object]]:
@@ -383,3 +426,136 @@ def test_object_storage_sync_records_endpoint_returns_mirror_and_delete_records(
     assert "mirror" in record_types
     assert "remote_delete" in record_types
     assert "remote_upload" in record_types
+
+
+def test_failed_object_storage_sync_records_can_be_queued_for_retry(
+    client,
+    admin_headers,
+    seeded_session,
+) -> None:
+    from aerisun.domain.media.models import (
+        Asset,
+        AssetLocalDeleteQueueItem,
+        AssetMirrorQueueItem,
+        AssetRemoteDeleteQueueItem,
+        AssetRemoteUploadQueueItem,
+    )
+
+    asset = Asset(
+        file_name="retry.png",
+        resource_key="internal/assets/retry.png",
+        visibility="internal",
+        scope="user",
+        category="test",
+        storage_path="/tmp/retry.png",
+        storage_provider="bitiful",
+        remote_object_key="internal/assets/retry.png",
+        remote_status="failed",
+        mirror_status="failed",
+    )
+    seeded_session.add(asset)
+    seeded_session.flush()
+    records = [
+        (
+            "mirror",
+            AssetMirrorQueueItem(
+                asset_id=asset.id,
+                object_key=asset.resource_key,
+                status="failed",
+                retry_count=4,
+                last_error="mirror failed",
+            ),
+        ),
+        (
+            "local_delete",
+            AssetLocalDeleteQueueItem(
+                storage_path="/tmp/obsolete.png",
+                status="failed",
+                retry_count=3,
+                last_error="local delete failed",
+            ),
+        ),
+        (
+            "remote_delete",
+            AssetRemoteDeleteQueueItem(
+                object_key="internal/assets/obsolete.png",
+                status="failed",
+                retry_count=2,
+                last_error="remote delete failed",
+            ),
+        ),
+        (
+            "remote_upload",
+            AssetRemoteUploadQueueItem(
+                asset_id=asset.id,
+                object_key=asset.resource_key,
+                status="failed",
+                retry_count=1,
+                last_error="upload failed",
+            ),
+        ),
+    ]
+    seeded_session.add_all([record for _, record in records])
+    seeded_session.commit()
+
+    for record_type, record in records:
+        response = client.post(
+            f"/api/v1/admin/object-storage/sync-records/{record_type}/{record.id}/retry",
+            headers=admin_headers,
+        )
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["id"] == record.id
+        assert payload["record_type"] == record_type
+        assert payload["status"] == "retrying"
+        assert payload["retry_count"] == record.retry_count
+        assert payload["last_error"] is None
+        seeded_session.expire_all()
+        persisted = seeded_session.get(type(record), record.id)
+        assert persisted is not None
+        assert persisted.status == "retrying"
+        assert persisted.last_error is None
+
+    seeded_session.expire_all()
+    persisted_asset = seeded_session.get(Asset, asset.id)
+    assert persisted_asset is not None
+    assert persisted_asset.mirror_status == "retrying"
+    assert persisted_asset.remote_status == "retrying"
+
+
+def test_object_storage_sync_retry_rejects_missing_invalid_and_non_failed_records(
+    client,
+    admin_headers,
+    seeded_session,
+) -> None:
+    from aerisun.domain.media.models import AssetRemoteDeleteQueueItem
+
+    completed = AssetRemoteDeleteQueueItem(
+        object_key="internal/assets/completed.png",
+        status="completed",
+        retry_count=0,
+    )
+    seeded_session.add(completed)
+    seeded_session.commit()
+
+    conflict = client.post(
+        f"/api/v1/admin/object-storage/sync-records/remote_delete/{completed.id}/retry",
+        headers=admin_headers,
+    )
+    missing = client.post(
+        "/api/v1/admin/object-storage/sync-records/remote_delete/missing/retry",
+        headers=admin_headers,
+    )
+    invalid = client.post(
+        f"/api/v1/admin/object-storage/sync-records/unknown/{completed.id}/retry",
+        headers=admin_headers,
+    )
+    unauthorized = client.post(
+        f"/api/v1/admin/object-storage/sync-records/remote_delete/{completed.id}/retry",
+    )
+
+    assert conflict.status_code == 409
+    assert missing.status_code == 404
+    assert invalid.status_code == 422
+    assert unauthorized.status_code == 401

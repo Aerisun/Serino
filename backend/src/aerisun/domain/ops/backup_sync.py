@@ -1355,6 +1355,77 @@ def probe_backup_machine_connection(session: Session, payload: BackupSyncConfigU
     )
 
 
+def probe_backup_write_access(session: Session, payload: BackupSyncConfigUpdate) -> BackupSyncConfigTestRead:
+    """Verify backup write access without falling back to unbounded SFTP calls."""
+    config = _config_object_from_payload(payload)
+    _validate_config(config)
+    recovery_ready, recovery_acknowledged, _, _ = _recovery_key_status(session, credential_ref=config.credential_ref)
+    transport = SftpTransport(
+        host=config.remote_host,
+        port=config.remote_port or 22,
+        username=config.remote_username,
+        remote_root=config.remote_path,
+        site_slug=config.site_slug,
+    )
+    started_at = time.perf_counter()
+    connected, identity, error_message = transport.probe_repo_identity(
+        timeout_seconds=BACKUP_SYNC_CONFIG_TEST_TIMEOUT_SECONDS
+    )
+    if not connected:
+        latency_ms = int((time.perf_counter() - started_at) * 1000)
+        summary = error_message or "无法使用 serino-backup 连接备份机，需要先执行临时接入命令。"
+        return BackupSyncConfigTestRead(
+            ok=False,
+            summary=summary,
+            latency_ms=latency_ms,
+            remote_path_preview=str(config.remote_path or ""),
+            recovery_key_ready=recovery_ready,
+            recovery_key_acknowledged=recovery_acknowledged,
+            remote_history_state="unreachable",
+            remote_history_summary=summary,
+        )
+
+    history = _history_from_identity(session, config=config, identity=identity)
+    if history["remote_history_state"] == "foreign":
+        latency_ms = int((time.perf_counter() - started_at) * 1000)
+        return BackupSyncConfigTestRead(
+            ok=True,
+            summary=history["remote_history_summary"],
+            latency_ms=latency_ms,
+            remote_path_preview=str(config.remote_path or ""),
+            recovery_key_ready=recovery_ready,
+            recovery_key_acknowledged=recovery_acknowledged,
+            **history,
+        )
+
+    try:
+        transport.begin_session(timeout_seconds=BACKUP_SYNC_CONFIG_TEST_TIMEOUT_SECONDS)
+        transport.probe_write_access(timeout_seconds=BACKUP_SYNC_CONFIG_TEST_TIMEOUT_SECONDS)
+    except ValidationError as exc:
+        latency_ms = int((time.perf_counter() - started_at) * 1000)
+        return BackupSyncConfigTestRead(
+            ok=False,
+            summary=str(exc),
+            latency_ms=latency_ms,
+            remote_path_preview=str(config.remote_path or ""),
+            recovery_key_ready=recovery_ready,
+            recovery_key_acknowledged=recovery_acknowledged,
+            remote_history_state="unreachable",
+            remote_history_summary="备份机可以识别，但远端目录写入检查失败。",
+        )
+
+    latency_ms = int((time.perf_counter() - started_at) * 1000)
+    return BackupSyncConfigTestRead(
+        ok=True,
+        summary=history["remote_history_summary"] or "SFTP 连接正常，远端目录可写。",
+        latency_ms=latency_ms,
+        remote_path_preview=str(config.remote_path or ""),
+        recovery_key_ready=recovery_ready,
+        recovery_key_acknowledged=recovery_acknowledged,
+        **history,
+    )
+
+
 def test_backup_sync_config(session: Session, payload: BackupSyncConfigUpdate) -> BackupSyncConfigTestRead:
     config = _config_object_from_payload(payload)
     _validate_config(config)

@@ -8,7 +8,7 @@ from contextlib import suppress
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 from urllib.parse import quote
 
 from sqlalchemy.orm import Session
@@ -91,7 +91,14 @@ class ObjectStorageEntry:
 
 
 class BitifulObjectStorageProvider:
-    def __init__(self, config: ObjectStorageConfig) -> None:
+    def __init__(
+        self,
+        config: ObjectStorageConfig,
+        *,
+        connect_timeout_seconds: float | None = None,
+        read_timeout_seconds: float | None = None,
+        max_attempts: int | None = None,
+    ) -> None:
         try:
             import boto3
             from botocore.config import Config as BotoConfig
@@ -106,13 +113,24 @@ class BitifulObjectStorageProvider:
         if not self._bucket:
             raise ValidationError("缺少 OSS bucket 配置")
 
+        boto_config: dict[str, Any] = {"signature_version": "s3v4"}
+        if connect_timeout_seconds is not None:
+            boto_config["connect_timeout"] = max(float(connect_timeout_seconds), 0.1)
+        if read_timeout_seconds is not None:
+            boto_config["read_timeout"] = max(float(read_timeout_seconds), 0.1)
+        if max_attempts is not None:
+            boto_config["retries"] = {
+                "total_max_attempts": max(int(max_attempts), 1),
+                "mode": "standard",
+            }
+
         self._client = boto3.client(
             "s3",
             endpoint_url=endpoint,
             region_name=str(config.region or "").strip() or None,
             aws_access_key_id=str(config.access_key or "").strip(),
             aws_secret_access_key=str(config.secret_key or "").strip(),
-            config=BotoConfig(signature_version="s3v4"),
+            config=BotoConfig(**boto_config),
         )
 
     def sign_upload(self, *, object_key: str, content_type: str | None, expires_in: int) -> str:
@@ -471,73 +489,36 @@ def list_object_storage_sync_records(
     records: list[ObjectStorageSyncRecordRead] = []
 
     for item in repo.list_mirror_queue_items(session):
-        asset = asset_by_id.get(item.asset_id)
-        record = ObjectStorageSyncRecordRead(
-            id=item.id,
-            record_type="mirror",
-            status=item.status,
-            object_key=item.object_key,
-            asset_id=item.asset_id,
-            asset_file_name=asset.file_name if asset is not None else None,
-            asset_resource_key=asset.resource_key if asset is not None else None,
-            retry_count=item.retry_count,
-            last_error=item.last_error,
-            started_at=item.started_at,
-            finished_at=item.finished_at,
-            created_at=item.created_at,
-            updated_at=item.updated_at,
+        records.append(
+            _object_storage_sync_record_read(
+                item,
+                record_type="mirror",
+                asset=asset_by_id.get(item.asset_id),
+            )
         )
-        records.append(record)
 
     for item in repo.list_remote_delete_queue_items(session):
         records.append(
-            ObjectStorageSyncRecordRead(
-                id=item.id,
+            _object_storage_sync_record_read(
+                item,
                 record_type="remote_delete",
-                status=item.status,
-                object_key=item.object_key,
-                retry_count=item.retry_count,
-                last_error=item.last_error,
-                started_at=item.started_at,
-                finished_at=item.finished_at,
-                created_at=item.created_at,
-                updated_at=item.updated_at,
             )
         )
 
     for item in repo.list_local_delete_queue_items(session):
         records.append(
-            ObjectStorageSyncRecordRead(
-                id=item.id,
+            _object_storage_sync_record_read(
+                item,
                 record_type="local_delete",
-                status=item.status,
-                object_key=item.storage_path,
-                retry_count=item.retry_count,
-                last_error=item.last_error,
-                started_at=item.started_at,
-                finished_at=item.finished_at,
-                created_at=item.created_at,
-                updated_at=item.updated_at,
             )
         )
 
     for item in repo.list_remote_upload_queue_items(session):
-        asset = asset_by_id.get(item.asset_id)
         records.append(
-            ObjectStorageSyncRecordRead(
-                id=item.id,
+            _object_storage_sync_record_read(
+                item,
                 record_type="remote_upload",
-                status=item.status,
-                object_key=item.object_key,
-                asset_id=item.asset_id,
-                asset_file_name=asset.file_name if asset is not None else None,
-                asset_resource_key=asset.resource_key if asset is not None else None,
-                retry_count=item.retry_count,
-                last_error=item.last_error,
-                started_at=item.started_at,
-                finished_at=item.finished_at,
-                created_at=item.created_at,
-                updated_at=item.updated_at,
+                asset=asset_by_id.get(item.asset_id),
             )
         )
 
@@ -562,6 +543,82 @@ def list_object_storage_sync_records(
         "page": page,
         "page_size": page_size,
     }
+
+
+ObjectStorageSyncRecordType = Literal[
+    "mirror",
+    "local_delete",
+    "remote_delete",
+    "remote_upload",
+]
+
+
+def _object_storage_sync_record_read(
+    item: Any,
+    *,
+    record_type: ObjectStorageSyncRecordType,
+    asset: Asset | None = None,
+) -> ObjectStorageSyncRecordRead:
+    object_key = item.storage_path if record_type == "local_delete" else item.object_key
+    asset_id = item.asset_id if record_type in {"mirror", "remote_upload"} else None
+    return ObjectStorageSyncRecordRead(
+        id=item.id,
+        record_type=record_type,
+        status=item.status,
+        object_key=object_key,
+        asset_id=asset_id,
+        asset_file_name=asset.file_name if asset is not None else None,
+        asset_resource_key=asset.resource_key if asset is not None else None,
+        retry_count=item.retry_count,
+        last_error=item.last_error,
+        started_at=item.started_at,
+        finished_at=item.finished_at,
+        created_at=item.created_at,
+        updated_at=item.updated_at,
+    )
+
+
+def retry_object_storage_sync_record(
+    session: Session,
+    *,
+    record_type: ObjectStorageSyncRecordType,
+    record_id: str,
+) -> ObjectStorageSyncRecordRead:
+    getters = {
+        "mirror": repo.get_mirror_queue_item,
+        "local_delete": repo.get_local_delete_queue_item,
+        "remote_delete": repo.get_remote_delete_queue_item,
+        "remote_upload": repo.get_remote_upload_queue_item,
+    }
+    item = getters[record_type](session, record_id)
+    if item is None:
+        raise ResourceNotFound("OSS 同步记录不存在")
+    if item.status != "failed":
+        raise StateConflict("仅失败的 OSS 同步记录可以重试")
+
+    item.status = "retrying"
+    item.next_retry_at = utcnow()
+    item.last_error = None
+    item.started_at = None
+    item.finished_at = None
+    asset: Asset | None = None
+    if record_type in {"mirror", "remote_upload"}:
+        asset = repo.find_asset_by_id(session, item.asset_id)
+        if asset is not None:
+            if record_type == "mirror":
+                asset.mirror_status = "retrying"
+                asset.mirror_last_error = None
+            else:
+                asset.remote_status = "retrying"
+    session.commit()
+    session.refresh(item)
+    if asset is not None:
+        session.refresh(asset)
+    return _object_storage_sync_record_read(
+        item,
+        record_type=record_type,
+        asset=asset,
+    )
 
 
 def should_use_direct_upload(session: Session) -> bool:

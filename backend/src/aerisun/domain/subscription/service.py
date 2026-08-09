@@ -3,6 +3,8 @@ from __future__ import annotations
 import base64
 import logging
 import smtplib
+from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import datetime
 from email.message import EmailMessage
 from string import Formatter
@@ -702,7 +704,10 @@ def _fetch_microsoft_smtp_access_token(config: ContentSubscriptionConfig) -> str
             timeout=10.0,
         )
     except httpx.HTTPError as exc:
-        logger.warning("Microsoft SMTP OAuth2 token request failed", exc_info=exc)
+        logger.warning(
+            "Microsoft SMTP OAuth2 token request failed (%s)",
+            type(exc).__name__,
+        )
         raise ValidationError(
             "Microsoft OAuth2 令牌获取失败，请检查租户、Client ID、Client Secret 和 Refresh Token"
         ) from exc
@@ -713,16 +718,23 @@ def _fetch_microsoft_smtp_access_token(config: ContentSubscriptionConfig) -> str
         payload = {}
 
     if response.is_error:
+        error_name = str(payload.get("error") or "unknown")[:80]
+        raw_error_codes = payload.get("error_codes")
+        error_codes = raw_error_codes if isinstance(raw_error_codes, list) else []
         logger.warning(
-            "Microsoft SMTP OAuth2 token request failed with status %s: %s",
+            "Microsoft SMTP OAuth2 token request failed with status %s (error=%s, codes=%s)",
             response.status_code,
-            payload if payload else response.text[:500],
+            error_name,
+            error_codes[:10],
         )
         raise ValidationError("Microsoft OAuth2 令牌获取失败，请检查租户、Client ID、Client Secret 和 Refresh Token")
 
     access_token = str(payload.get("access_token") or "").strip()
     if not access_token:
-        logger.warning("Microsoft SMTP OAuth2 token response missing access_token: %s", payload)
+        logger.warning(
+            "Microsoft SMTP OAuth2 token response missing access_token (keys=%s)",
+            sorted(str(key)[:80] for key in payload)[:20],
+        )
         raise ValidationError("Microsoft OAuth2 令牌获取失败，请检查租户、Client ID、Client Secret 和 Refresh Token")
 
     refreshed_refresh_token = str(payload.get("refresh_token") or "").strip()
@@ -1160,40 +1172,132 @@ def _build_subscription_welcome_message(
     return msg
 
 
+def _authenticate_smtp_server(
+    *,
+    config: ContentSubscriptionConfig,
+    server: smtplib.SMTP,
+) -> None:
+    username = _smtp_login_identity(config)
+    password = config.smtp_password.strip()
+    if _smtp_auth_mode(config) == SMTP_AUTH_MODE_MICROSOFT_OAUTH2:
+        access_token = _fetch_microsoft_smtp_access_token(config)
+        auth_string = base64.b64encode(f"user={username}\x01auth=Bearer {access_token}\x01\x01".encode()).decode(
+            "ascii"
+        )
+        code, response = server.docmd("AUTH", f"XOAUTH2 {auth_string}")
+        if code != 235:
+            raise smtplib.SMTPAuthenticationError(code, response)
+        return
+    if username:
+        server.login(username, password)
+
+
+@contextmanager
+def _smtp_connection(
+    *,
+    config: ContentSubscriptionConfig,
+    timeout_seconds: int,
+) -> Iterator[smtplib.SMTP]:
+    smtp_type = smtplib.SMTP_SSL if config.smtp_use_ssl else smtplib.SMTP
+    with smtp_type(config.smtp_host, config.smtp_port, timeout=timeout_seconds) as server:
+        _require_successful_smtp_ehlo(server.ehlo())
+        if config.smtp_use_tls and not config.smtp_use_ssl:
+            server.starttls()
+            _require_successful_smtp_ehlo(server.ehlo())
+        _authenticate_smtp_server(config=config, server=server)
+        yield server
+
+
+def _require_successful_smtp_ehlo(response: tuple[int, bytes] | None) -> None:
+    # Test doubles used by older callers may return None; smtplib itself always
+    # returns the SMTP status tuple, which must be successful before auth/send.
+    if response is None:
+        return
+    code, message = response
+    if not 200 <= int(code) < 300:
+        raise ValidationError(f"SMTP EHLO 检查失败（{code}）：{message!r}")
+
+
 def _send_email(
     *,
     config: ContentSubscriptionConfig,
     message: EmailMessage,
+    timeout_seconds: int = 20,
 ) -> None:
-    username = _smtp_login_identity(config)
-    password = config.smtp_password.strip()
-
-    def _authenticate(server: smtplib.SMTP) -> None:
-        if _smtp_auth_mode(config) == SMTP_AUTH_MODE_MICROSOFT_OAUTH2:
-            access_token = _fetch_microsoft_smtp_access_token(config)
-            auth_string = base64.b64encode(f"user={username}\x01auth=Bearer {access_token}\x01\x01".encode()).decode(
-                "ascii"
-            )
-            code, response = server.docmd("AUTH", f"XOAUTH2 {auth_string}")
-            if code != 235:
-                raise smtplib.SMTPAuthenticationError(code, response)
-            return
-        if username:
-            server.login(username, password)
-
-    if config.smtp_use_ssl:
-        with smtplib.SMTP_SSL(config.smtp_host, config.smtp_port, timeout=20) as server:
-            _authenticate(server)
-            server.send_message(message)
-        return
-
-    with smtplib.SMTP(config.smtp_host, config.smtp_port, timeout=20) as server:
-        server.ehlo()
-        if config.smtp_use_tls:
-            server.starttls()
-            server.ehlo()
-        _authenticate(server)
+    with _smtp_connection(config=config, timeout_seconds=timeout_seconds) as server:
         server.send_message(message)
+
+
+def _build_subscription_smtp_test_message(
+    config: ContentSubscriptionConfig,
+    *,
+    site_name: str,
+    site_url: str,
+    diagnostic: bool = False,
+) -> tuple[EmailMessage, str]:
+    recipient = _smtp_test_recipient()
+    message = EmailMessage()
+    from_name = config.smtp_from_name.strip() or site_name
+    message["Subject"] = f"[{site_name}] SMTP Diagnostic" if diagnostic else f"[{site_name}] SMTP Test"
+    message["From"] = f"{from_name} <{config.smtp_from_email}>"
+    message["To"] = recipient
+    if config.smtp_reply_to.strip():
+        message["Reply-To"] = config.smtp_reply_to.strip()
+    message_id_prefix = "system-diagnostic" if diagnostic else "subscription-test"
+    message["Message-ID"] = f"<{message_id_prefix}-{uuid4().hex}@aerisun.local>"
+    first_line = (
+        "This automated test email was sent by Aerisun system diagnostics."
+        if diagnostic
+        else "This is a test email from Aerisun."
+    )
+    message.set_content(
+        "\n".join(
+            [
+                first_line,
+                f"Site: {site_name}",
+                f"URL: {site_url.rstrip('/')}",
+                "",
+                "If you received this email, the current SMTP configuration can connect and send mail.",
+            ]
+        )
+    )
+    return message, recipient
+
+
+def send_subscription_smtp_diagnostic_email(
+    config: ContentSubscriptionConfig | ContentSubscriptionConfigAdminRead,
+    settings: Settings | None = None,
+    *,
+    timeout_seconds: int = 10,
+) -> ContentSubscriptionTestResult:
+    if not _smtp_ready(config):  # type: ignore[arg-type]
+        raise _smtp_incomplete_validation_error(config)  # type: ignore[arg-type]
+    username = _smtp_login_identity(config)  # type: ignore[arg-type]
+    password = config.smtp_password.strip()
+    if _smtp_auth_mode(config) == SMTP_AUTH_MODE_PASSWORD and username and not password:  # type: ignore[arg-type]
+        raise ValidationError("填写了 SMTP 用户名后，还需要填写对应的密码或授权码")
+
+    active_settings = settings or get_settings()
+    site_name = config.smtp_from_name.strip() or "Aerisun"
+    message, recipient = _build_subscription_smtp_test_message(
+        config,  # type: ignore[arg-type]
+        site_name=site_name,
+        site_url=active_settings.site_url or "https://example.com",
+        diagnostic=True,
+    )
+    try:
+        _send_email(
+            config=config,  # type: ignore[arg-type]
+            message=message,
+            timeout_seconds=max(1, min(int(timeout_seconds), 10)),
+        )
+    except (smtplib.SMTPException, httpx.HTTPError, OSError) as exc:
+        logger.warning(
+            "Subscription SMTP diagnostic email failed (%s)",
+            type(exc).__name__,
+        )
+        raise _smtp_login_validation_error(config) from exc  # type: ignore[arg-type]
+    return ContentSubscriptionTestResult(recipient=recipient)
 
 
 def _build_comment_feedback_message(
@@ -1523,26 +1627,10 @@ def send_subscription_test_email(
     site_name = (
         (site.title if site is not None else "").strip() or (site.name if site is not None else "").strip() or "Aerisun"
     )
-    recipient = _smtp_test_recipient()
-
-    message = EmailMessage()
-    from_name = test_config.smtp_from_name.strip() or site_name
-    message["Subject"] = f"[{site_name}] SMTP Test"
-    message["From"] = f"{from_name} <{test_config.smtp_from_email}>"
-    message["To"] = recipient
-    if test_config.smtp_reply_to.strip():
-        message["Reply-To"] = test_config.smtp_reply_to.strip()
-    message["Message-ID"] = f"<subscription-test-{uuid4().hex}@aerisun.local>"
-    message.set_content(
-        "\n".join(
-            [
-                "This is a test email from Aerisun.",
-                f"Site: {site_name}",
-                f"URL: {(active_settings.site_url or 'https://example.com').rstrip('/')}",
-                "",
-                "If you received this email, the current SMTP configuration can connect and send mail.",
-            ]
-        )
+    message, recipient = _build_subscription_smtp_test_message(
+        test_config,
+        site_name=site_name,
+        site_url=active_settings.site_url or "https://example.com",
     )
 
     try:
