@@ -61,6 +61,7 @@ from aerisun.domain.agent.mcp_admin_tools import (
     get_admin_asset_item,
     get_admin_community_config_state,
     get_admin_content,
+    get_admin_content_by_url,
     get_admin_login_options_state,
     get_admin_me,
     get_admin_record,
@@ -429,7 +430,7 @@ def _list_friend_feed_sources_tool(session: Session, friend_id: str) -> dict[str
     return {"items": list_friend_feed_sources(session, friend_id=friend_id)}
 
 
-def _posts_feed_resource(session: Session) -> str:
+def _articles_feed_resource(session: Session) -> str:
     return build_posts_rss_xml(session, "http://localhost")
 
 
@@ -514,15 +515,15 @@ _CAPABILITIES: tuple[AgentCapabilityDefinition, ...] = (
         group_label="内容",
     ),
     _resource(
-        "aerisun://feeds/posts",
-        "Return the posts RSS XML.",
+        "aerisun://feeds/articles",
+        "Return the manuscripts and notes RSS XML.",
         [CONTENT_READ],
-        _posts_feed_resource,
+        _articles_feed_resource,
         response_kind="text",
-        label="文章 RSS",
-        label_en="Posts RSS feed",
-        help_text="以 RSS XML 格式返回文章订阅源。",
-        help_text_en="Return the posts feed as RSS XML.",
+        label="文稿与手记 RSS",
+        label_en="Articles RSS feed",
+        help_text="以 RSS XML 格式返回文稿与手记订阅源。",
+        help_text_en="Return the combined manuscripts and notes feed as RSS XML.",
         domain="content",
         group_label="内容",
     ),
@@ -644,6 +645,28 @@ _CAPABILITIES: tuple[AgentCapabilityDefinition, ...] = (
         ai_usage_hint="获取单条后台内容详情。content_type 必传 (posts/diary/thoughts/excerpts)，item_id 必传。",
         examples=[
             {"arguments": {"content_type": "posts", "item_id": "abc-123"}, "scenario": "获取指定文章的完整内容。"}
+        ],
+        domain="content",
+        group_label="内容",
+    ),
+    _tool(
+        "get_admin_content_by_url",
+        "Get one admin content item with its full body from a site content URL.",
+        [CONTENT_READ],
+        get_admin_content_by_url,
+        label="按网址读取内容",
+        label_en="Get content by URL",
+        help_text="按本站文章或日记网址直接读取完整正文和元数据，不发起外部网络请求。",
+        help_text_en="Read the full body and metadata for a site post or diary URL without an external network request.",
+        ai_usage_hint=(
+            "传入管理员留言里的完整本站内容网址。支持 /posts/{slug}、/diary/{slug}、"
+            "/thoughts/{slug}、/excerpts/{slug}；会直接返回完整正文。"
+        ),
+        examples=[
+            {
+                "arguments": {"url": "https://example.com/diary/evening-tram-and-orange-sky"},
+                "scenario": "按作者提供的网址阅读全文。",
+            }
         ],
         domain="content",
         group_label="内容",

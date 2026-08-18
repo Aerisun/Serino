@@ -32,19 +32,25 @@ plugins/aerisun-mcp/
 
 ## 日常安装
 
-执行对应域名脚本，随后在隐藏提示中粘贴一次 API Key：
+Codex 用户只需两步：
 
-```bash
-curl -fsSL https://你的域名/mcp/install/codex.sh | sh
-```
+1. 在 Serino 管理台复制并运行安装命令：
 
-或：
+   ```bash
+   curl -fsSL https://你的域名/mcp/install/codex.sh | sh
+   ```
+
+2. 在隐藏提示中输入 Serino MCP API Key。
+
+安装器会完成 MCP 插件与 Skills 安装、MCP 配置、Key 安全保存、换 Key 工具安装和 Codex 自动重连。npm、pnpm、bun 与官网安装的 Codex CLI 都受支持，不需要额外激活。
+
+Claude Code 用户运行：
 
 ```bash
 curl -fsSL https://你的域名/mcp/install/claude.sh | sh
 ```
 
-安装器会安装共享 Skills，把客户端连接到这个域名的 `/api/mcp/`，并将 Key 写入仅当前用户可读的客户端私有凭据，同时安装 `~/.local/bin/serino-mcp-key`。以后运行这个本地命令即可离线更新 Key，无需再次请求站点安装脚本。
+安装器会安装共享 Skills，把客户端连接到这个域名的 `/api/mcp/`，并将 Key 写入仅当前用户可读的客户端私有凭据，同时安装 `~/.local/bin/serino-mcp-key`。以后运行该本地命令即可离线更新 Key，无需再次请求站点安装脚本；Codex 会自动重连，Claude Code 用户需要重启客户端。
 
 ## 本地诊断
 

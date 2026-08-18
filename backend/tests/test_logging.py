@@ -48,7 +48,7 @@ def test_public_visit_candidate_excludes_static_and_ai_entry_paths():
         "/llms.txt",
         "/resume.md",
         "/sitemap.xml",
-        "/feeds/posts.xml",
+        "/feeds/articles.xml",
         "/assets/app.js",
         "/mcp/install",
         "/mcp/install/claude.sh",

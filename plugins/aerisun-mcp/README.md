@@ -6,9 +6,15 @@
 
 Codex：
 
-```sh
-curl -fsSL https://你的域名/mcp/install/codex.sh | sh
-```
+1. 在 Serino 管理台复制并运行 Codex 安装命令：
+
+   ```sh
+   curl -fsSL https://你的域名/mcp/install/codex.sh | sh
+   ```
+
+2. 按终端提示输入 Serino MCP API Key。
+
+安装器会自动安装 MCP 插件和 Skills、写入 MCP 配置、安全保存 Key、安装换 Key 工具，并让 Codex 自动重连。通过 npm、pnpm、bun 或官网安装的 Codex CLI 都不需要额外的激活命令。
 
 Claude Code：
 
@@ -16,7 +22,9 @@ Claude Code：
 curl -fsSL https://你的域名/mcp/install/claude.sh | sh
 ```
 
-安装器会从终端隐藏读取一次 API Key，并持久写入权限为 `0600` 的用户私有凭据。Codex 使用 `~/.codex/.env`；Claude Code 通过不含密钥的 `headersHelper` 读取 `~/.config/aerisun/mcp-api-key`。密钥不会进入插件、URL 或客户端命令参数。之后运行本地的 `~/.local/bin/serino-mcp-key` 即可离线轮换密钥；安装或换 Key 后启动新的 Codex 任务或重启 Claude Code。
+安装器会从终端隐藏读取一次 API Key，并持久写入权限为 `0600` 的 `~/.config/aerisun/mcp-api-key`。Codex 只在自动启动或重启 app-server daemon 时把密钥注入该进程；`~/.codex/.env` 是兼容副本。Claude Code 通过不含密钥的 `headersHelper` 读取私有凭据。密钥不会进入插件、URL 或客户端命令参数。
+
+之后运行 `~/.local/bin/serino-mcp-key` 即可离线轮换密钥；Codex 会自动重连，Claude Code 用户需要重启客户端。
 
 ## 包含的 Skills
 

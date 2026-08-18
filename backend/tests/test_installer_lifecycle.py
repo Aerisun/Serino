@@ -1055,6 +1055,7 @@ ensure_supported_existing_installation() { :; }
 ensure_service_user() { :; }
 load_env_file() { :; }
 repair_upgrade_preflight_layout() { record repair_upgrade_preflight_layout; }
+cleanup_release_data_migrations() { record "cleanup_release_data_migrations:$1"; }
 run_upgrade_preflight() { record run_upgrade_preflight; }
 resolve_release_tag() { printf 'v2.0.0'; }
 make_temp_file() { printf '/tmp/manifest'; }
@@ -1154,6 +1155,7 @@ require_supported_linux() { :; }
 require_root_or_sudo() { :; }
 ensure_supported_existing_installation() { :; }
 ensure_service_user() { :; }
+run_as_root() { return 1; }
 load_env_file() {
   AERISUN_IMAGE_REGISTRY='registry.example.com/current'
   AERISUN_IMAGE_TAG='v1.0.0'
@@ -1181,6 +1183,7 @@ seed_persistent_uptime_marker() { :; }
     }
 install_release_payload() { record install_release_payload; }
 reload_installer_libraries() { record reload_installer_libraries; }
+validate_registered_caddy_routes() { :; }
 set_env_value() { record "set_env_value:$2=$3"; }
 normalize_production_env_file() { record normalize_production_env_file; }
 validate_release_compose_configuration() { record validate_release_compose_configuration; }
@@ -1251,6 +1254,7 @@ require_supported_linux() { :; }
 require_root_or_sudo() { :; }
 ensure_supported_existing_installation() { :; }
 ensure_service_user() { :; }
+run_as_root() { return 1; }
 load_env_file() {
   AERISUN_IMAGE_REGISTRY='registry.example.com/current'
   AERISUN_IMAGE_TAG='v1.0.0'
@@ -1280,6 +1284,7 @@ resolve_active_registry() {
 }
 install_release_payload() { record install_release_payload; }
 reload_installer_libraries() { record reload_installer_libraries; }
+validate_registered_caddy_routes() { :; }
 set_env_value() { record "set_env_value:$2=$3"; }
 normalize_production_env_file() { record normalize_production_env_file; }
 validate_release_compose_configuration() {
@@ -1339,6 +1344,7 @@ require_supported_linux() { :; }
 require_root_or_sudo() { :; }
 ensure_supported_existing_installation() { :; }
 ensure_service_user() { :; }
+run_as_root() { return 1; }
 load_env_file() { :; }
 repair_upgrade_preflight_layout() { :; }
 run_upgrade_preflight() { :; }
@@ -1362,6 +1368,7 @@ backup_current_installation() { :; }
 resolve_active_registry() { printf '%s' "$1"; }
 install_release_payload() { :; }
 reload_installer_libraries() { :; }
+validate_registered_caddy_routes() { :; }
 set_env_value() { record "set_env_value:$2=$3"; }
 normalize_production_env_file() { :; }
 validate_release_compose_configuration() { :; }

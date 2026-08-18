@@ -271,12 +271,7 @@ export function McpInstallGuide({ endpoint, usageUrl }: McpInstallGuideProps) {
                 <SetupStep
                   number={2}
                   title={t("integrations.mcpClientStepCredential")}
-                />
-              </li>
-              <li className="rounded-[var(--admin-radius-md)] bg-muted/35 p-3">
-                <SetupStep
-                  number={3}
-                  title={t("integrations.mcpClientStepReload")}
+                  description={t("integrations.mcpClientStepCredentialDescription")}
                 />
               </li>
             </ol>

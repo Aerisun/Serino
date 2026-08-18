@@ -110,7 +110,19 @@ def _scrub_secret_text(value: str) -> str:
 def _redact_string(value: str, *, max_string_length: int) -> str:
     if value.startswith(SECRET_ENVELOPE_PREFIX):
         return REDACTED
-    value = sanitize_url(value) if value.startswith(("http://", "https://")) else _scrub_secret_text(value)
+    sanitized_lines: list[str] = []
+    for line in value.splitlines(keepends=True) or [value]:
+        content = line.rstrip("\r\n")
+        line_ending = line[len(content) :]
+        stripped = content.strip()
+        if stripped.startswith(("http://", "https://")) and not any(char.isspace() for char in stripped):
+            leading = content[: len(content) - len(content.lstrip())]
+            trailing = content[len(content.rstrip()) :]
+            sanitized = f"{leading}{sanitize_url(stripped)}{trailing}"
+        else:
+            sanitized = _scrub_secret_text(content)
+        sanitized_lines.append(f"{sanitized}{line_ending}")
+    value = "".join(sanitized_lines)
     if len(value) > max_string_length:
         return value[:max_string_length] + TRUNCATED
     return value

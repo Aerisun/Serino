@@ -106,26 +106,29 @@ describe("McpInstallGuide", () => {
     expect(screen.queryByText("输入 API Key")).toBeNull();
     const credentialStep = screen.getByText("按照提示输入 Serino MCP API Key");
     expect(credentialStep.className).toContain("font-semibold");
-    expect(screen.queryByText("进入 Codex / Claude Code")).toBeNull();
-    expect(screen.queryByText("进行管理")).toBeNull();
-    const managementStep = screen.getByText("进入 Codex / Claude Code 进行管理");
-    expect(managementStep.className).toContain("font-semibold");
+    expect(
+      screen.getByText(
+        "之后无需其他操作：安装器会完成 MCP、Skills、配置与 Key 保存，并让 Codex 自动重连。Claude Code 用户安装后请重启客户端。",
+      ),
+    ).toBeTruthy();
     expect(screen.getByText("以后更换 MCP API Key")).toBeTruthy();
-    expect(screen.getByText("运行以下命令，输入新 Key")).toBeTruthy();
+    expect(screen.getByText("运行以下命令输入新 Key；Codex 会自动重连。"))
+      .toBeTruthy();
 
     const stepList = screen.getByText("运行安装命令").closest("ol");
     expect(stepList).not.toBeNull();
     const steps = stepList?.querySelectorAll(":scope > li");
-    expect(steps).toHaveLength(3);
+    expect(steps).toHaveLength(2);
     expect(steps?.[0]?.textContent).toContain("运行安装命令");
-    expect(steps?.[1]?.textContent).toBe("2按照提示输入 Serino MCP API Key");
-    expect(steps?.[2]?.textContent).toBe("3进入 Codex / Claude Code 进行管理");
+    expect(steps?.[1]?.textContent).toContain("2按照提示输入 Serino MCP API Key");
+    expect(steps?.[1]?.textContent).toContain("之后无需其他操作");
     expect(
       screen.getByText("curl -fsSL https://blog.example/mcp/install/codex.sh | sh"),
     ).toBeTruthy();
     expect(
       screen.getByText("curl -fsSL https://blog.example/mcp/install/claude.sh | sh"),
     ).toBeTruthy();
+    expect(screen.queryByText("~/.local/bin/serino-mcp-activate")).toBeNull();
     expect(screen.getByText("~/.local/bin/serino-mcp-key")).toBeTruthy();
     expect(screen.queryByText("/mcp/install/key.sh", { exact: false })).toBeNull();
     expect(screen.queryByText("选择客户端运行一条命令，MCP 和 Skills 会一起安装。")).toBeNull();
@@ -154,4 +157,5 @@ describe("McpInstallGuide", () => {
       "curl -fsSL https://blog.example/mcp/install/codex.sh | sh",
     );
   });
+
 });

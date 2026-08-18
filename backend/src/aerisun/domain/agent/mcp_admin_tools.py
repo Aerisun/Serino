@@ -3,12 +3,14 @@ from __future__ import annotations
 import base64
 from dataclasses import dataclass
 from typing import Any, Literal
+from urllib.parse import unquote, urlsplit
 
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from aerisun.domain.automation.schemas import AgentModelConfigUpdate, AgentWorkflowCreate, AgentWorkflowRunCreateWrite
+from aerisun.domain.content import repository as content_repo
 from aerisun.domain.content import service as content_service
 from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
 from aerisun.domain.content.schemas import ContentAdminRead, ContentCreate, ContentUpdate, PoemGenerationRequest
@@ -221,6 +223,46 @@ def get_admin_content(session: Session, *, content_type: ManagedContentType, ite
             read_schema=ContentAdminRead,
         )
     )
+
+
+def get_admin_content_by_url(session: Session, *, url: str) -> dict[str, Any]:
+    normalized_url = str(url or "").strip()
+    if not normalized_url or len(normalized_url) > 2_048:
+        raise ValidationError("Content URL must be between 1 and 2048 characters")
+    try:
+        parsed = urlsplit(normalized_url)
+    except ValueError as exc:
+        raise ValidationError("Content URL is invalid") from exc
+    if parsed.scheme and parsed.scheme not in {"http", "https"}:
+        raise ValidationError("Content URL must use HTTP or HTTPS")
+    segments = [unquote(segment).strip() for segment in parsed.path.split("/") if segment.strip()]
+    if len(segments) < 2:
+        raise ValidationError("Content URL must contain a supported content type and slug")
+    route_types: dict[str, ManagedContentType] = {
+        "posts": "posts",
+        "diary": "diary",
+        "thoughts": "thoughts",
+        "excerpts": "excerpts",
+    }
+    content_type = route_types.get(segments[0].lower())
+    slug = segments[1]
+    if content_type is None or not slug:
+        raise ValidationError("Content URL must point to posts, diary, thoughts, or excerpts")
+    item = content_repo.find_by_slug(
+        session,
+        _content_model(content_type),
+        slug,
+        include_private=True,
+    )
+    if item is None:
+        raise ResourceNotFound("Content URL was not found")
+    encoded = _encode(ContentAdminRead.model_validate(item))
+    return {
+        "content_type": content_type,
+        "slug": slug,
+        "path": f"/{segments[0].lower()}/{slug}",
+        "item": encoded,
+    }
 
 
 def create_admin_content(
