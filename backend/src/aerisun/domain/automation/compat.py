@@ -32,6 +32,17 @@ LEGACY_TRIGGER_TYPE_ALIASES = {
     "schedule": "trigger.schedule",
 }
 
+LEGACY_AI_CONFIG_KEYS = frozenset(
+    {
+        "input_mode",
+        "input_mappings",
+        "output_mode",
+        "output_schema",
+        "output_fields",
+        "route_path",
+    }
+)
+
 
 def normalize_node_type(value: str) -> str:
     normalized = (value or "").strip()
@@ -264,8 +275,9 @@ def normalize_graph_payload(raw: dict[str, Any] | None) -> dict[str, Any]:
         if not isinstance(item, dict):
             continue
         node = deepcopy(item)
+        raw_node_type = str(node.get("type") or "note").strip()
         node["id"] = str(node.get("id") or f"node-{index}")
-        node["type"] = normalize_node_type(str(node.get("type") or "note"))
+        node["type"] = normalize_node_type(raw_node_type)
         node["label"] = str(node.get("label") or node["type"])
         node["position"] = dict(node.get("position") or {"x": 0, "y": 0})
         node["config"] = dict(node.get("config") or {})
@@ -273,19 +285,26 @@ def normalize_graph_payload(raw: dict[str, Any] | None) -> dict[str, Any]:
             node["config"]["operation_key"] = str(
                 node["config"].get("capability") or node["config"].get("operation") or ""
             ).strip()
-        if node["type"] == "ai.task" and "output_schema" not in node["config"]:
-            node["config"]["output_schema"] = {
-                "type": "object",
-                "properties": {
-                    "summary": {"type": "string"},
-                    "action": {"type": "string"},
-                    "needs_approval": {"type": "boolean"},
-                },
-            }
         if node["type"] == "ai.task":
-            node["config"].setdefault("input_mode", "context_and_outputs")
-            node["config"].setdefault("output_mode", "custom" if "output_schema" in node["config"] else "route")
-            node["config"] = migrate_ai_node_config(node["config"])
+            uses_legacy_contract = raw_node_type == "ai_task" or bool(
+                LEGACY_AI_CONFIG_KEYS.intersection(node["config"])
+            )
+            if uses_legacy_contract:
+                if "output_schema" not in node["config"]:
+                    node["config"]["output_schema"] = {
+                        "type": "object",
+                        "properties": {
+                            "summary": {"type": "string"},
+                            "action": {"type": "string"},
+                            "needs_approval": {"type": "boolean"},
+                        },
+                    }
+                node["config"].setdefault("input_mode", "context_and_outputs")
+                node["config"].setdefault(
+                    "output_mode",
+                    "custom" if "output_schema" in node["config"] else "route",
+                )
+                node["config"] = migrate_ai_node_config(node["config"])
         if node["type"] == "approval.review":
             node["config"].setdefault("approval_type", "manual_review")
             node["config"].setdefault("mode", "conditional")

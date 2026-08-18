@@ -14,4 +14,9 @@ describe("workflow canvas layout", () => {
     expect(source).toContain('className="min-w-0 flex-1 space-y-1"');
     expect(source).toContain("break-words");
   });
+
+  it("does not cover workflow nodes with a floating graph summary", () => {
+    expect(source).not.toContain("<Panel");
+    expect(source).not.toContain("aria-label={copy.runtimeSummary}");
+  });
 });

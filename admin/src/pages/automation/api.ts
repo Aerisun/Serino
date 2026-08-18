@@ -15,6 +15,7 @@ import {
   postModelConfigDiagnoseApiV1AdminAutomationModelConfigDiagnosePost,
   postModelConfigTestApiV1AdminAutomationModelConfigTestPost,
   postWorkflowApiV1AdminAutomationWorkflowsPost,
+  postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPost,
   postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPost,
   postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPost,
   postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPost,
@@ -28,6 +29,7 @@ import {
 import type {
   AgentModelConfigUpdate as AgentModelConfigUpdatePayload,
   AgentWorkflowCreate as AgentWorkflowInputPayload,
+  AgentWorkflowMessageRunCreateWrite as AgentWorkflowMessageRunInputPayload,
   AgentWorkflowRunCreateWrite as AgentWorkflowRunInputPayload,
   DeriveAiSchemaRequest as DeriveAiSchemaRequestPayload,
   GetWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetParams,
@@ -136,6 +138,13 @@ export interface AgentWorkflowRunInput {
   target_id?: string | null;
   context_payload?: Record<string, unknown>;
   input_payload?: Record<string, unknown>;
+  idempotency_key?: string | null;
+  execution_mode?: "live" | "dry_run";
+  execute_immediately?: boolean;
+}
+
+export interface AgentWorkflowMessageRunInput {
+  message: string;
   idempotency_key?: string | null;
   execution_mode?: "live" | "dry_run";
   execute_immediately?: boolean;
@@ -265,6 +274,16 @@ export function createAgentWorkflowRun(workflowKey: string, data: AgentWorkflowR
   return postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPost(
     workflowKey,
     data as AgentWorkflowRunInputPayload,
+  ).then((response) => response.data as AgentWorkflowRunResult);
+}
+
+export function createAgentWorkflowMessageRun(
+  workflowKey: string,
+  data: AgentWorkflowMessageRunInput,
+) {
+  return postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPost(
+    workflowKey,
+    data as AgentWorkflowMessageRunInputPayload,
   ).then((response) => response.data as AgentWorkflowRunResult);
 }
 

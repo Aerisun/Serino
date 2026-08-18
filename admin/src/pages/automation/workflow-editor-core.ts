@@ -15,6 +15,7 @@ import {
   Cable,
   Clock3,
   GitBranch,
+  MessageSquare,
   PauseCircle,
   Play,
   RefreshCw,
@@ -354,6 +355,7 @@ export const zhNodeLabels: Record<string, string> = {
   "trigger.webhook": "Webhook 触发",
   "trigger.manual": "手动触发",
   "trigger.schedule": "定时触发",
+  "trigger.message": "留言触发",
   "ai.task": "AI 任务",
   "tool.query": "只读工具",
   "apply.action": "执行动作",
@@ -364,6 +366,7 @@ export const zhNodeLabels: Record<string, string> = {
   "flow.poll": "轮询检测",
   "flow.wait_for_event": "等待事件",
   "notification.webhook": "Webhook 通知",
+  "output.message": "留言",
 };
 
 export const enNodeLabels: Record<string, string> = {};
@@ -394,6 +397,8 @@ export function iconForName(icon: string) {
       return Play;
     case "webhook":
       return Webhook;
+    case "message-square":
+      return MessageSquare;
     case "refresh-cw":
       return RefreshCw;
     case "pause-circle":
@@ -516,6 +521,9 @@ export function summaryForNode(definition: AgentWorkflowCatalogNodeType | undefi
   }
   if (definition.type === "approval.review") {
     return `${String(config.approval_type || "manual_review")} · ${String(config.mode || "conditional")}`;
+  }
+  if (definition.type === "output.message") {
+    return String(config.message_path || "message");
   }
   if (definition.type.startsWith("operation.")) {
     return String(config.operation_key || "-");
@@ -718,6 +726,10 @@ export function deriveTriggerBindings(nodes: WorkflowCanvasNode[]): AgentWorkflo
       enabled: true,
       config: cloneJson(node.data.config || {}),
     }));
+}
+
+export function canAddWorkflowNode(nodes: WorkflowCanvasNode[], nodeType: string) {
+  return !nodeType.startsWith("trigger.") || !nodes.some((node) => node.data.nodeType.startsWith("trigger."));
 }
 
 export function nextNodeId(nodeType: string, nodes: WorkflowCanvasNode[]) {

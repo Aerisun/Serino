@@ -128,7 +128,7 @@ export function ApprovalsPanel({
   };
 
   return (
-    <AdminSurface eyebrow="Approval" title={t("automation.approvals")} description={t("automation.approvalsDescription")}>
+    <AdminSurface title={t("automation.approvals")} description={t("automation.approvalsDescription")}>
       {isError ? (
         <AutomationQueryError lang={lang} onRetry={() => void refetch()} />
       ) : (

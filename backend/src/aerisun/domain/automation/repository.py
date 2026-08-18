@@ -301,6 +301,67 @@ def query_agent_runs(
     return rows[:limit], total, len(rows) > limit
 
 
+def query_agent_message_steps(
+    session: Session,
+    *,
+    workflow_key: str | None = None,
+    execution_mode: str | None = None,
+    cursor_created_at: datetime | None = None,
+    cursor_id: str | None = None,
+    limit: int = 25,
+) -> tuple[list[tuple[AgentRunStep, AgentRun]], int, bool]:
+    filters = [AgentRunStep.step_kind == "message_output"]
+    if workflow_key:
+        filters.append(AgentRun.workflow_key == workflow_key)
+    if execution_mode:
+        filters.append(AgentRun.execution_mode == execution_mode)
+    total = int(
+        session.scalar(
+            select(func.count())
+            .select_from(AgentRunStep)
+            .join(AgentRun, AgentRun.id == AgentRunStep.run_id)
+            .where(*filters)
+        )
+        or 0
+    )
+    page_filters = list(filters)
+    if cursor_created_at is not None and cursor_id:
+        page_filters.append(
+            or_(
+                AgentRunStep.created_at < cursor_created_at,
+                and_(AgentRunStep.created_at == cursor_created_at, AgentRunStep.id < cursor_id),
+            )
+        )
+    rows = list(
+        session.execute(
+            select(AgentRunStep, AgentRun)
+            .join(AgentRun, AgentRun.id == AgentRunStep.run_id)
+            .where(*page_filters)
+            .order_by(AgentRunStep.created_at.desc(), AgentRunStep.id.desc())
+            .limit(limit + 1)
+        ).all()
+    )
+    return rows[:limit], total, len(rows) > limit
+
+
+def get_agent_message_step(
+    session: Session,
+    *,
+    message_id: str,
+) -> tuple[AgentRunStep, AgentRun] | None:
+    row = session.execute(
+        select(AgentRunStep, AgentRun)
+        .join(AgentRun, AgentRun.id == AgentRunStep.run_id)
+        .where(
+            AgentRunStep.id == message_id,
+            AgentRunStep.step_kind == "message_output",
+        )
+    ).one_or_none()
+    if row is None:
+        return None
+    return row[0], row[1]
+
+
 def agent_run_status_counts(session: Session) -> dict[str, int]:
     rows = session.execute(select(AgentRun.status, func.count()).group_by(AgentRun.status)).all()
     return {str(status): int(count) for status, count in rows}

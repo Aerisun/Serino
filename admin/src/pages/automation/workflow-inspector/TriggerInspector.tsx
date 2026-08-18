@@ -49,7 +49,7 @@ export function TriggerInspector({
           description={
             lang === "zh"
               ? "选择这一步怎么触发。切换后，图标和默认设置会一起更新。"
-              : "Choose whether this trigger node is event-based, webhook-based, scheduled, or manual. The icon and default config update together."
+              : "Choose whether this trigger is event-based, webhook-based, scheduled, manual, or message-based. The icon and default config update together."
           }
         />
         <Select

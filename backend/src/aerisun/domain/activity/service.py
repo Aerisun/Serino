@@ -31,7 +31,7 @@ from aerisun.domain.waline.service import list_all_waline_records, parse_comment
 
 DEFAULT_ACTIVITY_HEATMAP_TZ = "Asia/Shanghai"
 RECENT_ACTIVITY_OWNER_COMMENT_CONTENT_TYPES_FLAG = "recent_activity_owner_comment_content_types"
-RECENT_ACTIVITY_OWNER_COMMENT_CONTENT_TYPES = frozenset({"posts", "diary", "thoughts", "excerpts"})
+RECENT_ACTIVITY_OWNER_COMMENT_CONTENT_TYPES = frozenset({"posts", "notes", "diary", "thoughts", "excerpts"})
 
 
 def _avatar_for_name(name: str) -> str:
@@ -217,7 +217,7 @@ def list_recent_activity(session: Session, limit: int = 8) -> RecentActivityRead
 
     for published_at, kind, title, summary, body, href in published_content:
         normalized_title = (title or "").strip()
-        target_title = normalized_title if kind in {"post", "diary"} else ""
+        target_title = normalized_title if kind in {"post", "note", "diary"} else ""
         excerpt = (
             _pick_private_diary_publish_excerpt(summary)
             if kind == "diary" and private_diary_enabled

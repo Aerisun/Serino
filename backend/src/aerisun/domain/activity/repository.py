@@ -13,6 +13,7 @@ from aerisun.domain.engagement.models import Reaction
 
 CONTENT_MODELS: dict[str, type] = {
     "posts": PostEntry,
+    "notes": PostEntry,
     "diary": DiaryEntry,
     "thoughts": ThoughtEntry,
     "excerpts": ExcerptEntry,
@@ -27,20 +28,17 @@ def find_content_events(session: Session, *, include_diary: bool = True) -> list
     """Query content models for (published_at, kind, title, slug, href) tuples."""
     items: list[tuple[datetime, str, str, str, str]] = []
     mappings = [
-        (PostEntry, "post", "/posts/{slug}"),
-        (ExcerptEntry, "excerpt", "/excerpts"),
+        (PostEntry, "post", "/posts/{slug}", "manuscript"),
+        (PostEntry, "note", "/notes/{slug}", "note"),
+        (ExcerptEntry, "excerpt", "/excerpts", None),
     ]
     if include_diary:
-        mappings.insert(1, (DiaryEntry, "diary", "/diary/{slug}"))
-    for model, kind, href_template in mappings:
-        rows = session.scalars(
-            select(model)
-            .where(
-                model.visibility == "public",
-                model.published_at.is_not(None),
-            )
-            .order_by(desc(model.published_at))
-        ).all()
+        mappings.insert(2, (DiaryEntry, "diary", "/diary/{slug}", None))
+    for model, kind, href_template, post_kind in mappings:
+        conditions = [model.visibility == "public", model.published_at.is_not(None)]
+        if model is PostEntry and post_kind is not None:
+            conditions.append(PostEntry.kind == post_kind)
+        rows = session.scalars(select(model).where(*conditions).order_by(desc(model.published_at))).all()
         for row in rows:
             assert row.published_at is not None
             href = href_template.format(slug=row.slug)
@@ -54,22 +52,18 @@ def find_recent_published_content(
     """Query recent public published content across all content models."""
     items: list[tuple[datetime, str, str | None, str | None, str, str]] = []
     mappings = [
-        (PostEntry, "post", "/posts/{slug}"),
-        (ThoughtEntry, "thought", "/thoughts#{slug}"),
-        (ExcerptEntry, "excerpt", "/excerpts#{slug}"),
+        (PostEntry, "post", "/posts/{slug}", "manuscript"),
+        (PostEntry, "note", "/notes/{slug}", "note"),
+        (ThoughtEntry, "thought", "/thoughts#{slug}", None),
+        (ExcerptEntry, "excerpt", "/excerpts#{slug}", None),
     ]
     if include_diary:
-        mappings.insert(1, (DiaryEntry, "diary", "/diary/{slug}"))
-    for model, kind, href_template in mappings:
-        rows = session.scalars(
-            select(model)
-            .where(
-                model.visibility == "public",
-                model.published_at.is_not(None),
-            )
-            .order_by(desc(model.published_at))
-            .limit(limit)
-        ).all()
+        mappings.insert(2, (DiaryEntry, "diary", "/diary/{slug}", None))
+    for model, kind, href_template, post_kind in mappings:
+        conditions = [model.visibility == "public", model.published_at.is_not(None)]
+        if model is PostEntry and post_kind is not None:
+            conditions.append(PostEntry.kind == post_kind)
+        rows = session.scalars(select(model).where(*conditions).order_by(desc(model.published_at)).limit(limit)).all()
         for row in rows:
             assert row.published_at is not None
             href = href_template.format(slug=row.slug)
@@ -94,7 +88,11 @@ def batch_resolve_titles(session: Session, pairs: list[tuple[str, str]]) -> dict
             for slug in slugs:
                 result[(ct, slug)] = slug
             continue
-        rows = session.execute(select(model.slug, model.title).where(model.slug.in_(slugs))).all()
+        conditions = [model.slug.in_(slugs)]
+        post_kind = {"posts": "manuscript", "notes": "note"}.get(ct)
+        if model is PostEntry and post_kind is not None:
+            conditions.append(PostEntry.kind == post_kind)
+        rows = session.execute(select(model.slug, model.title).where(*conditions)).all()
         found = {slug: title for slug, title in rows}
         for slug in slugs:
             result[(ct, slug)] = found.get(slug, slug)

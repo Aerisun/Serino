@@ -9,7 +9,7 @@ from aerisun.core.schemas import ModelBase
 
 class CalendarEventRead(ModelBase):
     date: str = Field(description="Event date in YYYY-MM-DD format")
-    type: str = Field(description="Event type: post, diary, thought, or excerpt")
+    type: str = Field(description="Event type: post, note, diary, thought, or excerpt")
     title: str = Field(description="Event title")
     slug: str = Field(description="Content slug")
     href: str = Field(description="Frontend URL path")

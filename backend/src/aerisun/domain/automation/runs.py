@@ -7,6 +7,7 @@ import hmac
 import json
 import logging
 import os
+import re
 import socket
 from base64 import urlsafe_b64decode, urlsafe_b64encode
 from binascii import Error as Base64DecodeError
@@ -28,7 +29,7 @@ from aerisun.core.redaction import safe_exception_detail
 from aerisun.core.time import BEIJING_TZ, normalize_shanghai_datetime, shanghai_now
 from aerisun.domain.automation import repository as repo
 from aerisun.domain.automation._helpers import fallback_workflow_config
-from aerisun.domain.automation.models import AgentRun
+from aerisun.domain.automation.models import AgentRun, AgentRunStep
 from aerisun.domain.automation.run_state import (
     LEGAL_RUN_TRANSITIONS,
     AgentRunCancellationRequested,
@@ -38,10 +39,14 @@ from aerisun.domain.automation.run_state import (
 )
 from aerisun.domain.automation.runtime import RUNTIME_STATE_SECRET_PURPOSE, AutomationRuntime
 from aerisun.domain.automation.schemas import (
+    AgentMessageCollectionRead,
+    AgentMessageRead,
+    AgentMessageSummaryRead,
     AgentOverviewRead,
     AgentRunCollectionRead,
     AgentRunRead,
     AgentRunStepRead,
+    AgentWorkflowMessageRunCreateWrite,
     AgentWorkflowRead,
     AgentWorkflowRunCreateRead,
     AgentWorkflowRunCreateWrite,
@@ -68,6 +73,11 @@ logger = logging.getLogger(__name__)
 DEFAULT_RUN_LEASE_SECONDS = 600
 MIN_WORKFLOW_WEBHOOK_SECRET_LENGTH = 16
 _PROCESS_WORKER_ID = f"{socket.gethostname()}:{os.getpid()}:{uuid4().hex}"
+_MESSAGE_PREVIEW_MAX_CHARS = 320
+_MARKDOWN_BLOCK_PREFIX_RE = re.compile(r"^\s{0,3}(?:(?:#{1,6}|>)\s*|(?:[-+*]|\d+[.)])\s+)")
+_MARKDOWN_IMAGE_RE = re.compile(r"!\[([^\]]*)\]\([^)]*\)")
+_MARKDOWN_LINK_RE = re.compile(r"\[([^\]]+)\]\([^)]*\)")
+_MARKDOWN_INLINE_CODE_RE = re.compile(r"`{1,3}([^`]*)`{1,3}")
 
 
 @dataclass(frozen=True, slots=True)
@@ -296,6 +306,130 @@ def list_run_collection(
     )
 
 
+def _encode_message_cursor(step: AgentRunStep) -> str:
+    payload = {
+        "v": 1,
+        "created_at": normalize_shanghai_datetime(step.created_at).isoformat(),
+        "id": step.id,
+    }
+    return urlsafe_b64encode(json.dumps(payload, separators=(",", ":")).encode()).decode().rstrip("=")
+
+
+def _decode_message_cursor(cursor: str) -> tuple[datetime, str]:
+    normalized = str(cursor or "").strip()
+    if not normalized or len(normalized) > 512:
+        raise ValidationError("Invalid Agent message cursor")
+    try:
+        raw = urlsafe_b64decode(normalized + ("=" * (-len(normalized) % 4)))
+        payload = json.loads(raw.decode())
+        if not isinstance(payload, dict) or payload.get("v") != 1:
+            raise ValueError("unsupported cursor version")
+        created_at = datetime.fromisoformat(str(payload["created_at"]))
+        step_id = str(payload["id"]).strip()
+        if not step_id or len(step_id) > 64:
+            raise ValueError("invalid step id")
+    except (Base64DecodeError, KeyError, TypeError, UnicodeDecodeError, ValueError, json.JSONDecodeError) as exc:
+        raise ValidationError("Invalid Agent message cursor") from exc
+    return normalize_shanghai_datetime(created_at), step_id
+
+
+def _message_text_from_step(step: AgentRunStep) -> str:
+    output_payload = reveal_sensitive_data(
+        dict(step.output_payload or {}),
+        purpose=RUNTIME_STATE_SECRET_PURPOSE,
+    )
+    return str(dict(output_payload or {}).get("message") or "").strip()
+
+
+def _message_preview(message: str) -> str:
+    first_line = next(
+        (line.strip() for line in message.splitlines() if line.strip()),
+        "",
+    )
+    preview = _MARKDOWN_BLOCK_PREFIX_RE.sub("", first_line, count=1)
+    preview = _MARKDOWN_IMAGE_RE.sub(r"\1", preview)
+    preview = _MARKDOWN_LINK_RE.sub(r"\1", preview)
+    preview = _MARKDOWN_INLINE_CODE_RE.sub(r"\1", preview)
+    preview = re.sub(r"<[^>]+>", "", preview)
+    preview = re.sub(r"(?<!\\)(?:\*\*|__|~~)", "", preview)
+    preview = " ".join(preview.split()).strip()
+    if len(preview) <= _MESSAGE_PREVIEW_MAX_CHARS:
+        return preview
+    return f"{preview[: _MESSAGE_PREVIEW_MAX_CHARS - 1].rstrip()}…"
+
+
+def list_agent_messages(
+    session: Session,
+    *,
+    workflow_key: str | None = None,
+    execution_mode: str | None = None,
+    cursor: str | None = None,
+    limit: int = 25,
+) -> AgentMessageCollectionRead:
+    normalized_workflow_key = str(workflow_key or "").strip() or None
+    normalized_mode = str(execution_mode or "").strip() or None
+    if normalized_mode not in {None, "live", "dry_run"}:
+        raise ValidationError("Unsupported Agent message execution mode")
+    effective_limit = int(limit)
+    if effective_limit < 1 or effective_limit > 100:
+        raise ValidationError("Agent message page size must be between 1 and 100")
+    cursor_created_at = None
+    cursor_id = None
+    if cursor:
+        cursor_created_at, cursor_id = _decode_message_cursor(cursor)
+
+    rows, total, has_more = repo.query_agent_message_steps(
+        session,
+        workflow_key=normalized_workflow_key,
+        execution_mode=normalized_mode,
+        cursor_created_at=cursor_created_at,
+        cursor_id=cursor_id,
+        limit=effective_limit,
+    )
+    items: list[AgentMessageSummaryRead] = []
+    for step, run in rows:
+        message = _message_text_from_step(step)
+        if not message:
+            continue
+        items.append(
+            AgentMessageSummaryRead(
+                id=step.id,
+                run_id=run.id,
+                workflow_key=run.workflow_key,
+                node_key=step.node_key,
+                message_preview=_message_preview(message),
+                execution_mode=run.execution_mode,
+                created_at=step.created_at,
+            )
+        )
+    return AgentMessageCollectionRead(
+        items=items,
+        total=total,
+        limit=effective_limit,
+        has_more=has_more,
+        next_cursor=_encode_message_cursor(rows[-1][0]) if has_more and rows else None,
+    )
+
+
+def get_agent_message(session: Session, *, message_id: str) -> AgentMessageRead:
+    row = repo.get_agent_message_step(session, message_id=str(message_id or "").strip())
+    if row is None:
+        raise ResourceNotFound("Agent message not found")
+    step, run = row
+    message = _message_text_from_step(step)
+    if not message:
+        raise ResourceNotFound("Agent message not found")
+    return AgentMessageRead(
+        id=step.id,
+        run_id=run.id,
+        workflow_key=run.workflow_key,
+        node_key=step.node_key,
+        message=message,
+        execution_mode=run.execution_mode,
+        created_at=step.created_at,
+    )
+
+
 def get_agent_overview(
     session: Session,
     *,
@@ -482,6 +616,8 @@ def create_workflow_run(
     binding = _select_trigger_binding(
         workflow, payload, preferred_type=f"trigger.{trigger_kind}" if trigger_kind else None
     )
+    if binding is None:
+        raise ValidationError(f"Workflow has no enabled trigger.{trigger_kind} binding")
     queued = enqueue_workflow_run(
         session,
         workflow_key=workflow.key,
@@ -504,6 +640,41 @@ def create_workflow_run(
         session.expire_all()
     run, steps = get_run_detail(session, queued.id)
     return AgentWorkflowRunCreateRead(run=run, steps=steps, validation=validation)
+
+
+def create_message_workflow_run(
+    session: Session,
+    runtime: AutomationRuntime,
+    *,
+    workflow_key: str,
+    payload: AgentWorkflowMessageRunCreateWrite,
+    principal: RunPrincipal | None = None,
+) -> AgentWorkflowRunCreateRead:
+    workflow = get_agent_workflow(session, workflow_key)
+    binding = next(
+        (item for item in workflow.trigger_bindings if item.enabled and item.type == "trigger.message"),
+        None,
+    )
+    if binding is None:
+        raise ValidationError("Workflow does not have an enabled message trigger")
+    message = payload.message.strip()
+    return create_workflow_run(
+        session,
+        runtime,
+        workflow_key=workflow_key,
+        payload=AgentWorkflowRunCreateWrite(
+            trigger_binding_id=binding.id,
+            trigger_event="message.submitted",
+            target_type="message",
+            context_payload={"message": message},
+            input_payload={"message": message},
+            idempotency_key=payload.idempotency_key,
+            execution_mode=payload.execution_mode,
+            execute_immediately=payload.execute_immediately,
+        ),
+        trigger_kind="message",
+        principal=principal,
+    )
 
 
 def test_workflow_run(
@@ -844,7 +1015,9 @@ def _next_run_sequence_no(session: Session, run_id: str) -> int:
 
 def _persist_graph_trace_steps(session: Session, run: AgentRun, trace: list[dict[str, Any]]) -> None:
     existing_steps = repo.list_agent_run_steps(session, run_id=run.id)
-    persisted_count = len([item for item in existing_steps if item.step_kind == "graph_node_completed"])
+    persisted_count = len(
+        [item for item in existing_steps if item.step_kind in {"graph_node_completed", "message_output"}]
+    )
     next_sequence = (existing_steps[-1].sequence_no if existing_steps else 0) + 1
     for entry in trace[persisted_count:]:
         finished_at_raw = entry.get("finished_at")
@@ -859,7 +1032,7 @@ def _persist_graph_trace_steps(session: Session, run: AgentRun, trace: list[dict
             run_id=run.id,
             sequence_no=next_sequence,
             node_key=str(entry.get("node_key") or "graph_node"),
-            step_kind="graph_node_completed",
+            step_kind=str(entry.get("step_kind") or "graph_node_completed"),
             status=str(entry.get("status") or "completed"),
             narrative=str(entry.get("narrative") or "图节点已完成执行。"),
             input_payload=dict(entry.get("input_payload") or {}),

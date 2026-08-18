@@ -1,13 +1,17 @@
-import { useGetOverviewApiV1AdminAutomationOverviewGet } from "@serino/api-client/admin";
+import {
+  useGetMessagesApiV1AdminAutomationMessagesGet,
+  useGetOverviewApiV1AdminAutomationOverviewGet,
+} from "@serino/api-client/admin";
 import { AdminSegmentedFilter } from "@/components/ui/AdminSegmentedFilter";
 import { useI18n } from "@/i18n";
 import { cn } from "@/lib/utils";
 import { AgentRunsPanel } from "./AgentRunsPage";
+import { AgentMessagesPanel } from "./AgentMessagesPage";
 import { ApprovalsPanel } from "./ApprovalsPage";
 import { summarizeAutomationOverview } from "./automation-run-view";
 import { useSearchParams } from "react-router-dom";
 
-type ActivityView = "runs" | "approvals";
+type ActivityView = "messages" | "runs" | "approvals";
 
 const COPY = {
   zh: {
@@ -17,6 +21,7 @@ const COPY = {
     failed: "失败",
     approvalsList: "审批列表",
     runsList: "运行记录",
+    messagesList: "留言列表",
   },
   en: {
     approvals: "Pending approvals",
@@ -25,18 +30,29 @@ const COPY = {
     failed: "Failed",
     approvalsList: "Approvals",
     runsList: "Runs",
+    messagesList: "Messages",
   },
 } as const;
 
 export function AgentActivitySection() {
   const { lang } = useI18n();
   const [searchParams, setSearchParams] = useSearchParams();
-  const view: ActivityView = searchParams.get("view") === "approvals" ? "approvals" : "runs";
+  const requestedView = searchParams.get("view");
+  const view: ActivityView =
+    requestedView === "approvals" || requestedView === "messages"
+      ? requestedView
+      : "runs";
   const copy = COPY[lang];
   const { data: overviewRaw } = useGetOverviewApiV1AdminAutomationOverviewGet({
     query: { refetchOnWindowFocus: true },
   });
   const summary = summarizeAutomationOverview(overviewRaw?.data);
+  const { data: messageCollectionRaw } =
+    useGetMessagesApiV1AdminAutomationMessagesGet(
+      { limit: 1 },
+      { query: { refetchOnWindowFocus: true } },
+    );
+  const messageCount = messageCollectionRaw?.data.total ?? 0;
 
   const metrics = [
     { key: "approvals", label: copy.approvals, value: summary.approvals },
@@ -52,9 +68,10 @@ export function AgentActivitySection() {
           value={view}
           onValueChange={(next) => {
             const nextView = next as ActivityView;
-            setSearchParams(nextView === "approvals" ? { view: "approvals" } : {}, { replace: true });
+            setSearchParams(nextView === "runs" ? {} : { view: nextView }, { replace: true });
           }}
           items={[
+            { value: "messages", label: copy.messagesList, badge: messageCount },
             { value: "approvals", label: copy.approvalsList, badge: summary.approvals },
             { value: "runs", label: copy.runsList, badge: summary.runs },
           ]}
@@ -95,7 +112,9 @@ export function AgentActivitySection() {
       </div>
 
       <div className="min-w-0">
-        {view === "runs" ? (
+        {view === "messages" ? (
+          <AgentMessagesPanel runDetailBasePath="/agent/activity/runs" />
+        ) : view === "runs" ? (
           <AgentRunsPanel runDetailBasePath="/agent/activity/runs" />
         ) : (
           <ApprovalsPanel runDetailBasePath="/agent/activity/runs" />

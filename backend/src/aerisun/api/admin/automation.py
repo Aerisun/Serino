@@ -23,6 +23,8 @@ from aerisun.domain.automation.model_management import (
     start_chatgpt_device_login,
 )
 from aerisun.domain.automation.schemas import (
+    AgentMessageCollectionRead,
+    AgentMessageRead,
     AgentModelConfigRead,
     AgentModelConfigTestRead,
     AgentModelConfigUpdate,
@@ -38,6 +40,7 @@ from aerisun.domain.automation.schemas import (
     AgentWorkflowDraftCreateRead,
     AgentWorkflowDraftCreateWrite,
     AgentWorkflowDraftRead,
+    AgentWorkflowMessageRunCreateWrite,
     AgentWorkflowRead,
     AgentWorkflowRunCreateRead,
     AgentWorkflowRunCreateWrite,
@@ -70,15 +73,18 @@ from aerisun.domain.automation.service import (
     continue_agent_workflow_draft,
     continue_surface_draft,
     create_agent_workflow_from_draft,
+    create_message_workflow_run,
     create_webhook_subscription,
     create_workflow_run,
     delete_webhook_subscription,
     full_access_run_principal,
+    get_agent_message,
     get_agent_overview,
     get_agent_workflow_catalog,
     get_agent_workflow_draft,
     get_run_detail,
     get_surface_draft,
+    list_agent_messages,
     list_pending_approvals,
     list_run_collection,
     list_webhook_dead_letters,
@@ -422,6 +428,28 @@ def post_workflow_run(
     )
 
 
+@router.post(
+    "/workflows/{workflow_key}/message-runs",
+    response_model=AgentWorkflowRunCreateRead,
+    summary="使用留言触发工作流",
+)
+def post_workflow_message_run(
+    workflow_key: str,
+    payload: AgentWorkflowMessageRunCreateWrite,
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> AgentWorkflowRunCreateRead:
+    from aerisun.domain.automation.runtime_registry import get_automation_runtime
+
+    return create_message_workflow_run(
+        session,
+        get_automation_runtime(),
+        workflow_key=workflow_key,
+        payload=payload,
+        principal=full_access_run_principal("admin", _admin.id),
+    )
+
+
 @router.post("/workflows/{workflow_key}/test-runs", response_model=AgentWorkflowRunCreateRead, summary="测试运行工作流")
 def post_workflow_test_run(
     workflow_key: str,
@@ -491,6 +519,33 @@ def get_runs(
         cursor=cursor,
         limit=limit,
     )
+
+
+@router.get("/messages", response_model=AgentMessageCollectionRead, summary="获取 Agent 留言列表")
+def get_messages(
+    workflow_key: str | None = Query(default=None, max_length=120),
+    execution_mode: Literal["live", "dry_run"] | None = Query(default=None),
+    cursor: str | None = Query(default=None, max_length=512),
+    limit: int = Query(default=25, ge=1, le=100),
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> AgentMessageCollectionRead:
+    return list_agent_messages(
+        session,
+        workflow_key=workflow_key,
+        execution_mode=execution_mode,
+        cursor=cursor,
+        limit=limit,
+    )
+
+
+@router.get("/messages/{message_id}", response_model=AgentMessageRead, summary="获取 Agent 留言详情")
+def get_message(
+    message_id: str,
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> AgentMessageRead:
+    return get_agent_message(session, message_id=message_id)
 
 
 @router.get("/runs/{run_id}", response_model=AgentRunRead, summary="获取单个 Agent 运行记录")

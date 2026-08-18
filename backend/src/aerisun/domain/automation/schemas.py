@@ -899,6 +899,21 @@ class AgentWorkflowRunCreateWrite(BaseModel):
     execute_immediately: bool = True
 
 
+class AgentWorkflowMessageRunCreateWrite(BaseModel):
+    message: str = Field(min_length=1, max_length=20_000)
+    idempotency_key: str | None = Field(default=None, min_length=1, max_length=255)
+    execution_mode: Literal["live", "dry_run"] = "live"
+    execute_immediately: bool = True
+
+    @field_validator("message")
+    @classmethod
+    def normalize_message(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("Message must not be blank")
+        return normalized
+
+
 class AgentWorkflowRunCreateRead(ModelBase):
     run: AgentRunRead
     steps: list[AgentRunStepRead] = Field(default_factory=list)
@@ -1063,6 +1078,34 @@ class AgentRunApprovalRead(ModelBase):
 
 class AgentRunCollectionRead(BaseModel):
     items: list[AgentRunRead] = Field(default_factory=list)
+    total: int = 0
+    limit: int = 25
+    has_more: bool = False
+    next_cursor: str | None = None
+
+
+class AgentMessageSummaryRead(ModelBase):
+    id: str
+    run_id: str
+    workflow_key: str
+    node_key: str
+    message_preview: str
+    execution_mode: Literal["live", "dry_run"] = "live"
+    created_at: datetime
+
+
+class AgentMessageRead(ModelBase):
+    id: str
+    run_id: str
+    workflow_key: str
+    node_key: str
+    message: str
+    execution_mode: Literal["live", "dry_run"] = "live"
+    created_at: datetime
+
+
+class AgentMessageCollectionRead(BaseModel):
+    items: list[AgentMessageSummaryRead] = Field(default_factory=list)
     total: int = 0
     limit: int = 25
     has_more: bool = False

@@ -17,6 +17,7 @@ import {
   runtimePolicyDefaults,
   WORKFLOWS_QUERY_KEY,
 } from "./workflow-shared";
+import { WorkflowQuickTriggerButton } from "./WorkflowQuickTriggerButton";
 
 const loadWorkflowVisualEditorDialog = () =>
   import("./WorkflowVisualEditorDialog").then((module) => ({
@@ -181,6 +182,7 @@ export function AgentWorkflowsSection() {
                   </div>
 
                   <div className="flex items-center gap-2">
+                    <WorkflowQuickTriggerButton workflow={item} />
                     <Button
                       variant="default"
                       size="sm"

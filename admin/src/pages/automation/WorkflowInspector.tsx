@@ -268,6 +268,7 @@ export function WorkflowInspector(props: WorkflowInspectorProps) {
         "trigger.webhook",
         "trigger.schedule",
         "trigger.manual",
+        "trigger.message",
       ]
         .map((type) => catalog?.node_types?.find((item) => item.type === type))
         .filter((item): item is AgentWorkflowCatalogNodeType => Boolean(item)),
@@ -488,6 +489,10 @@ export function WorkflowInspector(props: WorkflowInspectorProps) {
                               ? lang === "zh"
                                 ? "轮询检测会结合这份结构化输出持续检查状态。"
                                 : "Polling will use this structured output while checking status over time."
+                              : targetNode.data.nodeType === "output.message"
+                                ? lang === "zh"
+                                  ? "留言节点会保存 AI 输出的完整文字，并显示在活动记录的留言列表中。"
+                                  : "The message node saves the complete AI output and shows it in Agent activity."
                               : lang === "zh"
                                 ? "下游节点会读取这份结构化输出继续处理。"
                                 : "The downstream node will read this structured output and continue processing.";

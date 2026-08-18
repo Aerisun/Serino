@@ -271,6 +271,19 @@ def derive_ai_output_schema(
             source_node_ids.append(node_id)
             continue
 
+        if node_type == "output.message":
+            properties.setdefault(
+                "message",
+                {
+                    "type": "string",
+                    "description": "The complete internal message shown in Agent activity.",
+                },
+            )
+            if "message" not in required_fields:
+                required_fields.append("message")
+            source_node_ids.append(node_id)
+            continue
+
         if node_type == "apply.action":
             surface_key = str(config.get("surface_key") or "").strip()
             if surface_key:

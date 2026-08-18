@@ -10,9 +10,7 @@ import type {
   WebhookDeliveryRead,
   WebhookSubscriptionRead,
 } from "@serino/api-client/models";
-import {
-  getAgentWorkflowCatalog,
-} from "@/pages/automation/api";
+import { getAgentWorkflowCatalog } from "@/pages/automation/api";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import {
@@ -200,7 +198,6 @@ function WorkflowVisualEditorDialogInner({
     selectedOperation,
     selectedOperationExamples,
     selectedSourceNodeDefinition,
-    summaryPreview,
     onNodesChange,
     onEdgesChange,
     onConnect,
@@ -417,9 +414,7 @@ function WorkflowVisualEditorDialogInner({
               registry={registry}
               catalog={catalog}
               lang={lang}
-              copy={copy}
               viewport={viewport}
-              summaryPreview={summaryPreview}
               onNodesChange={onNodesChange}
               onEdgesChange={onEdgesChange}
               onConnect={onConnect}

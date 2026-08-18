@@ -138,6 +138,34 @@ def _node_types() -> list[AgentWorkflowCatalogNodeTypeRead]:
             ],
         ),
         AgentWorkflowCatalogNodeTypeRead(
+            type="trigger.message",
+            label="留言触发",
+            category="trigger",
+            description="由管理员输入一段内部留言来启动流程。",
+            icon="message-square",
+            default_config={"event_type": "message.submitted", "target_type": "message"},
+            config_schema={
+                "type": "object",
+                "properties": {
+                    "event_type": {"type": "string"},
+                    "target_type": {"type": "string"},
+                },
+            },
+            input_ports=[],
+            output_ports=[
+                _port(
+                    "next",
+                    "Next",
+                    "right",
+                    data_schema={
+                        "type": "object",
+                        "properties": {"message": {"type": "string"}},
+                        "required": ["message"],
+                    },
+                ),
+            ],
+        ),
+        AgentWorkflowCatalogNodeTypeRead(
             type="trigger.schedule",
             label="定时触发",
             category="trigger",
@@ -371,6 +399,36 @@ def _node_types() -> list[AgentWorkflowCatalogNodeTypeRead]:
                 },
             },
             input_ports=[_port("in", "In", "left", required=False)],
+            output_ports=[],
+        ),
+        AgentWorkflowCatalogNodeTypeRead(
+            type="output.message",
+            label="留言",
+            category="common",
+            description="保存前面节点生成的内部留言，并显示在活动记录中。",
+            icon="message-square",
+            default_config={"message_path": "message"},
+            config_schema={
+                "type": "object",
+                "properties": {
+                    "message_path": {
+                        "type": "string",
+                        "description": "Path to the message text in the upstream output",
+                    },
+                },
+            },
+            input_ports=[
+                _port(
+                    "message",
+                    "留言",
+                    "left",
+                    data_schema={
+                        "type": "object",
+                        "properties": {"message": {"type": "string"}},
+                        "required": ["message"],
+                    },
+                ),
+            ],
             output_ports=[],
         ),
         AgentWorkflowCatalogNodeTypeRead(
@@ -865,6 +923,20 @@ def _trigger_types() -> list[AgentWorkflowCatalogTriggerTypeRead]:
             description="由后台手动执行，用于测试或受控运行。",
             config_schema={"type": "object", "properties": {}},
             example_config={},
+        ),
+        AgentWorkflowCatalogTriggerTypeRead(
+            type="trigger.message",
+            label="留言触发",
+            description="由管理员输入一段内部留言来触发工作流。",
+            config_schema={
+                "type": "object",
+                "properties": {
+                    "event_type": {"type": "string"},
+                    "target_type": {"type": "string"},
+                },
+            },
+            example_config={"event_type": "message.submitted", "target_type": "message"},
+            supports_target_types=["message"],
         ),
         AgentWorkflowCatalogTriggerTypeRead(
             type="trigger.schedule",

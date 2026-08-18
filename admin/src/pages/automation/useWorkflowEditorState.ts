@@ -32,6 +32,7 @@ import {
   type CopyShape,
   CATEGORY_ORDER_FALLBACK,
   cloneJson,
+  canAddWorkflowNode,
   workflowGraphToCanvas,
   canvasToGraph,
   deriveTriggerBindings,
@@ -54,6 +55,7 @@ const SKETCH_NODE_TYPES = new Set([
   "trigger.webhook",
   "trigger.manual",
   "trigger.schedule",
+  "trigger.message",
   "flow.condition",
   "flow.delay",
   "flow.poll",
@@ -63,11 +65,13 @@ const SKETCH_NODE_TYPES = new Set([
   "apply.action",
   "approval.review",
   "notification.webhook",
+  "output.message",
 ]);
 
 const COMMON_NODE_TYPE_ORDER = [
   "trigger.event",
   "ai.task",
+  "output.message",
   "approval.review",
   "notification.webhook",
 ] as const;
@@ -77,9 +81,11 @@ const COMMON_NODE_TYPES = new Set([
   "trigger.webhook",
   "trigger.manual",
   "trigger.schedule",
+  "trigger.message",
   "ai.task",
   "approval.review",
   "notification.webhook",
+  "output.message",
 ]);
 
 const GENERIC_TRIGGER_DEFAULT_TYPE = "trigger.event";
@@ -171,7 +177,9 @@ export function useWorkflowEditorState({
     );
     const commonItems = COMMON_NODE_TYPE_ORDER.map((type) =>
       type === GENERIC_TRIGGER_DEFAULT_TYPE
-        ? toDisplayItem(defaultTrigger)
+        ? nodes.some((node) => node.data.nodeType.startsWith("trigger."))
+          ? null
+          : toDisplayItem(defaultTrigger)
         : visibleNodeTypes.find((item) => item.type === type) || null,
     ).filter((item): item is AgentWorkflowCatalogNodeType => item !== null);
 
@@ -210,7 +218,7 @@ export function useWorkflowEditorState({
         ),
       })),
     ].filter((group) => group.items.length > 0);
-  }, [lang, visibleNodeTypes]);
+  }, [lang, nodes, visibleNodeTypes]);
 
   const operationCatalog = useMemo(
     () => catalog?.operation_catalog || [],
@@ -261,21 +269,6 @@ export function useWorkflowEditorState({
     const sourceNode = nodes.find((node) => node.id === selectedEdge.source);
     return sourceNode ? registry.get(sourceNode.data.nodeType) || null : null;
   }, [nodes, registry, selectedEdge]);
-
-  const graphPreview = useMemo(
-    () => canvasToGraph(nodes, edges, viewport),
-    [nodes, edges, viewport],
-  );
-
-  const triggerBindingsPreview = useMemo(
-    () => deriveTriggerBindings(nodes),
-    [nodes],
-  );
-
-  const summaryPreview = useMemo(
-    () => deriveWorkflowSummary(workflowName, graphPreview, triggerBindingsPreview),
-    [graphPreview, triggerBindingsPreview, workflowName],
-  );
 
   const applyWorkflowState = useCallback((nextWorkflow: AgentWorkflow) => {
     const canvas = workflowGraphToCanvas(nextWorkflow.graph);
@@ -625,6 +618,14 @@ export function useWorkflowEditorState({
 
   const addNode = useCallback(
     (definition: AgentWorkflowCatalogNodeType) => {
+      if (!canAddWorkflowNode(nodes, definition.type)) {
+        toast.error(
+          lang === "zh"
+            ? "一个工作流只能有一个触发器，请直接修改现有触发器。"
+            : "A workflow can have only one trigger. Edit the existing trigger instead.",
+        );
+        return;
+      }
       const createdId = nextNodeId(definition.type, nodes);
       const isGenericTrigger =
         definition.type === GENERIC_TRIGGER_DEFAULT_TYPE &&
@@ -1162,7 +1163,6 @@ export function useWorkflowEditorState({
     selectedOperation,
     selectedOperationExamples,
     selectedSourceNodeDefinition,
-    summaryPreview,
     onNodesChange,
     onEdgesChange,
     onConnect,

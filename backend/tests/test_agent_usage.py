@@ -190,7 +190,7 @@ class TestAgentUsage:
             "aerisun://diary",
             "aerisun://thoughts",
             "aerisun://excerpts",
-            "aerisun://feeds/posts",
+            "aerisun://feeds/articles",
         }.issubset(resource_names)
         assert data["skill_maps"][0]["id"] == "comment-moderation"
         assert data["skill_maps"][0]["docs_url"].endswith("/api/agent/usage")

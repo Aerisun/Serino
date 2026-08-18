@@ -104,6 +104,7 @@ class AgentRunStep(Base, TimestampMixin):
     __table_args__ = (
         Index("uq_agent_run_steps_run_sequence", "run_id", "sequence_no", unique=True),
         Index("ix_agent_run_steps_run_id_status", "run_id", "status"),
+        Index("ix_agent_run_steps_kind_created_at", "step_kind", "created_at"),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)

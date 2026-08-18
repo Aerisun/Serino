@@ -9,7 +9,6 @@ import {
   type NodeProps,
   type OnEdgesChange,
   type OnNodesChange,
-  Panel,
   ReactFlow,
   type Connection,
 } from "@xyflow/react";
@@ -22,7 +21,6 @@ import { cn } from "@/lib/utils";
 import {
   type WorkflowCanvasNode,
   type WorkflowCanvasEdge,
-  type CopyShape,
   edgeKind,
   iconForName,
   toneForCategory,
@@ -188,14 +186,7 @@ interface WorkflowCanvasProps {
   registry: Map<string, AgentWorkflowCatalogNodeType>;
   catalog: AgentWorkflowCatalog | undefined;
   lang: Lang;
-  copy: CopyShape;
   viewport: { x: number; y: number; zoom: number };
-  summaryPreview: {
-    trigger_labels: string[];
-    node_count: number;
-    operation_count: number;
-    high_risk_operation_count: number;
-  };
   onNodesChange: OnNodesChange<WorkflowCanvasNode>;
   onEdgesChange: OnEdgesChange<WorkflowCanvasEdge>;
   onConnect: (connection: Connection) => void;
@@ -218,9 +209,7 @@ export function WorkflowCanvas({
   registry,
   catalog,
   lang,
-  copy,
   viewport,
-  summaryPreview,
   onNodesChange,
   onEdgesChange,
   onConnect,
@@ -343,32 +332,6 @@ export function WorkflowCanvas({
         <Background variant={BackgroundVariant.Dots} gap={20} size={1.1} color="rgba(148,163,184,0.22)" />
         <MiniMap pannable zoomable className="!bottom-5 !right-5 !rounded-2xl !border !border-border/60 !bg-background/85" />
         <Controls className="!bottom-5 !left-5" />
-
-        <Panel position="bottom-left">
-          <div className="w-[240px] rounded-[22px] border border-border/60 bg-background/82 px-4 py-3 shadow-[var(--admin-shadow-md)] backdrop-blur-xl">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-              {copy.runtimeSummary}
-            </div>
-            <div className="mt-2 space-y-2 text-sm leading-6">
-              <div>
-                <div className="text-xs text-muted-foreground">{copy.triggers}</div>
-                <div className="text-foreground">{summaryPreview.trigger_labels.length}</div>
-              </div>
-              <div>
-                <div className="text-xs text-muted-foreground">{copy.nodes}</div>
-                <div className="text-foreground">{summaryPreview.node_count}</div>
-              </div>
-              <div>
-                <div className="text-xs text-muted-foreground">{copy.operations}</div>
-                <div className="text-foreground">{summaryPreview.operation_count}</div>
-              </div>
-              <div>
-                <div className="text-xs text-muted-foreground">{copy.highRisk}</div>
-                <div className="text-foreground">{summaryPreview.high_risk_operation_count}</div>
-              </div>
-            </div>
-          </div>
-        </Panel>
       </ReactFlow>
     </div>
   );

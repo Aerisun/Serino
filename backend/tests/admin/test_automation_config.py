@@ -5,6 +5,7 @@ import sqlite3
 from typing import Any, ClassVar
 
 import httpx
+import pytest
 
 from aerisun.core.settings import get_settings
 from aerisun.domain.agent.capabilities.registry import _json_schema_for_annotation
@@ -19,6 +20,7 @@ from aerisun.domain.automation.runtime import (
     _ai_shell_input_payload,
     _effective_model_timeout_seconds,
     _enforce_tool_usage_policy,
+    build_model_chat_completions_url,
 )
 from aerisun.domain.automation.schemas import (
     ActionSurfaceEntrySpec,
@@ -429,6 +431,23 @@ def test_admin_agent_model_config_test_preserves_versioned_api_root(client, admi
     assert response.status_code == 200
     assert response.json()["ok"] is True
     assert captured["url"] == "https://ark.cn-beijing.volces.com/api/v3/chat/completions"
+
+
+@pytest.mark.parametrize(
+    ("base_url", "expected"),
+    [
+        (
+            "https://generativelanguage.googleapis.com/v1beta/openai/",
+            "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+        ),
+        (
+            "https://gateway.example.com/openai/chat/completions?api-version=2026-01-01",
+            "https://gateway.example.com/openai/chat/completions?api-version=2026-01-01",
+        ),
+    ],
+)
+def test_model_chat_completions_url_preserves_api_root_and_query(base_url: str, expected: str) -> None:
+    assert build_model_chat_completions_url(base_url) == expected
 
 
 def test_admin_agent_model_config_test_rejects_empty_response_body(client, admin_headers, monkeypatch) -> None:

@@ -4,7 +4,6 @@ import ast
 import hashlib
 import json
 import logging
-import re
 import sqlite3
 import threading
 import time
@@ -13,6 +12,7 @@ from contextlib import suppress
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, TypedDict
+from urllib.parse import urlsplit
 
 import httpx
 from jsonschema import ValidationError as JsonSchemaValidationError
@@ -316,12 +316,13 @@ def _append_trace(
     input_payload: dict[str, Any] | None = None,
     output_payload: dict[str, Any] | None = None,
     error_payload: dict[str, Any] | None = None,
+    step_kind: str = "graph_node_completed",
 ) -> list[dict[str, Any]]:
     trace = _copy_trace(state)
     trace.append(
         {
             "node_key": node_id,
-            "step_kind": "graph_node_completed",
+            "step_kind": step_kind,
             "status": status,
             "narrative": narrative,
             "input_payload": input_payload or {},
@@ -716,16 +717,16 @@ def _evaluate_condition_expression(expression: str, state: WorkflowExecutionStat
     return _eval_expr(tree.body, _condition_environment(state))
 
 
-_VERSIONED_MODEL_API_ROOT_RE = re.compile(r"/v\d+$", re.IGNORECASE)
-
-
 def build_model_chat_completions_url(base_url: str) -> str:
-    normalized = base_url.strip().rstrip("/")
-    if normalized.endswith("/chat/completions"):
-        return normalized
-    if _VERSIONED_MODEL_API_ROOT_RE.search(normalized):
-        return f"{normalized}/chat/completions"
-    return f"{normalized}/v1/chat/completions"
+    parsed = urlsplit(base_url.strip())
+    base_path = parsed.path.rstrip("/")
+    if base_path.endswith("/chat/completions"):
+        endpoint_path = base_path
+    elif base_path:
+        endpoint_path = f"{base_path}/chat/completions"
+    else:
+        endpoint_path = "/v1/chat/completions"
+    return parsed._replace(path=endpoint_path).geturl()
 
 
 def _extract_choice_message(payload: dict[str, Any]) -> dict[str, Any]:
@@ -1628,6 +1629,9 @@ def _describe_ai_downstream_contracts(
         elif target_type == "approval.review":
             contract["required_fields"] = ["summary", "needs_approval"]
             contract["usage_note"] = f"Approval node {target_label} will use this AI output as review content."
+        elif target_type == "output.message":
+            contract["required_fields"] = ["message"]
+            contract["usage_note"] = f"Message node {target_label} will save the complete message in Agent activity."
         elif target_type == "flow.condition":
             contract["usage_note"] = f"Condition node {target_label} will branch based on fields from this AI output."
         elif target_type == "ai.task":
@@ -1766,13 +1770,19 @@ def _execute_trigger_node(
     state: WorkflowExecutionState, *, node_id: str, node_type: str, node_config: dict[str, Any]
 ) -> WorkflowExecutionState:
     updates = _load_target_context(state)
-    payload = {
+    context_payload = dict(updates.get("context_payload") or state.get("context_payload") or {})
+    payload: dict[str, Any] = {
         "type": node_type,
         "trigger_event": state.get("trigger_event"),
         "target_type": state.get("target_type"),
         "target_id": state.get("target_id"),
         "config": node_config,
     }
+    if node_type == "trigger.message":
+        message = str(context_payload.get("message") or dict(state.get("inputs") or {}).get("message") or "").strip()
+        if not message:
+            raise ValidationError("Message trigger requires a non-empty message")
+        payload["message"] = message
     updates["node_outputs"] = _set_node_output(state, node_id=node_id, value=payload)
     updates["execution_trace"] = _append_trace(
         state,
@@ -1783,6 +1793,42 @@ def _execute_trigger_node(
         output_payload=payload,
     )
     return updates
+
+
+def _execute_message_output_node(
+    state: WorkflowExecutionState, *, node_id: str, node_config: dict[str, Any]
+) -> WorkflowExecutionState:
+    source_node_id = _previous_node_id(state)
+    source_payload = _node_output_payload(state, node_id=source_node_id) if source_node_id else {}
+    message_path = str(node_config.get("message_path") or "message").strip() or "message"
+    message_value = _lookup_path(source_payload, message_path)
+    if message_value is None:
+        latest_ai_output = dict(_copy_artifacts(state).get("latest_ai_output") or {})
+        message_value = _lookup_path(latest_ai_output, message_path)
+    if not isinstance(message_value, str) or not message_value.strip():
+        raise ValidationError(f"Message output node {node_id} requires a non-empty string at '{message_path}'")
+    message = message_value.strip()
+    if len(message) > 100_000:
+        raise ValidationError(f"Message output node {node_id} exceeds the 100000 character limit")
+    payload = {
+        "kind": "message",
+        "status": "completed",
+        "message": message,
+        "source_node_id": source_node_id,
+    }
+    return {
+        "result_payload": payload,
+        "node_outputs": _set_node_output(state, node_id=node_id, value=payload),
+        "execution_trace": _append_trace(
+            state,
+            node_id=node_id,
+            status="completed",
+            narrative="留言已保存到活动记录。",
+            input_payload={"message_path": message_path, "source_node_id": source_node_id},
+            output_payload=payload,
+            step_kind="message_output",
+        ),
+    }
 
 
 def _execute_apply_action_node(
@@ -3596,6 +3642,8 @@ def _execute_graph_node(
         return _execute_poll_node(effective_state, node_id=node_id, node_config=node_config)
     if normalized_type == "note":
         return _execute_note_node(effective_state, node_id=node_id, node_config=node_config)
+    if normalized_type == "output.message":
+        return _execute_message_output_node(effective_state, node_id=node_id, node_config=node_config)
     if normalized_type == "approval.review":
         return _execute_approval_node(effective_state, node_id=node_id, node_config=node_config)
     if normalized_type == "apply.action":

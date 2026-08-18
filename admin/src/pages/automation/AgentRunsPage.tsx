@@ -40,6 +40,7 @@ function humanizeTrigger(run: AgentRunRead, lang: "zh" | "en") {
         return "内容发布申请";
       default:
         if (kind === "manual") return "手动触发";
+        if (kind === "message") return "留言触发";
         if (kind === "webhook") return "Webhook 触发";
         if (kind === "schedule") return "定时触发";
         if (kind === "event") return event || "事件触发";
@@ -57,6 +58,7 @@ function humanizeTrigger(run: AgentRunRead, lang: "zh" | "en") {
       return "Publish request";
     default:
       if (kind === "manual") return "Manual";
+      if (kind === "message") return "Message trigger";
       if (kind === "webhook") return "Webhook";
       if (kind === "schedule") return "Scheduled";
       if (kind === "event") return event || "Event";
@@ -75,6 +77,7 @@ function humanizeTarget(run: AgentRunRead, lang: "zh" | "en") {
     content_batch: "内容批次",
     friend: "友链",
     asset: "资源",
+    message: "内部留言",
   };
   const enMap: Record<string, string> = {
     comment: "Comment",
@@ -83,6 +86,7 @@ function humanizeTarget(run: AgentRunRead, lang: "zh" | "en") {
     content_batch: "Content batch",
     friend: "Friend",
     asset: "Asset",
+    message: "Internal message",
   };
   const label = (lang === "zh" ? zhMap : enMap)[targetType] || targetType || "-";
   return targetId ? `${label}:${targetId}` : label;
@@ -164,9 +168,7 @@ export function AgentRunsPanel({
 
   return (
     <AdminSurface
-      eyebrow="Automation"
       title={t("automation.runs")}
-      description={t("automation.runsDescription")}
       actions={
         <Button variant="outline" size="sm" onClick={() => void refetch()} disabled={isFetching}>
           <RefreshCw className={`mr-2 h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />

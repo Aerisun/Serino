@@ -129,7 +129,8 @@ def compile_workflow(
     node_id_set = set(node_ids)
     nodes_by_id = {str(n.get("id") or "").strip(): n for n in nodes if str(n.get("id") or "").strip()}
     reverse_adj = _reverse_adjacency(graph)
-    has_trigger_node = any(str(n.get("type") or "").strip().startswith("trigger.") for n in nodes)
+    trigger_nodes = [n for n in nodes if str(n.get("type") or "").strip().startswith("trigger.")]
+    has_trigger_node = bool(trigger_nodes)
     has_webhook_trigger = any(normalize_node_type(str(n.get("type") or "").strip()) == "trigger.webhook" for n in nodes)
     has_approval = any(normalize_node_type(str(item.get("type") or "")) == "approval.review" for item in nodes)
     ai_output_port_usage: dict[tuple[str, str], int] = {}
@@ -161,12 +162,28 @@ def compile_workflow(
                 message="Workflow graph must contain at least one trigger node.",
             )
         )
+    elif len(trigger_nodes) > 1:
+        issues.append(
+            AgentWorkflowValidationIssueRead(
+                code="graph.multiple_triggers",
+                message="Workflow graph must contain exactly one trigger node.",
+                path="graph.nodes",
+            )
+        )
 
     if not trigger_bindings:
         issues.append(
             AgentWorkflowValidationIssueRead(
                 code="workflow.no_trigger_bindings",
                 message="Workflow must declare at least one trigger binding.",
+                path="trigger_bindings",
+            )
+        )
+    elif len(trigger_bindings) > 1:
+        issues.append(
+            AgentWorkflowValidationIssueRead(
+                code="workflow.multiple_trigger_bindings",
+                message="Workflow must declare exactly one trigger binding.",
                 path="trigger_bindings",
             )
         )
