@@ -1,15 +1,21 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
+import { useReducedMotionPreference } from "@/lib/useReducedMotion";
 import "./ImageLightbox.css";
 
 interface ImageLightboxProps {
   src: string;
   alt?: string;
   caption?: string;
+  showCaption?: boolean;
+  originImage?: HTMLImageElement | null;
   onClose: () => void;
 }
 
 const clamp = (value: number, limit: number) => Math.min(limit, Math.max(-limit, value));
+const OPEN_TRANSITION_DURATION = 320;
+const CLOSE_TRANSITION_DURATION = 260;
+const TRANSITION_EASING = "cubic-bezier(0.22, 0.61, 0.36, 1)";
 
 const constrainImageOffset = (
   image: HTMLImageElement | null,
@@ -23,10 +29,74 @@ const constrainImageOffset = (
   };
 };
 
-export default function ImageLightbox({ src, alt = "", caption, onClose }: ImageLightboxProps) {
+const isVisibleRect = (rect: DOMRect) => {
+  return rect.width > 0
+    && rect.height > 0
+    && rect.right > 0
+    && rect.bottom > 0
+    && rect.left < window.innerWidth
+    && rect.top < window.innerHeight;
+};
+
+const createTransitionImage = (sourceImage: HTMLImageElement, sourceRect: DOMRect) => {
+  const styles = window.getComputedStyle(sourceImage);
+  const transitionImage = document.createElement("img");
+  transitionImage.src = sourceImage.currentSrc || sourceImage.src;
+  transitionImage.alt = "";
+  transitionImage.setAttribute("aria-hidden", "true");
+  transitionImage.decoding = "async";
+  Object.assign(transitionImage.style, {
+    position: "fixed",
+    top: `${sourceRect.top}px`,
+    left: `${sourceRect.left}px`,
+    width: `${sourceRect.width}px`,
+    height: `${sourceRect.height}px`,
+    maxWidth: "none",
+    maxHeight: "none",
+    margin: "0",
+    borderRadius: styles.borderRadius,
+    objectFit: styles.objectFit,
+    objectPosition: styles.objectPosition,
+    pointerEvents: "none",
+    transformOrigin: "top left",
+    willChange: "transform",
+    contain: "paint",
+    zIndex: "1201",
+  });
+  document.body.appendChild(transitionImage);
+  return transitionImage;
+};
+
+const getTransitionKeyframes = (from: DOMRect, to: DOMRect): Keyframe[] => {
+  const translateX = to.left - from.left;
+  const translateY = to.top - from.top;
+  const scaleX = to.width / from.width;
+  const scaleY = to.height / from.height;
+  const targetTransform = `translate3d(${translateX}px, ${translateY}px, 0) scale(${scaleX}, ${scaleY})`;
+
+  return [
+    { transform: "translate3d(0, 0, 0) scale(1)" },
+    { transform: targetTransform },
+  ];
+};
+
+export default function ImageLightbox({
+  src,
+  alt = "",
+  caption,
+  showCaption = true,
+  originImage = null,
+  onClose,
+}: ImageLightboxProps) {
   const [zoom, setZoom] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageReady, setImageReady] = useState(false);
+  const [opening, setOpening] = useState(false);
+  const [presented, setPresented] = useState(false);
+  const [closing, setClosing] = useState(false);
+  const prefersReducedMotion = useReducedMotionPreference();
   const overlayRef = useRef<HTMLDivElement | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const onCloseRef = useRef(onClose);
@@ -36,6 +106,12 @@ export default function ImageLightbox({ src, alt = "", caption, onClose }: Image
   const pendingTransformRef = useRef({ zoom: 1, offset: { x: 0, y: 0 } });
   const dragRef = useRef<{ pointerId: number; x: number; y: number; offset: { x: number; y: number } } | null>(null);
   const pointersRef = useRef(new Map<number, { x: number; y: number }>());
+  const transitionImageRef = useRef<HTMLImageElement | null>(null);
+  const transitionAnimationRef = useRef<Animation | null>(null);
+  const hiddenOriginRef = useRef<{ image: HTMLImageElement; opacity: string; willChange: string } | null>(null);
+  const revealFrameRef = useRef<number | null>(null);
+  const closingRef = useRef(false);
+  const imageLoadedRef = useRef(false);
   const pinchRef = useRef<{
     distance: number;
     center: { x: number; y: number };
@@ -64,10 +140,158 @@ export default function ImageLightbox({ src, alt = "", caption, onClose }: Image
     onCloseRef.current = onClose;
   }, [onClose]);
 
+  const removeTransitionImage = useCallback(() => {
+    const animation = transitionAnimationRef.current;
+    if (animation) animation.cancel();
+    transitionAnimationRef.current = null;
+    transitionImageRef.current?.remove();
+    transitionImageRef.current = null;
+  }, []);
+
+  const restoreOriginImage = useCallback(() => {
+    const hiddenOrigin = hiddenOriginRef.current;
+    if (!hiddenOrigin) return;
+    hiddenOrigin.image.style.opacity = hiddenOrigin.opacity;
+    hiddenOrigin.image.style.willChange = hiddenOrigin.willChange;
+    hiddenOriginRef.current = null;
+  }, []);
+
+  const hideOriginImage = useCallback((image: HTMLImageElement) => {
+    if (hiddenOriginRef.current?.image === image) return;
+    restoreOriginImage();
+    hiddenOriginRef.current = { image, opacity: image.style.opacity, willChange: image.style.willChange };
+    image.style.willChange = "opacity";
+    image.style.opacity = "0";
+  }, [restoreOriginImage]);
+
+  const playImageTransition = useCallback((
+    sourceImage: HTMLImageElement,
+    from: DOMRect,
+    to: DOMRect,
+    duration: number,
+    onFinished: () => void,
+    retainTransitionImage = false,
+  ) => {
+    const transitionImage = createTransitionImage(sourceImage, from);
+    transitionImageRef.current = transitionImage;
+    const animation = transitionImage.animate(getTransitionKeyframes(from, to), {
+      duration,
+      easing: TRANSITION_EASING,
+      fill: "forwards",
+    });
+    transitionAnimationRef.current = animation;
+    void animation.finished
+      .catch(() => undefined)
+      .then(() => {
+        if (transitionAnimationRef.current !== animation) return;
+        transitionAnimationRef.current = null;
+        if (!retainTransitionImage) {
+          transitionImage.remove();
+          if (transitionImageRef.current === transitionImage) {
+            transitionImageRef.current = null;
+          }
+        }
+        onFinished();
+      });
+  }, []);
+
+  const finishClose = useCallback(() => {
+    restoreOriginImage();
+    onCloseRef.current();
+  }, [restoreOriginImage]);
+
+  const fadeOutAndClose = useCallback(() => {
+    const overlay = overlayRef.current;
+    if (!overlay) {
+      finishClose();
+      return;
+    }
+    const animation = overlay.animate([{ opacity: window.getComputedStyle(overlay).opacity }, { opacity: 0 }], {
+      duration: prefersReducedMotion ? 1 : CLOSE_TRANSITION_DURATION,
+      easing: TRANSITION_EASING,
+      fill: "forwards",
+    });
+    transitionAnimationRef.current = animation;
+    void animation.finished
+      .catch(() => undefined)
+      .then(() => {
+        if (transitionAnimationRef.current !== animation) return;
+        transitionAnimationRef.current = null;
+        finishClose();
+      });
+  }, [finishClose, prefersReducedMotion]);
+
+  const requestClose = useCallback(() => {
+    if (closingRef.current) return;
+    closingRef.current = true;
+    setClosing(true);
+    setOpening(false);
+    if (revealFrameRef.current !== null) {
+      window.cancelAnimationFrame(revealFrameRef.current);
+      revealFrameRef.current = null;
+    }
+    removeTransitionImage();
+
+    const targetImage = imageRef.current;
+    if (prefersReducedMotion || !originImage || !targetImage || !originImage.isConnected) {
+      fadeOutAndClose();
+      return;
+    }
+
+    const from = targetImage.getBoundingClientRect();
+    const to = originImage.getBoundingClientRect();
+    if (!isVisibleRect(from) || !isVisibleRect(to)) {
+      fadeOutAndClose();
+      return;
+    }
+
+    hideOriginImage(originImage);
+    setImageReady(false);
+    playImageTransition(targetImage, from, to, CLOSE_TRANSITION_DURATION, finishClose);
+  }, [fadeOutAndClose, finishClose, hideOriginImage, originImage, playImageTransition, prefersReducedMotion, removeTransitionImage]);
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      setPresented(true);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+
+  useEffect(() => {
+    if (!presented || !imageLoaded || opening || closing) return;
+    revealFrameRef.current = window.requestAnimationFrame(() => {
+      revealFrameRef.current = null;
+      setImageReady(true);
+    });
+    return () => {
+      if (revealFrameRef.current !== null) {
+        window.cancelAnimationFrame(revealFrameRef.current);
+        revealFrameRef.current = null;
+      }
+    };
+  }, [closing, imageLoaded, opening, presented]);
+
+  useEffect(() => {
+    if (!opening || !imageReady) return;
+    removeTransitionImage();
+    revealFrameRef.current = window.requestAnimationFrame(() => {
+      revealFrameRef.current = window.requestAnimationFrame(() => {
+        revealFrameRef.current = null;
+        setOpening(false);
+      });
+    });
+    return () => {
+      if (revealFrameRef.current !== null) {
+        window.cancelAnimationFrame(revealFrameRef.current);
+        revealFrameRef.current = null;
+      }
+    };
+  }, [imageReady, opening, removeTransitionImage]);
+
   useEffect(() => {
     const originalOverflow = document.body.style.overflow;
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onCloseRef.current();
+      if (event.key === "Escape") requestClose();
     };
     const overlay = overlayRef.current;
     const handleWheel = (event: WheelEvent) => {
@@ -90,7 +314,41 @@ export default function ImageLightbox({ src, alt = "", caption, onClose }: Image
         transformFrameRef.current = null;
       }
     };
-  }, [scheduleTransform]);
+  }, [requestClose, scheduleTransform]);
+
+  useEffect(() => {
+    return () => {
+      removeTransitionImage();
+      restoreOriginImage();
+      if (revealFrameRef.current !== null) {
+        window.cancelAnimationFrame(revealFrameRef.current);
+      }
+    };
+  }, [removeTransitionImage, restoreOriginImage]);
+
+  const handlePreviewImageLoad = useCallback(() => {
+    if (imageLoadedRef.current) return;
+    imageLoadedRef.current = true;
+    const targetImage = imageRef.current;
+    if (prefersReducedMotion || !originImage || !targetImage || !originImage.isConnected) {
+      setImageLoaded(true);
+      return;
+    }
+
+    const from = originImage.getBoundingClientRect();
+    const to = targetImage.getBoundingClientRect();
+    if (!isVisibleRect(from) || !isVisibleRect(to)) {
+      setImageLoaded(true);
+      return;
+    }
+
+    hideOriginImage(originImage);
+    setOpening(true);
+    playImageTransition(originImage, from, to, OPEN_TRANSITION_DURATION, () => {
+      setImageReady(true);
+    }, true);
+    setImageLoaded(true);
+  }, [hideOriginImage, originImage, playImageTransition, prefersReducedMotion]);
 
   const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -153,12 +411,12 @@ export default function ImageLightbox({ src, alt = "", caption, onClose }: Image
   const text = caption?.trim() || alt.trim();
   if (typeof document === "undefined") return null;
   return createPortal(
-    <div ref={overlayRef} className="aerisun-image-lightbox" role="dialog" aria-modal="true" aria-label="查看图片" onClick={onClose}>
+    <div ref={overlayRef} className={`aerisun-image-lightbox ${presented ? "is-presented" : ""} ${closing ? "is-closing" : ""}`} role="dialog" aria-modal="true" aria-label="查看图片" onClick={requestClose}>
       <figure className="aerisun-image-lightbox__frame" onClick={(event) => event.stopPropagation()}>
         <div className="aerisun-image-lightbox__viewport" onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerEnd} onPointerCancel={handlePointerEnd}>
-          <img ref={imageRef} src={src} alt={alt} draggable={false} onDragStart={(event) => event.preventDefault()} className={`aerisun-image-lightbox__image ${zoom > 1 ? "is-zoomed" : ""} ${dragging ? "is-dragging" : ""}`} style={{ transform: `translate3d(${offset.x}px, ${offset.y}px, 0) scale(${zoom})` }} />
+          <img ref={imageRef} src={src} alt={alt} draggable={false} onLoad={handlePreviewImageLoad} onError={() => setImageLoaded(true)} onDragStart={(event) => event.preventDefault()} className={`aerisun-image-lightbox__image ${opening ? "is-opening" : ""} ${imageReady ? "is-ready" : ""} ${zoom > 1 ? "is-zoomed" : ""} ${dragging ? "is-dragging" : ""}`} style={{ transform: `translate3d(${offset.x}px, ${offset.y}px, 0) scale(${zoom})` }} />
         </div>
-        {text ? <figcaption className="aerisun-image-lightbox__caption">{text}</figcaption> : null}
+        {showCaption && text ? <figcaption className="aerisun-image-lightbox__caption">{text}</figcaption> : null}
       </figure>
     </div>,
     document.body,

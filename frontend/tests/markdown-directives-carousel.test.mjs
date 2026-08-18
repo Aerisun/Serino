@@ -140,25 +140,25 @@ test("carousel syntax keeps descriptions on each image instead of accepting a ga
   assert.match(adminPreview, /return <MarkdownPreviewCarousel>\{children\}<\/MarkdownPreviewCarousel>;/);
 });
 
-test("carousel styles use same-size direct-image thumbnails with accessible interaction", () => {
+test("carousel moves its active description without changing the visual stack", () => {
+  const carousel = readSource("frontend/src/components/MarkdownCarousel.tsx");
   const css = readSource("frontend/src/components/markdown.css");
 
   assert.match(css, /\.prose \.markdown-carousel\s*\{/);
-  assert.match(css, /\.prose \.markdown-carousel-stage\s*\{/);
-  assert.match(css, /\.prose \.markdown-carousel-description\s*\{[^}]*text-align:\s*center;/);
-  assert.match(css, /width:\s*min\(100%,\s*32rem\);/);
-  assert.match(css, /margin:\s*0\s+auto;/);
-  assert.match(css, /aspect-ratio:\s*4\s*\/\s*3;/);
+  assert.doesNotMatch(carousel, /markdown-carousel-layout/);
+  assert.match(css, /\.prose \.markdown-carousel-description\s*\{[^}]*position:\s*relative;[^}]*left:\s*-1\.45rem;[^}]*text-align:\s*center;/);
+  assert.match(css, /\.prose \.markdown-carousel-stage\s*\{[^}]*width:\s*min\(100%,\s*32rem\);[^}]*margin:\s*0 auto;/);
   assert.match(css, /\.prose \.markdown-carousel-slide\s*\{[\s\S]*?position:\s*absolute;[\s\S]*?inset:\s*0\s+2\.9rem\s+1\.35rem\s+0;/);
   assert.match(css, /\.prose \.markdown-carousel-slide,\s*\.prose \.markdown-carousel-preview\s*\{[\s\S]*?border:\s*0;[\s\S]*?background:\s*transparent;[\s\S]*?box-shadow:\s*none;/);
   assert.match(css, /\.markdown-carousel-preview\[data-depth="1"\]\s*\{[\s\S]*?rotate\(1\.4deg\)/);
   assert.match(css, /@keyframes markdown-carousel-enter-forward/);
   assert.match(css, /\.prose \.markdown-carousel-controls\s*\{/);
-  assert.match(css, /\.markdown-carousel-slide \.markdown-figure-image\s*\{[\s\S]*?object-fit:\s*cover;/);
+  assert.match(css, /\.prose \.markdown-carousel-slide \.markdown-figure-image,\s*\.prose \.markdown-carousel-preview \.markdown-figure-image\s*\{[^}]*width:\s*100%;[^}]*max-width:\s*none;[^}]*height:\s*100%;[^}]*max-height:\s*none;[^}]*object-fit:\s*cover;[^}]*object-position:\s*center;/);
   assert.match(css, /touch-action:\s*pan-y;/);
   assert.match(css, /\.prose \.markdown-carousel-control:focus-visible/);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(css, /@media \(max-width: 640px\)/);
+  assert.match(css, /@media \(max-width: 640px\) \{[\s\S]*?\.prose \.markdown-carousel-description\s*\{[\s\S]*?left:\s*-0\.6rem;/);
   assert.match(css, /@media \(max-width: 640px\) \{[\s\S]*?\.prose \.markdown-carousel-stage\s*\{[\s\S]*?width:\s*min\(19\.5rem,\s*calc\(100%\s*-\s*3rem\)\);/);
   assert.match(css, /@media \(max-width: 640px\) \{[\s\S]*?\.prose \.markdown-carousel-slide\s*\{[\s\S]*?border-radius:\s*min\(0\.75rem, 2\.4%\);/);
   assert.match(css, /@media \(max-width: 640px\) \{[\s\S]*?\.prose \.markdown-carousel-footer\s*\{[\s\S]*?align-items:\s*center;/);
@@ -185,8 +185,9 @@ test("article Markdown images reuse the shared lightbox with the established vie
   assert.match(lightbox, /onPointerDown=\{handlePointerDown\}/);
   assert.match(lightbox, /onPointerMove=\{handlePointerMove\}/);
   assert.match(lightbox, /onPointerUp=\{handlePointerEnd\}/);
-  assert.match(lightbox, /onClick=\{onClose\}/);
-  assert.match(css, /\.aerisun-image-lightbox\s*\{[^}]*?background:\s*rgb\(15 23 42 \/ 0\.46\);[^}]*?backdrop-filter:\s*blur\(14px\) saturate\(105%\);/);
+  assert.match(lightbox, /onClick=\{requestClose\}/);
+  assert.match(lightbox, /onCloseRef\.current\(\)/);
+  assert.match(css, /\.aerisun-image-lightbox::before\s*\{[^}]*?background:\s*rgb\(15 23 42 \/ 0\.46\);[^}]*?opacity:\s*0;/);
   assert.match(css, /\.aerisun-image-lightbox__frame\s*\{[\s\S]*?max-width:\s*min\(92vw, 1080px\);/);
   assert.match(css, /\.aerisun-image-lightbox__viewport\s*\{[\s\S]*?max-height:\s*min\([\s\S]*?920px/);
   assert.match(css, /\.aerisun-image-lightbox__viewport\s*\{[^}]*?touch-action:\s*none;/);
@@ -194,6 +195,18 @@ test("article Markdown images reuse the shared lightbox with the established vie
   assert.match(css, /\.aerisun-image-lightbox__image\.is-zoomed\s*\{[\s\S]*?cursor:\s*grab;/);
   assert.match(css, /\.aerisun-image-lightbox__image\.is-dragging\s*\{[^}]*?transition:\s*none;/);
   assert.match(css, /\.aerisun-image-lightbox__image\s*\{[^}]*?-webkit-user-drag:\s*none;/);
+});
+
+test("comment-oriented Markdown hides lightbox captions without changing the default", () => {
+  const commentRenderer = readSource("frontend/src/components/CommentMarkdownRenderer.tsx");
+  const articleRenderer = readSource("frontend/src/components/MarkdownRenderer.tsx");
+  const lightbox = readSource("frontend/src/components/ImageLightbox.tsx");
+
+  assert.match(lightbox, /showCaption\?: boolean;/);
+  assert.match(lightbox, /showCaption = true/);
+  assert.match(lightbox, /showCaption && text/);
+  assert.match(commentRenderer, /<ImageLightbox[\s\S]*?showCaption=\{false\}/);
+  assert.doesNotMatch(articleRenderer, /showCaption=\{false\}/);
 });
 
 test("shared lightbox batches gesture transforms to animation frames and only promotes zoomed images", () => {

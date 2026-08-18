@@ -19,6 +19,10 @@
   cursor: zoom-in;
 }
 
+.aerisun-comment-image-button:disabled {
+  cursor: default;
+}
+
 .aerisun-comment-image-button img {
   display: block;
   width: 100%;

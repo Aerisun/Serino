@@ -7,6 +7,7 @@ import remarkMath from "remark-math";
 import "katex/dist/katex.min.css";
 import { resolveMarkdownDocumentIndent } from "@serino/utils/markdown-indentation";
 import ImageLightbox from "@/components/ImageLightbox";
+import { QueuedAttachmentImage } from "@/components/QueuedAttachmentImage";
 import { remarkAerisunIndentDirectives } from "@/components/markdown-directives";
 import {
   getMarkdownIndentDirectiveKind,
@@ -70,7 +71,7 @@ function MarkdownSpan({
 
 const buildComponents = (
   imageSourceMap: Record<string, string> | undefined,
-  onImageOpen: (src: string, alt: string) => void,
+  onImageOpen: (src: string, alt: string, originImage: HTMLImageElement | null) => void,
 ) => ({
   p: MarkdownParagraph,
   span: MarkdownSpan,
@@ -91,20 +92,16 @@ const buildComponents = (
       return null;
     }
     return (
-      <button
-        type="button"
-        className="aerisun-comment-image-button"
-        onClick={() => onImageOpen(resolvedSrc, String(alt ?? ""))}
-        aria-label={alt ? `查看图片：${alt}` : "查看图片"}
-      >
-        <img
-          src={resolvedSrc}
-          alt={alt}
-          loading="lazy"
-          decoding="async"
-          {...props}
-        />
-      </button>
+      <QueuedAttachmentImage
+        src={resolvedSrc}
+        alt={String(alt ?? "")}
+        onOpen={(event) => onImageOpen(
+          resolvedSrc,
+          String(alt ?? ""),
+          event.currentTarget.querySelector<HTMLImageElement>("img"),
+        )}
+        imageProps={props}
+      />
     );
   },
   code: ({ className, children, ...props }: ComponentPropsWithoutRef<"code">) => {
@@ -149,13 +146,19 @@ export default function CommentMarkdownRenderer({
   imageSourceMap,
   style,
 }: CommentMarkdownRendererProps) {
-  const [lightboxImage, setLightboxImage] = useState<{ src: string; alt: string } | null>(null);
+  const [lightboxImage, setLightboxImage] = useState<{
+    src: string;
+    alt: string;
+    originImage: HTMLImageElement | null;
+  } | null>(null);
   const documentIndent = resolveMarkdownDocumentIndent(content);
   const { images, text } = extractMarkdownImageAttachments(
     documentIndent.content,
     imageSourceMap,
   );
-  const openImage = (src: string, alt: string) => setLightboxImage({ src, alt });
+  const openImage = (src: string, alt: string, originImage: HTMLImageElement | null) => {
+    setLightboxImage({ src, alt, originImage });
+  };
   const shouldIndentParagraphs = documentIndent.indentParagraphs ?? indentParagraphs;
   const indentationClassName = shouldIndentParagraphs ? "markdown-indent-enabled" : "";
 
@@ -168,20 +171,16 @@ export default function CommentMarkdownRenderer({
         {images.length > 0 ? (
           <div className="aerisun-comment-attachment-grid">
             {images.map((image) => (
-              <button
+              <QueuedAttachmentImage
                 key={image.key}
-                type="button"
-                className="aerisun-comment-image-button"
-                onClick={() => openImage(image.src, image.alt)}
-                aria-label={image.alt ? `查看图片：${image.alt}` : "查看图片"}
-              >
-                <img
-                  src={image.src}
-                  alt={image.alt}
-                  loading="lazy"
-                  decoding="async"
-                />
-              </button>
+                src={image.src}
+                alt={image.alt}
+                onOpen={(event) => openImage(
+                  image.src,
+                  image.alt,
+                  event.currentTarget.querySelector<HTMLImageElement>("img"),
+                )}
+              />
             ))}
           </div>
         ) : null}
@@ -204,6 +203,8 @@ export default function CommentMarkdownRenderer({
         <ImageLightbox
           src={lightboxImage.src}
           alt={lightboxImage.alt}
+          showCaption={false}
+          originImage={lightboxImage.originImage}
           onClose={() => setLightboxImage(null)}
         />
       ) : null}

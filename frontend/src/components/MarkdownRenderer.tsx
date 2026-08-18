@@ -49,6 +49,7 @@ import {
 import MarkdownMermaid from "@/components/MarkdownMermaid";
 import MarkdownCarousel from "@/components/MarkdownCarousel";
 import ImageLightbox from "@/components/ImageLightbox";
+import { useQueuedImageLoad } from "@/components/QueuedAttachmentImage";
 import { remarkAerisunDirectives } from "@/components/markdown-directives";
 import {
   getMarkdownIndentDirectiveKind,
@@ -551,12 +552,16 @@ function MarkdownImage({
   title,
   className,
   onLoad,
+  onError,
   ...props
 }: ComponentPropsWithoutRef<"img">) {
   const [open, setOpen] = useState(false);
   const [isPortrait, setIsPortrait] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const imageRef = useRef<HTMLImageElement | null>(null);
   const caption = title?.trim() || alt?.trim();
   const resolvedSrc = resolveMarkdownImageSrc(src);
+  const imageLoad = useQueuedImageLoad(buttonRef, resolvedSrc);
   const zoomLabel = getText("markdown.imageZoom", "查看大图");
   const imageClassName = [
     "markdown-figure-image",
@@ -574,20 +579,37 @@ function MarkdownImage({
     <>
       <span className="markdown-figure">
         <button
+          ref={buttonRef}
           type="button"
           className="markdown-figure-button"
           onClick={() => setOpen(true)}
+          disabled={imageLoad.isControlled && !imageLoad.isReady}
+          aria-busy={imageLoad.isControlled && !imageLoad.isReady}
           aria-label={zoomLabel}
         >
-          <img
-            src={resolvedSrc}
-            alt={alt}
-            className={imageClassName}
-            loading="lazy"
-            decoding="async"
-            onLoad={handleImageLoad}
-            {...props}
-          />
+          {imageLoad.isReady ? (
+            <img
+              key={imageLoad.imageKey ?? resolvedSrc}
+              ref={imageRef}
+              src={resolvedSrc}
+              alt={alt}
+              className={imageClassName}
+              loading={imageLoad.loading}
+              decoding="async"
+              fetchPriority={imageLoad.fetchPriority}
+              onLoad={(event) => {
+                handleImageLoad(event);
+                void event.currentTarget.decode().catch(() => undefined).finally(() => {
+                  imageLoad.finish(imageLoad.imageKey ?? 0);
+                });
+              }}
+              onError={(event) => {
+                onError?.(event);
+                imageLoad.finish(imageLoad.imageKey ?? 0);
+              }}
+              {...props}
+            />
+          ) : null}
         </button>
         {caption ? <span className="markdown-figure-caption">{caption}</span> : null}
       </span>
@@ -597,6 +619,7 @@ function MarkdownImage({
           src={resolvedSrc}
           alt={alt}
           caption={caption}
+          originImage={imageRef.current}
           onClose={() => setOpen(false)}
         />
       ) : null}

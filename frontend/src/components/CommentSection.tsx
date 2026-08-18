@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Heart, MessageCircle } from "lucide-react";
 import { useLocation, useParams } from "react-router-dom";
+import { ImageLoadQueueBoundary } from "@/components/QueuedAttachmentImage";
 import { transition } from "@/config";
 import { useFrontendI18n } from "@/i18n";
 import { useContentReaction, type ContentReactionSurface } from "@/hooks/use-content-reaction";
@@ -40,7 +41,7 @@ const resolveCommentContext = (
   }
 
   if (
-    (contentType === "posts" || contentType === "diary" || contentType === "thoughts" || contentType === "excerpts") &&
+    (contentType === "posts" || contentType === "notes" || contentType === "diary" || contentType === "thoughts" || contentType === "excerpts") &&
     contentSlug
   ) {
     return { contentType, slug: contentSlug };
@@ -57,6 +58,9 @@ const resolveCommentContext = (
   const fallbackSlug = routeId ? decodeURIComponent(routeId) : "";
   if (pathname.startsWith("/posts/") && fallbackSlug) {
     return { contentType: "posts", slug: fallbackSlug };
+  }
+  if (pathname.startsWith("/notes/") && fallbackSlug) {
+    return { contentType: "notes", slug: fallbackSlug };
   }
   if (pathname.startsWith("/diary/") && fallbackSlug) {
     return { contentType: "diary", slug: fallbackSlug };
@@ -128,28 +132,32 @@ const CommentSection = ({
     };
   }, [contentContext]);
 
-  const body = contentContext ? (
-    shouldLoadSurface ? (
-      <Suspense
-        fallback={
-          <div className="liquid-glass rounded-[1.5rem] border border-[rgb(var(--shiro-border-rgb)/0.16)] px-5 py-6 text-sm font-body text-foreground/45">
-            {t("comments.loading")}
-          </div>
-        }
-      >
-        <WalineSurface
-          surface={contentContext.contentType}
-          slug={contentContext.contentType === "guestbook" ? undefined : contentContext.slug}
-          layout={layout}
-          className={layout === "modal" ? "min-h-0 flex-1" : undefined}
-          onVisibleCountChange={setCommentCount}
-        />
-      </Suspense>
-    ) : null
-  ) : (
-    <div className="liquid-glass rounded-[1.5rem] border border-[rgb(var(--shiro-border-rgb)/0.16)] px-5 py-6 text-sm font-body text-foreground/45">
-      {t("comments.missingContext")}
-    </div>
+  const body = (
+    <ImageLoadQueueBoundary>
+      {contentContext ? (
+        shouldLoadSurface ? (
+          <Suspense
+            fallback={
+              <div className="liquid-glass rounded-[1.5rem] border border-[rgb(var(--shiro-border-rgb)/0.16)] px-5 py-6 text-sm font-body text-foreground/45">
+                {t("comments.loading")}
+              </div>
+            }
+          >
+            <WalineSurface
+              surface={contentContext.contentType}
+              slug={contentContext.contentType === "guestbook" ? undefined : contentContext.slug}
+              layout={layout}
+              className={layout === "modal" ? "min-h-0 flex-1" : undefined}
+              onVisibleCountChange={setCommentCount}
+            />
+          </Suspense>
+        ) : null
+      ) : (
+        <div className="liquid-glass rounded-[1.5rem] border border-[rgb(var(--shiro-border-rgb)/0.16)] px-5 py-6 text-sm font-body text-foreground/45">
+          {t("comments.missingContext")}
+        </div>
+      )}
+    </ImageLoadQueueBoundary>
   );
 
   /* Guestbook: always expanded, no toggle */
