@@ -50,7 +50,7 @@ SMTP_AUTH_MODE_PASSWORD = "password"
 SMTP_AUTH_MODE_MICROSOFT_OAUTH2 = "microsoft_oauth2"
 MICROSOFT_SMTP_SCOPE = "offline_access https://outlook.office.com/SMTP.Send"
 CONTENT_TYPE_LABELS = {
-    "posts": "文章",
+    "posts": "文稿与手记",
     "diary": "日记",
     "thoughts": "碎碎念",
     "excerpts": "文摘",

@@ -5,6 +5,7 @@ from pathlib import Path
 
 import httpx
 from fastapi import APIRouter, Depends, Response
+from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session
@@ -148,6 +149,20 @@ def posts_seo_html(session: Session = Depends(get_session)) -> Response:
     )
 
 
+@html_router.get("/notes", include_in_schema=False)
+def notes_seo_html(session: Session = Depends(get_session)) -> Response:
+    settings = get_settings()
+    site_url = settings.site_url or "https://example.com"
+    return _html_response(
+        build_content_collection_seo_html(
+            session,
+            site_url,
+            "notes",
+            app_shell_html=_read_frontend_app_shell(settings),
+        )
+    )
+
+
 @html_router.get("/diary", include_in_schema=False)
 def diary_seo_html(session: Session = Depends(get_session)) -> Response:
     settings = get_settings()
@@ -231,6 +246,21 @@ def post_detail_seo_html(slug: str, session: Session = Depends(get_session)) -> 
     )
 
 
+@html_router.get("/notes/{slug}", include_in_schema=False)
+def note_detail_seo_html(slug: str, session: Session = Depends(get_session)) -> Response:
+    settings = get_settings()
+    site_url = settings.site_url or "https://example.com"
+    return _html_response(
+        build_content_detail_seo_html(
+            session,
+            site_url,
+            "notes",
+            slug,
+            app_shell_html=_read_frontend_app_shell(settings),
+        )
+    )
+
+
 @html_router.get("/diary/{slug}", include_in_schema=False)
 def diary_detail_seo_html(slug: str, session: Session = Depends(get_session)) -> Response:
     settings = get_settings()
@@ -308,8 +338,8 @@ def resume_markdown_head() -> Response:
     return _markdown_response()
 
 
-@router.get("/feeds/posts.xml")
-def posts_feed(session: Session = Depends(get_session)) -> Response:
+@router.get("/feeds/articles.xml")
+def articles_feed(session: Session = Depends(get_session)) -> Response:
     settings = get_settings()
     site_url = _public_site_url(session, settings)
     xml = build_posts_rss_xml(session, site_url)
@@ -341,24 +371,15 @@ def excerpts_feed(session: Session = Depends(get_session)) -> Response:
 
 
 @router.get("/rss.xml")
-def rss_alias(session: Session = Depends(get_session)) -> Response:
-    settings = get_settings()
-    site_url = _public_site_url(session, settings)
-    xml = build_posts_rss_xml(session, site_url)
-    return _rss_response(xml)
+def rss_alias() -> RedirectResponse:
+    return RedirectResponse(url="/feeds/articles.xml", status_code=308)
 
 
 @router.get("/feeds.xml")
-def feeds_alias(session: Session = Depends(get_session)) -> Response:
-    settings = get_settings()
-    site_url = _public_site_url(session, settings)
-    xml = build_posts_rss_xml(session, site_url)
-    return _rss_response(xml)
+def feeds_alias() -> RedirectResponse:
+    return RedirectResponse(url="/feeds/articles.xml", status_code=308)
 
 
 @router.get("/feed.xml")
-def feed_alias(session: Session = Depends(get_session)) -> Response:
-    settings = get_settings()
-    site_url = _public_site_url(session, settings)
-    xml = build_posts_rss_xml(session, site_url)
-    return _rss_response(xml)
+def feed_alias() -> RedirectResponse:
+    return RedirectResponse(url="/feeds/articles.xml", status_code=308)

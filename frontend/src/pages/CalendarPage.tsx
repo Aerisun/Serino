@@ -17,7 +17,7 @@ import { getBeijingNowParts, normalizeDateKey } from "@/lib/time";
 
 interface CalendarEvent {
   date: string;
-  type: "post" | "diary" | "excerpt";
+  type: "post" | "note" | "diary" | "excerpt";
   title: string;
   href?: string;
 }
@@ -51,6 +51,7 @@ interface CalendarPageConfig extends BaseViewPageConfig {
   todayLabel?: string;
   selectedEmptyMessage?: string;
   postTypeLabel?: string;
+  noteTypeLabel?: string;
   diaryTypeLabel?: string;
   excerptTypeLabel?: string;
 }
@@ -60,6 +61,11 @@ const typeConfigBase = {
     icon: FileText,
     chipClass: "bg-[rgb(var(--shiro-accent-rgb)/0.12)] text-[rgb(var(--shiro-accent-rgb)/0.88)]",
     dotClass: "bg-[rgb(var(--shiro-accent-rgb)/0.72)]",
+  },
+  note: {
+    icon: FileText,
+    chipClass: "bg-[rgb(var(--shiro-accent-rgb)/0.09)] text-[rgb(var(--shiro-accent-rgb)/0.76)]",
+    dotClass: "bg-[rgb(var(--shiro-accent-rgb)/0.56)]",
   },
   diary: {
     icon: BookOpen,
@@ -92,6 +98,7 @@ const formatDateKey = (value: Date) => {
 const normalizeType = (value: string): CalendarEvent["type"] | null => {
   const raw = value.toLowerCase();
   if (raw === "post" || raw === "posts" || raw === "article") return "post";
+  if (raw === "note" || raw === "notes") return "note";
   if (raw === "diary" || raw === "diaries" || raw === "journal") return "diary";
   if (raw === "excerpt" || raw === "excerpts" || raw === "quote") return "excerpt";
   return null;
@@ -160,6 +167,10 @@ const CalendarPage = () => {
     post: {
       ...typeConfigBase.post,
       label: config.postTypeLabel ?? t("calendar.postTypeLabel"),
+    },
+    note: {
+      ...typeConfigBase.note,
+      label: config.noteTypeLabel ?? t("calendar.noteTypeLabel"),
     },
     diary: {
       ...typeConfigBase.diary,
@@ -394,6 +405,8 @@ const CalendarPage = () => {
                           className={`h-1 w-1 rounded-full ${
                             event.type === "post"
                               ? typeConfig.post.dotClass
+                              : event.type === "note"
+                                ? typeConfig.note.dotClass
                               : event.type === "diary"
                                 ? typeConfig.diary.dotClass
                                 : typeConfig.excerpt.dotClass

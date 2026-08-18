@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { useLocation } from "react-router-dom"
 
-const DETAIL_PATTERNS = [/^\/posts\//, /^\/diary\//]
+const DETAIL_PATTERNS = [/^\/posts\//, /^\/notes\//, /^\/diary\//]
 
 const ReadingProgress = () => {
   const { pathname } = useLocation()

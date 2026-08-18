@@ -50,7 +50,6 @@ def test_default_title_endpoint_formats_title(
     ("content_type", "route_prefix", "model", "prefix", "category_a", "category_b"),
     [
         ("diary", "/api/v1/admin/diary/", DiaryEntry, "日记", None, None),
-        ("thoughts", "/api/v1/admin/thoughts/", ThoughtEntry, "碎碎念", "生活", "工作"),
         ("excerpts", "/api/v1/admin/excerpts/", ExcerptEntry, "文摘", "文学", "哲学"),
     ],
 )
@@ -144,6 +143,43 @@ def test_default_title_endpoint_counts_same_day_entries_by_category(
             "sequence": 2,
             "date_label": "26.4.5.",
         }
+
+
+def test_default_title_endpoint_counts_thoughts_together_regardless_of_category(
+    client, admin_headers, monkeypatch
+) -> None:
+    monkeypatch.setattr(content_service, "beijing_today", lambda: date(2026, 4, 5))
+
+    for index, category in enumerate(("生活", "工作", "随想")):
+        response = client.post(
+            "/api/v1/admin/thoughts/",
+            json={
+                "slug": f"thought-default-title-{index}",
+                "title": f"碎碎念{index}",
+                "body": "thought",
+                "visibility": "private",
+                "category": category,
+            },
+            headers=admin_headers,
+        )
+        assert response.status_code == 201
+        with get_session_factory()() as session:
+            item = session.query(ThoughtEntry).filter(ThoughtEntry.id == response.json()["id"]).one()
+            item.created_at = datetime(2026, 4, 5, 10 + index, 0, tzinfo=BEIJING_TZ)
+            session.commit()
+
+    response = client.get(
+        BASE,
+        params={"content_type": "thoughts", "category": "旧客户端分类"},
+        headers=admin_headers,
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "title": "碎碎念四则 (26.4.5.)",
+        "sequence": 4,
+        "date_label": "26.4.5.",
+    }
 
 
 @pytest.mark.parametrize(

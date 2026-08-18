@@ -111,7 +111,7 @@ def test_visit_beacon_ignores_static_and_ai_entry_paths(monkeypatch):
 
     monkeypatch.setattr(ops_service, "enqueue_visit_record", fake_enqueue)
 
-    for path in ("/manifest.webmanifest", "/llms.txt", "/resume.md", "/feeds/posts.xml", "/assets/app.js"):
+    for path in ("/manifest.webmanifest", "/llms.txt", "/resume.md", "/feeds/articles.xml", "/assets/app.js"):
         accepted = ops_service.record_page_visit(
             url=path,
             referer=None,
@@ -159,6 +159,45 @@ def test_persisted_content_visit_increments_article_historical_view_count(client
 
     assert detail["view_count"] == 42
     assert listed_post["view_count"] == 42
+
+
+def test_persisted_content_visit_increments_note_historical_view_count(client):
+    path = "/notes/quick-note"
+    session_factory = get_session_factory()
+    with session_factory() as session:
+        session.add(
+            PostEntry(
+                slug="quick-note",
+                title="Quick note",
+                body="A note body",
+                visibility="public",
+                kind="note",
+                published_at=shanghai_now(),
+                view_count=0,
+            )
+        )
+        session.commit()
+
+    with session_factory() as session:
+        persist_visit_record_payload(
+            session,
+            VisitRecordPayload(
+                visited_at=shanghai_now(),
+                path=path,
+                ip_address="203.0.113.44",
+                user_agent="Mozilla/5.0",
+                referer=None,
+                status_code=200,
+                duration_ms=120,
+                is_bot=False,
+            ),
+        )
+        note = session.query(PostEntry).filter(PostEntry.slug == "quick-note").one()
+        assert note.view_count == 1
+
+    detail = client.get("/api/v1/site/notes/quick-note")
+    assert detail.status_code == 200
+    assert detail.json()["view_count"] == 1
 
 
 def test_persisted_content_visit_does_not_change_article_updated_at(client):

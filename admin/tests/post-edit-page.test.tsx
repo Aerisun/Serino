@@ -23,6 +23,7 @@ const api = vi.hoisted(() => ({
       visibility: "private",
       exclude_from_rss: false,
       requires_approval: false,
+      kind: "manuscript",
       published_at: "2026-07-01T10:00:00+08:00",
       updated_at: "2026-07-01T10:00:00+08:00",
       category: "Notes",
@@ -201,6 +202,30 @@ describe("PostEditPage", () => {
           slug: "renamed-slug",
           title: "Current Title",
         }),
+      });
+    });
+  });
+
+  it("switches to notes with a separate category bucket and clears the current category", async () => {
+    const user = userEvent.setup();
+    api.updatePost.mockResolvedValue({ data: { id: "post-1" } });
+    renderPostEditPage();
+
+    const kindSelect = screen.getByRole("combobox", { name: "类别" });
+    expect(document.querySelector("[data-post-metadata-fields]")?.className).toContain("md:grid-cols-3");
+
+    await user.selectOptions(kindSelect, "note");
+
+    const categorySelect = screen
+      .getAllByRole("combobox")
+      .find((element) => element !== kindSelect) as HTMLSelectElement;
+    expect(categorySelect.value).toBe("__none__");
+    await user.click(screen.getByRole("button", { name: "保存私密" }));
+
+    await waitFor(() => {
+      expect(api.updatePost).toHaveBeenCalledWith({
+        itemId: "post-1",
+        data: expect.objectContaining({ kind: "note", category: "" }),
       });
     });
   });

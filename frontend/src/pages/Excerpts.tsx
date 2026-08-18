@@ -1,8 +1,10 @@
 import { Suspense, useDeferredValue, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { BookOpen, MessageCircle, Search, X } from "lucide-react";
+import { BookOpen, MessageCircle, X } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "react-router-dom";
 import ArchiveBadge from "@/components/ArchiveBadge";
+import { CategoryFilter } from "@/components/CategoryFilter";
 import CommentMarkdownRenderer from "@/components/CommentMarkdownRenderer";
 import PageShell from "@/components/PageShell";
 import PreviewModeBadge from "@/components/PreviewModeBadge";
@@ -15,7 +17,10 @@ import { stripMarkdownImages } from "@/lib/markdown-images";
 import { clampPageSize } from "@/lib/page-size";
 import { lazyWithPreload } from "@/lib/lazy";
 import { usePreviewChannel } from "@/lib/preview";
-import { readExcerptsApiV1SiteExcerptsGet } from "@serino/api-client/site";
+import {
+  readCategoryStatsApiV1SiteCategoryStatsGet,
+  readExcerptsApiV1SiteExcerptsGet,
+} from "@serino/api-client/site";
 import type { ContentEntryRead } from "@serino/api-client/models";
 import type { BaseViewPageConfig } from "@/lib/page-config";
 import { useInfiniteList } from "@/hooks/use-infinite-list";
@@ -95,7 +100,7 @@ const hasCjkCharacters = (value: string) =>
   /[\u3400-\u9FFF\uF900-\uFAFF]/.test(value);
 
 const Excerpts = () => {
-  const { t, lang } = useFrontendI18n();
+  const { t } = useFrontendI18n();
   const location = useLocation();
   const previewStorageKey =
     new URLSearchParams(location.search).get("previewStorageKey") || "";
@@ -116,7 +121,7 @@ const Excerpts = () => {
   const [search, setSearch] = useState("");
   const deferredSearch = useDeferredValue(search);
   const previewOpenedRef = useRef<string | null>(null);
-  const [activeCategory, setActiveCategory] = useState(allCategoryLabel);
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const { data: previewData } = usePreviewChannel(previewStorageKey);
 
   const {
@@ -128,9 +133,11 @@ const Excerpts = () => {
     sentinelRef,
     reload,
   } = useInfiniteList({
-    queryKey: ["site", "excerpts", pageSize],
+    queryKey: ["site", "excerpts", pageSize, activeCategory],
     queryFn: async (p) => {
-      const data = (await readExcerptsApiV1SiteExcerptsGet(p)).data;
+      const data = (
+        await readExcerptsApiV1SiteExcerptsGet({ ...p, category: activeCategory ?? undefined })
+      ).data;
 
       if (data && "items" in data && Array.isArray(data.items)) {
         return {
@@ -146,6 +153,14 @@ const Excerpts = () => {
     staleTime: 60_000,
     gcTime: 20 * 60_000,
   });
+  const categoryStats = useQuery({
+    queryKey: ["site", "category-stats", "excerpts"],
+    queryFn: () =>
+      readCategoryStatsApiV1SiteCategoryStatsGet({ content_type: "excerpts" }).then(
+        (response) => response.data,
+      ),
+    staleTime: 0,
+  });
   const previewExcerpt =
     previewData?.type === "excerpts" ? buildPreviewExcerpt(previewData, t("common.draft")) : null;
   const displayItems = useMemo(() => {
@@ -160,19 +175,16 @@ const Excerpts = () => {
   }, [items, previewExcerpt]);
   const viewStatus: typeof status =
     previewExcerpt && status !== "ready" ? "ready" : status;
-
-  const allCategories = useMemo(
-    () => [
-      allCategoryLabel,
-      ...Array.from(
-        new Set(displayItems.map((item) => item.category).filter(Boolean)),
-      ).sort((a, b) => a.localeCompare(b, lang === "zh" ? "zh-CN" : "en-US")),
-    ],
-    [allCategoryLabel, displayItems, lang],
+  const categoryVisibleItems = useMemo(
+    () =>
+      activeCategory && previewExcerpt?.category !== activeCategory
+        ? displayItems.filter((item) => item.id !== previewExcerpt.id)
+        : displayItems,
+    [activeCategory, displayItems, previewExcerpt],
   );
 
   const filtered = useMemo(() => {
-    return displayItems.filter((excerpt) => {
+    return categoryVisibleItems.filter((excerpt) => {
       const matchSearch = matchesSearchText(
         [
           excerpt.title,
@@ -183,12 +195,9 @@ const Excerpts = () => {
         ],
         deferredSearch,
       );
-      const matchCategory =
-        activeCategory === allCategoryLabel ||
-        excerpt.category === activeCategory;
-      return matchSearch && matchCategory;
+      return matchSearch;
     });
-  }, [activeCategory, allCategoryLabel, deferredSearch, displayItems]);
+  }, [categoryVisibleItems, deferredSearch]);
 
   const selected = useMemo(
     () => displayItems.find((excerpt) => excerpt.id === selectedId) ?? null,
@@ -239,48 +248,18 @@ const Excerpts = () => {
       contentClassName="mt-0 sm:mt-10"
     >
       {previewExcerpt ? <PreviewModeBadge /> : null}
-      <div className="mt-3 flex flex-col gap-4 sm:mt-6 sm:flex-row sm:items-center sm:justify-between">
-        <div className="group relative max-w-xs flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/25 transition-colors group-focus-within:text-[rgb(var(--shiro-accent-rgb)/0.72)]" />
-          <input
-            type="text"
-            placeholder={searchPlaceholder}
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            maxLength={100}
-            aria-label={searchPlaceholder}
-            className="w-full rounded-xl border border-foreground/8 bg-foreground/[0.03] py-2.5 pl-10 pr-4 text-sm text-foreground placeholder:text-foreground/25 outline-none transition-colors focus:border-[rgb(var(--shiro-border-rgb)/0.32)] focus:bg-[rgb(var(--shiro-panel-rgb)/0.35)]"
-          />
-        </div>
-
-        <div className="flex flex-wrap gap-1.5">
-          <button
-            type="button"
-            onClick={() => setActiveCategory(allCategoryLabel)}
-            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors active:scale-[0.97] ${
-              activeCategory === allCategoryLabel
-                ? "bg-[rgb(var(--shiro-accent-rgb)/0.12)] text-[rgb(var(--shiro-accent-rgb)/0.9)]"
-                : "text-foreground/35 hover:bg-[rgb(var(--shiro-panel-rgb)/0.28)] hover:text-[rgb(var(--shiro-accent-rgb)/0.72)]"
-            }`}
-          >
-            {allCategoryLabel}
-          </button>
-          {allCategories.slice(1).map((category) => (
-            <button
-              key={category}
-              type="button"
-              onClick={() => setActiveCategory(category)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors active:scale-[0.97] ${
-                activeCategory === category
-                  ? "bg-[rgb(var(--shiro-accent-rgb)/0.12)] text-[rgb(var(--shiro-accent-rgb)/0.9)]"
-                  : "text-foreground/35 hover:bg-[rgb(var(--shiro-panel-rgb)/0.28)] hover:text-[rgb(var(--shiro-accent-rgb)/0.72)]"
-              }`}
-            >
-              {category}
-            </button>
-          ))}
-        </div>
-      </div>
+      <CategoryFilter
+        search={search}
+        searchPlaceholder={searchPlaceholder}
+        onSearchChange={setSearch}
+        allLabel={allCategoryLabel}
+        activeCategory={activeCategory}
+        onCategoryChange={setActiveCategory}
+        stats={categoryStats.data}
+        isLoading={categoryStats.isLoading}
+        errorMessage={categoryStats.isError ? t("categories.loadFailed") : undefined}
+        onRetry={() => void categoryStats.refetch()}
+      />
 
       <div className="mt-6 grid grid-cols-1 gap-4 sm:mt-8 sm:grid-cols-2">
         {viewStatus === "loading" &&

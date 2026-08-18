@@ -4,6 +4,7 @@ import { Heart, MessageCircle, Search } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import ArchiveBadge from "@/components/ArchiveBadge";
 import CommentMarkdownRenderer from "@/components/CommentMarkdownRenderer";
+import { ImageLoadQueueProvider } from "@/components/QueuedAttachmentImage";
 import PageShell from "@/components/PageShell";
 import PreviewModeBadge from "@/components/PreviewModeBadge";
 import { staggerItem } from "@/config";
@@ -29,14 +30,9 @@ interface Thought {
   likes: number;
   comments: number;
   mood?: string;
-  category: string;
 }
 
-interface ThoughtsPageConfig extends BaseViewPageConfig {
-  categories?: {
-    all?: string;
-  };
-}
+type ThoughtsPageConfig = BaseViewPageConfig;
 
 type TranslateFn = (
   key: string,
@@ -58,7 +54,6 @@ const mapRemoteThought = (
     likes: entry.like_count ?? 0,
     comments: entry.comment_count ?? 0,
     mood: entry.mood ?? undefined,
-    category: entry.category || "",
   };
 };
 
@@ -70,7 +65,6 @@ const buildPreviewThought = (
     body?: string;
     published_at?: string | null;
     mood?: string;
-    category?: string;
   },
   draftLabel: string,
   t: TranslateFn,
@@ -85,7 +79,6 @@ const buildPreviewThought = (
     likes: 0,
     comments: 0,
     mood: preview.mood ?? undefined,
-    category: preview.category || "",
   };
 };
 
@@ -148,14 +141,12 @@ const Thoughts = () => {
   const retryLabel = config.retryLabel ?? t("common.retry");
   const loadMoreLabel = config.loadMoreLabel ?? t("thoughts.loadingMore");
   const pageSize = clampPageSize(config.pageSize, 15);
-  const allCategoryLabel = config.categories?.all ?? t("thoughts.allCategory");
   const [expandedCommentId, setExpandedCommentId] = useState<string | null>(
     null,
   );
   const searchPlaceholder = config.searchPlaceholder ?? t("thoughts.searchPlaceholder");
   const [search, setSearch] = useState("");
   const deferredSearch = useDeferredValue(search);
-  const [activeCategory, setActiveCategory] = useState(allCategoryLabel);
   const [relativeNow, setRelativeNow] = useState(() => Date.now());
   const { data: previewData } = usePreviewChannel(previewStorageKey);
   const mapThoughtItem = useCallback(
@@ -213,29 +204,15 @@ const Thoughts = () => {
   }, [items, previewThought]);
   const viewStatus: typeof status =
     previewThought && status !== "ready" ? "ready" : status;
-
-  const allCategories = useMemo(
-    () => [
-      allCategoryLabel,
-      ...Array.from(
-        new Set(displayItems.map((item) => item.category).filter(Boolean)),
-      ).sort((a, b) => a.localeCompare(b, lang === "zh" ? "zh-CN" : "en-US")),
-    ],
-    [allCategoryLabel, displayItems, lang],
-  );
-
   const filtered = useMemo(() => {
     return displayItems.filter((thought) => {
       const matchSearch = matchesSearchText(
-        [thought.content, thought.date, thought.mood, thought.category],
+        [thought.content, thought.date, thought.mood],
         deferredSearch,
       );
-      const matchCategory =
-        activeCategory === allCategoryLabel ||
-        thought.category === activeCategory;
-      return matchSearch && matchCategory;
+      return matchSearch;
     });
-  }, [activeCategory, allCategoryLabel, deferredSearch, displayItems]);
+  }, [deferredSearch, displayItems]);
 
   useEffect(() => {
     const targetId = previewThought?.id || location.hash.slice(1);
@@ -263,49 +240,22 @@ const Thoughts = () => {
       }
       contentClassName="mt-0 sm:mt-10"
     >
-      {previewThought ? <PreviewModeBadge /> : null}
-      <div className="mt-3 flex flex-col gap-4 sm:mt-6 sm:flex-row sm:items-center sm:justify-between">
-        <div className="group relative max-w-xs flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/25 transition-colors group-focus-within:text-[rgb(var(--shiro-accent-rgb)/0.72)]" />
-          <input
-            type="text"
-            placeholder={searchPlaceholder}
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            maxLength={100}
-            aria-label={searchPlaceholder}
-            className="w-full rounded-xl border border-foreground/8 bg-foreground/[0.03] py-2.5 pl-10 pr-4 text-sm text-foreground placeholder:text-foreground/25 outline-none transition-colors focus:border-[rgb(var(--shiro-border-rgb)/0.32)] focus:bg-[rgb(var(--shiro-panel-rgb)/0.35)]"
-          />
+      <ImageLoadQueueProvider>
+        {previewThought ? <PreviewModeBadge /> : null}
+        <div className="mt-3 flex flex-col gap-4 sm:mt-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="group relative max-w-xs flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/25 transition-colors group-focus-within:text-[rgb(var(--shiro-accent-rgb)/0.72)]" />
+            <input
+              type="text"
+              placeholder={searchPlaceholder}
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              maxLength={100}
+              aria-label={searchPlaceholder}
+              className="w-full rounded-xl border border-foreground/8 bg-foreground/[0.03] py-2.5 pl-10 pr-4 text-sm text-foreground placeholder:text-foreground/25 outline-none transition-colors focus:border-[rgb(var(--shiro-border-rgb)/0.32)] focus:bg-[rgb(var(--shiro-panel-rgb)/0.35)]"
+            />
+          </div>
         </div>
-
-        <div className="flex flex-wrap gap-1.5">
-          <button
-            type="button"
-            onClick={() => setActiveCategory(allCategoryLabel)}
-            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors active:scale-[0.97] ${
-              activeCategory === allCategoryLabel
-                ? "bg-[rgb(var(--shiro-accent-rgb)/0.12)] text-[rgb(var(--shiro-accent-rgb)/0.9)]"
-                : "text-foreground/35 hover:bg-[rgb(var(--shiro-panel-rgb)/0.28)] hover:text-[rgb(var(--shiro-accent-rgb)/0.72)]"
-            }`}
-          >
-            {allCategoryLabel}
-          </button>
-          {allCategories.slice(1).map((category) => (
-            <button
-              key={category}
-              type="button"
-              onClick={() => setActiveCategory(category)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors active:scale-[0.97] ${
-                activeCategory === category
-                  ? "bg-[rgb(var(--shiro-accent-rgb)/0.12)] text-[rgb(var(--shiro-accent-rgb)/0.9)]"
-                  : "text-foreground/35 hover:bg-[rgb(var(--shiro-panel-rgb)/0.28)] hover:text-[rgb(var(--shiro-accent-rgb)/0.72)]"
-              }`}
-            >
-              {category}
-            </button>
-          ))}
-        </div>
-      </div>
 
       <div className="relative mt-6 sm:mt-8">
         <div className="absolute bottom-0 left-5 top-0 w-px bg-[rgb(var(--shiro-divider-rgb)/0.26)]" />
@@ -399,12 +349,6 @@ const Thoughts = () => {
                 indentParagraphs
               />
 
-              {thought.category ? (
-                <div className="mt-3 text-[10px] text-foreground/20 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.58)]">
-                  {thought.category}
-                </div>
-              ) : null}
-
               <div className="mt-3 flex items-center gap-5 text-xs text-foreground/20 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.42)]">
                 <ThoughtLikeButton
                   thoughtId={thought.id}
@@ -460,6 +404,7 @@ const Thoughts = () => {
           )}
         </div>
       )}
+      </ImageLoadQueueProvider>
     </PageShell>
   );
 };

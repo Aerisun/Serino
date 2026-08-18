@@ -19,6 +19,7 @@ interface PageShellProps {
   noIndex?: boolean;
   children: ReactNode;
   headerAside?: ReactNode;
+  headerAsideClassName?: string;
   width?: "narrow" | "content" | "wide";
   contentClassName?: string;
   mainClassName?: string;
@@ -43,6 +44,7 @@ const PageShell = ({
   noIndex = false,
   children,
   headerAside,
+  headerAsideClassName = "",
   width = "content",
   contentClassName = "mt-5 sm:mt-10",
   mainClassName = "",
@@ -119,7 +121,7 @@ const PageShell = ({
                 </div>
 
                 {headerAside ? (
-                  <div className="relative flex shrink-0 items-start text-sm text-foreground/28 md:items-end">
+                  <div className={`relative flex shrink-0 items-start text-sm text-foreground/28 md:items-end ${headerAsideClassName}`.trim()}>
                     {headerAside}
                   </div>
                 ) : null}

@@ -64,7 +64,7 @@ def get_default_title(
     operation_id="list_content_categories",
 )
 def list_category_options(
-    content_type: str | None = Query(default=None),
+    content_type: Literal["posts", "notes", "excerpts"] | None = Query(default=None),
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> list[ContentCategoryRead]:

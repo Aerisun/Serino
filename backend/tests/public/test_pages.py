@@ -19,7 +19,7 @@ def test_read_pages_returns_seeded_page_copy(client) -> None:
     assert items["activity"]["extras"]["dashboardLabel"] == "Dashboard"
     assert items["notFound"]["title"] == "这个页面没有留下来"
     assert items["notFound"]["extras"]["metaTitle"] == "页面未找到"
-    assert items["posts"]["title"] == "Posts"
+    assert items["posts"]["title"] == "文稿"
     assert items["friends"]["page_size"] == 10
     assert items["guestbook"]["extras"]["submitLabel"] == "提交留言"
     assert items["friends"]["extras"]["loadingLabel"] == "正在加载..."

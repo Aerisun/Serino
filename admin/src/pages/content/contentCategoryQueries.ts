@@ -5,8 +5,6 @@ import {
   getListExcerptsQueryOptions,
   getListPostsQueryKey,
   getListPostsQueryOptions,
-  getListThoughtsQueryKey,
-  getListThoughtsQueryOptions,
 } from "@serino/api-client/admin";
 import type { ContentCategoryType } from "@/lib/contentCategories";
 
@@ -16,10 +14,10 @@ export function getContentListQueryKey(contentType: ContentCategoryType) {
   switch (contentType) {
     case "posts":
       return getListPostsQueryKey(CONTENT_LIST_PARAMS);
+    case "notes":
+      return getListPostsQueryKey(CONTENT_LIST_PARAMS);
     case "diary":
       return getListDiaryQueryKey(CONTENT_LIST_PARAMS);
-    case "thoughts":
-      return getListThoughtsQueryKey(CONTENT_LIST_PARAMS);
     case "excerpts":
       return getListExcerptsQueryKey(CONTENT_LIST_PARAMS);
   }
@@ -30,10 +28,10 @@ export function getContentListQueryOptions(contentType: ContentCategoryType) {
   switch (contentType) {
     case "posts":
       return getListPostsQueryOptions(CONTENT_LIST_PARAMS, { query });
+    case "notes":
+      return getListPostsQueryOptions(CONTENT_LIST_PARAMS, { query });
     case "diary":
       return getListDiaryQueryOptions(CONTENT_LIST_PARAMS, { query });
-    case "thoughts":
-      return getListThoughtsQueryOptions(CONTENT_LIST_PARAMS, { query });
     case "excerpts":
       return getListExcerptsQueryOptions(CONTENT_LIST_PARAMS, { query });
   }

@@ -15,8 +15,8 @@ def test_list_feeds_returns_canonical_public_content_feeds(client, admin_headers
     assert payload["items"] == [
         {
             "key": "posts",
-            "title": "Aerisun Posts",
-            "url": f"{site_url}/feeds/posts.xml",
+            "title": "Aerisun Articles",
+            "url": f"{site_url}/feeds/articles.xml",
             "enabled": True,
             "format": "rss",
         },

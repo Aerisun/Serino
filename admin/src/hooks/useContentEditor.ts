@@ -132,7 +132,7 @@ export function useContentEditor(config: ContentEditorConfig) {
   const defaultTitleParams = useMemo<GetDefaultContentTitleParams>(() => ({
     content_type: defaultTitleContentType,
     category:
-      defaultTitleContentType === "thoughts" || defaultTitleContentType === "excerpts"
+      defaultTitleContentType === "excerpts"
         ? normalizeAutoTitleCategory(form.category)
         : undefined,
     item_id: !isNew && id ? id : undefined,
@@ -386,7 +386,7 @@ export function useContentEditor(config: ContentEditorConfig) {
   ): GetDefaultContentTitleParams => ({
     content_type: defaultTitleContentType,
     category:
-      defaultTitleContentType === "thoughts" || defaultTitleContentType === "excerpts"
+      defaultTitleContentType === "excerpts"
         ? normalizeAutoTitleCategory(currentForm.category)
         : undefined,
     item_id: itemId,

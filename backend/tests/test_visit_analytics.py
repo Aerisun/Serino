@@ -134,7 +134,7 @@ class TestVisitTracking:
             "/rss.xml",
             "/feeds.xml",
             "/feeds/",
-            "/feeds/posts.xml",
+            "/feeds/articles.xml",
             "/feeds/thoughts.xml",
         ):
             assert classify_visit_path(path) == "ai_entry"

@@ -3,13 +3,14 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 
+from alembic import command
 from alembic.config import Config
 from alembic.script import ScriptDirectory
 
 from aerisun.core.db import dispose_engine, run_database_migrations
 from aerisun.core.settings import get_settings
 
-CURRENT_SCHEMA_HEAD = "0023_agent_run_principal"
+CURRENT_SCHEMA_HEAD = "0027_remove_thought_categories"
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
 
@@ -102,6 +103,10 @@ def test_active_alembic_history_is_reset_to_single_production_baseline_head() ->
         "0021_system_diagnostics.py",
         "0022_webhook_network_policy.py",
         "0023_agent_run_principal.py",
+        "0024_agent_message_projection.py",
+        "0025_post_manuscript_note_kind.py",
+        "0026_manuscript_note_page_config.py",
+        "0027_remove_thought_categories.py",
     ]
     assert not (BACKEND_ROOT / "alembic" / "legacy_versions").exists()
 
@@ -137,6 +142,7 @@ def test_run_database_migrations_creates_baseline_schema_and_journal(tmp_path, m
     assert "ix_assets_remote_object_key" in _get_indexes(db_path, "assets")
     assert "exclude_from_rss" in _get_columns(db_path, "posts")
     assert "requires_approval" in _get_columns(db_path, "posts")
+    assert "kind" in _get_columns(db_path, "posts")
     assert "post_access_requests" in tables
     assert "exclude_from_rss" not in _get_columns(db_path, "diary_entries")
     assert "page_display_options" not in tables
@@ -187,6 +193,78 @@ def test_run_database_migrations_creates_baseline_schema_and_journal(tmp_path, m
     )
     assert "allow_private_network" in _get_columns(db_path, "webhook_subscriptions")
     assert _get_alembic_revision(db_path) == CURRENT_SCHEMA_HEAD
+
+
+def test_remove_thought_categories_migration_clears_legacy_data(tmp_path, monkeypatch) -> None:
+    db_path = tmp_path / "legacy-thought-categories.db"
+
+    _configure_test_database(monkeypatch, tmp_path, db_path)
+    config = Config(str(BACKEND_ROOT / "alembic.ini"))
+    config.set_main_option("script_location", str(BACKEND_ROOT / "alembic"))
+    config.set_main_option("sqlalchemy.url", get_settings().database_url)
+    command.upgrade(config, "0026_manuscript_note_page_config")
+
+    connection = sqlite3.connect(db_path)
+    try:
+        connection.execute(
+            """
+            INSERT INTO thoughts (
+                id, slug, title, summary, body, category, tags, visibility, published_at,
+                public_title, first_published_at, is_pinned, pin_order, mood, view_count,
+                created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                "legacy-thought",
+                "legacy-thought",
+                "旧碎碎念",
+                None,
+                "旧内容",
+                "旧分类",
+                "[]",
+                "private",
+                None,
+                None,
+                None,
+                0,
+                0,
+                None,
+                0,
+                "2026-08-18 12:00:00",
+                "2026-08-18 12:00:00",
+            ),
+        )
+        connection.executemany(
+            """
+            INSERT INTO content_categories (id, content_type, name, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            [
+                ("legacy-thought-category", "thoughts", "旧分类", "2026-08-18 12:00:00", "2026-08-18 12:00:00"),
+                ("post-category", "posts", "文稿分类", "2026-08-18 12:00:00", "2026-08-18 12:00:00"),
+            ],
+        )
+        connection.commit()
+    finally:
+        connection.close()
+
+    run_database_migrations()
+
+    connection = sqlite3.connect(db_path)
+    try:
+        category = connection.execute("SELECT category FROM thoughts WHERE id = 'legacy-thought'").fetchone()
+        thought_categories = connection.execute(
+            "SELECT COUNT(*) FROM content_categories WHERE content_type = 'thoughts'"
+        ).fetchone()
+        retained_categories = connection.execute(
+            "SELECT COUNT(*) FROM content_categories WHERE content_type = 'posts' AND name = '文稿分类'"
+        ).fetchone()
+    finally:
+        connection.close()
+
+    assert category == (None,)
+    assert thought_categories == (0,)
+    assert retained_categories == (1,)
 
 
 def test_agent_run_coordination_migration_upgrades_legacy_schema_and_rows(tmp_path, monkeypatch) -> None:

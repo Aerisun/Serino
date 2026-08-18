@@ -23,6 +23,18 @@ CONTENT_MODELS: dict[str, type] = {
     "excerpts": ExcerptEntry,
 }
 
+_CATEGORY_POST_KINDS = {
+    "posts": "manuscript",
+    "notes": "note",
+}
+
+
+def _category_content_query(session: Session, content_type: str):
+    if content_type in _CATEGORY_POST_KINDS:
+        return PostEntry, session.query(PostEntry).filter(PostEntry.kind == _CATEGORY_POST_KINDS[content_type])
+    model = CONTENT_MODELS[content_type]
+    return model, session.query(model)
+
 
 def _public_filter(
     model: type[ContentModel],
@@ -30,6 +42,8 @@ def _public_filter(
     include_private: bool = False,
     exclude_from_rss: bool = False,
     exclude_requires_approval: bool = False,
+    kind: str | None = None,
+    category: str | None = None,
 ) -> Select:
     """Base query for public content, with optional owner-only private items."""
     visibility_filter = model.visibility == "public"
@@ -40,6 +54,11 @@ def _public_filter(
         query = query.where(model.exclude_from_rss.is_(False))
     if exclude_requires_approval and hasattr(model, "requires_approval"):
         query = query.where(model.requires_approval.is_(False))
+    if kind is not None and hasattr(model, "kind"):
+        query = query.where(model.kind == kind)
+    normalized_category = category.strip() if isinstance(category, str) else None
+    if normalized_category:
+        query = query.where(model.category == normalized_category)
     return query.order_by(desc(model.published_at), desc(model.created_at))
 
 
@@ -50,6 +69,7 @@ def _summary_load_attributes(model: type[ContentModel]) -> list:
         "title",
         "summary",
         "category",
+        "kind",
         "tags",
         "visibility",
         "published_at",
@@ -76,6 +96,8 @@ def find_published(
     load_body: bool = True,
     exclude_from_rss: bool = False,
     exclude_requires_approval: bool = False,
+    kind: str | None = None,
+    category: str | None = None,
 ) -> tuple[list, int]:
     """Paginated query for public content. Returns (items, total)."""
     base = _public_filter(
@@ -83,12 +105,37 @@ def find_published(
         include_private=include_private,
         exclude_from_rss=exclude_from_rss,
         exclude_requires_approval=exclude_requires_approval,
+        kind=kind,
+        category=category,
     )
     total = session.scalar(select(func.count()).select_from(base.subquery())) or 0
     if not load_body:
         base = base.options(load_only(*_summary_load_attributes(model)))
     items = list(session.scalars(base.offset(offset).limit(limit)).all())
     return items, total
+
+
+def find_published_category_stats(
+    session: Session,
+    model: type[ContentModel],
+    *,
+    include_private: bool = False,
+    kind: str | None = None,
+) -> tuple[int, list[tuple[str, int]]]:
+    """Return one complete visible count and grouped non-empty category counts."""
+    base = _public_filter(
+        model,
+        include_private=include_private,
+        kind=kind,
+    ).order_by(None)
+    total = session.scalar(select(func.count()).select_from(base.subquery())) or 0
+    rows = session.execute(
+        base.with_only_columns(model.category, func.count(model.id))
+        .where(model.category.isnot(None), model.category != "")
+        .group_by(model.category)
+        .order_by(func.count(model.id).desc(), model.category.asc())
+    ).all()
+    return total, [(name, int(count)) for name, count in rows if name]
 
 
 def load_bodies_by_ids(session: Session, model: type[ContentModel], ids: list[str]) -> dict[str, str]:
@@ -111,10 +158,11 @@ def find_by_slug(
     slug: str,
     *,
     include_private: bool = False,
+    kind: str | None = None,
 ):
     """Find a single public item by slug. Returns model or None."""
     return session.scalars(
-        _public_filter(model, include_private=include_private).where(model.slug == slug).limit(1)
+        _public_filter(model, include_private=include_private, kind=kind).where(model.slug == slug).limit(1)
     ).first()
 
 
@@ -191,15 +239,28 @@ def list_categories(session: Session, *, content_type: str | None = None) -> lis
 
 
 def list_distinct_content_categories(session: Session, *, content_type: str) -> list[str]:
-    model = CONTENT_MODELS[content_type]
+    model, query = _category_content_query(session, content_type)
     rows = (
-        session.query(model.category)
-        .filter(model.category.isnot(None), model.category != "")
+        query.filter(model.category.isnot(None), model.category != "")
+        .with_entities(model.category)
         .distinct()
         .order_by(model.category.asc())
         .all()
     )
     return [name for (name,) in rows if name]
+
+
+def count_category_usage(session: Session, *, content_type: str, name: str) -> int:
+    model, query = _category_content_query(session, content_type)
+    return query.filter(model.category == name).count()
+
+
+def rename_category_on_content(session: Session, *, content_type: str, previous_name: str, name: str) -> None:
+    model, query = _category_content_query(session, content_type)
+    items = query.filter(model.category == previous_name).all()
+    for item in items:
+        item.category = name
+    session.commit()
 
 
 def get_category(session: Session, category_id: str) -> ContentCategory | None:

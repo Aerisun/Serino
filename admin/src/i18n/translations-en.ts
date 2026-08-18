@@ -78,6 +78,7 @@ export const enTranslations: TranslationDict = {
     "nav.dashboard": "Dashboard",
     "nav.overview": "Overview",
     "nav.posts": "Posts",
+    "nav.notes": "Notes",
     "nav.diary": "Diary",
     "nav.thoughts": "Thoughts",
     "nav.excerpts": "Excerpts",
@@ -213,6 +214,9 @@ export const enTranslations: TranslationDict = {
     "posts.body": "Body",
     "posts.tags": "Tags",
     "posts.tagsHint": "Tags (comma-separated)",
+    "posts.kind": "Kind",
+    "posts.kindManuscript": "Manuscript",
+    "posts.kindNote": "Note",
     "posts.status": "Status",
     "posts.visibility": "Visibility",
     "posts.publishedAt": "Published At",
@@ -252,7 +256,7 @@ export const enTranslations: TranslationDict = {
     // contentCategories
     "contentCategories.title": "Categories",
     "contentCategories.description":
-      "Manage reusable categories for posts, diary, thoughts, and excerpts.",
+      "Manage reusable categories for posts, notes, and excerpts.",
     "contentCategories.sectionHint":
       "These categories appear in the editor dropdown for the current content type.",
     "contentCategories.countSuffix": "categories",
@@ -261,8 +265,8 @@ export const enTranslations: TranslationDict = {
     "contentCategories.none": "No category",
     "contentCategories.selectPlaceholder": "Select an existing category",
     "contentCategories.postPlaceholder": "Select a post category",
+    "contentCategories.notePlaceholder": "Select a note category",
     "contentCategories.diaryPlaceholder": "Select a diary category",
-    "contentCategories.thoughtPlaceholder": "Select a thought category",
     "contentCategories.excerptPlaceholder": "Select an excerpt category",
     "contentCategories.createOption": "Create category…",
     "contentCategories.createTitle": "Create Category",
@@ -996,10 +1000,11 @@ export const enTranslations: TranslationDict = {
     "integrations.mcpClientStepInstall": "Run the installer",
     "integrations.mcpClientStepCredential":
       "Enter the Serino MCP API key when prompted",
-    "integrations.mcpClientStepReload": "Open Codex / Claude Code to manage your site",
+    "integrations.mcpClientStepCredentialDescription":
+      "Nothing else is required: the installer completes MCP, Skills, configuration, key storage, and reconnects Codex automatically. Claude Code users should restart the client after installation.",
     "integrations.mcpUpdateKey": "Change the MCP API key later",
     "integrations.mcpUpdateKeyDescription":
-      "Run this command and enter the new key.",
+      "Run this command and enter the new key. Codex reconnects automatically.",
     "integrations.mcpCopyKeyCommand": "Copy key update command",
     "integrations.mcpInstallCopyCommand": "Copy {client} install command",
     "integrations.mcpInstallCommandCopied": "Copied {client} command",

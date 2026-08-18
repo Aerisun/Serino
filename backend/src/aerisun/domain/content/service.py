@@ -19,6 +19,8 @@ from aerisun.domain.content.models import (
 )
 from aerisun.domain.content.schemas import (
     ContentCategoryRead,
+    ContentCategoryStatRead,
+    ContentCategoryStatsRead,
     ContentCollectionRead,
     ContentEntryRead,
     ContentSummaryCollectionRead,
@@ -30,11 +32,12 @@ from aerisun.domain.waline.service import build_comment_path, count_records_by_u
 
 ContentModel = TypeVar("ContentModel", PostEntry, DiaryEntry, ThoughtEntry, ExcerptEntry)
 
-CONTENT_CATEGORY_TYPES = {"posts", "thoughts", "excerpts"}
+CONTENT_CATEGORY_TYPES = {"posts", "notes", "excerpts"}
 CONTENT_TYPES = {"posts", "diary", "thoughts", "excerpts"}
 TAGLESS_CONTENT_TYPES = {"diary", "thoughts", "excerpts"}
 
 CONTENT_VISIBILITY_VALUES = {"public", "private"}
+POST_KIND_VALUES = {"manuscript", "note"}
 MANAGED_MODEL_CONTENT_TYPES = {
     PostEntry: "posts",
     DiaryEntry: "diary",
@@ -234,7 +237,7 @@ def _count_daily_title_candidates(
     query = session.query(func.count(model.id)).filter(reference_time >= day_start, reference_time < day_end)
     if exclude_id:
         query = query.filter(model.id != exclude_id)
-    if content_type in {"thoughts", "excerpts"}:
+    if content_type == "excerpts":
         normalized_category = _normalize_default_title_category(category)
         if normalized_category:
             query = query.filter(model.category == normalized_category)
@@ -378,6 +381,13 @@ def _normalize_content_fields(
     if content_type not in CONTENT_TYPES:
         raise ValidationError("不支持的内容类型")
 
+    if content_type == "posts":
+        kind = data.get("kind") if "kind" in data else getattr(existing, "kind", "manuscript")
+        if kind not in POST_KIND_VALUES:
+            raise ValidationError("文章类别不正确")
+        if existing is None or "kind" in data:
+            data["kind"] = kind
+
     if "slug" in data:
         data["slug"] = _normalize_optional_text(data.get("slug"), field_label="slug", collapse_whitespace=False)
     if "title" in data:
@@ -498,11 +508,21 @@ def normalize_content_update_state(session: Session, existing: ContentModel, pat
     content_type = MANAGED_MODEL_CONTENT_TYPES.get(type(existing))
     if content_type is None:
         raise ValidationError("不支持的内容类型")
+    if (
+        content_type == "posts"
+        and "kind" in normalized
+        and normalized["kind"] != getattr(existing, "kind", "manuscript")
+    ):
+        # A category belongs to either manuscripts or notes. Never carry it
+        # across the two buckets, including when the admin API is called
+        # directly instead of through the editor.
+        normalized["category"] = None
     _normalize_content_fields(session, normalized, content_type=content_type, existing=existing)
     _normalize_and_sync_category(
         session,
         normalized,
         content_type=content_type,
+        existing=existing,
     )
     previous_visibility = _normalize_visibility(getattr(existing, "visibility", None), fallback="private")
     next_visibility = _normalize_visibility(
@@ -686,6 +706,7 @@ def _content_summary_payload(
         "created_at": item.created_at,
         "updated_at": item.updated_at,
         "category": category,
+        "kind": getattr(item, "kind", None),
         "read_time": (
             _estimate_read_time(item.body)
             if include_read_time
@@ -749,6 +770,7 @@ def _list_entries(
     offset: int = 0,
     *,
     include_private: bool = False,
+    category: str | None = None,
 ) -> ContentCollectionRead:
     items, total = repo.find_published(
         session,
@@ -756,6 +778,7 @@ def _list_entries(
         limit=limit,
         offset=offset,
         include_private=include_private,
+        category=category,
     )
     slugs = [item.slug for item in items]
     engagement_stats = _engagement_stats_by_slug(session, content_type, slugs)
@@ -776,6 +799,8 @@ def _list_summary_entries(
     include_private: bool = False,
     exclude_from_rss: bool = False,
     exclude_requires_approval: bool = False,
+    kind: str | None = None,
+    category: str | None = None,
     summary_fallback_max_length: int = 500,
 ) -> ContentSummaryCollectionRead:
     items, total = repo.find_published(
@@ -787,6 +812,8 @@ def _list_summary_entries(
         load_body=False,
         exclude_from_rss=exclude_from_rss,
         exclude_requires_approval=exclude_requires_approval,
+        kind=kind,
+        category=category,
     )
     slugs = [item.slug for item in items]
     item_ids = [item.id for item in items]
@@ -818,8 +845,9 @@ def _get_by_slug(
     slug: str,
     *,
     include_private: bool = False,
+    kind: str | None = None,
 ) -> ContentEntryRead:
-    item = repo.find_by_slug(session, model, slug, include_private=include_private)
+    item = repo.find_by_slug(session, model, slug, include_private=include_private, kind=kind)
     if item is None:
         raise ResourceNotFound(f"{model.__name__} with slug '{slug}' was not found")
     engagement_stats = _engagement_stats_by_slug(session, content_type, [item.slug])
@@ -832,8 +860,38 @@ def list_public_posts(
     offset: int = 0,
     *,
     include_private: bool = False,
+    category: str | None = None,
 ) -> ContentSummaryCollectionRead:
-    return _list_summary_entries(session, PostEntry, "posts", limit, offset, include_private=include_private)
+    return _list_summary_entries(
+        session,
+        PostEntry,
+        "posts",
+        limit,
+        offset,
+        include_private=include_private,
+        kind="manuscript",
+        category=category,
+    )
+
+
+def list_public_notes(
+    session: Session,
+    limit: int = 20,
+    offset: int = 0,
+    *,
+    include_private: bool = False,
+    category: str | None = None,
+) -> ContentSummaryCollectionRead:
+    return _list_summary_entries(
+        session,
+        PostEntry,
+        "notes",
+        limit,
+        offset,
+        include_private=include_private,
+        kind="note",
+        category=category,
+    )
 
 
 def list_rss_posts(
@@ -856,7 +914,11 @@ def list_rss_posts(
 
 
 def get_public_post(session: Session, slug: str, *, include_private: bool = False) -> ContentEntryRead:
-    return _get_by_slug(session, PostEntry, "posts", slug, include_private=include_private)
+    return _get_by_slug(session, PostEntry, "posts", slug, include_private=include_private, kind="manuscript")
+
+
+def get_public_note(session: Session, slug: str, *, include_private: bool = False) -> ContentEntryRead:
+    return _get_by_slug(session, PostEntry, "notes", slug, include_private=include_private, kind="note")
 
 
 def list_public_diary_entries(
@@ -880,7 +942,14 @@ def list_public_thoughts(
     *,
     include_private: bool = False,
 ) -> ContentCollectionRead:
-    return _list_entries(session, ThoughtEntry, "thoughts", limit, offset, include_private=include_private)
+    return _list_entries(
+        session,
+        ThoughtEntry,
+        "thoughts",
+        limit,
+        offset,
+        include_private=include_private,
+    )
 
 
 def list_public_excerpts(
@@ -889,8 +958,45 @@ def list_public_excerpts(
     offset: int = 0,
     *,
     include_private: bool = False,
+    category: str | None = None,
 ) -> ContentCollectionRead:
-    return _list_entries(session, ExcerptEntry, "excerpts", limit, offset, include_private=include_private)
+    return _list_entries(
+        session,
+        ExcerptEntry,
+        "excerpts",
+        limit,
+        offset,
+        include_private=include_private,
+        category=category,
+    )
+
+
+def list_public_category_stats(
+    session: Session,
+    *,
+    content_type: str,
+    include_private: bool = False,
+) -> ContentCategoryStatsRead:
+    sources: dict[str, tuple[type[ContentModel], str | None]] = {
+        "posts": (PostEntry, "manuscript"),
+        "notes": (PostEntry, "note"),
+        "excerpts": (ExcerptEntry, None),
+    }
+    try:
+        model, kind = sources[content_type]
+    except KeyError as exc:
+        raise ValidationError("不支持的内容类型") from exc
+
+    total, rows = repo.find_published_category_stats(
+        session,
+        model,
+        include_private=include_private,
+        kind=kind,
+    )
+    return ContentCategoryStatsRead(
+        total=total,
+        items=[ContentCategoryStatRead(name=name, count=count) for name, count in rows],
+    )
 
 
 def aggregate_tags(session: Session) -> list:
@@ -919,8 +1025,13 @@ def _normalize_and_sync_category(
     data: dict,
     *,
     content_type: str | None,
+    existing: ContentModel | None = None,
 ) -> None:
     if "category" not in data:
+        return
+
+    if content_type == "thoughts":
+        data["category"] = None
         return
 
     raw_value = data.get("category")
@@ -934,7 +1045,20 @@ def _normalize_and_sync_category(
     data["category"] = normalized_name or None
 
     if normalized_name and content_type:
-        create_managed_category(session, content_type=content_type, name=normalized_name)
+        category_type = _category_type_for_content(content_type, data, existing=existing)
+        create_managed_category(session, content_type=category_type, name=normalized_name)
+
+
+def _category_type_for_content(
+    content_type: str,
+    data: dict,
+    *,
+    existing: ContentModel | None = None,
+) -> str:
+    if content_type != "posts":
+        return content_type
+    kind = data.get("kind", getattr(existing, "kind", "manuscript"))
+    return "notes" if kind == "note" else "posts"
 
 
 def ensure_content_type(content_type: str) -> str:
@@ -944,8 +1068,7 @@ def ensure_content_type(content_type: str) -> str:
 
 
 def _category_usage_count(session: Session, *, content_type: str, name: str) -> int:
-    model = repo.CONTENT_MODELS[content_type]
-    return session.query(func.count(model.id)).filter(model.category == name).scalar() or 0
+    return repo.count_category_usage(session, content_type=content_type, name=name)
 
 
 def _to_category_read(session: Session, category: ContentCategory) -> ContentCategoryRead:
@@ -1024,11 +1147,12 @@ def update_managed_category(session: Session, *, category_id: str, name: str) ->
     previous_name = category.name
     category = repo.update_category_name(session, category, name=normalized_name)
     if previous_name != normalized_name:
-        model = repo.CONTENT_MODELS[category.content_type]
-        items = session.query(model).filter(model.category == previous_name).all()
-        for item in items:
-            item.category = normalized_name
-        session.commit()
+        repo.rename_category_on_content(
+            session,
+            content_type=category.content_type,
+            previous_name=previous_name,
+            name=normalized_name,
+        )
     return _to_category_read(session, category)
 
 

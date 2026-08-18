@@ -39,7 +39,7 @@ const OWNER_COMMENT_ACTIVITY_CONTENT_TYPE_OPTIONS = [
   { key: "excerpts", labelKey: "nav.excerpts" },
 ] as const;
 const SUBSCRIPTION_CONTENT_OPTIONS = [
-  { key: "posts", label: "文章" },
+  { key: "posts", label: "文稿与手记" },
   { key: "diary", label: "日记" },
   { key: "thoughts", label: "碎碎念" },
   { key: "excerpts", label: "文摘" },

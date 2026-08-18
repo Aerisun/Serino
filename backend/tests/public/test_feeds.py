@@ -33,7 +33,7 @@ def _make_payload(content_type: str, suffix: str) -> dict:
 @pytest.mark.parametrize(
     ("path", "channel_section", "slug", "item_path"),
     [
-        ("/feeds/posts.xml", "Posts", "from-zero-design-system", "/posts/from-zero-design-system"),
+        ("/feeds/articles.xml", "Articles", "from-zero-design-system", "/posts/from-zero-design-system"),
         ("/feeds/diary.xml", "Diary", "spring-equinox-and-warm-light", "/diary/spring-equinox-and-warm-light"),
         ("/feeds/thoughts.xml", "Thoughts", "spacing-rhythm-note", "/thoughts#spacing-rhythm-note"),
         ("/feeds/excerpts.xml", "Excerpts", "good-design-note", "/excerpts#good-design-note"),
@@ -58,20 +58,21 @@ def test_public_content_feeds_return_rss_xml(
 
 
 @pytest.mark.parametrize("alias_path", ["/rss.xml", "/feed.xml", "/feeds.xml"])
-def test_posts_feed_aliases_return_same_xml_as_posts_feed(client, alias_path: str) -> None:
-    posts_response = client.get("/feeds/posts.xml")
-    alias_response = client.get(alias_path)
+def test_articles_feed_aliases_redirect_to_canonical_feed(client, alias_path: str) -> None:
+    alias_response = client.get(alias_path, follow_redirects=False)
 
-    assert posts_response.status_code == 200
-    assert alias_response.status_code == 200
-    assert alias_response.headers["content-type"].startswith("application/rss+xml")
-    assert alias_response.text == posts_response.text
+    assert alias_response.status_code == 308
+    assert alias_response.headers["location"] == "/feeds/articles.xml"
+
+
+def test_legacy_posts_feed_is_not_available(client) -> None:
+    assert client.get("/feeds/posts.xml").status_code == 404
 
 
 @pytest.mark.parametrize(
     ("content_type", "feed_path"),
     [
-        ("posts", "/feeds/posts.xml"),
+        ("posts", "/feeds/articles.xml"),
         ("diary", "/feeds/diary.xml"),
         ("thoughts", "/feeds/thoughts.xml"),
         ("excerpts", "/feeds/excerpts.xml"),
@@ -109,10 +110,28 @@ def test_posts_feed_excludes_public_posts_marked_for_rss_exclusion(client, admin
     assert hidden_response.status_code == 201
     assert visible_response.status_code == 201
 
-    response = client.get("/feeds/posts.xml")
+    response = client.get("/feeds/articles.xml")
 
     assert visible_payload["slug"] in response.text
     assert hidden_payload["slug"] not in response.text
+
+
+def test_posts_feed_includes_notes_at_their_public_url_unless_excluded(client, admin_headers) -> None:
+    visible_note = _make_payload("posts", "-visible-note-in-rss")
+    visible_note["kind"] = "note"
+    hidden_note = _make_payload("posts", "-hidden-note-from-rss")
+    hidden_note["kind"] = "note"
+    hidden_note["exclude_from_rss"] = True
+
+    assert client.post(f"{ADMIN_BASE}/posts/", json=visible_note, headers=admin_headers).status_code == 201
+    assert client.post(f"{ADMIN_BASE}/posts/", json=hidden_note, headers=admin_headers).status_code == 201
+
+    response = client.get("/feeds/articles.xml")
+
+    assert response.status_code == 200
+    assert visible_note["slug"] in response.text
+    assert f"/notes/{visible_note['slug']}" in response.text
+    assert hidden_note["slug"] not in response.text
 
 
 def test_posts_feed_excludes_posts_that_require_access_approval(client, admin_headers) -> None:
@@ -122,7 +141,7 @@ def test_posts_feed_excludes_posts_that_require_access_approval(client, admin_he
     created = client.post(f"{ADMIN_BASE}/posts/", json=protected_payload, headers=admin_headers)
     assert created.status_code == 201
 
-    response = client.get("/feeds/posts.xml")
+    response = client.get("/feeds/articles.xml")
 
     assert response.status_code == 200
     assert protected_payload["slug"] not in response.text
@@ -134,11 +153,11 @@ def test_feed_identity_uses_the_configured_public_site_name(client) -> None:
         profile.name = "Custom Public Name"
         session.commit()
 
-    response = client.get("/feeds/posts.xml")
+    response = client.get("/feeds/articles.xml")
 
     assert response.status_code == 200
-    assert "<title>Custom Public Name Posts</title>" in response.text
-    assert "<description>Latest published posts from Custom Public Name</description>" in response.text
+    assert "<title>Custom Public Name Articles</title>" in response.text
+    assert "<description>Latest published manuscripts and notes from Custom Public Name</description>" in response.text
     assert "<generator>Serino</generator>" in response.text
 
 
@@ -170,7 +189,7 @@ def test_posts_rss_limits_generated_summary_to_thirty_characters_without_changin
     created = client.post(f"{ADMIN_BASE}/posts/", json=payload, headers=admin_headers)
     assert created.status_code == 201
 
-    feed_response = client.get("/feeds/posts.xml")
+    feed_response = client.get("/feeds/articles.xml")
     list_response = client.get("/api/v1/site/posts")
 
     assert feed_response.status_code == 200

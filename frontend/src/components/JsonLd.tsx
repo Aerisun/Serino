@@ -6,7 +6,7 @@ interface JsonLdProps {
   title: string
   description: string
   slug: string
-  type: "posts" | "diary"
+  type: "posts" | "notes" | "diary"
   publishedAt?: string
   modifiedAt?: string
   tags?: string[]

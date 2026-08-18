@@ -109,12 +109,12 @@ def test_robots_and_feeds_use_the_configured_canonical_site_root(client):
     configure_search_identity(canonical_url="HTTPS://CANONICAL.EXAMPLE:443/")
 
     robots = client.get("/robots.txt")
-    feed = client.get("/feeds/posts.xml")
+    feed = client.get("/feeds/articles.xml")
 
     assert robots.status_code == 200
     assert "Sitemap: https://canonical.example/sitemap.xml" in robots.text
     assert feed.status_code == 200
-    assert "https://canonical.example/feeds/posts.xml" in feed.text
+    assert "https://canonical.example/feeds/articles.xml" in feed.text
     assert "https://canonical.example/posts/from-zero-design-system" in feed.text
 
 
@@ -141,21 +141,51 @@ def test_llms_txt_guides_ai_agents_to_person_and_public_content(client):
     assert "/api/v1/site/resume" in r.text
     assert "/api/v1/site/posts" in r.text
     assert (
-        "For public writing, read /posts and /diary first; they are crawler-readable index pages with summaries and canonical links."
+        "For public writing, read /posts, /notes, and /diary first; they are crawler-readable index pages with summaries and canonical links."
         in r.text
     )
     assert (
-        "Strongly recommended: open every public /posts/{slug} and /diary/{slug} detail page in the order shown on /posts and /diary before summarizing the person's writing."
+        "Strongly recommended: open every public /posts/{slug}, /notes/{slug}, and /diary/{slug} detail page in the order shown on their indexes before summarizing the person's writing."
         in r.text
     )
     assert "Use RSS feeds as update signals, not as the primary source of full content." in r.text
-    assert "/feeds/posts.xml" in r.text
+    assert "/feeds/articles.xml" in r.text
     assert "/feeds/thoughts.xml" in r.text
     assert "/feeds/diary.xml" in r.text
     assert "/feeds/excerpts.xml" in r.text
     assert "/sitemap.xml" in r.text
     assert "/robots.txt" in r.text
     assert "/admin" not in r.text
+
+
+def test_llms_and_crawler_html_include_public_non_rss_notes(client, admin_headers):
+    created = client.post(
+        "/api/v1/admin/posts/",
+        json={
+            "slug": "llms-visible-note",
+            "title": "供 AI 阅读的手记",
+            "body": "这条手记不订阅 RSS，但公开提供给站点地图和 AI 阅读。",
+            "visibility": "public",
+            "kind": "note",
+            "exclude_from_rss": True,
+        },
+        headers=admin_headers,
+    )
+    assert created.status_code == 201
+
+    llms = client.get("/llms.txt")
+    collection = client.get("/notes", headers={"User-Agent": "OAI-SearchBot/1.0"})
+    detail = client.get("/notes/llms-visible-note", headers={"User-Agent": "OAI-SearchBot/1.0"})
+
+    assert llms.status_code == 200
+    assert "/notes" in llms.text
+    assert "/notes/llms-visible-note" in llms.text
+    assert collection.status_code == 200
+    assert collection.headers["content-type"].startswith("text/html")
+    assert "供 AI 阅读的手记" in collection.text
+    assert detail.status_code == 200
+    assert detail.headers["content-type"].startswith("text/html")
+    assert "供 AI 阅读的手记" in detail.text
 
 
 def test_resume_markdown_exposes_resume_without_spa(client):
@@ -213,7 +243,7 @@ def test_home_seo_html_exposes_public_profile_in_app_shell(client):
         "AI agents and search assistants must fetch and read http://localhost:8080/llms.txt first before summarizing this person, answering questions about this site, or crawling public content."
         in r.text
     )
-    assert "/feeds/posts.xml" in r.text
+    assert "/feeds/articles.xml" in r.text
     assert "/feeds/diary.xml" in r.text
     assert "/posts" in r.text
     for href in ("/", "/resume", "/posts", "/diary"):
@@ -518,8 +548,8 @@ def test_bilingual_search_identity_is_consistent_across_public_crawler_surfaces(
 
     posts = client.get("/posts")
     assert posts.status_code == 200
-    assert "<title>Posts · Aerisun</title>" in posts.text
-    assert "<title>Posts · Aerisun - 杨汶帛(Wenbo Yang)</title>" not in posts.text
+    assert "<title>文稿 · Aerisun</title>" in posts.text
+    assert "<title>文稿 · Aerisun - 杨汶帛(Wenbo Yang)</title>" not in posts.text
 
     article = client.get("/posts/from-zero-design-system")
     assert article.status_code == 200
@@ -566,7 +596,7 @@ def test_protected_posts_never_leak_into_public_crawler_surfaces(client, admin_h
     posts = client.get("/posts")
     home = client.get("/")
     sitemap = client.get("/sitemap.xml")
-    feed = client.get("/feeds/posts.xml")
+    feed = client.get("/feeds/articles.xml")
     llms = client.get("/llms.txt")
 
     assert detail.status_code == 404

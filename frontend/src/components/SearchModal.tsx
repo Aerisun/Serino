@@ -16,6 +16,7 @@ interface SearchResult {
 
 const TYPE_CONFIG: Record<string, { typeKey: string; icon: typeof FileText; color: string; prefix: string }> = {
   posts: { typeKey: "search.type.posts", icon: FileText, color: "rgb(var(--shiro-accent-rgb)/0.7)", prefix: "/posts" },
+  notes: { typeKey: "search.type.notes", icon: FileText, color: "rgb(var(--shiro-accent-rgb)/0.7)", prefix: "/notes" },
   diary: { typeKey: "search.type.diary", icon: BookOpen, color: "rgb(59 130 246 / 0.7)", prefix: "/diary" },
   thoughts: { typeKey: "search.type.thoughts", icon: MessageSquare, color: "rgb(168 85 247 / 0.7)", prefix: "/thoughts" },
   excerpts: { typeKey: "search.type.excerpts", icon: Quote, color: "rgb(234 179 8 / 0.7)", prefix: "/excerpts" },

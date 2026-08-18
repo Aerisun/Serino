@@ -141,9 +141,10 @@ def search_public_content(
 
         for row in rows:
             snippet = _make_snippet(_snippet_source(row, keywords[0]), keywords)
+            result_type = "notes" if model is PostEntry and row.kind == "note" else type_name
             results.append(
                 SearchResultItem(
-                    type=type_name,
+                    type=result_type,
                     slug=row.slug,
                     title=row.title,
                     snippet=snippet,

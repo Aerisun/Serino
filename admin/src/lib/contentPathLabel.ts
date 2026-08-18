@@ -1,9 +1,10 @@
-export type ContentPathType = "posts" | "diary" | "thoughts" | "excerpts";
+export type ContentPathType = "posts" | "notes" | "diary" | "thoughts" | "excerpts";
 
 type Translator = (key: string) => string;
 
 const CONTENT_PATH_SEGMENT_TO_TYPE: Record<string, ContentPathType> = {
   posts: "posts",
+  notes: "notes",
   diary: "diary",
   thoughts: "thoughts",
   excerpts: "excerpts",
@@ -12,6 +13,8 @@ const CONTENT_PATH_SEGMENT_TO_TYPE: Record<string, ContentPathType> = {
 const CONTENT_TYPE_ALIAS_TO_TYPE: Record<string, ContentPathType> = {
   post: "posts",
   posts: "posts",
+  note: "notes",
+  notes: "notes",
   diary: "diary",
   thought: "thoughts",
   thoughts: "thoughts",
@@ -68,6 +71,7 @@ export function getContentTargetFromPath(path: string) {
 function getContentTypeLabel(contentType: ContentPathType, t: Translator) {
   const labels: Record<ContentPathType, string> = {
     posts: t("nav.posts"),
+    notes: t("nav.notes"),
     diary: t("nav.diary"),
     thoughts: t("nav.thoughts"),
     excerpts: t("nav.excerpts"),

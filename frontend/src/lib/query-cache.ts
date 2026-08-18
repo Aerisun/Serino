@@ -22,6 +22,8 @@ export const isFreshnessSensitiveQueryKey = (queryKey: readonly unknown[]) => {
   return (
     first === "/api/v1/site/posts" ||
     first.startsWith("/api/v1/site/posts/") ||
+    first === "/api/v1/site/notes" ||
+    first.startsWith("/api/v1/site/notes/") ||
     first === "/api/v1/site/diary" ||
     first.startsWith("/api/v1/site/diary/") ||
     first === "/api/v1/site/thoughts" ||

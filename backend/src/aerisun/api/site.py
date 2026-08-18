@@ -28,12 +28,20 @@ from aerisun.domain.activity.service import (
     list_calendar_events,
     list_recent_activity,
 )
-from aerisun.domain.content.schemas import ContentCollectionRead, ContentEntryRead, ContentSummaryCollectionRead
+from aerisun.domain.content.schemas import (
+    ContentCategoryStatsRead,
+    ContentCollectionRead,
+    ContentEntryRead,
+    ContentSummaryCollectionRead,
+)
 from aerisun.domain.content.service import (
     get_public_diary_entry,
+    get_public_note,
     get_public_post,
+    list_public_category_stats,
     list_public_diary_entries,
     list_public_excerpts,
+    list_public_notes,
     list_public_posts,
     list_public_thoughts,
 )
@@ -344,6 +352,7 @@ def read_posts(
     request: Request = None,
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
+    category: str | None = Query(default=None, max_length=100),
     session: Session = Depends(get_session),
     current_user: SiteUser | None = Depends(get_current_site_user_optional),
     current_site_session: SiteUserSession | None = Depends(get_current_site_session_optional),
@@ -353,6 +362,7 @@ def read_posts(
         limit=limit,
         offset=offset,
         include_private=_can_view_private_content(session, current_user, current_site_session),
+        category=category,
     )
     if request is None:
         return payload
@@ -378,6 +388,54 @@ def read_post(
         slug,
         include_private=include_private,
     )
+    if request is None:
+        return payload
+    if protected:
+        response = _build_conditional_json_response(
+            request,
+            payload=payload,
+            cache_control="private, no-store",
+        )
+        response.headers["Vary"] = "Cookie"
+        return response
+    return _build_conditional_json_response(request, payload=payload)
+
+
+@base_router.get("/notes", response_model=ContentSummaryCollectionRead, summary="获取手记列表")
+def read_notes(
+    request: Request = None,
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    category: str | None = Query(default=None, max_length=100),
+    session: Session = Depends(get_session),
+    current_user: SiteUser | None = Depends(get_current_site_user_optional),
+    current_site_session: SiteUserSession | None = Depends(get_current_site_session_optional),
+) -> ContentSummaryCollectionRead | Response:
+    payload = list_public_notes(
+        session,
+        limit=limit,
+        offset=offset,
+        include_private=_can_view_private_content(session, current_user, current_site_session),
+        category=category,
+    )
+    if request is None:
+        return payload
+    return _build_conditional_json_response(request, payload=payload)
+
+
+@base_router.get("/notes/{slug}", response_model=ContentEntryRead, summary="获取单篇手记")
+def read_note(
+    slug: str,
+    request: Request = None,
+    session: Session = Depends(get_session),
+    current_user: SiteUser | None = Depends(get_current_site_user_optional),
+    current_site_session: SiteUserSession | None = Depends(get_current_site_session_optional),
+) -> ContentEntryRead | Response:
+    include_private = _can_view_private_content(session, current_user, current_site_session)
+    protected = (
+        False if include_private else require_post_detail_access(session, slug, current_user, current_site_session)
+    )
+    payload = get_public_note(session, slug, include_private=include_private)
     if request is None:
         return payload
     if protected:
@@ -461,6 +519,7 @@ def read_excerpts(
     request: Request = None,
     limit: int = Query(default=40, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
+    category: str | None = Query(default=None, max_length=100),
     session: Session = Depends(get_session),
     current_user: SiteUser | None = Depends(get_current_site_user_optional),
     current_site_session: SiteUserSession | None = Depends(get_current_site_session_optional),
@@ -470,9 +529,37 @@ def read_excerpts(
         limit=limit,
         offset=offset,
         include_private=_can_view_private_content(session, current_user, current_site_session),
+        category=category,
     )
     if request is None:
         return payload
+    return _build_conditional_json_response(request, payload=payload)
+
+
+@base_router.get("/category-stats", response_model=ContentCategoryStatsRead, summary="获取公开内容分类统计")
+def read_category_stats(
+    content_type: Literal["posts", "notes", "excerpts"],
+    request: Request = None,
+    session: Session = Depends(get_session),
+    current_user: SiteUser | None = Depends(get_current_site_user_optional),
+    current_site_session: SiteUserSession | None = Depends(get_current_site_session_optional),
+) -> ContentCategoryStatsRead | Response:
+    include_private = _can_view_private_content(session, current_user, current_site_session)
+    payload = list_public_category_stats(
+        session,
+        content_type=content_type,
+        include_private=include_private,
+    )
+    if request is None:
+        return payload
+    if include_private:
+        response = _build_conditional_json_response(
+            request,
+            payload=payload,
+            cache_control="private, no-store",
+        )
+        response.headers["Vary"] = "Cookie"
+        return response
     return _build_conditional_json_response(request, payload=payload)
 
 

@@ -55,6 +55,7 @@ class TestContentCRUDLifecycle:
         if content_type == "posts":
             assert data["exclude_from_rss"] is False
             assert data["requires_approval"] is False
+            assert data["kind"] == "manuscript"
         else:
             assert "exclude_from_rss" not in data
             assert "requires_approval" not in data
@@ -153,6 +154,30 @@ class TestContentCRUDLifecycle:
         assert response.status_code == 200
         assert response.json()["requires_approval"] is True
 
+    def test_post_kind_is_persisted_and_rejects_unknown_values(self, client, admin_headers, content_type):
+        if content_type != "posts":
+            pytest.skip("post-specific kind")
+
+        payload = _make_payload(content_type, "-note-kind")
+        payload["kind"] = "note"
+        created = client.post(f"{BASE}/{content_type}/", json=payload, headers=admin_headers)
+
+        assert created.status_code == 201
+        assert created.json()["kind"] == "note"
+
+        updated = client.put(
+            f"{BASE}/{content_type}/{created.json()['id']}",
+            json={"kind": "manuscript"},
+            headers=admin_headers,
+        )
+        assert updated.status_code == 200
+        assert updated.json()["kind"] == "manuscript"
+
+        invalid_payload = _make_payload(content_type, "-invalid-kind")
+        invalid_payload["kind"] = "invalid"
+        invalid = client.post(f"{BASE}/{content_type}/", json=invalid_payload, headers=admin_headers)
+        assert invalid.status_code == 422
+
     def test_post_json_export_and_import_preserve_post_specific_settings(self, client, admin_headers, content_type):
         if content_type != "posts":
             pytest.skip("post-specific RSS exclusion")
@@ -160,6 +185,7 @@ class TestContentCRUDLifecycle:
         payload = _make_payload(content_type, "-rss-export")
         payload["exclude_from_rss"] = True
         payload["requires_approval"] = True
+        payload["kind"] = "note"
         created = client.post(f"{BASE}/{content_type}/", json=payload, headers=admin_headers)
         assert created.status_code == 201
 
@@ -168,6 +194,7 @@ class TestContentCRUDLifecycle:
         exported_post = next(item for item in exported_items if item["slug"] == payload["slug"])
         assert exported_post["exclude_from_rss"] is True
         assert exported_post["requires_approval"] is True
+        assert exported_post["kind"] == "note"
 
         assert (
             client.put(
@@ -181,7 +208,14 @@ class TestContentCRUDLifecycle:
             import_result = import_content_json(
                 session,
                 "posts",
-                [{"slug": payload["slug"], "exclude_from_rss": True, "requires_approval": True}],
+                [
+                    {
+                        "slug": payload["slug"],
+                        "exclude_from_rss": True,
+                        "requires_approval": True,
+                        "kind": "manuscript",
+                    }
+                ],
             )
         assert import_result.errors == []
 
@@ -192,6 +226,7 @@ class TestContentCRUDLifecycle:
         assert restored.status_code == 200
         assert restored.json()["exclude_from_rss"] is True
         assert restored.json()["requires_approval"] is True
+        assert restored.json()["kind"] == "manuscript"
 
     def test_update_does_not_change_historical_view_count(self, client, admin_headers, content_type):
         payload = _make_payload(content_type, "-view-count")

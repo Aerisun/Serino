@@ -120,7 +120,7 @@ const seoHtmlDevProxyBlockedResponseHeaders = new Set([
 
 const crawlerUserAgentPattern =
   /(bot|crawler|spider|crawling|slurp|bingpreview|facebookexternalhit|twitterbot|linkedinbot|discordbot|telegrambot|whatsapp|googlebot|googleother|google-inspectiontool|google-agent|google-notebooklm|google-read-aloud|bingbot|baiduspider|bytespider|doubaobot|oai-searchbot|chatgpt-user|perplexitybot|claude-searchbot|claude-user|curl|wget|python-requests|httpx)/i;
-const crawlerOnlySeoHtmlPathPattern = /^\/(?:posts(?:\/[^/?#]+)?|diary(?:\/[^/?#]+)?|thoughts|excerpts|friends|guestbook)$/;
+const crawlerOnlySeoHtmlPathPattern = /^\/(?:posts(?:\/[^/?#]+)?|notes(?:\/[^/?#]+)?|diary(?:\/[^/?#]+)?|thoughts|excerpts|friends|guestbook)$/;
 
 const isAlwaysSeoHtmlPath = (pathname: string) => pathname === "/" || pathname === "/resume";
 

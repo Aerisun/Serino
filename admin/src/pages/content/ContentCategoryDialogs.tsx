@@ -4,11 +4,9 @@ import {
   useListDiary,
   useListExcerpts,
   useListPosts,
-  useListThoughts,
   useUpdateDiary,
   useUpdateExcerpts,
   useUpdatePosts,
-  useUpdateThoughts,
 } from "@serino/api-client/admin";
 import type { ContentCategoryRead, ContentRead } from "@serino/api-client/models";
 import { FolderMinus, FolderPlus, Loader2 } from "lucide-react";
@@ -91,7 +89,7 @@ interface EditCategoryDialogProps {
 }
 
 function getCategoryItemLabel(item: ContentRead, contentType: ContentCategoryType) {
-  if (contentType === "thoughts" || contentType === "excerpts") {
+  if (contentType === "excerpts") {
     return getBodySnippet(item.body, item.summary || item.title || item.id);
   }
   return item.title || item.summary || item.id;
@@ -114,13 +112,10 @@ export function EditCategoryDialog({
   const [movingItemIds, setMovingItemIds] = useState<Set<string>>(new Set());
 
   const postsResult = useListPosts(CONTENT_LIST_PARAMS, {
-    query: { enabled: open && contentType === "posts" && !!category, staleTime: 60_000, refetchOnWindowFocus: false },
+    query: { enabled: open && (contentType === "posts" || contentType === "notes") && !!category, staleTime: 60_000, refetchOnWindowFocus: false },
   });
   const diaryResult = useListDiary(CONTENT_LIST_PARAMS, {
     query: { enabled: open && contentType === "diary" && !!category, staleTime: 60_000, refetchOnWindowFocus: false },
-  });
-  const thoughtsResult = useListThoughts(CONTENT_LIST_PARAMS, {
-    query: { enabled: open && contentType === "thoughts" && !!category, staleTime: 60_000, refetchOnWindowFocus: false },
   });
   const excerptsResult = useListExcerpts(CONTENT_LIST_PARAMS, {
     query: { enabled: open && contentType === "excerpts" && !!category, staleTime: 60_000, refetchOnWindowFocus: false },
@@ -130,18 +125,27 @@ export function EditCategoryDialog({
     switch (contentType) {
       case "posts":
         return postsResult;
+      case "notes":
+        return postsResult;
       case "diary":
         return diaryResult;
-      case "thoughts":
-        return thoughtsResult;
       case "excerpts":
         return excerptsResult;
     }
-  }, [contentType, diaryResult, excerptsResult, postsResult, thoughtsResult]);
+  }, [contentType, diaryResult, excerptsResult, postsResult]);
 
   const isLoadingContent = contentResult.isLoading;
   const allContent = contentResult.data;
-  const allItems = useMemo(() => ((allContent?.data?.items as ContentRead[] | undefined) ?? []), [allContent]);
+  const allItems = useMemo(() => {
+    const items = (allContent?.data?.items as ContentRead[] | undefined) ?? [];
+    if (contentType === "notes") {
+      return items.filter((item) => (item as { kind?: string }).kind === "note");
+    }
+    if (contentType === "posts") {
+      return items.filter((item) => (item as { kind?: string }).kind !== "note");
+    }
+    return items;
+  }, [allContent, contentType]);
 
   const listItems = useMemo(() => {
     if (Object.keys(optimisticCategoryByItemId).length === 0) {
@@ -174,21 +178,20 @@ export function EditCategoryDialog({
 
   const postsUpdate = useUpdatePosts();
   const diaryUpdate = useUpdateDiary();
-  const thoughtsUpdate = useUpdateThoughts();
   const excerptsUpdate = useUpdateExcerpts();
 
   const updateMutation = useMemo(() => {
     switch (contentType) {
       case "posts":
         return postsUpdate;
+      case "notes":
+        return postsUpdate;
       case "diary":
         return diaryUpdate;
-      case "thoughts":
-        return thoughtsUpdate;
       case "excerpts":
         return excerptsUpdate;
     }
-  }, [contentType, diaryUpdate, excerptsUpdate, postsUpdate, thoughtsUpdate]);
+  }, [contentType, diaryUpdate, excerptsUpdate, postsUpdate]);
 
   const listQueryKey = useMemo(() => getContentListQueryKey(contentType), [contentType]);
 

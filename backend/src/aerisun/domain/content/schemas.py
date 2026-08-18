@@ -18,6 +18,10 @@ class ContentSummaryRead(ModelBase):
     created_at: datetime = Field(description="Creation timestamp")
     updated_at: datetime = Field(description="Last update timestamp")
     category: str | None = Field(default=None, description="Content category")
+    kind: Literal["manuscript", "note"] | None = Field(
+        default=None,
+        description="Post kind: manuscript or note",
+    )
     read_time: str | None = Field(default=None, description="Estimated reading time")
     display_date: str | None = Field(default=None, description="Formatted display date string")
     relative_date: str | None = Field(default=None, description="Relative time string (e.g. 3 days ago)")
@@ -44,6 +48,16 @@ class ContentSummaryCollectionRead(ModelBase):
     items: list[ContentSummaryRead] = Field(description="List of content summaries")
     total: int = Field(default=0, description="Total number of matching entries")
     has_more: bool = Field(default=False, description="Whether more entries are available")
+
+
+class ContentCategoryStatRead(ModelBase):
+    name: str = Field(description="Content category name")
+    count: int = Field(ge=0, description="Visible entries in this category")
+
+
+class ContentCategoryStatsRead(ModelBase):
+    total: int = Field(ge=0, description="Total visible entries")
+    items: list[ContentCategoryStatRead] = Field(description="Visible categories with their entry counts")
 
 
 class ContentCollectionRead(ModelBase):
@@ -110,6 +124,10 @@ class ContentAdminRead(ModelBase):
     created_at: datetime = Field(description="Creation timestamp")
     updated_at: datetime = Field(description="Last update timestamp")
     category: str | None = Field(default=None, description="Content category")
+    kind: Literal["manuscript", "note"] | None = Field(
+        default=None,
+        description="Post kind: manuscript or note",
+    )
     mood: str | None = Field(default=None, description="Author mood (diary-specific)")
     weather: str | None = Field(default=None, description="Weather description (diary-specific)")
     poem: str | None = Field(default=None, description="Associated poem text")
@@ -121,6 +139,10 @@ class ContentAdminRead(ModelBase):
 
 
 class PostContentCreate(ContentCreate):
+    kind: Literal["manuscript", "note"] = Field(
+        default="manuscript",
+        description="Whether this post is a manuscript or note",
+    )
     exclude_from_rss: bool = Field(
         default=False,
         description="Whether this public post is excluded from RSS",
@@ -132,6 +154,10 @@ class PostContentCreate(ContentCreate):
 
 
 class PostContentUpdate(ContentUpdate):
+    kind: Literal["manuscript", "note"] | None = Field(
+        default=None,
+        description="Whether this post is a manuscript or note",
+    )
     exclude_from_rss: bool | None = Field(
         default=None,
         description="Whether this public post is excluded from RSS",
@@ -143,6 +169,9 @@ class PostContentUpdate(ContentUpdate):
 
 
 class PostContentAdminRead(ContentAdminRead):
+    kind: Literal["manuscript", "note"] = Field(
+        description="Whether this post is a manuscript or note",
+    )
     exclude_from_rss: bool = Field(description="Whether this public post is excluded from RSS")
     requires_approval: bool = Field(description="Whether viewing this public post requires approval")
 
@@ -195,7 +224,7 @@ class ContentCategoryRead(ModelBase):
 
 
 class ContentCategoryCreate(BaseModel):
-    content_type: Literal["posts", "thoughts", "excerpts"] = Field(
+    content_type: Literal["posts", "notes", "excerpts"] = Field(
         description="Content type bucket",
     )
     name: str = Field(min_length=1, max_length=80, description="Category name")

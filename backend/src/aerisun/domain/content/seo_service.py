@@ -41,6 +41,18 @@ def _crawler_public_conditions(model: type, *, hide_protected_posts: bool) -> li
     return conditions
 
 
+def _content_public_conditions(
+    model: type,
+    *,
+    hide_protected_posts: bool,
+    post_kind: str | None = None,
+) -> list[object]:
+    conditions = _crawler_public_conditions(model, hide_protected_posts=hide_protected_posts)
+    if model is PostEntry and post_kind is not None:
+        conditions.append(PostEntry.kind == post_kind)
+    return conditions
+
+
 def build_sitemap_xml(session: Session, site_url: str) -> str:
     """Build sitemap XML string. Uses module-level caching with 1-hour TTL."""
     now = time.monotonic()
@@ -51,20 +63,25 @@ def build_sitemap_xml(session: Session, site_url: str) -> str:
     hide_protected_posts = bool(feature_flags.get(POST_ACCESS_APPROVAL_FEATURE_FLAG, True))
     base_url = _canonical_base_url(site_url, _read_search_optimization(profile))
     content_types = [
-        (PostEntry, "posts", "weekly", "0.8"),
+        (PostEntry, "posts", "weekly", "0.8", "manuscript"),
+        (PostEntry, "notes", "weekly", "0.7", "note"),
     ]
     if include_diary:
-        content_types.append((DiaryEntry, "diary", "monthly", "0.6"))
+        content_types.append((DiaryEntry, "diary", "monthly", "0.6", None))
 
     content_revisions: list[str] = []
-    for model, *_ in content_types:
+    for model, prefix, _, _, post_kind in content_types:
         count, latest_update = session.execute(
             select(func.count(model.id), func.max(model.updated_at)).where(
-                *_crawler_public_conditions(model, hide_protected_posts=hide_protected_posts)
+                *_content_public_conditions(
+                    model,
+                    hide_protected_posts=hide_protected_posts,
+                    post_kind=post_kind,
+                )
             )
         ).one()
         revision = latest_update.isoformat() if isinstance(latest_update, datetime) else str(latest_update or "")
-        content_revisions.append(f"{model.__tablename__}:{count}:{revision}")
+        content_revisions.append(f"{prefix}:{count}:{revision}")
 
     profile_revision = profile.updated_at.isoformat() if profile else ""
     resume_revision = resume.updated_at.isoformat() if resume else ""
@@ -94,6 +111,7 @@ def build_sitemap_xml(session: Session, site_url: str) -> str:
     static_pages = [
         ("/", "daily", "1.0", profile.updated_at if profile else None),
         ("/posts", "daily", "0.9", None),
+        ("/notes", "daily", "0.8", None),
         ("/thoughts", "weekly", "0.7", None),
         ("/excerpts", "weekly", "0.7", None),
         ("/friends", "weekly", "0.6", None),
@@ -112,10 +130,14 @@ def build_sitemap_xml(session: Session, site_url: str) -> str:
         SubElement(url_el, "changefreq").text = changefreq
         SubElement(url_el, "priority").text = priority
 
-    for model, prefix, changefreq, priority in content_types:
+    for model, prefix, changefreq, priority, post_kind in content_types:
         rows = session.execute(
             select(model.slug, model.updated_at).where(
-                *_crawler_public_conditions(model, hide_protected_posts=hide_protected_posts),
+                *_content_public_conditions(
+                    model,
+                    hide_protected_posts=hide_protected_posts,
+                    post_kind=post_kind,
+                ),
             )
         ).all()
         for slug, updated_at in rows:
@@ -577,7 +599,8 @@ def _render_public_resource_links(base_url: str, *, api_base_path: str = "/api",
         ("Resume Markdown", _internal_url(base_url, "/resume.md")),
         ("AI site guide", _internal_url(base_url, "/llms.txt")),
         ("Posts", _internal_url(base_url, "/posts")),
-        ("Posts RSS", _internal_url(base_url, "/feeds/posts.xml")),
+        ("Notes", _internal_url(base_url, "/notes")),
+        ("Articles RSS", _internal_url(base_url, "/feeds/articles.xml")),
         ("Thoughts RSS", _internal_url(base_url, "/feeds/thoughts.xml")),
         ("Resume JSON", _internal_url(base_url, f"{api_path}/v1/site/resume")),
         ("Sitemap", _internal_url(base_url, "/sitemap.xml")),
@@ -594,6 +617,7 @@ def _render_ai_navigation_instructions(base_url: str, *, include_diary: bool = T
     fallback_links = [
         ("Resume Markdown", _internal_url(base_url, "/resume.md")),
         ("Posts index", _internal_url(base_url, "/posts")),
+        ("Notes index", _internal_url(base_url, "/notes")),
     ]
     if include_diary:
         fallback_links.append(("Diary index", _internal_url(base_url, "/diary")))
@@ -619,7 +643,11 @@ def _render_posts_list(session: Session, base_url: str, *, hide_protected_posts:
     posts = session.scalars(
         select(PostEntry)
         .where(
-            *_crawler_public_conditions(PostEntry, hide_protected_posts=hide_protected_posts),
+            *_content_public_conditions(
+                PostEntry,
+                hide_protected_posts=hide_protected_posts,
+                post_kind="manuscript",
+            ),
         )
         .order_by(PostEntry.is_pinned.desc(), PostEntry.pin_order.asc(), PostEntry.updated_at.desc())
         .limit(8)
@@ -648,7 +676,7 @@ def _render_posts_list(session: Session, base_url: str, *, hide_protected_posts:
             )
         )
 
-    return "\n".join(["<section>", "<h2>Latest public posts</h2>", "<ol>", *items, "</ol>", "</section>"])
+    return "\n".join(["<section>", "<h2>Latest public manuscripts</h2>", "<ol>", *items, "</ol>", "</section>"])
 
 
 def _strip_inline_markdown(value: str) -> str:
@@ -700,11 +728,26 @@ _CONTENT_SEO_CONFIG: dict[str, dict[str, object]] = {
         "description": "Public long-form posts and project notes.",
         "path": "/posts",
         "detail_path_template": "/posts/{slug}",
-        "feed_path": "/feeds/posts.xml",
+        "feed_path": "/feeds/articles.xml",
         "limit": 20,
         "include_body_in_collection": False,
         "schema_type": "BlogPosting",
         "detail_shell_key": "post-detail",
+        "post_kind": "manuscript",
+    },
+    "notes": {
+        "model": PostEntry,
+        "page_key": "notes",
+        "title": "Notes",
+        "description": "Public personal notes and everyday reflections.",
+        "path": "/notes",
+        "detail_path_template": "/notes/{slug}",
+        "feed_path": "/feeds/articles.xml",
+        "limit": 20,
+        "include_body_in_collection": False,
+        "schema_type": "BlogPosting",
+        "detail_shell_key": "note-detail",
+        "post_kind": "note",
     },
     "diary": {
         "model": DiaryEntry,
@@ -799,11 +842,16 @@ def _content_entries(
 ) -> list[object]:
     model = config["model"]
     limit = int(config["limit"])
+    post_kind = config.get("post_kind")
     return list(
         session.scalars(
             select(model)
             .where(
-                *_crawler_public_conditions(model, hide_protected_posts=hide_protected_posts),
+                *_content_public_conditions(
+                    model,
+                    hide_protected_posts=hide_protected_posts,
+                    post_kind=str(post_kind) if post_kind else None,
+                ),
             )
             .order_by(
                 model.is_pinned.desc(),
@@ -823,10 +871,15 @@ def _content_entry(
     hide_protected_posts: bool,
 ) -> object:
     model = config["model"]
+    post_kind = config.get("post_kind")
     item = session.scalar(
         select(model)
         .where(
-            *_crawler_public_conditions(model, hide_protected_posts=hide_protected_posts),
+            *_content_public_conditions(
+                model,
+                hide_protected_posts=hide_protected_posts,
+                post_kind=str(post_kind) if post_kind else None,
+            ),
             model.slug == slug,
         )
         .limit(1)
@@ -1050,7 +1103,7 @@ def build_content_detail_seo_html(
     app_shell_html: str | None = None,
 ) -> str:
     """Build crawler-readable HTML for public post and diary detail pages."""
-    if content_type not in {"posts", "diary"}:
+    if content_type not in {"posts", "notes", "diary"}:
         raise ResourceNotFound(f"content detail '{content_type}' is not available")
     config = _content_config(content_type)
     identity = _read_public_identity(session, site_url)
@@ -1584,7 +1637,7 @@ def build_home_seo_html(
     include_diary = not bool(identity["diary_private"])
     alternate_links = [
         ("text/markdown", _internal_url(base_url, "/llms.txt"), "AI-readable site guide"),
-        ("application/rss+xml", _internal_url(base_url, "/feeds/posts.xml"), "Latest public posts"),
+        ("application/rss+xml", _internal_url(base_url, "/feeds/articles.xml"), "Latest public articles"),
     ]
     if include_diary:
         alternate_links.append(
@@ -1824,14 +1877,14 @@ def build_llms_txt(session: Session, site_url: str, *, api_base_path: str = "/ap
         alternate_identity_sentence = f"{english_name} is the public English name for {real_name}."
 
     writing_guidance = (
-        "For public writing, read /posts and /diary first; they are crawler-readable index pages with summaries and canonical links."
+        "For public writing, read /posts, /notes, and /diary first; they are crawler-readable index pages with summaries and canonical links."
         if include_diary
-        else "For public writing, read /posts first; diary details are private and not part of the public AI-readable surface."
+        else "For public writing, read /posts and /notes first; diary details are private and not part of the public AI-readable surface."
     )
     detail_guidance = (
-        "Strongly recommended: open every public /posts/{slug} and /diary/{slug} detail page in the order shown on /posts and /diary before summarizing the person's writing."
+        "Strongly recommended: open every public /posts/{slug}, /notes/{slug}, and /diary/{slug} detail page in the order shown on their indexes before summarizing the person's writing."
         if include_diary
-        else "Strongly recommended: open every public /posts/{slug} detail page in the order shown on /posts before summarizing the person's writing."
+        else "Strongly recommended: open every public /posts/{slug} and /notes/{slug} detail page in the order shown on their indexes before summarizing the person's writing."
     )
 
     lines = [
@@ -1863,13 +1916,15 @@ def build_llms_txt(session: Session, site_url: str, *, api_base_path: str = "/ap
         f"- [Public bootstrap JSON]({_internal_url(base_url, f'{api_path}/v1/site/bootstrap')}): Site profile, navigation, page metadata, and resume in one read-only JSON payload.",
         f"- [Resume JSON]({_internal_url(base_url, f'{api_path}/v1/site/resume')}): Structured public resume data.",
         f"- [Posts JSON]({_internal_url(base_url, f'{api_path}/v1/site/posts')}): Public article list with titles and summaries.",
-        f"- [Posts RSS]({_internal_url(base_url, '/feeds/posts.xml')}): Update feed for public long-form posts; use /posts and /posts/{{slug}} for crawler-readable content.",
+        f"- [Notes JSON]({_internal_url(base_url, f'{api_path}/v1/site/notes')}): Public hand-note list with titles and summaries.",
+        f"- [Articles RSS]({_internal_url(base_url, '/feeds/articles.xml')}): Update feed for public manuscripts and notes that opt in to RSS; use /posts, /notes, and their detail URLs for complete crawlable content.",
         f"- [Thoughts RSS]({_internal_url(base_url, '/feeds/thoughts.xml')}): Update feed for public short notes; use /thoughts for crawler-readable content.",
         f"- [Excerpts RSS]({_internal_url(base_url, '/feeds/excerpts.xml')}): Update feed for public excerpts; use /excerpts for crawler-readable content.",
     ]
     public_pages = [
         f"- [Resume page]({_internal_url(base_url, '/resume')}): Browser-rendered resume page; use /resume.md or resume JSON when JavaScript is unavailable.",
-        f"- [Posts]({_internal_url(base_url, '/posts')}): Crawler-readable long-form article index with summaries and canonical detail links.",
+        f"- [Posts]({_internal_url(base_url, '/posts')}): Crawler-readable manuscript index with summaries and canonical detail links.",
+        f"- [Notes]({_internal_url(base_url, '/notes')}): Crawler-readable hand-note index with summaries and canonical detail links; notes excluded from RSS remain available here and in the sitemap.",
         f"- [Thoughts]({_internal_url(base_url, '/thoughts')}): Crawler-readable short notes; entries are available directly on this page.",
         f"- [Excerpts]({_internal_url(base_url, '/excerpts')}): Crawler-readable excerpts and reading notes; entries are available directly on this page.",
     ]
@@ -1911,7 +1966,11 @@ def build_llms_txt(session: Session, site_url: str, *, api_base_path: str = "/ap
     posts = session.scalars(
         select(PostEntry)
         .where(
-            *_crawler_public_conditions(PostEntry, hide_protected_posts=hide_protected_posts),
+            *_content_public_conditions(
+                PostEntry,
+                hide_protected_posts=hide_protected_posts,
+                post_kind="manuscript",
+            ),
         )
         .order_by(PostEntry.is_pinned.desc(), PostEntry.pin_order.asc(), PostEntry.updated_at.desc())
         .limit(8)
@@ -1923,6 +1982,26 @@ def build_llms_txt(session: Session, site_url: str, *, api_base_path: str = "/ap
             note = _markdown_note(post.summary or post.body)
             suffix = f": {note}" if note else ""
             lines.append(f"- [{title}]({_internal_url(base_url, f'/posts/{post.slug}')}){suffix}")
+
+    notes = session.scalars(
+        select(PostEntry)
+        .where(
+            *_content_public_conditions(
+                PostEntry,
+                hide_protected_posts=hide_protected_posts,
+                post_kind="note",
+            ),
+        )
+        .order_by(PostEntry.is_pinned.desc(), PostEntry.pin_order.asc(), PostEntry.updated_at.desc())
+        .limit(8)
+    ).all()
+    if notes:
+        lines.extend(["", "## Representative notes", ""])
+        for note in notes:
+            title = _markdown_label(note.public_title or note.title, "Untitled note")
+            summary = _markdown_note(note.summary or note.body)
+            suffix = f": {summary}" if summary else ""
+            lines.append(f"- [{title}]({_internal_url(base_url, f'/notes/{note.slug}')}){suffix}")
 
     if social_links:
         lines.extend(["", "## Identity links", ""])

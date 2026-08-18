@@ -43,6 +43,17 @@ function usePostListConfig(): ContentListConfig {
     columns: [
       { header: t("posts.postTitle"), accessor: "title" },
       {
+        header: t("posts.kind"),
+        accessor: (row) => {
+          const isNote = (row as { kind?: string }).kind === "note";
+          return (
+            <span className={isNote ? "text-pink-400 dark:text-pink-300" : "text-cyan-600 dark:text-cyan-300"}>
+              {isNote ? t("posts.kindNote") : t("posts.kindManuscript")}
+            </span>
+          );
+        },
+      },
+      {
         header: t("posts.visibility"),
         accessor: postVisibilityBadge,
         className: "text-center",

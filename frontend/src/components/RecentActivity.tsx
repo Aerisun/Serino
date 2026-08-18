@@ -18,6 +18,7 @@ type ActivityType =
   | "reply"
   | "guestbook"
   | "publish_post"
+  | "publish_note"
   | "publish_diary"
   | "publish_thought"
   | "publish_excerpt";
@@ -63,7 +64,7 @@ const looksMachineLike = (value: string) => {
   if (!normalized) return true;
   if (/[:/@]/.test(normalized)) return true;
   if (/^[a-z0-9_-]{20,}$/i.test(normalized)) return true;
-  if (/^(posts|post|diary|thoughts|guestbook|preview|excerpt|resume)\b/i.test(normalized)) return true;
+  if (/^(posts|post|notes|note|diary|thoughts|guestbook|preview|excerpt|resume)\b/i.test(normalized)) return true;
   return false;
 };
 
@@ -98,6 +99,7 @@ const humanizeTarget = (value: string) => {
 const normalizeType = (value: string): ActivityType => {
   const raw = value.toLowerCase();
   if (raw === "publish_post") return "publish_post";
+  if (raw === "publish_note") return "publish_note";
   if (raw === "publish_diary") return "publish_diary";
   if (raw === "publish_thought") return "publish_thought";
   if (raw === "publish_excerpt") return "publish_excerpt";
@@ -138,7 +140,7 @@ const itemClass =
   "group relative flex w-full gap-2.5 rounded-2xl py-1 text-left transition-colors md:gap-4";
 
 const shouldSplitMobileTarget = (item: ActivityItem) =>
-  item.type === "publish_post" || item.type === "publish_diary";
+  item.type === "publish_post" || item.type === "publish_note" || item.type === "publish_diary";
 
 const renderSummary = (item: ActivityItem, t: TranslateFn): ReactNode => {
   const actor = <span className={actorClass}>{item.user || t("recentActivity.visitor")}</span>;
@@ -183,6 +185,16 @@ const renderSummary = (item: ActivityItem, t: TranslateFn): ReactNode => {
     );
   }
 
+  if (item.type === "publish_note") {
+    return (
+      <>
+        {actor}
+        <span className={verbClass}>{t("recentActivity.notePublished")}</span>
+        {target ? <span className="pl-2">{target}</span> : null}
+      </>
+    );
+  }
+
   if (item.type === "publish_diary") {
     return (
       <>
@@ -222,6 +234,15 @@ const renderMobileLead = (item: ActivityItem, t: TranslateFn): ReactNode => {
       <>
         {actor}
         <span className={verbClass}>{t("recentActivity.postPublished")}</span>
+      </>
+    );
+  }
+
+  if (item.type === "publish_note") {
+    return (
+      <>
+        {actor}
+        <span className={verbClass}>{t("recentActivity.notePublished")}</span>
       </>
     );
   }
@@ -388,6 +409,8 @@ const RecentActivity = ({ enabled = true }: RecentActivityProps) => {
                   ? Heart
                   : item.type === "publish_post"
                     ? FileText
+                    : item.type === "publish_note"
+                      ? FileText
                     : item.type === "publish_diary"
                       ? BookOpen
                       : item.type === "publish_thought"

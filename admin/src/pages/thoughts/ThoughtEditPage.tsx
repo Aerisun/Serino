@@ -11,7 +11,6 @@ import { ContentEditorHeaderActions } from "@/components/content/ContentEditorHe
 import { Button } from "@/components/ui/Button";
 import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { AutoTitleField } from "@/components/content/AutoTitleField";
-import { ContentCategoryField } from "@/components/content/ContentCategoryField";
 import { PublishTimeFooter } from "@/components/content/PublishTimeFooter";
 import { Label } from "@/components/ui/Label";
 import {
@@ -40,10 +39,9 @@ const editorConfig = {
   defaultForm: {
     slug: "", title: "", summary: "", body: "", tags: [],
     visibility: "private", published_at: null,
-    category: "", mood: "",
+    mood: "",
   },
   serverToForm: buildServerToForm((item) => ({
-    category: normalizeServerTextField(item.category),
     mood: normalizeServerTextField(item.mood),
   })),
   i18nKeys: {
@@ -102,33 +100,30 @@ export default function ThoughtEditPage() {
             mobileFullscreen
           />
         </div>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <ContentCategoryField contentType="thoughts" label={t("contentCategories.fieldLabel")} value={form.category || ""} placeholder={t("contentCategories.thoughtPlaceholder")} onChange={(nextValue) => setField("category", nextValue)} />
-          <div className="space-y-2">
-            <Label>{t("thoughts.mood")}</Label>
-            <Select
-              value={form.mood || "__empty"}
-              onValueChange={(value) =>
-                setField("mood", value === "__empty" ? "" : value)
-              }
-            >
-              <SelectTrigger className="min-h-12 rounded-lg px-3 py-2">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__empty">{t("common.empty")}</SelectItem>
-                {MOOD_OPTIONS.map((option) => (
-                  <SelectItem
-                    key={option.value}
-                    value={option.value}
-                    className="text-lg leading-none"
-                  >
-                    {option.value}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        <div className="space-y-2">
+          <Label>{t("thoughts.mood")}</Label>
+          <Select
+            value={form.mood || "__empty"}
+            onValueChange={(value) =>
+              setField("mood", value === "__empty" ? "" : value)
+            }
+          >
+            <SelectTrigger className="min-h-12 rounded-lg px-3 py-2">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__empty">{t("common.empty")}</SelectItem>
+              {MOOD_OPTIONS.map((option) => (
+                <SelectItem
+                  key={option.value}
+                  value={option.value}
+                  className="text-lg leading-none"
+                >
+                  {option.value}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div className="space-y-3 border-t border-border pt-4 sm:pt-6 md:grid md:grid-cols-2 md:items-start md:gap-5 md:space-y-0">
           <AutoTitleField

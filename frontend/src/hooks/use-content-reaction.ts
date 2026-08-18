@@ -5,7 +5,7 @@ import {
   readReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGet,
 } from "@serino/api-client/site-interactions";
 
-export type ContentReactionSurface = "posts" | "diary" | "thoughts" | "excerpts" | "friends";
+export type ContentReactionSurface = "posts" | "notes" | "diary" | "thoughts" | "excerpts" | "friends";
 
 interface UseContentReactionOptions {
   contentType: ContentReactionSurface | null;

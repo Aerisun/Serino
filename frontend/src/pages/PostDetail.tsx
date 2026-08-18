@@ -13,6 +13,7 @@ import JsonLd from "@/components/JsonLd";
 import PreviewModeBadge from "@/components/PreviewModeBadge";
 import LazyOnVisible from "@/components/LazyOnVisible";
 import ArticleEnhancements from "@/components/ArticleEnhancements";
+import { ImageLoadQueueProvider } from "@/components/QueuedAttachmentImage";
 import {
   getDiaryAccessErrorStatus,
   useDiaryAccessPrompt,
@@ -22,7 +23,10 @@ import { usePageConfig } from "@/contexts/runtime-config";
 import { useFrontendI18n, type FrontendLang } from "@/i18n";
 import { formatPublishedDate, formatRelativeUpdatedAt } from "@/lib/api/utils";
 import { usePreviewChannel, type ContentPreviewData } from "@/lib/preview";
-import { useReadPostApiV1SitePostsSlugGet } from "@serino/api-client/site";
+import {
+  useReadNoteApiV1SiteNotesSlugGet,
+  useReadPostApiV1SitePostsSlugGet,
+} from "@serino/api-client/site";
 import type { ContentEntryRead } from "@serino/api-client/models";
 import type { BaseViewPageConfig } from "@/lib/page-config";
 import { lazyWithPreload } from "@/lib/lazy";
@@ -188,14 +192,16 @@ const useEstimatedWordCount = (
   return wordCount;
 };
 
-const PostDetail = () => {
+const PostDetail = ({ kind = "manuscript" }: { kind?: "manuscript" | "note" }) => {
   const { t, lang } = useFrontendI18n();
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const featureFlags = useFeatureFlags();
   const pages = usePageConfig();
-  const postsConfig = (pages.posts ?? {}) as PostDetailPageConfig;
+  const contentType = kind === "note" ? "notes" : "posts";
+  const routePrefix = `/${contentType}`;
+  const postsConfig = (pages[contentType] ?? {}) as PostDetailPageConfig;
   const fallbackCategoryLabel = postsConfig.categories?.fallback ?? t("posts.fallbackCategory");
   const detailBackLabel = postsConfig.detailBackLabel ?? t("postDetail.back");
   const detailListLabel = postsConfig.detailListLabel ?? t("postDetail.backToList");
@@ -216,9 +222,8 @@ const PostDetail = () => {
   });
   const { data: previewData, isLoading: isPreviewLoading } =
     usePreviewChannel(previewStorageKey);
-  const { data: response, isLoading, isError, error, refetch } = useReadPostApiV1SitePostsSlugGet(slug, {
+  const queryOptions = {
     query: {
-      enabled: !!id,
       staleTime: 60_000,
       gcTime: 20 * 60_000,
       retry: (failureCount, requestError) => {
@@ -229,7 +234,17 @@ const PostDetail = () => {
         return failureCount < 2;
       },
     },
+  };
+  const manuscriptQuery = useReadPostApiV1SitePostsSlugGet(slug, {
+    ...queryOptions,
+    query: { ...queryOptions.query, enabled: !!id && kind === "manuscript" },
   });
+  const noteQuery = useReadNoteApiV1SiteNotesSlugGet(slug, {
+    ...queryOptions,
+    query: { ...queryOptions.query, enabled: !!id && kind === "note" },
+  });
+  const { data: response, isLoading, isError, error, refetch } =
+    kind === "note" ? noteQuery : manuscriptQuery;
 
   const previewPost =
     previewData?.type === "posts"
@@ -298,7 +313,7 @@ const PostDetail = () => {
           title={post.title}
           description={postDescription}
           slug={post.slug}
-          type="posts"
+          type={contentType}
           publishedAt={post.publishedAt}
           modifiedAt={post.modifiedAt}
           tags={post.tags}
@@ -309,6 +324,7 @@ const PostDetail = () => {
       {previewPost ? <PreviewModeBadge /> : null}
 
       <main className="mx-auto max-w-5xl px-6 pt-[5.5rem] pb-20 sm:pt-28 lg:px-8">
+        <ImageLoadQueueProvider>
         <motion.button
           type="button"
           onClick={() => navigate(-1)}
@@ -483,7 +499,7 @@ const PostDetail = () => {
             >
               <Suspense fallback={null}>
                 <CommentSection
-                  contentType="posts"
+                  contentType={contentType}
                   contentSlug={post.slug}
                 />
               </Suspense>
@@ -504,13 +520,14 @@ const PostDetail = () => {
             </p>
             <button
               type="button"
-              onClick={pageStatus === "error" ? () => refetch() : () => navigate("/posts")}
+              onClick={pageStatus === "error" ? () => refetch() : () => navigate(routePrefix)}
               className="mt-4 text-xs font-body text-foreground/30 transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.8)]"
             >
               {pageStatus === "error" ? retryLabel : detailListLabel}
             </button>
           </motion.div>
         )}
+        </ImageLoadQueueProvider>
       </main>
 
       <BackToTop />

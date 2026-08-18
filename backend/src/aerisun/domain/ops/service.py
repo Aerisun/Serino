@@ -75,6 +75,7 @@ _VISIT_GEO_WARM_MAX_IPS = 50
 
 _CONTENT_PATH_TO_TYPE: dict[str, str] = {
     "posts": "posts",
+    "notes": "notes",
     "diary": "diary",
     "thoughts": "thoughts",
     "excerpts": "excerpts",
@@ -156,7 +157,7 @@ class VisitRecordPayload:
     increment_public_counter: bool = True
 
 
-_CONTENT_PAGEVIEW_PREFIXES = ("/posts/", "/diary/", "/thoughts/", "/excerpts/")
+_CONTENT_PAGEVIEW_PREFIXES = ("/posts/", "/notes/", "/diary/", "/thoughts/", "/excerpts/")
 
 
 def _should_increment_content_pageview(payload: VisitRecordPayload) -> bool:
@@ -171,17 +172,19 @@ def _increment_content_view_count(session: Session, path: str) -> bool:
     from aerisun.domain.content import repository as content_repo
 
     content_type, _, slug = path.strip("/").partition("/")
-    model = content_repo.CONTENT_MODELS.get(content_type)
+    post_kind = {"posts": "manuscript", "notes": "note"}.get(content_type)
+    model = PostEntry if post_kind is not None else content_repo.CONTENT_MODELS.get(content_type)
     if model is None or not slug or "/" in slug:
         return False
     session.flush()
+    statement = update(model).where(model.slug == slug)
+    if post_kind is not None:
+        statement = statement.where(PostEntry.kind == post_kind)
     result = session.execute(
-        update(model)
-        .where(model.slug == slug)
-        .values(
+        statement.values(
             view_count=model.view_count + 1,
             updated_at=model.updated_at,
-        ),
+        )
     )
     return bool(result.rowcount)
 

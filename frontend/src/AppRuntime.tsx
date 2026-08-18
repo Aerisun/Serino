@@ -311,8 +311,10 @@ function AppContent() {
           >
             <Routes>
               <Route path="/" element={<Index />} />
-              <Route path="/posts" element={<Posts />} />
+              <Route path="/posts" element={<Posts key="manuscript" />} />
               <Route path="/posts/:id" element={<PostDetail />} />
+              <Route path="/notes" element={<Posts key="note" kind="note" />} />
+              <Route path="/notes/:id" element={<PostDetail kind="note" />} />
               <Route path="/friends" element={<Friends />} />
               <Route path="/thoughts" element={<Thoughts />} />
               <Route path="/diary" element={<Diary />} />

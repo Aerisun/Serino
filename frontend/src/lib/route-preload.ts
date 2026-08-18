@@ -5,10 +5,12 @@ import {
   getReadDiaryEntryApiV1SiteDiarySlugGetQueryOptions,
   getReadFriendFeedApiV1SiteFriendFeedGetQueryOptions,
   getReadFriendsApiV1SiteFriendsGetQueryOptions,
+  getReadNoteApiV1SiteNotesSlugGetQueryOptions,
   getReadPostApiV1SitePostsSlugGetQueryOptions,
   getReadRecentActivityApiV1SiteRecentActivityGetQueryOptions,
   readDiaryApiV1SiteDiaryGet,
   readExcerptsApiV1SiteExcerptsGet,
+  readNotesApiV1SiteNotesGet,
   readPostsApiV1SitePostsGet,
   readThoughtsApiV1SiteThoughtsGet,
 } from "@serino/api-client/site";
@@ -115,6 +117,8 @@ const normalizeInternalPath = (href: string | null | undefined) => {
 
 export const preloadPostsPage = () => import("@/pages/Posts");
 export const preloadPostDetailPage = () => import("@/pages/PostDetail");
+export const preloadNotesPage = () => import("@/pages/Posts");
+export const preloadNoteDetailPage = () => import("@/pages/PostDetail");
 export const preloadDiaryPage = () => import("@/pages/Diary");
 export const preloadDiaryDetailPage = () => import("@/pages/DiaryDetail");
 export const preloadThoughtsPage = () => import("@/pages/Thoughts");
@@ -149,6 +153,8 @@ const onceInFlight = (
 const getModulePreloadTask = (pathname: string) => {
   if (pathname === "/posts") return preloadPostsPage;
   if (pathname.startsWith("/posts/")) return preloadPostDetailPage;
+  if (pathname === "/notes") return preloadNotesPage;
+  if (pathname.startsWith("/notes/")) return preloadNoteDetailPage;
   if (pathname === "/diary") return preloadDiaryPage;
   if (pathname.startsWith("/diary/")) return preloadDiaryDetailPage;
   if (pathname === "/thoughts") return preloadThoughtsPage;
@@ -190,6 +196,17 @@ export const prefetchPostsData = (queryClient: QueryClient, pages?: RuntimePages
   );
 };
 
+export const prefetchNotesData = (queryClient: QueryClient, pages?: RuntimePages) => {
+  const pageSize = readPageSize(pages, "notes", 15);
+
+  return prefetchInfiniteSiteList(
+    queryClient,
+    ["site", "notes", pageSize],
+    pageSize,
+    async (params) => (await readNotesApiV1SiteNotesGet(params)).data,
+  );
+};
+
 export const prefetchDiaryData = (queryClient: QueryClient, pages?: RuntimePages) => {
   const pageSize = readPageSize(pages, "diary", 15);
 
@@ -227,6 +244,17 @@ export const prefetchPostDetailData = (queryClient: QueryClient, slug: string) =
   prefetchSiteQuery(
     queryClient,
     getReadPostApiV1SitePostsSlugGetQueryOptions(slug, {
+      query: {
+        staleTime: PREFETCH_STALE_TIME_MS,
+        gcTime: PREFETCH_GC_TIME_MS,
+      },
+    }),
+  );
+
+export const prefetchNoteDetailData = (queryClient: QueryClient, slug: string) =>
+  prefetchSiteQuery(
+    queryClient,
+    getReadNoteApiV1SiteNotesSlugGetQueryOptions(slug, {
       query: {
         staleTime: PREFETCH_STALE_TIME_MS,
         gcTime: PREFETCH_GC_TIME_MS,
@@ -409,6 +437,20 @@ export const warmInternalHref = async ({
         return;
       }
       await Promise.allSettled([preloadPostDetailPage(), prefetchPostDetailData(queryClient, slug)]);
+      return;
+    }
+
+    if (pathname === "/notes") {
+      await Promise.allSettled([preloadNotesPage(), prefetchNotesData(queryClient, pages)]);
+      return;
+    }
+
+    if (pathname.startsWith("/notes/")) {
+      const slug = decodeURIComponent(pathname.slice("/notes/".length));
+      if (!slug) {
+        return;
+      }
+      await Promise.allSettled([preloadNoteDetailPage(), prefetchNoteDetailData(queryClient, slug)]);
       return;
     }
 

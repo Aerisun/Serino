@@ -15,6 +15,7 @@ import JsonLd from "@/components/JsonLd";
 import PreviewModeBadge from "@/components/PreviewModeBadge";
 import LazyOnVisible from "@/components/LazyOnVisible";
 import ArticleEnhancements from "@/components/ArticleEnhancements";
+import { ImageLoadQueueProvider } from "@/components/QueuedAttachmentImage";
 import {
   getDiaryAccessErrorMessage,
   getDiaryAccessErrorStatus,
@@ -259,6 +260,7 @@ const DiaryDetail = () => {
       {previewEntry ? <PreviewModeBadge /> : null}
 
       <main className="mx-auto max-w-5xl px-6 pt-[5.5rem] pb-20 sm:pt-28 lg:px-8">
+        <ImageLoadQueueProvider>
         <motion.button
           type="button"
           onClick={() => navigate(-1)}
@@ -469,6 +471,7 @@ const DiaryDetail = () => {
             </button>
           </motion.div>
         )}
+        </ImageLoadQueueProvider>
       </main>
 
       <Footer />

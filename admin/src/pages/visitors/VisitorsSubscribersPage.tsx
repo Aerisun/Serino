@@ -43,7 +43,7 @@ interface VisitorsSubscribersPanelProps {
 }
 
 const CONTENT_TYPE_LABELS: Record<string, string> = {
-  posts: "文章",
+  posts: "文稿与手记",
   diary: "日记",
   thoughts: "碎碎念",
   excerpts: "文摘",

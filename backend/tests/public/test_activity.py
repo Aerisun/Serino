@@ -51,6 +51,35 @@ def test_read_calendar_uses_beijing_date_boundary(client) -> None:
     assert any(item["title"] == "Beijing Boundary" and item["date"] == "2026-04-01" for item in payload["events"])
 
 
+def test_calendar_and_recent_activity_route_notes_to_notes(client) -> None:
+    session_factory = get_session_factory()
+    with session_factory() as session:
+        session.add(
+            PostEntry(
+                slug="latest-public-note",
+                title="Latest public note",
+                body="A fresh hand note",
+                summary="A fresh hand note",
+                visibility="public",
+                kind="note",
+                published_at=datetime(2099, 7, 10, 12, tzinfo=BEIJING_TZ),
+            )
+        )
+        session.commit()
+
+    calendar = client.get("/api/v1/site/calendar?from=2099-07-10&to=2099-07-10")
+    assert calendar.status_code == 200
+    calendar_item = next(item for item in calendar.json()["events"] if item["slug"] == "latest-public-note")
+    assert calendar_item["type"] == "note"
+    assert calendar_item["href"] == "/notes/latest-public-note"
+
+    recent_activity = client.get("/api/v1/site/recent-activity?limit=1")
+    assert recent_activity.status_code == 200
+    item = recent_activity.json()["items"][0]
+    assert item["kind"] == "publish_note"
+    assert item["href"] == "/notes/latest-public-note"
+
+
 def test_read_recent_activity_returns_items(client) -> None:
     response = client.get("/api/v1/site/recent-activity")
 

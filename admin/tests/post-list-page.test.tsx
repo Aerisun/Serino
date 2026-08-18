@@ -19,6 +19,7 @@ const api = vi.hoisted(() => ({
           body: "文章正文",
           tags: [],
           visibility: "public",
+          kind: "note",
           exclude_from_rss: true,
           published_at: "2026-07-28T10:00:00+08:00",
           created_at: "2026-07-28T10:00:00+08:00",
@@ -32,6 +33,7 @@ const api = vi.hoisted(() => ({
           body: "文章正文",
           tags: [],
           visibility: "public",
+          kind: "manuscript",
           exclude_from_rss: false,
           requires_approval: true,
           published_at: "2026-07-29T10:00:00+08:00",
@@ -46,6 +48,7 @@ const api = vi.hoisted(() => ({
           body: "文章正文",
           tags: [],
           visibility: "public",
+          kind: "manuscript",
           exclude_from_rss: true,
           requires_approval: true,
           published_at: "2026-07-30T10:00:00+08:00",
@@ -114,5 +117,17 @@ describe("PostListPage", () => {
     ];
     expect(approvalBadges).toHaveLength(4);
     expect(approvalBadges.every((badge) => badge.className.includes("bg-violet-100"))).toBe(true);
+  });
+
+  it("shows the post kind as its own list column", () => {
+    renderPostListPage();
+
+    expect(screen.getByRole("columnheader", { name: "类别" })).toBeTruthy();
+    const notes = screen.getAllByText("手记");
+    const manuscripts = screen.getAllByText("文稿");
+    expect(notes.length).toBeGreaterThan(0);
+    expect(manuscripts.length).toBeGreaterThan(0);
+    expect(notes.every((note) => note.className.includes("text-pink-400"))).toBe(true);
+    expect(manuscripts.every((manuscript) => manuscript.className.includes("text-cyan-600"))).toBe(true);
   });
 });

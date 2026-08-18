@@ -44,6 +44,27 @@ def test_search_empty_results(client):
     assert data["total"] == 0
 
 
+def test_search_labels_notes_with_their_public_route_type(client, admin_headers):
+    created = client.post(
+        "/api/v1/admin/posts/",
+        json={
+            "slug": "searchable-note",
+            "title": "手记搜索标题",
+            "body": "note-route-search-token",
+            "visibility": "public",
+            "kind": "note",
+        },
+        headers=admin_headers,
+    )
+    assert created.status_code == 201
+
+    response = client.get("/api/v1/site/search", params={"q": "note-route-search-token"})
+
+    assert response.status_code == 200
+    result = next(item for item in response.json()["items"] if item["slug"] == "searchable-note")
+    assert result["type"] == "notes"
+
+
 def test_search_never_exposes_body_matches_from_posts_that_require_approval(client, admin_headers):
     secret = "approvalsearchsecret9f2b"
     created = client.post(

@@ -1918,7 +1918,7 @@ def test_deploy_contract_reuses_shared_env_keys():
     assert "path / /resume" in caddy_text
     assert "@seoContentCrawler" in caddy_text
     assert "header_regexp User-Agent" in caddy_text
-    assert "path /posts /posts/* /diary /diary/* /thoughts /excerpts /friends /guestbook" in caddy_text
+    assert "path /posts /posts/* /notes /notes/* /diary /diary/* /thoughts /excerpts /friends /guestbook" in caddy_text
     for crawler_token in (
         "oai-searchbot",
         "chatgpt-user",
@@ -2024,7 +2024,8 @@ def test_caddy_routes_serino_before_local_extensions_and_returns_real_404():
     assert "redir /admin /admin/ 308" in caddy_text
     assert "path /assets/* /fonts/* /index.html /registerSW.js /sw.js" in caddy_text
     assert (
-        "path / /posts /posts/* /friends /thoughts /diary /diary/* /excerpts /resume /guestbook /calendar" in caddy_text
+        "path / /posts /posts/* /notes /notes/* /friends /thoughts /diary /diary/* /excerpts /resume /guestbook /calendar"
+        in caddy_text
     )
     assert "path /preview" in caddy_text
     assert caddy_text.index("@apiRoutes") < caddy_text.index("import routes.d/*.caddy")

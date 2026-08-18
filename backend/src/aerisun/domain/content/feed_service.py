@@ -37,9 +37,9 @@ class FeedDefinition:
 _FEED_DEFINITIONS: dict[str, FeedDefinition] = {
     "posts": FeedDefinition(
         key="posts",
-        title="Aerisun Posts",
-        description="Latest published posts from Aerisun",
-        feed_path="/feeds/posts.xml",
+        title="Aerisun Articles",
+        description="Latest published manuscripts and notes from Aerisun",
+        feed_path="/feeds/articles.xml",
         channel_path="/posts",
         item_path_template="/posts/{slug}",
         list_items=list_rss_posts,
@@ -112,6 +112,12 @@ def get_feed_definition(feed_key: str) -> FeedDefinition:
         raise ValidationError(f"Unsupported feed key: {feed_key}") from exc
 
 
+def _feed_item_path(definition: FeedDefinition, item: object) -> str:
+    if definition.key == "posts" and getattr(item, "kind", "manuscript") == "note":
+        return f"/notes/{item.slug}"
+    return definition.item_path_template.format(slug=item.slug)
+
+
 def build_feed_rss_xml(session: Session, site_url: str, feed_key: str, *, limit: int | None = None) -> str:
     definition = get_feed_definition(feed_key)
     profile = session.scalar(select(SiteProfile).order_by(SiteProfile.created_at.asc()).limit(1))
@@ -141,13 +147,13 @@ def build_feed_rss_xml(session: Session, site_url: str, feed_key: str, *, limit:
     rss = Element("rss", version="2.0")
     channel = SubElement(rss, "channel")
     section_title = {
-        "posts": "Posts",
+        "posts": "Articles",
         "diary": "Diary",
         "thoughts": "Thoughts",
         "excerpts": "Excerpts",
     }[definition.key]
     content_label = {
-        "posts": "posts",
+        "posts": "manuscripts and notes",
         "diary": "diary entries",
         "thoughts": "thoughts",
         "excerpts": "excerpts",
@@ -172,7 +178,7 @@ def build_feed_rss_xml(session: Session, site_url: str, feed_key: str, *, limit:
     latest_updated = None
     collection_items = collection.items if collection is not None else []
     for item in collection_items:
-        item_url = f"{settings_url}{definition.item_path_template.format(slug=item.slug)}"
+        item_url = f"{settings_url}{_feed_item_path(definition, item)}"
         entry = SubElement(channel, "item")
         SubElement(entry, "title").text = item.title
         SubElement(entry, "link").text = item_url

@@ -168,6 +168,7 @@ const RUNTIME_BOOTSTRAP_STORAGE_KEY = "aerisun.runtime-bootstrap.v1";
 
 const PAGE_DEFAULTS: Record<string, { width?: PageWidth; pageSize?: number; motion?: PageMotionConfig }> = {
   posts:    { width: "content", pageSize: 15, motion: DEFAULT_MOTION },
+  notes:    { width: "content", pageSize: 15, motion: DEFAULT_MOTION },
   diary:    { width: "narrow",  pageSize: 15, motion: DEFAULT_MOTION },
   friends:  { width: "wide",    pageSize: 10, motion: { duration: 0.4, delay: 0.08, stagger: 0.04 } },
   excerpts: { width: "content", pageSize: 15, motion: DEFAULT_MOTION },

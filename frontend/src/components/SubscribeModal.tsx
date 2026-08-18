@@ -18,7 +18,7 @@ import { useFeatureFlags } from "@/contexts/runtime-config";
 import { useFrontendI18n } from "@/i18n";
 
 const CONTENT_OPTIONS = [
-  { key: "posts", feedPath: "/feeds/posts.xml" },
+  { key: "posts", feedPath: "/feeds/articles.xml" },
   { key: "diary", feedPath: "/feeds/diary.xml" },
   { key: "thoughts", feedPath: "/feeds/thoughts.xml" },
   { key: "excerpts", feedPath: "/feeds/excerpts.xml" },

@@ -53,6 +53,29 @@ def test_sitemap_contains_published_posts(client):
     assert len(post_detail_urls) >= 1  # 至少有种子数据的文章
 
 
+def test_sitemap_includes_public_non_rss_notes_under_their_own_path(client, admin_headers):
+    _sitemap_cache.clear()
+    created = client.post(
+        "/api/v1/admin/posts/",
+        json={
+            "slug": "sitemap-note-not-in-rss",
+            "title": "站点地图中的手记",
+            "body": "这篇手记不进入 RSS，但仍应公开可发现。",
+            "visibility": "public",
+            "kind": "note",
+            "exclude_from_rss": True,
+        },
+        headers=admin_headers,
+    )
+    assert created.status_code == 201
+
+    response = client.get("/api/v1/site/sitemap.xml")
+
+    assert response.status_code == 200
+    assert "/notes" in response.text
+    assert "/notes/sitemap-note-not-in-rss" in response.text
+
+
 def test_sitemap_identity_pages_use_real_lastmod_and_bypass_stale_cache(client):
     _sitemap_cache.clear()
     with get_session_factory()() as session:

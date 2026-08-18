@@ -9,7 +9,7 @@ from aerisun.domain.content.models import PostEntry
 from aerisun.domain.engagement.models import Comment, GuestbookEntry, Reaction
 from aerisun.domain.iam.models import AdminUser
 from aerisun.domain.ops.models import TrafficDailySnapshot
-from aerisun.domain.site_config.models import CommunityConfig
+from aerisun.domain.site_config.models import CommunityConfig, PageCopy
 from aerisun.domain.social.models import Friend, FriendFeedItem, FriendFeedSource
 from aerisun.domain.waline.service import connect_waline_db
 
@@ -45,10 +45,19 @@ def test_seed_development_data_uses_updated_defaults(tmp_path, monkeypatch) -> N
         session_factory = get_session_factory()
         with session_factory() as session:
             community = session.query(CommunityConfig).one()
+            list_page_widths = {
+                page.page_key: page.max_width
+                for page in session.query(PageCopy).filter(PageCopy.page_key.in_(["posts", "notes", "excerpts"])).all()
+            }
 
         assert community.image_uploader is True
         assert community.comment_image_rate_limit_count == 18
         assert community.comment_image_rate_limit_window_minutes == 30
+        assert list_page_widths == {
+            "posts": "max-w-4xl",
+            "notes": "max-w-4xl",
+            "excerpts": "max-w-4xl",
+        }
     finally:
         teardown_runtime_state()
 

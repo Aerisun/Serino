@@ -16,6 +16,7 @@ import { ContentEditorHeaderActions } from "@/components/content/ContentEditorHe
 import { ContentCategoryField } from "@/components/content/ContentCategoryField";
 import { PublishTimeFooter } from "@/components/content/PublishTimeFooter";
 import { Label } from "@/components/ui/Label";
+import { NativeSelect } from "@/components/ui/NativeSelect";
 import { Trash2, Eye } from "lucide-react";
 import { useContentEditor, buildServerToForm } from "@/hooks/useContentEditor";
 
@@ -33,10 +34,11 @@ const editorConfig = {
   defaultForm: {
     slug: "", title: "", summary: "", body: "", tags: [],
     visibility: "private", published_at: null,
-    category: "", exclude_from_rss: false, requires_approval: false,
+    category: "", kind: "manuscript", exclude_from_rss: false, requires_approval: false,
   },
   serverToForm: buildServerToForm((item) => ({
     category: item.category || "",
+    kind: item.kind === "note" ? "note" : "manuscript",
     exclude_from_rss: Boolean(item.exclude_from_rss),
     requires_approval: Boolean(item.requires_approval),
   })),
@@ -53,6 +55,7 @@ export default function PostEditPage() {
   const { data: profileRaw } = useGetProfileApiV1AdminSiteConfigProfileGet();
   const excludeFromRss = Boolean((form as { exclude_from_rss?: boolean }).exclude_from_rss);
   const requiresApproval = Boolean((form as { requires_approval?: boolean }).requires_approval);
+  const postKind = (form as { kind?: string }).kind === "note" ? "note" : "manuscript";
   const featureFlags = (profileRaw?.data as { feature_flags?: Record<string, unknown> } | undefined)
     ?.feature_flags;
   const postApprovalEnabled = featureFlags?.post_access_approval_enabled !== false;
@@ -117,7 +120,7 @@ export default function PostEditPage() {
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div data-post-metadata-fields className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <div className="space-y-2">
             <Label>{t("posts.tagsHint")}</Label>
             <Input
@@ -126,12 +129,31 @@ export default function PostEditPage() {
             />
           </div>
           <ContentCategoryField
-            contentType="posts"
+            contentType={postKind === "note" ? "notes" : "posts"}
             label={t("contentCategories.fieldLabel")}
             value={form.category || ""}
-            placeholder={t("contentCategories.postPlaceholder")}
+            placeholder={t(postKind === "note" ? "contentCategories.notePlaceholder" : "contentCategories.postPlaceholder")}
             onChange={(nextValue) => setField("category", nextValue)}
           />
+          <div className="space-y-2">
+            <Label htmlFor="post-kind">{t("posts.kind")}</Label>
+            <NativeSelect
+              id="post-kind"
+              aria-label={t("posts.kind")}
+              value={postKind}
+              onChange={(event) => {
+                const nextKind = event.target.value === "note" ? "note" : "manuscript";
+                if (nextKind !== postKind) {
+                  setField("category", "");
+                }
+                setField("kind", nextKind);
+              }}
+              className="h-11 rounded-xl border-border/50 bg-background/70"
+            >
+              <option value="manuscript">{t("posts.kindManuscript")}</option>
+              <option value="note">{t("posts.kindNote")}</option>
+            </NativeSelect>
+          </div>
         </div>
 
         <div className="pt-6 border-t border-border">
