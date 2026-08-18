@@ -25,7 +25,6 @@ const MASKED_SECRET = "********";
 
 const COPY = {
   zh: {
-    eyebrow: "Storage",
     title: "OSS 加速",
     description: "😴🤔 目前只是先支持了滨纷云",
     enabled: "启用 OSS 加速",
@@ -77,7 +76,6 @@ const COPY = {
     statusPending: "待测试",
   },
   en: {
-    eyebrow: "Storage",
     title: "OSS Acceleration",
     description:
       "Fill only the required fields to enable it. Media usage stays the same for admins and end users.",
@@ -339,7 +337,6 @@ export function ObjectStorageSection() {
 
   return (
     <ConfigSettingsCard
-      eyebrow={copy.eyebrow}
       title={copy.title}
       description={copy.description}
       dirty={dirty}

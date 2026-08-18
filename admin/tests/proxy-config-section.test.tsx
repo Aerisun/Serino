@@ -70,6 +70,24 @@ afterEach(() => {
 });
 
 describe("ProxyConfigSection", () => {
+  it("omits the OAuth dependency note and detailed health result cards", async () => {
+    const user = userEvent.setup();
+    renderSection();
+
+    await screen.findByRole("switch", { name: "OAuth 走代理" });
+    expect(
+      screen.queryByText(
+        "ChatGPT OAuth 来源依赖 OAuth 代理；关闭前需要先在模型配置中停用 ChatGPT OAuth。",
+      ),
+    ).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "端口测试" }));
+    await waitFor(() => expect(api.test).toHaveBeenCalledTimes(1));
+
+    expect(screen.queryByText("最近一次测试")).toBeNull();
+    expect(screen.queryByText("http://127.0.0.1:7890")).toBeNull();
+  });
+
   it("shows the backend action message when ChatGPT still requires the OAuth proxy", async () => {
     const detail = "ChatGPT OAuth 来源已启用，请先停用该来源再关闭 OAuth 代理。";
     api.save.mockRejectedValue(
@@ -81,7 +99,7 @@ describe("ProxyConfigSection", () => {
     renderSection();
 
     const oauthSwitch = await screen.findByRole("switch", {
-      name: "OAuth 与 ChatGPT 走代理",
+      name: "OAuth 走代理",
     });
     await user.click(oauthSwitch);
     await user.click(screen.getByRole("button", { name: "保存" }));

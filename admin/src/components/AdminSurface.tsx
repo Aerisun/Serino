@@ -65,13 +65,21 @@ export function AdminSurface({
 
 interface AdminToolbarProps extends HTMLAttributes<HTMLDivElement> {
   align?: "start" | "between";
+  surface?: "glass" | "plain";
 }
 
-export function AdminToolbar({ align = "between", className, ...props }: AdminToolbarProps) {
+export function AdminToolbar({
+  align = "between",
+  surface = "glass",
+  className,
+  ...props
+}: AdminToolbarProps) {
   return (
     <div
       className={cn(
-        "admin-glass flex flex-col gap-3 rounded-[var(--admin-radius-lg)] px-4 py-4 sm:flex-row sm:flex-wrap sm:items-center",
+        "flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center",
+        surface === "glass" &&
+          "admin-glass rounded-[var(--admin-radius-lg)] px-4 py-4",
         align === "between" && "sm:justify-between",
         className,
       )}

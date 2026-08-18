@@ -574,7 +574,6 @@ export function ExternalConfigSection() {
 
   return (
     <ConfigSettingsCard
-      eyebrow="Mail"
       title={t("more.mailSettings")}
       dirty={hasChanges}
       saving={saveSubscription.isPending || isTesting || isSavingWithCheck}

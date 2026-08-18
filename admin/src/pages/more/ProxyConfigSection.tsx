@@ -4,9 +4,7 @@ import { Loader2, Plug, Stethoscope } from "lucide-react";
 import { toast } from "sonner";
 import { ConfigSettingsCard } from "@/components/ConfigSettingsCard";
 import { AppleSwitch } from "@/components/ui/AppleSwitch";
-import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { Card, CardContent } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { LabelWithHelp } from "@/components/ui/LabelWithHelp";
 import {
@@ -17,7 +15,6 @@ import {
 import type {
   OutboundProxyConfigRead,
   OutboundProxyConfigUpdate,
-  OutboundProxyHealthRead,
 } from "@serino/api-client/models";
 import { useI18n } from "@/i18n";
 import { extractApiErrorMessage } from "@/lib/api-error";
@@ -30,11 +27,9 @@ const QUERY_KEY = ["admin", "proxy-config"] as const;
 const PROXY_CONFIG_STATUS_STORAGE_KEY = "proxy-config";
 
 type OutboundProxyConfig = Required<OutboundProxyConfigRead>;
-type OutboundProxyHealthResult = OutboundProxyHealthRead;
 
 const COPY = {
   zh: {
-    eyebrow: "Network",
     title: "代理设置",
     loading: "加载中...",
     pending: "待测试",
@@ -45,7 +40,7 @@ const COPY = {
     unconfigured: "未设置代理端口",
     webhookProxyOn: "Webhook 走代理",
     webhookProxyOff: "Webhook 不走代理",
-    oauthProxyOn: "OAuth 与 ChatGPT 走代理",
+    oauthProxyOn: "OAuth 走代理",
     oauthProxyOff: "OAuth 与 ChatGPT 不走代理",
     proxyPort: "代理端口",
     proxyPortTitle: "本机 HTTP/HTTPS 代理监听端口",
@@ -58,25 +53,19 @@ const COPY = {
       "Webhook 测试、实际投递，以及 Telegram 连接这类相关出站请求都会优先走本机代理。",
     webhookToggleDisabled:
       "请先填写可用的代理端口，再决定是否让 Webhook 走代理。",
-    oauthToggle: "OAuth 与 ChatGPT 走代理",
+    oauthToggle: "OAuth 走代理",
     oauthToggleHint:
       "Google / GitHub 认证以及 ChatGPT OAuth 登录、令牌刷新和 Codex 模型请求都会走这份代理配置。",
     oauthToggleDisabled:
       "请先填写可用的代理端口，再启用 OAuth 与 ChatGPT 代理。",
-    scopeNote:
-      "ChatGPT OAuth 来源依赖 OAuth 代理；关闭前需要先在模型配置中停用 ChatGPT OAuth。",
     test: "端口测试",
     testing: "测试中...",
     saveSuccess: "代理设置已保存",
     saveFailed: "代理设置保存失败",
     testSuccess: "代理端口测试通过",
     testFailed: "代理端口测试失败",
-    lastTest: "最近一次测试",
-    latency: "耗时",
-    statusCode: "返回码",
   },
   en: {
-    eyebrow: "Network",
     title: "Proxy Settings",
     loading: "Loading...",
     pending: "Pending",
@@ -106,17 +95,12 @@ const COPY = {
       "Routes Google / GitHub auth plus ChatGPT OAuth sign-in, token refresh, and Codex model traffic through this proxy.",
     oauthToggleDisabled:
       "Configure a valid proxy port before enabling OAuth and ChatGPT proxying.",
-    scopeNote:
-      "The ChatGPT OAuth source depends on this OAuth proxy. Disable that model source before turning this proxy off.",
     test: "Health Check",
     testing: "Testing...",
     saveSuccess: "Proxy settings saved",
     saveFailed: "Failed to save proxy settings",
     testSuccess: "Proxy port health check passed",
     testFailed: "Proxy port health check failed",
-    lastTest: "Latest Check",
-    latency: "Latency",
-    statusCode: "Status",
   },
 } as const;
 
@@ -184,8 +168,6 @@ export function ProxyConfigSection() {
     refetchOnWindowFocus: false,
   });
   const [form, setForm] = useState(EMPTY_FORM);
-  const [healthResult, setHealthResult] =
-    useState<OutboundProxyHealthResult | null>(null);
   const [lastCheckOk, setLastCheckOk] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -195,7 +177,6 @@ export function ProxyConfigSection() {
     const nextForm = toForm(data);
     const nextPayload = buildPayload(nextForm);
     setForm(nextForm);
-    setHealthResult(null);
     setLastCheckOk(
       nextPayload.proxy_port == null
         ? null
@@ -232,7 +213,6 @@ export function ProxyConfigSection() {
         (r) => r.data,
       ),
     onSuccess: (result, variables) => {
-      setHealthResult(result);
       setLastCheckOk(result.ok);
       setPersistedConfigCheckStatus(
         PROXY_CONFIG_STATUS_STORAGE_KEY,
@@ -298,13 +278,11 @@ export function ProxyConfigSection() {
       webhook_enabled: nextValue.trim() ? current.webhook_enabled : false,
       oauth_enabled: nextValue.trim() ? current.oauth_enabled : false,
     }));
-    setHealthResult(null);
     setLastCheckOk(null);
   };
 
   const runHealthCheck = async (nextPayload = payload) => {
     if (nextPayload.proxy_port == null) {
-      setHealthResult(null);
       return false;
     }
     try {
@@ -323,9 +301,7 @@ export function ProxyConfigSection() {
     }
     if (payload.proxy_port != null) {
       await runHealthCheck(payload);
-      return;
     }
-    setHealthResult(null);
   };
 
   if (isLoading && !data) {
@@ -334,7 +310,6 @@ export function ProxyConfigSection() {
 
   return (
     <ConfigSettingsCard
-      eyebrow={copy.eyebrow}
       title={copy.title}
       dirty={hasChanges}
       saving={save.isPending || test.isPending}
@@ -362,111 +337,67 @@ export function ProxyConfigSection() {
         </Button>
       }
     >
-      <div className="space-y-5">
-        <div className="space-y-4">
-          <div className="max-w-[340px] space-y-2">
-            <LabelWithHelp
-              label={copy.proxyPort}
-              htmlFor="proxy-port"
-              title={copy.proxyPortTitle}
-              description={copy.proxyPortHint}
-            />
-            <Input
-              id="proxy-port"
-              type="text"
-              inputMode="numeric"
-              value={form.proxy_port}
-              onChange={(event) => setPortValue(event.target.value)}
-              placeholder={copy.proxyPortPlaceholder}
-              disabled={save.isPending || test.isPending}
-            />
-            {!isPortValid ? (
-              <p className="text-xs text-amber-600 dark:text-amber-300">
-                {copy.proxyPortInvalid}
-              </p>
-            ) : null}
-          </div>
-
-          <AppleSwitch
-            checked={form.webhook_enabled}
-            onCheckedChange={(checked) => {
-              if (!normalizedPort) {
-                return;
-              }
-              setForm((current) => ({ ...current, webhook_enabled: checked }));
-              setHealthResult(null);
-              setLastCheckOk(null);
-            }}
-            leading={
-              <Plug className="h-4 w-4 text-[rgb(var(--admin-accent-rgb)/0.82)]" />
-            }
-            label={copy.webhookToggle}
-            description={
-              normalizedPort
-                ? copy.webhookToggleHint
-                : copy.webhookToggleDisabled
-            }
-            disabled={!normalizedPort || save.isPending || test.isPending}
+      <div className="space-y-4">
+        <div className="max-w-[340px] space-y-2">
+          <LabelWithHelp
+            label={copy.proxyPort}
+            htmlFor="proxy-port"
+            title={copy.proxyPortTitle}
+            description={copy.proxyPortHint}
           />
-
-          <AppleSwitch
-            checked={form.oauth_enabled}
-            onCheckedChange={(checked) => {
-              if (!normalizedPort) {
-                return;
-              }
-              setForm((current) => ({ ...current, oauth_enabled: checked }));
-              setHealthResult(null);
-              setLastCheckOk(null);
-            }}
-            leading={
-              <Plug className="h-4 w-4 text-[rgb(var(--admin-accent-rgb)/0.82)]" />
-            }
-            label={copy.oauthToggle}
-            description={
-              normalizedPort ? copy.oauthToggleHint : copy.oauthToggleDisabled
-            }
-            disabled={!normalizedPort || save.isPending || test.isPending}
+          <Input
+            id="proxy-port"
+            type="text"
+            inputMode="numeric"
+            value={form.proxy_port}
+            onChange={(event) => setPortValue(event.target.value)}
+            placeholder={copy.proxyPortPlaceholder}
+            disabled={save.isPending || test.isPending}
           />
-
-          <Card surface="soft" className="border-dashed">
-            <CardContent className="pt-6">
-              <p className="text-sm leading-6 text-muted-foreground">
-                {copy.scopeNote}
-              </p>
-            </CardContent>
-          </Card>
+          {!isPortValid ? (
+            <p className="text-xs text-amber-600 dark:text-amber-300">
+              {copy.proxyPortInvalid}
+            </p>
+          ) : null}
         </div>
 
-        {healthResult ? (
-          <Card surface="soft">
-            <CardContent className="space-y-3 pt-6">
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge variant={healthResult.ok ? "success" : "warning"}>
-                  {copy.lastTest}
-                </Badge>
-                <code className="rounded-md bg-black/5 px-2 py-1 text-xs text-foreground/80 dark:bg-white/5">
-                  {healthResult.proxy_url}
-                </code>
-              </div>
-              <p className="text-sm leading-6 text-foreground/88">
-                {healthResult.summary}
-              </p>
-              <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-                {typeof healthResult.latency_ms === "number" ? (
-                  <span>
-                    {copy.latency}: {healthResult.latency_ms}ms
-                  </span>
-                ) : null}
-                {typeof healthResult.status_code === "number" ? (
-                  <span>
-                    {copy.statusCode}: {healthResult.status_code}
-                  </span>
-                ) : null}
-              </div>
-            </CardContent>
-          </Card>
-        ) : null}
+        <AppleSwitch
+          checked={form.webhook_enabled}
+          onCheckedChange={(checked) => {
+            if (!normalizedPort) {
+              return;
+            }
+            setForm((current) => ({ ...current, webhook_enabled: checked }));
+            setLastCheckOk(null);
+          }}
+          leading={
+            <Plug className="h-4 w-4 text-[rgb(var(--admin-accent-rgb)/0.82)]" />
+          }
+          label={copy.webhookToggle}
+          description={
+            normalizedPort ? copy.webhookToggleHint : copy.webhookToggleDisabled
+          }
+          disabled={!normalizedPort || save.isPending || test.isPending}
+        />
+
+        <AppleSwitch
+          checked={form.oauth_enabled}
+          onCheckedChange={(checked) => {
+            if (!normalizedPort) {
+              return;
+            }
+            setForm((current) => ({ ...current, oauth_enabled: checked }));
+            setLastCheckOk(null);
+          }}
+          leading={
+            <Plug className="h-4 w-4 text-[rgb(var(--admin-accent-rgb)/0.82)]" />
+          }
+          label={copy.oauthToggle}
+          description={
+            normalizedPort ? copy.oauthToggleHint : copy.oauthToggleDisabled
+          }
+          disabled={!normalizedPort || save.isPending || test.isPending}
+        />
       </div>
     </ConfigSettingsCard>
   );
