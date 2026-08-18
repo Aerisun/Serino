@@ -24,6 +24,8 @@ export interface ContentEntryRead {
   updated_at: string;
   /** Content category */
   category?: string | null;
+  /** Post kind: manuscript or note */
+  kind?: 'manuscript' | 'note' | null;
   /** Estimated reading time */
   read_time?: string | null;
   /** Formatted display date string */

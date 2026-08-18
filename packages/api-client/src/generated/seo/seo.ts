@@ -472,31 +472,31 @@ export function useResumeMarkdownResumeMdGet<TData = Awaited<ReturnType<typeof r
 
 
 /**
- * @summary Posts Feed
+ * @summary Articles Feed
  */
-export type postsFeedFeedsPostsXmlGetResponse200 = {
+export type articlesFeedFeedsArticlesXmlGetResponse200 = {
   data: unknown
   status: 200
 }
 
-export type postsFeedFeedsPostsXmlGetResponseSuccess = (postsFeedFeedsPostsXmlGetResponse200) & {
+export type articlesFeedFeedsArticlesXmlGetResponseSuccess = (articlesFeedFeedsArticlesXmlGetResponse200) & {
   headers: Headers;
 };
 ;
 
-export type postsFeedFeedsPostsXmlGetResponse = (postsFeedFeedsPostsXmlGetResponseSuccess)
+export type articlesFeedFeedsArticlesXmlGetResponse = (articlesFeedFeedsArticlesXmlGetResponseSuccess)
 
-export const getPostsFeedFeedsPostsXmlGetUrl = () => {
-
-
+export const getArticlesFeedFeedsArticlesXmlGetUrl = () => {
 
 
-  return `/feeds/posts.xml`
+
+
+  return `/feeds/articles.xml`
 }
 
-export const postsFeedFeedsPostsXmlGet = async ( options?: RequestInit): Promise<postsFeedFeedsPostsXmlGetResponse> => {
+export const articlesFeedFeedsArticlesXmlGet = async ( options?: RequestInit): Promise<articlesFeedFeedsArticlesXmlGetResponse> => {
 
-  return customInstance<postsFeedFeedsPostsXmlGetResponse>(getPostsFeedFeedsPostsXmlGetUrl(),
+  return customInstance<articlesFeedFeedsArticlesXmlGetResponse>(getArticlesFeedFeedsArticlesXmlGetUrl(),
   {
     ...options,
     method: 'GET'
@@ -509,69 +509,69 @@ export const postsFeedFeedsPostsXmlGet = async ( options?: RequestInit): Promise
 
 
 
-export const getPostsFeedFeedsPostsXmlGetQueryKey = () => {
+export const getArticlesFeedFeedsArticlesXmlGetQueryKey = () => {
     return [
-    `/feeds/posts.xml`
+    `/feeds/articles.xml`
     ] as const;
     }
 
 
-export const getPostsFeedFeedsPostsXmlGetQueryOptions = <TData = Awaited<ReturnType<typeof postsFeedFeedsPostsXmlGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postsFeedFeedsPostsXmlGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+export const getArticlesFeedFeedsArticlesXmlGetQueryOptions = <TData = Awaited<ReturnType<typeof articlesFeedFeedsArticlesXmlGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof articlesFeedFeedsArticlesXmlGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getPostsFeedFeedsPostsXmlGetQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getArticlesFeedFeedsArticlesXmlGetQueryKey();
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof postsFeedFeedsPostsXmlGet>>> = ({ signal }) => postsFeedFeedsPostsXmlGet({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof articlesFeedFeedsArticlesXmlGet>>> = ({ signal }) => articlesFeedFeedsArticlesXmlGet({ signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postsFeedFeedsPostsXmlGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof articlesFeedFeedsArticlesXmlGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type PostsFeedFeedsPostsXmlGetQueryResult = NonNullable<Awaited<ReturnType<typeof postsFeedFeedsPostsXmlGet>>>
-export type PostsFeedFeedsPostsXmlGetQueryError = ErrorType<unknown>
+export type ArticlesFeedFeedsArticlesXmlGetQueryResult = NonNullable<Awaited<ReturnType<typeof articlesFeedFeedsArticlesXmlGet>>>
+export type ArticlesFeedFeedsArticlesXmlGetQueryError = ErrorType<unknown>
 
 
-export function usePostsFeedFeedsPostsXmlGet<TData = Awaited<ReturnType<typeof postsFeedFeedsPostsXmlGet>>, TError = ErrorType<unknown>>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof postsFeedFeedsPostsXmlGet>>, TError, TData>> & Pick<
+export function useArticlesFeedFeedsArticlesXmlGet<TData = Awaited<ReturnType<typeof articlesFeedFeedsArticlesXmlGet>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof articlesFeedFeedsArticlesXmlGet>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof postsFeedFeedsPostsXmlGet>>,
+          Awaited<ReturnType<typeof articlesFeedFeedsArticlesXmlGet>>,
           TError,
-          Awaited<ReturnType<typeof postsFeedFeedsPostsXmlGet>>
+          Awaited<ReturnType<typeof articlesFeedFeedsArticlesXmlGet>>
         > , 'initialData'
       >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePostsFeedFeedsPostsXmlGet<TData = Awaited<ReturnType<typeof postsFeedFeedsPostsXmlGet>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postsFeedFeedsPostsXmlGet>>, TError, TData>> & Pick<
+export function useArticlesFeedFeedsArticlesXmlGet<TData = Awaited<ReturnType<typeof articlesFeedFeedsArticlesXmlGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof articlesFeedFeedsArticlesXmlGet>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof postsFeedFeedsPostsXmlGet>>,
+          Awaited<ReturnType<typeof articlesFeedFeedsArticlesXmlGet>>,
           TError,
-          Awaited<ReturnType<typeof postsFeedFeedsPostsXmlGet>>
+          Awaited<ReturnType<typeof articlesFeedFeedsArticlesXmlGet>>
         > , 'initialData'
       >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePostsFeedFeedsPostsXmlGet<TData = Awaited<ReturnType<typeof postsFeedFeedsPostsXmlGet>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postsFeedFeedsPostsXmlGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+export function useArticlesFeedFeedsArticlesXmlGet<TData = Awaited<ReturnType<typeof articlesFeedFeedsArticlesXmlGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof articlesFeedFeedsArticlesXmlGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Posts Feed
+ * @summary Articles Feed
  */
 
-export function usePostsFeedFeedsPostsXmlGet<TData = Awaited<ReturnType<typeof postsFeedFeedsPostsXmlGet>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postsFeedFeedsPostsXmlGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+export function useArticlesFeedFeedsArticlesXmlGet<TData = Awaited<ReturnType<typeof articlesFeedFeedsArticlesXmlGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof articlesFeedFeedsArticlesXmlGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getPostsFeedFeedsPostsXmlGetQueryOptions(options)
+  const queryOptions = getArticlesFeedFeedsArticlesXmlGetQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -1682,31 +1682,31 @@ export function useResumeMarkdownApiV1SiteResumeMdGet<TData = Awaited<ReturnType
 
 
 /**
- * @summary Posts Feed
+ * @summary Articles Feed
  */
-export type postsFeedApiV1SiteFeedsPostsXmlGetResponse200 = {
+export type articlesFeedApiV1SiteFeedsArticlesXmlGetResponse200 = {
   data: unknown
   status: 200
 }
 
-export type postsFeedApiV1SiteFeedsPostsXmlGetResponseSuccess = (postsFeedApiV1SiteFeedsPostsXmlGetResponse200) & {
+export type articlesFeedApiV1SiteFeedsArticlesXmlGetResponseSuccess = (articlesFeedApiV1SiteFeedsArticlesXmlGetResponse200) & {
   headers: Headers;
 };
 ;
 
-export type postsFeedApiV1SiteFeedsPostsXmlGetResponse = (postsFeedApiV1SiteFeedsPostsXmlGetResponseSuccess)
+export type articlesFeedApiV1SiteFeedsArticlesXmlGetResponse = (articlesFeedApiV1SiteFeedsArticlesXmlGetResponseSuccess)
 
-export const getPostsFeedApiV1SiteFeedsPostsXmlGetUrl = () => {
-
-
+export const getArticlesFeedApiV1SiteFeedsArticlesXmlGetUrl = () => {
 
 
-  return `/api/v1/site/feeds/posts.xml`
+
+
+  return `/api/v1/site/feeds/articles.xml`
 }
 
-export const postsFeedApiV1SiteFeedsPostsXmlGet = async ( options?: RequestInit): Promise<postsFeedApiV1SiteFeedsPostsXmlGetResponse> => {
+export const articlesFeedApiV1SiteFeedsArticlesXmlGet = async ( options?: RequestInit): Promise<articlesFeedApiV1SiteFeedsArticlesXmlGetResponse> => {
 
-  return customInstance<postsFeedApiV1SiteFeedsPostsXmlGetResponse>(getPostsFeedApiV1SiteFeedsPostsXmlGetUrl(),
+  return customInstance<articlesFeedApiV1SiteFeedsArticlesXmlGetResponse>(getArticlesFeedApiV1SiteFeedsArticlesXmlGetUrl(),
   {
     ...options,
     method: 'GET'
@@ -1719,69 +1719,69 @@ export const postsFeedApiV1SiteFeedsPostsXmlGet = async ( options?: RequestInit)
 
 
 
-export const getPostsFeedApiV1SiteFeedsPostsXmlGetQueryKey = () => {
+export const getArticlesFeedApiV1SiteFeedsArticlesXmlGetQueryKey = () => {
     return [
-    `/api/v1/site/feeds/posts.xml`
+    `/api/v1/site/feeds/articles.xml`
     ] as const;
     }
 
 
-export const getPostsFeedApiV1SiteFeedsPostsXmlGetQueryOptions = <TData = Awaited<ReturnType<typeof postsFeedApiV1SiteFeedsPostsXmlGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postsFeedApiV1SiteFeedsPostsXmlGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+export const getArticlesFeedApiV1SiteFeedsArticlesXmlGetQueryOptions = <TData = Awaited<ReturnType<typeof articlesFeedApiV1SiteFeedsArticlesXmlGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof articlesFeedApiV1SiteFeedsArticlesXmlGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getPostsFeedApiV1SiteFeedsPostsXmlGetQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getArticlesFeedApiV1SiteFeedsArticlesXmlGetQueryKey();
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof postsFeedApiV1SiteFeedsPostsXmlGet>>> = ({ signal }) => postsFeedApiV1SiteFeedsPostsXmlGet({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof articlesFeedApiV1SiteFeedsArticlesXmlGet>>> = ({ signal }) => articlesFeedApiV1SiteFeedsArticlesXmlGet({ signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postsFeedApiV1SiteFeedsPostsXmlGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof articlesFeedApiV1SiteFeedsArticlesXmlGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type PostsFeedApiV1SiteFeedsPostsXmlGetQueryResult = NonNullable<Awaited<ReturnType<typeof postsFeedApiV1SiteFeedsPostsXmlGet>>>
-export type PostsFeedApiV1SiteFeedsPostsXmlGetQueryError = ErrorType<unknown>
+export type ArticlesFeedApiV1SiteFeedsArticlesXmlGetQueryResult = NonNullable<Awaited<ReturnType<typeof articlesFeedApiV1SiteFeedsArticlesXmlGet>>>
+export type ArticlesFeedApiV1SiteFeedsArticlesXmlGetQueryError = ErrorType<unknown>
 
 
-export function usePostsFeedApiV1SiteFeedsPostsXmlGet<TData = Awaited<ReturnType<typeof postsFeedApiV1SiteFeedsPostsXmlGet>>, TError = ErrorType<unknown>>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof postsFeedApiV1SiteFeedsPostsXmlGet>>, TError, TData>> & Pick<
+export function useArticlesFeedApiV1SiteFeedsArticlesXmlGet<TData = Awaited<ReturnType<typeof articlesFeedApiV1SiteFeedsArticlesXmlGet>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof articlesFeedApiV1SiteFeedsArticlesXmlGet>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof postsFeedApiV1SiteFeedsPostsXmlGet>>,
+          Awaited<ReturnType<typeof articlesFeedApiV1SiteFeedsArticlesXmlGet>>,
           TError,
-          Awaited<ReturnType<typeof postsFeedApiV1SiteFeedsPostsXmlGet>>
+          Awaited<ReturnType<typeof articlesFeedApiV1SiteFeedsArticlesXmlGet>>
         > , 'initialData'
       >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePostsFeedApiV1SiteFeedsPostsXmlGet<TData = Awaited<ReturnType<typeof postsFeedApiV1SiteFeedsPostsXmlGet>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postsFeedApiV1SiteFeedsPostsXmlGet>>, TError, TData>> & Pick<
+export function useArticlesFeedApiV1SiteFeedsArticlesXmlGet<TData = Awaited<ReturnType<typeof articlesFeedApiV1SiteFeedsArticlesXmlGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof articlesFeedApiV1SiteFeedsArticlesXmlGet>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof postsFeedApiV1SiteFeedsPostsXmlGet>>,
+          Awaited<ReturnType<typeof articlesFeedApiV1SiteFeedsArticlesXmlGet>>,
           TError,
-          Awaited<ReturnType<typeof postsFeedApiV1SiteFeedsPostsXmlGet>>
+          Awaited<ReturnType<typeof articlesFeedApiV1SiteFeedsArticlesXmlGet>>
         > , 'initialData'
       >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePostsFeedApiV1SiteFeedsPostsXmlGet<TData = Awaited<ReturnType<typeof postsFeedApiV1SiteFeedsPostsXmlGet>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postsFeedApiV1SiteFeedsPostsXmlGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+export function useArticlesFeedApiV1SiteFeedsArticlesXmlGet<TData = Awaited<ReturnType<typeof articlesFeedApiV1SiteFeedsArticlesXmlGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof articlesFeedApiV1SiteFeedsArticlesXmlGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Posts Feed
+ * @summary Articles Feed
  */
 
-export function usePostsFeedApiV1SiteFeedsPostsXmlGet<TData = Awaited<ReturnType<typeof postsFeedApiV1SiteFeedsPostsXmlGet>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postsFeedApiV1SiteFeedsPostsXmlGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+export function useArticlesFeedApiV1SiteFeedsArticlesXmlGet<TData = Awaited<ReturnType<typeof articlesFeedApiV1SiteFeedsArticlesXmlGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof articlesFeedApiV1SiteFeedsArticlesXmlGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getPostsFeedApiV1SiteFeedsPostsXmlGetQueryOptions(options)
+  const queryOptions = getArticlesFeedApiV1SiteFeedsArticlesXmlGetQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

@@ -280,11 +280,14 @@ export const readPostsApiV1SitePostsGetQueryLimitMax = 100;
 export const readPostsApiV1SitePostsGetQueryOffsetDefault = 0;
 export const readPostsApiV1SitePostsGetQueryOffsetMin = 0;
 
+export const readPostsApiV1SitePostsGetQueryCategoryOneMax = 100;
+
 
 
 export const ReadPostsApiV1SitePostsGetQueryParams = zod.object({
   "limit": zod.number().min(1).max(readPostsApiV1SitePostsGetQueryLimitMax).default(readPostsApiV1SitePostsGetQueryLimitDefault),
-  "offset": zod.number().min(readPostsApiV1SitePostsGetQueryOffsetMin).default(readPostsApiV1SitePostsGetQueryOffsetDefault)
+  "offset": zod.number().min(readPostsApiV1SitePostsGetQueryOffsetMin).default(readPostsApiV1SitePostsGetQueryOffsetDefault),
+  "category": zod.union([zod.string().max(readPostsApiV1SitePostsGetQueryCategoryOneMax),zod.null()]).optional()
 })
 
 export const readPostsApiV1SitePostsGetResponseItemsItemRequiresApprovalDefault = false;
@@ -302,6 +305,7 @@ export const ReadPostsApiV1SitePostsGetResponse = zod.object({
   "created_at": zod.string().datetime({"offset":true}).describe('Creation timestamp'),
   "updated_at": zod.string().datetime({"offset":true}).describe('Last update timestamp'),
   "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category'),
+  "kind": zod.union([zod.enum(['manuscript', 'note']),zod.null()]).optional().describe('Post kind: manuscript or note'),
   "read_time": zod.union([zod.string(),zod.null()]).optional().describe('Estimated reading time'),
   "display_date": zod.union([zod.string(),zod.null()]).optional().describe('Formatted display date string'),
   "relative_date": zod.union([zod.string(),zod.null()]).optional().describe('Relative time string (e.g. 3 days ago)'),
@@ -340,6 +344,7 @@ export const ReadPostApiV1SitePostsSlugGetResponse = zod.object({
   "created_at": zod.string().datetime({"offset":true}).describe('Creation timestamp'),
   "updated_at": zod.string().datetime({"offset":true}).describe('Last update timestamp'),
   "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category'),
+  "kind": zod.union([zod.enum(['manuscript', 'note']),zod.null()]).optional().describe('Post kind: manuscript or note'),
   "read_time": zod.union([zod.string(),zod.null()]).optional().describe('Estimated reading time'),
   "display_date": zod.union([zod.string(),zod.null()]).optional().describe('Formatted display date string'),
   "relative_date": zod.union([zod.string(),zod.null()]).optional().describe('Relative time string (e.g. 3 days ago)'),
@@ -353,6 +358,97 @@ export const ReadPostApiV1SitePostsSlugGetResponse = zod.object({
   "author": zod.union([zod.string(),zod.null()]).optional().describe('Original author name'),
   "source": zod.union([zod.string(),zod.null()]).optional().describe('Source URL or reference'),
   "requires_approval": zod.boolean().default(readPostApiV1SitePostsSlugGetResponseRequiresApprovalDefault).describe('Whether viewing this public post requires approval'),
+  "body": zod.string().describe('Full content body in Markdown')
+})
+
+
+/**
+ * @summary 获取手记列表
+ */
+export const readNotesApiV1SiteNotesGetQueryLimitDefault = 20;
+export const readNotesApiV1SiteNotesGetQueryLimitMax = 100;
+
+export const readNotesApiV1SiteNotesGetQueryOffsetDefault = 0;
+export const readNotesApiV1SiteNotesGetQueryOffsetMin = 0;
+
+export const readNotesApiV1SiteNotesGetQueryCategoryOneMax = 100;
+
+
+
+export const ReadNotesApiV1SiteNotesGetQueryParams = zod.object({
+  "limit": zod.number().min(1).max(readNotesApiV1SiteNotesGetQueryLimitMax).default(readNotesApiV1SiteNotesGetQueryLimitDefault),
+  "offset": zod.number().min(readNotesApiV1SiteNotesGetQueryOffsetMin).default(readNotesApiV1SiteNotesGetQueryOffsetDefault),
+  "category": zod.union([zod.string().max(readNotesApiV1SiteNotesGetQueryCategoryOneMax),zod.null()]).optional()
+})
+
+export const readNotesApiV1SiteNotesGetResponseItemsItemRequiresApprovalDefault = false;
+export const readNotesApiV1SiteNotesGetResponseTotalDefault = 0;
+export const readNotesApiV1SiteNotesGetResponseHasMoreDefault = false;
+
+export const ReadNotesApiV1SiteNotesGetResponse = zod.object({
+  "items": zod.array(zod.object({
+  "slug": zod.string().describe('URL-friendly unique identifier'),
+  "title": zod.string().describe('Content display title'),
+  "summary": zod.union([zod.string(),zod.null()]).describe('Brief summary or excerpt'),
+  "tags": zod.array(zod.string()).describe('List of tag names'),
+  "visibility": zod.string().describe('Visibility level'),
+  "published_at": zod.union([zod.string().datetime({"offset":true}),zod.null()]).describe('Publication timestamp'),
+  "created_at": zod.string().datetime({"offset":true}).describe('Creation timestamp'),
+  "updated_at": zod.string().datetime({"offset":true}).describe('Last update timestamp'),
+  "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category'),
+  "kind": zod.union([zod.enum(['manuscript', 'note']),zod.null()]).optional().describe('Post kind: manuscript or note'),
+  "read_time": zod.union([zod.string(),zod.null()]).optional().describe('Estimated reading time'),
+  "display_date": zod.union([zod.string(),zod.null()]).optional().describe('Formatted display date string'),
+  "relative_date": zod.union([zod.string(),zod.null()]).optional().describe('Relative time string (e.g. 3 days ago)'),
+  "view_count": zod.union([zod.number(),zod.null()]).optional().describe('Total page views'),
+  "comment_count": zod.union([zod.number(),zod.null()]).optional().describe('Number of comments'),
+  "like_count": zod.union([zod.number(),zod.null()]).optional().describe('Number of likes'),
+  "repost_count": zod.union([zod.number(),zod.null()]).optional().describe('Number of reposts'),
+  "mood": zod.union([zod.string(),zod.null()]).optional().describe('Author mood (diary-specific)'),
+  "weather": zod.union([zod.string(),zod.null()]).optional().describe('Weather description (diary-specific)'),
+  "poem": zod.union([zod.string(),zod.null()]).optional().describe('Associated poem text'),
+  "author": zod.union([zod.string(),zod.null()]).optional().describe('Original author name'),
+  "source": zod.union([zod.string(),zod.null()]).optional().describe('Source URL or reference'),
+  "requires_approval": zod.boolean().default(readNotesApiV1SiteNotesGetResponseItemsItemRequiresApprovalDefault).describe('Whether viewing this public post requires approval')
+})).describe('List of content summaries'),
+  "total": zod.number().default(readNotesApiV1SiteNotesGetResponseTotalDefault).describe('Total number of matching entries'),
+  "has_more": zod.boolean().default(readNotesApiV1SiteNotesGetResponseHasMoreDefault).describe('Whether more entries are available')
+})
+
+
+/**
+ * @summary 获取单篇手记
+ */
+export const ReadNoteApiV1SiteNotesSlugGetParams = zod.object({
+  "slug": zod.string()
+})
+
+export const readNoteApiV1SiteNotesSlugGetResponseRequiresApprovalDefault = false;
+
+export const ReadNoteApiV1SiteNotesSlugGetResponse = zod.object({
+  "slug": zod.string().describe('URL-friendly unique identifier'),
+  "title": zod.string().describe('Content display title'),
+  "summary": zod.union([zod.string(),zod.null()]).describe('Brief summary or excerpt'),
+  "tags": zod.array(zod.string()).describe('List of tag names'),
+  "visibility": zod.string().describe('Visibility level'),
+  "published_at": zod.union([zod.string().datetime({"offset":true}),zod.null()]).describe('Publication timestamp'),
+  "created_at": zod.string().datetime({"offset":true}).describe('Creation timestamp'),
+  "updated_at": zod.string().datetime({"offset":true}).describe('Last update timestamp'),
+  "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category'),
+  "kind": zod.union([zod.enum(['manuscript', 'note']),zod.null()]).optional().describe('Post kind: manuscript or note'),
+  "read_time": zod.union([zod.string(),zod.null()]).optional().describe('Estimated reading time'),
+  "display_date": zod.union([zod.string(),zod.null()]).optional().describe('Formatted display date string'),
+  "relative_date": zod.union([zod.string(),zod.null()]).optional().describe('Relative time string (e.g. 3 days ago)'),
+  "view_count": zod.union([zod.number(),zod.null()]).optional().describe('Total page views'),
+  "comment_count": zod.union([zod.number(),zod.null()]).optional().describe('Number of comments'),
+  "like_count": zod.union([zod.number(),zod.null()]).optional().describe('Number of likes'),
+  "repost_count": zod.union([zod.number(),zod.null()]).optional().describe('Number of reposts'),
+  "mood": zod.union([zod.string(),zod.null()]).optional().describe('Author mood (diary-specific)'),
+  "weather": zod.union([zod.string(),zod.null()]).optional().describe('Weather description (diary-specific)'),
+  "poem": zod.union([zod.string(),zod.null()]).optional().describe('Associated poem text'),
+  "author": zod.union([zod.string(),zod.null()]).optional().describe('Original author name'),
+  "source": zod.union([zod.string(),zod.null()]).optional().describe('Source URL or reference'),
+  "requires_approval": zod.boolean().default(readNoteApiV1SiteNotesSlugGetResponseRequiresApprovalDefault).describe('Whether viewing this public post requires approval'),
   "body": zod.string().describe('Full content body in Markdown')
 })
 
@@ -388,6 +484,7 @@ export const ReadDiaryApiV1SiteDiaryGetResponse = zod.object({
   "created_at": zod.string().datetime({"offset":true}).describe('Creation timestamp'),
   "updated_at": zod.string().datetime({"offset":true}).describe('Last update timestamp'),
   "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category'),
+  "kind": zod.union([zod.enum(['manuscript', 'note']),zod.null()]).optional().describe('Post kind: manuscript or note'),
   "read_time": zod.union([zod.string(),zod.null()]).optional().describe('Estimated reading time'),
   "display_date": zod.union([zod.string(),zod.null()]).optional().describe('Formatted display date string'),
   "relative_date": zod.union([zod.string(),zod.null()]).optional().describe('Relative time string (e.g. 3 days ago)'),
@@ -426,6 +523,7 @@ export const ReadDiaryEntryApiV1SiteDiarySlugGetResponse = zod.object({
   "created_at": zod.string().datetime({"offset":true}).describe('Creation timestamp'),
   "updated_at": zod.string().datetime({"offset":true}).describe('Last update timestamp'),
   "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category'),
+  "kind": zod.union([zod.enum(['manuscript', 'note']),zod.null()]).optional().describe('Post kind: manuscript or note'),
   "read_time": zod.union([zod.string(),zod.null()]).optional().describe('Estimated reading time'),
   "display_date": zod.union([zod.string(),zod.null()]).optional().describe('Formatted display date string'),
   "relative_date": zod.union([zod.string(),zod.null()]).optional().describe('Relative time string (e.g. 3 days ago)'),
@@ -474,6 +572,7 @@ export const ReadThoughtsApiV1SiteThoughtsGetResponse = zod.object({
   "created_at": zod.string().datetime({"offset":true}).describe('Creation timestamp'),
   "updated_at": zod.string().datetime({"offset":true}).describe('Last update timestamp'),
   "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category'),
+  "kind": zod.union([zod.enum(['manuscript', 'note']),zod.null()]).optional().describe('Post kind: manuscript or note'),
   "read_time": zod.union([zod.string(),zod.null()]).optional().describe('Estimated reading time'),
   "display_date": zod.union([zod.string(),zod.null()]).optional().describe('Formatted display date string'),
   "relative_date": zod.union([zod.string(),zod.null()]).optional().describe('Relative time string (e.g. 3 days ago)'),
@@ -503,11 +602,14 @@ export const readExcerptsApiV1SiteExcerptsGetQueryLimitMax = 100;
 export const readExcerptsApiV1SiteExcerptsGetQueryOffsetDefault = 0;
 export const readExcerptsApiV1SiteExcerptsGetQueryOffsetMin = 0;
 
+export const readExcerptsApiV1SiteExcerptsGetQueryCategoryOneMax = 100;
+
 
 
 export const ReadExcerptsApiV1SiteExcerptsGetQueryParams = zod.object({
   "limit": zod.number().min(1).max(readExcerptsApiV1SiteExcerptsGetQueryLimitMax).default(readExcerptsApiV1SiteExcerptsGetQueryLimitDefault),
-  "offset": zod.number().min(readExcerptsApiV1SiteExcerptsGetQueryOffsetMin).default(readExcerptsApiV1SiteExcerptsGetQueryOffsetDefault)
+  "offset": zod.number().min(readExcerptsApiV1SiteExcerptsGetQueryOffsetMin).default(readExcerptsApiV1SiteExcerptsGetQueryOffsetDefault),
+  "category": zod.union([zod.string().max(readExcerptsApiV1SiteExcerptsGetQueryCategoryOneMax),zod.null()]).optional()
 })
 
 export const readExcerptsApiV1SiteExcerptsGetResponseItemsItemRequiresApprovalDefault = false;
@@ -525,6 +627,7 @@ export const ReadExcerptsApiV1SiteExcerptsGetResponse = zod.object({
   "created_at": zod.string().datetime({"offset":true}).describe('Creation timestamp'),
   "updated_at": zod.string().datetime({"offset":true}).describe('Last update timestamp'),
   "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category'),
+  "kind": zod.union([zod.enum(['manuscript', 'note']),zod.null()]).optional().describe('Post kind: manuscript or note'),
   "read_time": zod.union([zod.string(),zod.null()]).optional().describe('Estimated reading time'),
   "display_date": zod.union([zod.string(),zod.null()]).optional().describe('Formatted display date string'),
   "relative_date": zod.union([zod.string(),zod.null()]).optional().describe('Relative time string (e.g. 3 days ago)'),
@@ -542,6 +645,28 @@ export const ReadExcerptsApiV1SiteExcerptsGetResponse = zod.object({
 })).describe('List of content entries'),
   "total": zod.number().default(readExcerptsApiV1SiteExcerptsGetResponseTotalDefault).describe('Total number of matching entries'),
   "has_more": zod.boolean().default(readExcerptsApiV1SiteExcerptsGetResponseHasMoreDefault).describe('Whether more entries are available')
+})
+
+
+/**
+ * @summary 获取公开内容分类统计
+ */
+export const ReadCategoryStatsApiV1SiteCategoryStatsGetQueryParams = zod.object({
+  "content_type": zod.enum(['posts', 'notes', 'excerpts'])
+})
+
+export const readCategoryStatsApiV1SiteCategoryStatsGetResponseTotalMin = 0;
+
+export const readCategoryStatsApiV1SiteCategoryStatsGetResponseItemsItemCountMin = 0;
+
+
+
+export const ReadCategoryStatsApiV1SiteCategoryStatsGetResponse = zod.object({
+  "total": zod.number().min(readCategoryStatsApiV1SiteCategoryStatsGetResponseTotalMin).describe('Total visible entries'),
+  "items": zod.array(zod.object({
+  "name": zod.string().describe('Content category name'),
+  "count": zod.number().min(readCategoryStatsApiV1SiteCategoryStatsGetResponseItemsItemCountMin).describe('Visible entries in this category')
+})).describe('Visible categories with their entry counts')
 })
 
 
@@ -605,7 +730,7 @@ export const ReadCalendarApiV1SiteCalendarGetResponse = zod.object({
   "range_end": zod.string().describe('Query range end date'),
   "events": zod.array(zod.object({
   "date": zod.string().describe('Event date in YYYY-MM-DD format'),
-  "type": zod.string().describe('Event type: post, diary, thought, or excerpt'),
+  "type": zod.string().describe('Event type: post, note, diary, thought, or excerpt'),
   "title": zod.string().describe('Event title'),
   "slug": zod.string().describe('Content slug'),
   "href": zod.string().describe('Frontend URL path')
@@ -1837,6 +1962,7 @@ export const ListPostsResponse = zod.object({
   "created_at": zod.string().datetime({"offset":true}).describe('Creation timestamp'),
   "updated_at": zod.string().datetime({"offset":true}).describe('Last update timestamp'),
   "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category'),
+  "kind": zod.enum(['manuscript', 'note']).describe('Whether this post is a manuscript or note'),
   "mood": zod.union([zod.string(),zod.null()]).optional().describe('Author mood (diary-specific)'),
   "weather": zod.union([zod.string(),zod.null()]).optional().describe('Weather description (diary-specific)'),
   "poem": zod.union([zod.string(),zod.null()]).optional().describe('Associated poem text'),
@@ -1861,6 +1987,7 @@ export const createPostsBodyVisibilityDefault = `private`;
 export const createPostsBodyViewCountDefault = 0;
 export const createPostsBodyIsPinnedDefault = false;
 export const createPostsBodyPinOrderDefault = 0;
+export const createPostsBodyKindDefault = `manuscript`;
 export const createPostsBodyExcludeFromRssDefault = false;
 export const createPostsBodyRequiresApprovalDefault = false;
 
@@ -1881,6 +2008,7 @@ export const CreatePostsBody = zod.object({
   "view_count": zod.number().default(createPostsBodyViewCountDefault).describe('Manual view count override'),
   "is_pinned": zod.boolean().default(createPostsBodyIsPinnedDefault).describe('Whether pinned to top'),
   "pin_order": zod.number().default(createPostsBodyPinOrderDefault).describe('Sort order among pinned items'),
+  "kind": zod.enum(['manuscript', 'note']).default(createPostsBodyKindDefault).describe('Whether this post is a manuscript or note'),
   "exclude_from_rss": zod.boolean().default(createPostsBodyExcludeFromRssDefault).describe('Whether this public post is excluded from RSS'),
   "requires_approval": zod.boolean().default(createPostsBodyRequiresApprovalDefault).describe('Whether viewing this public post requires approval')
 })
@@ -1909,6 +2037,7 @@ export const GetPostsResponse = zod.object({
   "created_at": zod.string().datetime({"offset":true}).describe('Creation timestamp'),
   "updated_at": zod.string().datetime({"offset":true}).describe('Last update timestamp'),
   "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category'),
+  "kind": zod.enum(['manuscript', 'note']).describe('Whether this post is a manuscript or note'),
   "mood": zod.union([zod.string(),zod.null()]).optional().describe('Author mood (diary-specific)'),
   "weather": zod.union([zod.string(),zod.null()]).optional().describe('Weather description (diary-specific)'),
   "poem": zod.union([zod.string(),zod.null()]).optional().describe('Associated poem text'),
@@ -1946,6 +2075,7 @@ export const UpdatePostsBody = zod.object({
   "view_count": zod.union([zod.number(),zod.null()]).optional().describe('Manual view count override'),
   "is_pinned": zod.union([zod.boolean(),zod.null()]).optional().describe('Whether pinned to top'),
   "pin_order": zod.union([zod.number(),zod.null()]).optional().describe('Sort order among pinned items'),
+  "kind": zod.union([zod.enum(['manuscript', 'note']),zod.null()]).optional().describe('Whether this post is a manuscript or note'),
   "exclude_from_rss": zod.union([zod.boolean(),zod.null()]).optional().describe('Whether this public post is excluded from RSS'),
   "requires_approval": zod.union([zod.boolean(),zod.null()]).optional().describe('Whether viewing this public post requires approval')
 })
@@ -1966,6 +2096,7 @@ export const UpdatePostsResponse = zod.object({
   "created_at": zod.string().datetime({"offset":true}).describe('Creation timestamp'),
   "updated_at": zod.string().datetime({"offset":true}).describe('Last update timestamp'),
   "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category'),
+  "kind": zod.enum(['manuscript', 'note']).describe('Whether this post is a manuscript or note'),
   "mood": zod.union([zod.string(),zod.null()]).optional().describe('Author mood (diary-specific)'),
   "weather": zod.union([zod.string(),zod.null()]).optional().describe('Weather description (diary-specific)'),
   "poem": zod.union([zod.string(),zod.null()]).optional().describe('Associated poem text'),
@@ -2050,6 +2181,7 @@ export const ListDiaryResponse = zod.object({
   "created_at": zod.string().datetime({"offset":true}).describe('Creation timestamp'),
   "updated_at": zod.string().datetime({"offset":true}).describe('Last update timestamp'),
   "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category'),
+  "kind": zod.union([zod.enum(['manuscript', 'note']),zod.null()]).optional().describe('Post kind: manuscript or note'),
   "mood": zod.union([zod.string(),zod.null()]).optional().describe('Author mood (diary-specific)'),
   "weather": zod.union([zod.string(),zod.null()]).optional().describe('Weather description (diary-specific)'),
   "poem": zod.union([zod.string(),zod.null()]).optional().describe('Associated poem text'),
@@ -2116,6 +2248,7 @@ export const GetDiaryResponse = zod.object({
   "created_at": zod.string().datetime({"offset":true}).describe('Creation timestamp'),
   "updated_at": zod.string().datetime({"offset":true}).describe('Last update timestamp'),
   "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category'),
+  "kind": zod.union([zod.enum(['manuscript', 'note']),zod.null()]).optional().describe('Post kind: manuscript or note'),
   "mood": zod.union([zod.string(),zod.null()]).optional().describe('Author mood (diary-specific)'),
   "weather": zod.union([zod.string(),zod.null()]).optional().describe('Weather description (diary-specific)'),
   "poem": zod.union([zod.string(),zod.null()]).optional().describe('Associated poem text'),
@@ -2169,6 +2302,7 @@ export const UpdateDiaryResponse = zod.object({
   "created_at": zod.string().datetime({"offset":true}).describe('Creation timestamp'),
   "updated_at": zod.string().datetime({"offset":true}).describe('Last update timestamp'),
   "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category'),
+  "kind": zod.union([zod.enum(['manuscript', 'note']),zod.null()]).optional().describe('Post kind: manuscript or note'),
   "mood": zod.union([zod.string(),zod.null()]).optional().describe('Author mood (diary-specific)'),
   "weather": zod.union([zod.string(),zod.null()]).optional().describe('Weather description (diary-specific)'),
   "poem": zod.union([zod.string(),zod.null()]).optional().describe('Associated poem text'),
@@ -2251,6 +2385,7 @@ export const ListThoughtsResponse = zod.object({
   "created_at": zod.string().datetime({"offset":true}).describe('Creation timestamp'),
   "updated_at": zod.string().datetime({"offset":true}).describe('Last update timestamp'),
   "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category'),
+  "kind": zod.union([zod.enum(['manuscript', 'note']),zod.null()]).optional().describe('Post kind: manuscript or note'),
   "mood": zod.union([zod.string(),zod.null()]).optional().describe('Author mood (diary-specific)'),
   "weather": zod.union([zod.string(),zod.null()]).optional().describe('Weather description (diary-specific)'),
   "poem": zod.union([zod.string(),zod.null()]).optional().describe('Associated poem text'),
@@ -2317,6 +2452,7 @@ export const GetThoughtsResponse = zod.object({
   "created_at": zod.string().datetime({"offset":true}).describe('Creation timestamp'),
   "updated_at": zod.string().datetime({"offset":true}).describe('Last update timestamp'),
   "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category'),
+  "kind": zod.union([zod.enum(['manuscript', 'note']),zod.null()]).optional().describe('Post kind: manuscript or note'),
   "mood": zod.union([zod.string(),zod.null()]).optional().describe('Author mood (diary-specific)'),
   "weather": zod.union([zod.string(),zod.null()]).optional().describe('Weather description (diary-specific)'),
   "poem": zod.union([zod.string(),zod.null()]).optional().describe('Associated poem text'),
@@ -2370,6 +2506,7 @@ export const UpdateThoughtsResponse = zod.object({
   "created_at": zod.string().datetime({"offset":true}).describe('Creation timestamp'),
   "updated_at": zod.string().datetime({"offset":true}).describe('Last update timestamp'),
   "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category'),
+  "kind": zod.union([zod.enum(['manuscript', 'note']),zod.null()]).optional().describe('Post kind: manuscript or note'),
   "mood": zod.union([zod.string(),zod.null()]).optional().describe('Author mood (diary-specific)'),
   "weather": zod.union([zod.string(),zod.null()]).optional().describe('Weather description (diary-specific)'),
   "poem": zod.union([zod.string(),zod.null()]).optional().describe('Associated poem text'),
@@ -2452,6 +2589,7 @@ export const ListExcerptsResponse = zod.object({
   "created_at": zod.string().datetime({"offset":true}).describe('Creation timestamp'),
   "updated_at": zod.string().datetime({"offset":true}).describe('Last update timestamp'),
   "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category'),
+  "kind": zod.union([zod.enum(['manuscript', 'note']),zod.null()]).optional().describe('Post kind: manuscript or note'),
   "mood": zod.union([zod.string(),zod.null()]).optional().describe('Author mood (diary-specific)'),
   "weather": zod.union([zod.string(),zod.null()]).optional().describe('Weather description (diary-specific)'),
   "poem": zod.union([zod.string(),zod.null()]).optional().describe('Associated poem text'),
@@ -2518,6 +2656,7 @@ export const GetExcerptsResponse = zod.object({
   "created_at": zod.string().datetime({"offset":true}).describe('Creation timestamp'),
   "updated_at": zod.string().datetime({"offset":true}).describe('Last update timestamp'),
   "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category'),
+  "kind": zod.union([zod.enum(['manuscript', 'note']),zod.null()]).optional().describe('Post kind: manuscript or note'),
   "mood": zod.union([zod.string(),zod.null()]).optional().describe('Author mood (diary-specific)'),
   "weather": zod.union([zod.string(),zod.null()]).optional().describe('Weather description (diary-specific)'),
   "poem": zod.union([zod.string(),zod.null()]).optional().describe('Associated poem text'),
@@ -2571,6 +2710,7 @@ export const UpdateExcerptsResponse = zod.object({
   "created_at": zod.string().datetime({"offset":true}).describe('Creation timestamp'),
   "updated_at": zod.string().datetime({"offset":true}).describe('Last update timestamp'),
   "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category'),
+  "kind": zod.union([zod.enum(['manuscript', 'note']),zod.null()]).optional().describe('Post kind: manuscript or note'),
   "mood": zod.union([zod.string(),zod.null()]).optional().describe('Author mood (diary-specific)'),
   "weather": zod.union([zod.string(),zod.null()]).optional().describe('Weather description (diary-specific)'),
   "poem": zod.union([zod.string(),zod.null()]).optional().describe('Associated poem text'),
@@ -8937,6 +9077,107 @@ export const PostWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostResp
 
 
 /**
+ * @summary 使用留言触发工作流
+ */
+export const PostWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostParams = zod.object({
+  "workflow_key": zod.string()
+})
+
+export const postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostBodyMessageMax = 20000;
+
+export const postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostBodyIdempotencyKeyOneMax = 255;
+
+export const postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostBodyExecutionModeDefault = `live`;
+export const postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostBodyExecuteImmediatelyDefault = true;
+
+export const PostWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostBody = zod.object({
+  "message": zod.string().min(1).max(postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostBodyMessageMax),
+  "idempotency_key": zod.union([zod.string().min(1).max(postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostBodyIdempotencyKeyOneMax),zod.null()]).optional(),
+  "execution_mode": zod.enum(['live', 'dry_run']).default(postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostBodyExecutionModeDefault),
+  "execute_immediately": zod.boolean().default(postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostBodyExecuteImmediatelyDefault)
+})
+
+export const postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostResponseRunExecutionModeDefault = `live`;
+export const postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostResponseRunRequestedByTypeDefault = `system`;
+export const postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostResponseRunAttemptCountDefault = 0;
+export const postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostResponseRunMaxAttemptsDefault = 3;
+export const postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostResponseRunCanCancelDefault = false;
+export const postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostResponseRunCanRetryDefault = false;
+export const postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostResponseValidationOkDefault = true;
+export const postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostResponseValidationIssuesItemLevelDefault = `error`;
+export const postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostResponseValidationIssuesItemCodeDefault = ``;
+export const postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostResponseValidationIssuesItemPathDefault = ``;
+
+export const PostWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostResponse = zod.object({
+  "run": zod.object({
+  "id": zod.string(),
+  "workflow_key": zod.string(),
+  "status": zod.string(),
+  "execution_mode": zod.string().default(postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostResponseRunExecutionModeDefault),
+  "workflow_fingerprint": zod.union([zod.string(),zod.null()]).optional(),
+  "idempotency_key": zod.union([zod.string(),zod.null()]).optional(),
+  "requested_by_type": zod.string().default(postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostResponseRunRequestedByTypeDefault),
+  "requested_by_id": zod.union([zod.string(),zod.null()]).optional(),
+  "authorization_scopes": zod.array(zod.string()).optional(),
+  "trigger_kind": zod.string(),
+  "trigger_event": zod.union([zod.string(),zod.null()]).optional(),
+  "target_type": zod.union([zod.string(),zod.null()]).optional(),
+  "target_id": zod.union([zod.string(),zod.null()]).optional(),
+  "thread_id": zod.string(),
+  "latest_checkpoint_id": zod.union([zod.string(),zod.null()]).optional(),
+  "checkpoint_ns": zod.union([zod.string(),zod.null()]).optional(),
+  "input_payload": zod.record(zod.string(), zod.unknown()).optional(),
+  "context_payload": zod.record(zod.string(), zod.unknown()).optional(),
+  "result_payload": zod.record(zod.string(), zod.unknown()).optional(),
+  "error_code": zod.union([zod.string(),zod.null()]).optional(),
+  "error_message": zod.union([zod.string(),zod.null()]).optional(),
+  "available_at": zod.union([zod.string().datetime({"offset":true}),zod.null()]).optional(),
+  "attempt_count": zod.number().default(postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostResponseRunAttemptCountDefault),
+  "max_attempts": zod.number().default(postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostResponseRunMaxAttemptsDefault),
+  "lease_owner": zod.union([zod.string(),zod.null()]).optional(),
+  "lease_expires_at": zod.union([zod.string().datetime({"offset":true}),zod.null()]).optional(),
+  "heartbeat_at": zod.union([zod.string().datetime({"offset":true}),zod.null()]).optional(),
+  "cancel_requested_at": zod.union([zod.string().datetime({"offset":true}),zod.null()]).optional(),
+  "retry_of_run_id": zod.union([zod.string(),zod.null()]).optional(),
+  "started_at": zod.union([zod.string().datetime({"offset":true}),zod.null()]).optional(),
+  "finished_at": zod.union([zod.string().datetime({"offset":true}),zod.null()]).optional(),
+  "created_at": zod.string().datetime({"offset":true}),
+  "updated_at": zod.string().datetime({"offset":true}),
+  "duration_ms": zod.union([zod.number(),zod.null()]).optional(),
+  "can_cancel": zod.boolean().default(postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostResponseRunCanCancelDefault),
+  "can_retry": zod.boolean().default(postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostResponseRunCanRetryDefault)
+}),
+  "steps": zod.array(zod.object({
+  "id": zod.string(),
+  "run_id": zod.string(),
+  "sequence_no": zod.number(),
+  "node_key": zod.string(),
+  "step_kind": zod.string(),
+  "status": zod.string(),
+  "narrative": zod.string(),
+  "input_payload": zod.record(zod.string(), zod.unknown()).optional(),
+  "output_payload": zod.record(zod.string(), zod.unknown()).optional(),
+  "error_payload": zod.record(zod.string(), zod.unknown()).optional(),
+  "started_at": zod.union([zod.string().datetime({"offset":true}),zod.null()]).optional(),
+  "finished_at": zod.union([zod.string().datetime({"offset":true}),zod.null()]).optional(),
+  "created_at": zod.string().datetime({"offset":true}),
+  "updated_at": zod.string().datetime({"offset":true})
+})).optional(),
+  "validation": zod.object({
+  "ok": zod.boolean().default(postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostResponseValidationOkDefault),
+  "issues": zod.array(zod.object({
+  "level": zod.string().default(postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostResponseValidationIssuesItemLevelDefault),
+  "code": zod.string().default(postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostResponseValidationIssuesItemCodeDefault),
+  "message": zod.string(),
+  "path": zod.string().default(postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostResponseValidationIssuesItemPathDefault),
+  "node_id": zod.union([zod.string(),zod.null()]).optional(),
+  "edge_id": zod.union([zod.string(),zod.null()]).optional()
+})).optional()
+}).optional()
+})
+
+
+/**
  * @summary 测试运行工作流
  */
 export const PostWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostParams = zod.object({
@@ -9155,6 +9396,67 @@ export const GetRunsApiV1AdminAutomationRunsGetResponse = zod.object({
   "limit": zod.number().default(getRunsApiV1AdminAutomationRunsGetResponseLimitDefault),
   "has_more": zod.boolean().default(getRunsApiV1AdminAutomationRunsGetResponseHasMoreDefault),
   "next_cursor": zod.union([zod.string(),zod.null()]).optional()
+})
+
+
+/**
+ * @summary 获取 Agent 留言列表
+ */
+export const getMessagesApiV1AdminAutomationMessagesGetQueryWorkflowKeyOneMax = 120;
+
+export const getMessagesApiV1AdminAutomationMessagesGetQueryCursorOneMax = 512;
+
+export const getMessagesApiV1AdminAutomationMessagesGetQueryLimitDefault = 25;
+export const getMessagesApiV1AdminAutomationMessagesGetQueryLimitMax = 100;
+
+
+
+export const GetMessagesApiV1AdminAutomationMessagesGetQueryParams = zod.object({
+  "workflow_key": zod.union([zod.string().max(getMessagesApiV1AdminAutomationMessagesGetQueryWorkflowKeyOneMax),zod.null()]).optional(),
+  "execution_mode": zod.union([zod.enum(['live', 'dry_run']),zod.null()]).optional(),
+  "cursor": zod.union([zod.string().max(getMessagesApiV1AdminAutomationMessagesGetQueryCursorOneMax),zod.null()]).optional(),
+  "limit": zod.number().min(1).max(getMessagesApiV1AdminAutomationMessagesGetQueryLimitMax).default(getMessagesApiV1AdminAutomationMessagesGetQueryLimitDefault)
+})
+
+export const getMessagesApiV1AdminAutomationMessagesGetResponseItemsItemExecutionModeDefault = `live`;
+export const getMessagesApiV1AdminAutomationMessagesGetResponseTotalDefault = 0;
+export const getMessagesApiV1AdminAutomationMessagesGetResponseLimitDefault = 25;
+export const getMessagesApiV1AdminAutomationMessagesGetResponseHasMoreDefault = false;
+
+export const GetMessagesApiV1AdminAutomationMessagesGetResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "run_id": zod.string(),
+  "workflow_key": zod.string(),
+  "node_key": zod.string(),
+  "message_preview": zod.string(),
+  "execution_mode": zod.enum(['live', 'dry_run']).default(getMessagesApiV1AdminAutomationMessagesGetResponseItemsItemExecutionModeDefault),
+  "created_at": zod.string().datetime({"offset":true})
+})).optional(),
+  "total": zod.number().default(getMessagesApiV1AdminAutomationMessagesGetResponseTotalDefault),
+  "limit": zod.number().default(getMessagesApiV1AdminAutomationMessagesGetResponseLimitDefault),
+  "has_more": zod.boolean().default(getMessagesApiV1AdminAutomationMessagesGetResponseHasMoreDefault),
+  "next_cursor": zod.union([zod.string(),zod.null()]).optional()
+})
+
+
+/**
+ * @summary 获取 Agent 留言详情
+ */
+export const GetMessageApiV1AdminAutomationMessagesMessageIdGetParams = zod.object({
+  "message_id": zod.string()
+})
+
+export const getMessageApiV1AdminAutomationMessagesMessageIdGetResponseExecutionModeDefault = `live`;
+
+export const GetMessageApiV1AdminAutomationMessagesMessageIdGetResponse = zod.object({
+  "id": zod.string(),
+  "run_id": zod.string(),
+  "workflow_key": zod.string(),
+  "node_key": zod.string(),
+  "message": zod.string(),
+  "execution_mode": zod.enum(['live', 'dry_run']).default(getMessageApiV1AdminAutomationMessagesMessageIdGetResponseExecutionModeDefault),
+  "created_at": zod.string().datetime({"offset":true})
 })
 
 
@@ -11181,7 +11483,7 @@ export const GetDefaultContentTitleResponse = zod.object({
  * @summary 获取内容分类列表
  */
 export const ListContentCategoriesQueryParams = zod.object({
-  "content_type": zod.union([zod.string(),zod.null()]).optional()
+  "content_type": zod.union([zod.enum(['posts', 'notes', 'excerpts']),zod.null()]).optional()
 })
 
 export const listContentCategoriesResponseUsageCountDefault = 0;
@@ -11203,7 +11505,7 @@ export const createContentCategoryBodyNameMax = 80;
 
 
 export const CreateContentCategoryBody = zod.object({
-  "content_type": zod.enum(['posts', 'thoughts', 'excerpts']).describe('Content type bucket'),
+  "content_type": zod.enum(['posts', 'notes', 'excerpts']).describe('Content type bucket'),
   "name": zod.string().min(1).max(createContentCategoryBodyNameMax).describe('Category name')
 })
 
@@ -11467,9 +11769,9 @@ export const RobotsTxtRobotsTxtGetResponse = zod.unknown()
 
 
 /**
- * @summary Posts Feed
+ * @summary Articles Feed
  */
-export const PostsFeedFeedsPostsXmlGetResponse = zod.unknown()
+export const ArticlesFeedFeedsArticlesXmlGetResponse = zod.unknown()
 
 
 /**
@@ -11521,9 +11823,9 @@ export const RobotsTxtApiV1SiteRobotsTxtGetResponse = zod.unknown()
 
 
 /**
- * @summary Posts Feed
+ * @summary Articles Feed
  */
-export const PostsFeedApiV1SiteFeedsPostsXmlGetResponse = zod.unknown()
+export const ArticlesFeedApiV1SiteFeedsArticlesXmlGetResponse = zod.unknown()
 
 
 /**

@@ -8,7 +8,7 @@
 export interface CalendarEventRead {
   /** Event date in YYYY-MM-DD format */
   date: string;
-  /** Event type: post, diary, thought, or excerpt */
+  /** Event type: post, note, diary, thought, or excerpt */
   type: string;
   /** Event title */
   title: string;

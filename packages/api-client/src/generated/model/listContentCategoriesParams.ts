@@ -6,5 +6,5 @@
  */
 
 export type ListContentCategoriesParams = {
-content_type?: string | null;
+content_type?: 'posts' | 'notes' | 'excerpts' | null;
 };

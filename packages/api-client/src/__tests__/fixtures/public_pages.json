@@ -97,7 +97,7 @@
         "modalCloseLabel": "关闭",
         "retryLabel": "重试"
       },
-      "max_width": "max-w-3xl",
+      "max_width": "max-w-4xl",
       "page_key": "excerpts",
       "page_size": 15,
       "search_placeholder": null,
@@ -167,25 +167,46 @@
       "title": "这个页面没有留下来"
     },
     {
-      "empty_message": "没有找到匹配的文章",
+      "empty_message": "没有找到匹配的手记",
       "extras": {
         "category_all_label": "全部",
         "category_fallback_label": "未分类",
         "detailBackLabel": "返回",
         "detailEndLabel": "— 完 —",
         "detailListLabel": "返回列表",
-        "detailMissingDescription": "你访问的文章暂时不存在。",
-        "detailMissingTitle": "文章不存在",
-        "errorTitle": "文章加载失败",
+        "detailMissingDescription": "你访问的手记暂时不存在。",
+        "detailMissingTitle": "手记不存在",
+        "errorTitle": "手记加载失败",
         "loadMoreLabel": "加载更多...",
         "retryLabel": "重试"
       },
-      "max_width": "max-w-3xl",
+      "max_width": "max-w-4xl",
+      "page_key": "notes",
+      "page_size": 15,
+      "search_placeholder": "搜索手记...",
+      "subtitle": "拾起日常微光，记下心绪流转",
+      "title": "手记"
+    },
+    {
+      "empty_message": "没有找到匹配的文稿",
+      "extras": {
+        "category_all_label": "全部",
+        "category_fallback_label": "未分类",
+        "detailBackLabel": "返回",
+        "detailEndLabel": "— 完 —",
+        "detailListLabel": "返回列表",
+        "detailMissingDescription": "你访问的文稿暂时不存在。",
+        "detailMissingTitle": "文稿不存在",
+        "errorTitle": "文稿加载失败",
+        "loadMoreLabel": "加载更多...",
+        "retryLabel": "重试"
+      },
+      "max_width": "max-w-4xl",
       "page_key": "posts",
       "page_size": 15,
-      "search_placeholder": "搜索文章...",
-      "subtitle": "整理过的碎碎念与实践记录。",
-      "title": "Posts"
+      "search_placeholder": "搜索文稿...",
+      "subtitle": "让思考与经历，在文字中缓缓流淌",
+      "title": "文稿"
     },
     {
       "empty_message": "最近没有新的碎碎念",

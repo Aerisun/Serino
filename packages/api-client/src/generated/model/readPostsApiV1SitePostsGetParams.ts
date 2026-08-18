@@ -15,4 +15,5 @@ limit?: number;
  * @minimum 0
  */
 offset?: number;
+category?: string | null;
 };

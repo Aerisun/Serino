@@ -22,7 +22,13 @@
     {
       "children": [],
       "href": "/posts",
-      "label": "帖子",
+      "label": "文稿",
+      "trigger": "none"
+    },
+    {
+      "children": [],
+      "href": "/notes",
+      "label": "手记",
       "trigger": "none"
     },
     {

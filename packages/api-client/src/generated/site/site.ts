@@ -27,6 +27,7 @@ import type {
   ActivityHeatmapRead,
   CalendarRead,
   CommunityConfigRead,
+  ContentCategoryStatsRead,
   ContentCollectionRead,
   ContentEntryRead,
   ContentSubscriptionPublicCreate,
@@ -50,12 +51,14 @@ import type {
   PostAccessStateRead,
   ReadActivityHeatmapApiV1SiteActivityHeatmapGetParams,
   ReadCalendarApiV1SiteCalendarGetParams,
+  ReadCategoryStatsApiV1SiteCategoryStatsGetParams,
   ReadDiaryApiV1SiteDiaryGetParams,
   ReadExcerptsApiV1SiteExcerptsGetParams,
   ReadFriendFeedApiV1SiteFriendFeedGetParams,
   ReadFriendsApiV1SiteFriendsGetParams,
   ReadLinkPreviewApiV1SiteLinkPreviewGetParams,
   ReadLinkPreviewImageApiV1SiteLinkPreviewImageGetParams,
+  ReadNotesApiV1SiteNotesGetParams,
   ReadNotionistsAvatarApiV1Avatars10XNotionistsSvgGetParams,
   ReadPoemPreviewApiV1SitePoemPreviewGetParams,
   ReadPostsApiV1SitePostsGetParams,
@@ -1590,6 +1593,247 @@ export function useReadPostApiV1SitePostsSlugGet<TData = Awaited<ReturnType<type
 
 
 /**
+ * @summary 获取手记列表
+ */
+export type readNotesApiV1SiteNotesGetResponse200 = {
+  data: ContentSummaryCollectionRead
+  status: 200
+}
+
+export type readNotesApiV1SiteNotesGetResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type readNotesApiV1SiteNotesGetResponseSuccess = (readNotesApiV1SiteNotesGetResponse200) & {
+  headers: Headers;
+};
+export type readNotesApiV1SiteNotesGetResponseError = (readNotesApiV1SiteNotesGetResponse422) & {
+  headers: Headers;
+};
+
+export type readNotesApiV1SiteNotesGetResponse = (readNotesApiV1SiteNotesGetResponseSuccess | readNotesApiV1SiteNotesGetResponseError)
+
+export const getReadNotesApiV1SiteNotesGetUrl = (params?: ReadNotesApiV1SiteNotesGetParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/site/notes?${stringifiedParams}` : `/api/v1/site/notes`
+}
+
+export const readNotesApiV1SiteNotesGet = async (params?: ReadNotesApiV1SiteNotesGetParams, options?: RequestInit): Promise<readNotesApiV1SiteNotesGetResponse> => {
+
+  return customInstance<readNotesApiV1SiteNotesGetResponse>(getReadNotesApiV1SiteNotesGetUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getReadNotesApiV1SiteNotesGetQueryKey = (params?: ReadNotesApiV1SiteNotesGetParams,) => {
+    return [
+    `/api/v1/site/notes`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getReadNotesApiV1SiteNotesGetQueryOptions = <TData = Awaited<ReturnType<typeof readNotesApiV1SiteNotesGet>>, TError = ErrorType<HTTPValidationError>>(params?: ReadNotesApiV1SiteNotesGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readNotesApiV1SiteNotesGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getReadNotesApiV1SiteNotesGetQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof readNotesApiV1SiteNotesGet>>> = ({ signal }) => readNotesApiV1SiteNotesGet(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof readNotesApiV1SiteNotesGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ReadNotesApiV1SiteNotesGetQueryResult = NonNullable<Awaited<ReturnType<typeof readNotesApiV1SiteNotesGet>>>
+export type ReadNotesApiV1SiteNotesGetQueryError = ErrorType<HTTPValidationError>
+
+
+export function useReadNotesApiV1SiteNotesGet<TData = Awaited<ReturnType<typeof readNotesApiV1SiteNotesGet>>, TError = ErrorType<HTTPValidationError>>(
+ params: undefined |  ReadNotesApiV1SiteNotesGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof readNotesApiV1SiteNotesGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof readNotesApiV1SiteNotesGet>>,
+          TError,
+          Awaited<ReturnType<typeof readNotesApiV1SiteNotesGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useReadNotesApiV1SiteNotesGet<TData = Awaited<ReturnType<typeof readNotesApiV1SiteNotesGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: ReadNotesApiV1SiteNotesGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readNotesApiV1SiteNotesGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof readNotesApiV1SiteNotesGet>>,
+          TError,
+          Awaited<ReturnType<typeof readNotesApiV1SiteNotesGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useReadNotesApiV1SiteNotesGet<TData = Awaited<ReturnType<typeof readNotesApiV1SiteNotesGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: ReadNotesApiV1SiteNotesGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readNotesApiV1SiteNotesGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取手记列表
+ */
+
+export function useReadNotesApiV1SiteNotesGet<TData = Awaited<ReturnType<typeof readNotesApiV1SiteNotesGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: ReadNotesApiV1SiteNotesGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readNotesApiV1SiteNotesGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getReadNotesApiV1SiteNotesGetQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 获取单篇手记
+ */
+export type readNoteApiV1SiteNotesSlugGetResponse200 = {
+  data: ContentEntryRead
+  status: 200
+}
+
+export type readNoteApiV1SiteNotesSlugGetResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type readNoteApiV1SiteNotesSlugGetResponseSuccess = (readNoteApiV1SiteNotesSlugGetResponse200) & {
+  headers: Headers;
+};
+export type readNoteApiV1SiteNotesSlugGetResponseError = (readNoteApiV1SiteNotesSlugGetResponse422) & {
+  headers: Headers;
+};
+
+export type readNoteApiV1SiteNotesSlugGetResponse = (readNoteApiV1SiteNotesSlugGetResponseSuccess | readNoteApiV1SiteNotesSlugGetResponseError)
+
+export const getReadNoteApiV1SiteNotesSlugGetUrl = (slug: string,) => {
+
+
+
+
+  return `/api/v1/site/notes/${slug}`
+}
+
+export const readNoteApiV1SiteNotesSlugGet = async (slug: string, options?: RequestInit): Promise<readNoteApiV1SiteNotesSlugGetResponse> => {
+
+  return customInstance<readNoteApiV1SiteNotesSlugGetResponse>(getReadNoteApiV1SiteNotesSlugGetUrl(slug),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getReadNoteApiV1SiteNotesSlugGetQueryKey = (slug: string,) => {
+    return [
+    `/api/v1/site/notes/${slug}`
+    ] as const;
+    }
+
+
+export const getReadNoteApiV1SiteNotesSlugGetQueryOptions = <TData = Awaited<ReturnType<typeof readNoteApiV1SiteNotesSlugGet>>, TError = ErrorType<HTTPValidationError>>(slug: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readNoteApiV1SiteNotesSlugGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getReadNoteApiV1SiteNotesSlugGetQueryKey(slug);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof readNoteApiV1SiteNotesSlugGet>>> = ({ signal }) => readNoteApiV1SiteNotesSlugGet(slug, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(slug), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof readNoteApiV1SiteNotesSlugGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ReadNoteApiV1SiteNotesSlugGetQueryResult = NonNullable<Awaited<ReturnType<typeof readNoteApiV1SiteNotesSlugGet>>>
+export type ReadNoteApiV1SiteNotesSlugGetQueryError = ErrorType<HTTPValidationError>
+
+
+export function useReadNoteApiV1SiteNotesSlugGet<TData = Awaited<ReturnType<typeof readNoteApiV1SiteNotesSlugGet>>, TError = ErrorType<HTTPValidationError>>(
+ slug: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof readNoteApiV1SiteNotesSlugGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof readNoteApiV1SiteNotesSlugGet>>,
+          TError,
+          Awaited<ReturnType<typeof readNoteApiV1SiteNotesSlugGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useReadNoteApiV1SiteNotesSlugGet<TData = Awaited<ReturnType<typeof readNoteApiV1SiteNotesSlugGet>>, TError = ErrorType<HTTPValidationError>>(
+ slug: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readNoteApiV1SiteNotesSlugGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof readNoteApiV1SiteNotesSlugGet>>,
+          TError,
+          Awaited<ReturnType<typeof readNoteApiV1SiteNotesSlugGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useReadNoteApiV1SiteNotesSlugGet<TData = Awaited<ReturnType<typeof readNoteApiV1SiteNotesSlugGet>>, TError = ErrorType<HTTPValidationError>>(
+ slug: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readNoteApiV1SiteNotesSlugGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取单篇手记
+ */
+
+export function useReadNoteApiV1SiteNotesSlugGet<TData = Awaited<ReturnType<typeof readNoteApiV1SiteNotesSlugGet>>, TError = ErrorType<HTTPValidationError>>(
+ slug: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readNoteApiV1SiteNotesSlugGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getReadNoteApiV1SiteNotesSlugGetQueryOptions(slug,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
  * @summary 获取日记列表
  */
 export type readDiaryApiV1SiteDiaryGetResponse200 = {
@@ -2069,6 +2313,130 @@ export function useReadExcerptsApiV1SiteExcerptsGet<TData = Awaited<ReturnType<t
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getReadExcerptsApiV1SiteExcerptsGetQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 获取公开内容分类统计
+ */
+export type readCategoryStatsApiV1SiteCategoryStatsGetResponse200 = {
+  data: ContentCategoryStatsRead
+  status: 200
+}
+
+export type readCategoryStatsApiV1SiteCategoryStatsGetResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type readCategoryStatsApiV1SiteCategoryStatsGetResponseSuccess = (readCategoryStatsApiV1SiteCategoryStatsGetResponse200) & {
+  headers: Headers;
+};
+export type readCategoryStatsApiV1SiteCategoryStatsGetResponseError = (readCategoryStatsApiV1SiteCategoryStatsGetResponse422) & {
+  headers: Headers;
+};
+
+export type readCategoryStatsApiV1SiteCategoryStatsGetResponse = (readCategoryStatsApiV1SiteCategoryStatsGetResponseSuccess | readCategoryStatsApiV1SiteCategoryStatsGetResponseError)
+
+export const getReadCategoryStatsApiV1SiteCategoryStatsGetUrl = (params: ReadCategoryStatsApiV1SiteCategoryStatsGetParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/site/category-stats?${stringifiedParams}` : `/api/v1/site/category-stats`
+}
+
+export const readCategoryStatsApiV1SiteCategoryStatsGet = async (params: ReadCategoryStatsApiV1SiteCategoryStatsGetParams, options?: RequestInit): Promise<readCategoryStatsApiV1SiteCategoryStatsGetResponse> => {
+
+  return customInstance<readCategoryStatsApiV1SiteCategoryStatsGetResponse>(getReadCategoryStatsApiV1SiteCategoryStatsGetUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getReadCategoryStatsApiV1SiteCategoryStatsGetQueryKey = (params?: ReadCategoryStatsApiV1SiteCategoryStatsGetParams,) => {
+    return [
+    `/api/v1/site/category-stats`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getReadCategoryStatsApiV1SiteCategoryStatsGetQueryOptions = <TData = Awaited<ReturnType<typeof readCategoryStatsApiV1SiteCategoryStatsGet>>, TError = ErrorType<HTTPValidationError>>(params: ReadCategoryStatsApiV1SiteCategoryStatsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readCategoryStatsApiV1SiteCategoryStatsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getReadCategoryStatsApiV1SiteCategoryStatsGetQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof readCategoryStatsApiV1SiteCategoryStatsGet>>> = ({ signal }) => readCategoryStatsApiV1SiteCategoryStatsGet(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof readCategoryStatsApiV1SiteCategoryStatsGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ReadCategoryStatsApiV1SiteCategoryStatsGetQueryResult = NonNullable<Awaited<ReturnType<typeof readCategoryStatsApiV1SiteCategoryStatsGet>>>
+export type ReadCategoryStatsApiV1SiteCategoryStatsGetQueryError = ErrorType<HTTPValidationError>
+
+
+export function useReadCategoryStatsApiV1SiteCategoryStatsGet<TData = Awaited<ReturnType<typeof readCategoryStatsApiV1SiteCategoryStatsGet>>, TError = ErrorType<HTTPValidationError>>(
+ params: ReadCategoryStatsApiV1SiteCategoryStatsGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof readCategoryStatsApiV1SiteCategoryStatsGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof readCategoryStatsApiV1SiteCategoryStatsGet>>,
+          TError,
+          Awaited<ReturnType<typeof readCategoryStatsApiV1SiteCategoryStatsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useReadCategoryStatsApiV1SiteCategoryStatsGet<TData = Awaited<ReturnType<typeof readCategoryStatsApiV1SiteCategoryStatsGet>>, TError = ErrorType<HTTPValidationError>>(
+ params: ReadCategoryStatsApiV1SiteCategoryStatsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readCategoryStatsApiV1SiteCategoryStatsGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof readCategoryStatsApiV1SiteCategoryStatsGet>>,
+          TError,
+          Awaited<ReturnType<typeof readCategoryStatsApiV1SiteCategoryStatsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useReadCategoryStatsApiV1SiteCategoryStatsGet<TData = Awaited<ReturnType<typeof readCategoryStatsApiV1SiteCategoryStatsGet>>, TError = ErrorType<HTTPValidationError>>(
+ params: ReadCategoryStatsApiV1SiteCategoryStatsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readCategoryStatsApiV1SiteCategoryStatsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取公开内容分类统计
+ */
+
+export function useReadCategoryStatsApiV1SiteCategoryStatsGet<TData = Awaited<ReturnType<typeof readCategoryStatsApiV1SiteCategoryStatsGet>>, TError = ErrorType<HTTPValidationError>>(
+ params: ReadCategoryStatsApiV1SiteCategoryStatsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readCategoryStatsApiV1SiteCategoryStatsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getReadCategoryStatsApiV1SiteCategoryStatsGetQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

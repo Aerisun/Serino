@@ -390,6 +390,23 @@
             }
           },
           {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Category"
+            }
+          },
+          {
             "name": "aerisun_site_session",
             "in": "cookie",
             "required": false,
@@ -437,6 +454,153 @@
         ],
         "summary": "获取单篇文章",
         "operationId": "read_post_api_v1_site_posts__slug__get",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          },
+          {
+            "name": "aerisun_site_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Aerisun Site Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentEntryRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/site/notes": {
+      "get": {
+        "tags": [
+          "site"
+        ],
+        "summary": "获取手记列表",
+        "operationId": "read_notes_api_v1_site_notes_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Category"
+            }
+          },
+          {
+            "name": "aerisun_site_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Aerisun Site Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentSummaryCollectionRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/site/notes/{slug}": {
+      "get": {
+        "tags": [
+          "site"
+        ],
+        "summary": "获取单篇手记",
+        "operationId": "read_note_api_v1_site_notes__slug__get",
         "parameters": [
           {
             "name": "slug",
@@ -722,6 +886,23 @@
             }
           },
           {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Category"
+            }
+          },
+          {
             "name": "aerisun_site_session",
             "in": "cookie",
             "required": false,
@@ -745,6 +926,69 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ContentCollectionRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/site/category-stats": {
+      "get": {
+        "tags": [
+          "site"
+        ],
+        "summary": "获取公开内容分类统计",
+        "operationId": "read_category_stats_api_v1_site_category_stats_get",
+        "parameters": [
+          {
+            "name": "content_type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "enum": [
+                "posts",
+                "notes",
+                "excerpts"
+              ],
+              "type": "string",
+              "title": "Content Type"
+            }
+          },
+          {
+            "name": "aerisun_site_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Aerisun Site Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentCategoryStatsRead"
                 }
               }
             }
@@ -13804,6 +14048,64 @@
         }
       }
     },
+    "/api/v1/admin/automation/workflows/{workflow_key}/message-runs": {
+      "post": {
+        "tags": [
+          "admin",
+          "admin-automation"
+        ],
+        "summary": "使用留言触发工作流",
+        "operationId": "post_workflow_message_run_api_v1_admin_automation_workflows__workflow_key__message_runs_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workflow_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Workflow Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentWorkflowMessageRunCreateWrite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentWorkflowRunCreateRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/automation/workflows/{workflow_key}/test-runs": {
       "post": {
         "tags": [
@@ -14047,6 +14349,159 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AgentRunCollectionRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/automation/messages": {
+      "get": {
+        "tags": [
+          "admin",
+          "admin-automation"
+        ],
+        "summary": "获取 Agent 留言列表",
+        "operationId": "get_messages_api_v1_admin_automation_messages_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workflow_key",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 120
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Workflow Key"
+            }
+          },
+          {
+            "name": "execution_mode",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "live",
+                    "dry_run"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Execution Mode"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 512
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 25,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentMessageCollectionRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/automation/messages/{message_id}": {
+      "get": {
+        "tags": [
+          "admin",
+          "admin-automation"
+        ],
+        "summary": "获取 Agent 留言详情",
+        "operationId": "get_message_api_v1_admin_automation_messages__message_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "message_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Message Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentMessageRead"
                 }
               }
             }
@@ -15129,6 +15584,11 @@
             "schema": {
               "anyOf": [
                 {
+                  "enum": [
+                    "posts",
+                    "notes",
+                    "excerpts"
+                  ],
                   "type": "string"
                 },
                 {
@@ -15912,13 +16372,13 @@
         }
       }
     },
-    "/feeds/posts.xml": {
+    "/feeds/articles.xml": {
       "get": {
         "tags": [
           "seo"
         ],
-        "summary": "Posts Feed",
-        "operationId": "posts_feed_feeds_posts_xml_get",
+        "summary": "Articles Feed",
+        "operationId": "articles_feed_feeds_articles_xml_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -16125,13 +16585,13 @@
         }
       }
     },
-    "/api/v1/site/feeds/posts.xml": {
+    "/api/v1/site/feeds/articles.xml": {
       "get": {
         "tags": [
           "seo"
         ],
-        "summary": "Posts Feed",
-        "operationId": "posts_feed_api_v1_site_feeds_posts_xml_get",
+        "summary": "Articles Feed",
+        "operationId": "articles_feed_api_v1_site_feeds_articles_xml_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -16786,6 +17246,141 @@
           "created_at"
         ],
         "title": "AdminUserRead"
+      },
+      "AgentMessageCollectionRead": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AgentMessageSummaryRead"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "default": 0
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit",
+            "default": 25
+          },
+          "has_more": {
+            "type": "boolean",
+            "title": "Has More",
+            "default": false
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "type": "object",
+        "title": "AgentMessageCollectionRead"
+      },
+      "AgentMessageRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "workflow_key": {
+            "type": "string",
+            "title": "Workflow Key"
+          },
+          "node_key": {
+            "type": "string",
+            "title": "Node Key"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "execution_mode": {
+            "type": "string",
+            "enum": [
+              "live",
+              "dry_run"
+            ],
+            "title": "Execution Mode",
+            "default": "live"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "run_id",
+          "workflow_key",
+          "node_key",
+          "message",
+          "created_at"
+        ],
+        "title": "AgentMessageRead"
+      },
+      "AgentMessageSummaryRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "workflow_key": {
+            "type": "string",
+            "title": "Workflow Key"
+          },
+          "node_key": {
+            "type": "string",
+            "title": "Node Key"
+          },
+          "message_preview": {
+            "type": "string",
+            "title": "Message Preview"
+          },
+          "execution_mode": {
+            "type": "string",
+            "enum": [
+              "live",
+              "dry_run"
+            ],
+            "title": "Execution Mode",
+            "default": "live"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "run_id",
+          "workflow_key",
+          "node_key",
+          "message_preview",
+          "created_at"
+        ],
+        "title": "AgentMessageSummaryRead"
       },
       "AgentModelConfigRead": {
         "properties": {
@@ -19587,6 +20182,48 @@
         },
         "type": "object",
         "title": "AgentWorkflowGraphViewport"
+      },
+      "AgentWorkflowMessageRunCreateWrite": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "maxLength": 20000,
+            "minLength": 1,
+            "title": "Message"
+          },
+          "idempotency_key": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Idempotency Key"
+          },
+          "execution_mode": {
+            "type": "string",
+            "enum": [
+              "live",
+              "dry_run"
+            ],
+            "title": "Execution Mode",
+            "default": "live"
+          },
+          "execute_immediately": {
+            "type": "boolean",
+            "title": "Execute Immediately",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "title": "AgentWorkflowMessageRunCreateWrite"
       },
       "AgentWorkflowRead": {
         "properties": {
@@ -22995,7 +23632,7 @@
           "type": {
             "type": "string",
             "title": "Type",
-            "description": "Event type: post, diary, thought, or excerpt"
+            "description": "Event type: post, note, diary, thought, or excerpt"
           },
           "title": {
             "type": "string",
@@ -24590,6 +25227,22 @@
             "title": "Category",
             "description": "Content category"
           },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "manuscript",
+                  "note"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind",
+            "description": "Post kind: manuscript or note"
+          },
           "mood": {
             "anyOf": [
               {
@@ -24690,7 +25343,7 @@
             "type": "string",
             "enum": [
               "posts",
-              "thoughts",
+              "notes",
               "excerpts"
             ],
             "title": "Content Type",
@@ -24742,6 +25395,51 @@
           "name"
         ],
         "title": "ContentCategoryRead"
+      },
+      "ContentCategoryStatRead": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Content category name"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Count",
+            "description": "Visible entries in this category"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "count"
+        ],
+        "title": "ContentCategoryStatRead"
+      },
+      "ContentCategoryStatsRead": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Total",
+            "description": "Total visible entries"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ContentCategoryStatRead"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "Visible categories with their entry counts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "items"
+        ],
+        "title": "ContentCategoryStatsRead"
       },
       "ContentCategoryUpdate": {
         "properties": {
@@ -25026,6 +25724,22 @@
             ],
             "title": "Category",
             "description": "Content category"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "manuscript",
+                  "note"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind",
+            "description": "Post kind: manuscript or note"
           },
           "read_time": {
             "anyOf": [
@@ -26111,6 +26825,22 @@
             ],
             "title": "Category",
             "description": "Content category"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "manuscript",
+                  "note"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind",
+            "description": "Post kind: manuscript or note"
           },
           "read_time": {
             "anyOf": [
@@ -31783,6 +32513,15 @@
             "title": "Category",
             "description": "Content category"
           },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "manuscript",
+              "note"
+            ],
+            "title": "Kind",
+            "description": "Whether this post is a manuscript or note"
+          },
           "mood": {
             "anyOf": [
               {
@@ -31884,6 +32623,7 @@
           "published_at",
           "created_at",
           "updated_at",
+          "kind",
           "exclude_from_rss",
           "requires_approval"
         ],
@@ -32045,6 +32785,16 @@
             "title": "Pin Order",
             "description": "Sort order among pinned items",
             "default": 0
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "manuscript",
+              "note"
+            ],
+            "title": "Kind",
+            "description": "Whether this post is a manuscript or note",
+            "default": "manuscript"
           },
           "exclude_from_rss": {
             "type": "boolean",
@@ -32267,6 +33017,22 @@
             ],
             "title": "Pin Order",
             "description": "Sort order among pinned items"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "manuscript",
+                  "note"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind",
+            "description": "Whether this post is a manuscript or note"
           },
           "exclude_from_rss": {
             "anyOf": [

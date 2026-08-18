@@ -4,6 +4,7 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { PostContentAdminReadKind } from './postContentAdminReadKind';
 
 export interface PostContentAdminRead {
   /** Unique content identifier */
@@ -28,6 +29,8 @@ export interface PostContentAdminRead {
   updated_at: string;
   /** Content category */
   category?: string | null;
+  /** Whether this post is a manuscript or note */
+  kind: PostContentAdminReadKind;
   /** Author mood (diary-specific) */
   mood?: string | null;
   /** Weather description (diary-specific) */

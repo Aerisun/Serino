@@ -13,6 +13,6 @@ export type ContentCategoryCreateContentType = typeof ContentCategoryCreateConte
 
 export const ContentCategoryCreateContentType = {
   posts: 'posts',
-  thoughts: 'thoughts',
+  notes: 'notes',
   excerpts: 'excerpts',
 } as const;

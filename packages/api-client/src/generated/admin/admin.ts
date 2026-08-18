@@ -30,6 +30,8 @@ import type {
   AdminProfileUpdate,
   AdminSessionRead,
   AdminUserRead,
+  AgentMessageCollectionRead,
+  AgentMessageRead,
   AgentModelConfigRead,
   AgentModelConfigTestRead,
   AgentModelConfigUpdate,
@@ -45,6 +47,7 @@ import type {
   AgentWorkflowDraftCreateRead,
   AgentWorkflowDraftCreateWrite,
   AgentWorkflowDraftRead,
+  AgentWorkflowMessageRunCreateWrite,
   AgentWorkflowRead,
   AgentWorkflowRunCreateRead,
   AgentWorkflowRunCreateWrite,
@@ -127,6 +130,7 @@ import type {
   FriendUpdate,
   GetDefaultContentTitleParams,
   GetMcpConfigApiV1AdminIntegrationsMcpConfigGetParams,
+  GetMessagesApiV1AdminAutomationMessagesGetParams,
   GetRunsApiV1AdminAutomationRunsGetParams,
   GetSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGetParams,
   GetWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetParams,
@@ -19218,6 +19222,96 @@ export const usePostWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPost 
       return useMutation(getPostWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostMutationOptions(options), queryClient);
     }
     /**
+ * @summary 使用留言触发工作流
+ */
+export type postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostResponse200 = {
+  data: AgentWorkflowRunCreateRead
+  status: 200
+}
+
+export type postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostResponseSuccess = (postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostResponse200) & {
+  headers: Headers;
+};
+export type postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostResponseError = (postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostResponse422) & {
+  headers: Headers;
+};
+
+export type postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostResponse = (postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostResponseSuccess | postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostResponseError)
+
+export const getPostWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostUrl = (workflowKey: string,) => {
+
+
+
+
+  return `/api/v1/admin/automation/workflows/${workflowKey}/message-runs`
+}
+
+export const postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPost = async (workflowKey: string,
+    agentWorkflowMessageRunCreateWrite: AgentWorkflowMessageRunCreateWrite, options?: RequestInit): Promise<postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostResponse> => {
+
+  return customInstance<postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostResponse>(getPostWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostUrl(workflowKey),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      agentWorkflowMessageRunCreateWrite,)
+  }
+);}
+
+
+
+
+export const getPostWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPost>>, TError,{workflowKey: string;data: BodyType<AgentWorkflowMessageRunCreateWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPost>>, TError,{workflowKey: string;data: BodyType<AgentWorkflowMessageRunCreateWrite>}, TContext> => {
+
+const mutationKey = ['postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPost>>, {workflowKey: string;data: BodyType<AgentWorkflowMessageRunCreateWrite>}> = (props) => {
+          const {workflowKey,data} = props ?? {};
+
+          return  postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPost(workflowKey,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostMutationResult = NonNullable<Awaited<ReturnType<typeof postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPost>>>
+    export type PostWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostMutationBody = BodyType<AgentWorkflowMessageRunCreateWrite>
+    export type PostWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 使用留言触发工作流
+ */
+export const usePostWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPost>>, TError,{workflowKey: string;data: BodyType<AgentWorkflowMessageRunCreateWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof postWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPost>>,
+        TError,
+        {workflowKey: string;data: BodyType<AgentWorkflowMessageRunCreateWrite>},
+        TContext
+      > => {
+      return useMutation(getPostWorkflowMessageRunApiV1AdminAutomationWorkflowsWorkflowKeyMessageRunsPostMutationOptions(options), queryClient);
+    }
+    /**
  * @summary 测试运行工作流
  */
 export type postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostResponse200 = {
@@ -19532,6 +19626,247 @@ export function useGetRunsApiV1AdminAutomationRunsGet<TData = Awaited<ReturnType
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getGetRunsApiV1AdminAutomationRunsGetQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 获取 Agent 留言列表
+ */
+export type getMessagesApiV1AdminAutomationMessagesGetResponse200 = {
+  data: AgentMessageCollectionRead
+  status: 200
+}
+
+export type getMessagesApiV1AdminAutomationMessagesGetResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type getMessagesApiV1AdminAutomationMessagesGetResponseSuccess = (getMessagesApiV1AdminAutomationMessagesGetResponse200) & {
+  headers: Headers;
+};
+export type getMessagesApiV1AdminAutomationMessagesGetResponseError = (getMessagesApiV1AdminAutomationMessagesGetResponse422) & {
+  headers: Headers;
+};
+
+export type getMessagesApiV1AdminAutomationMessagesGetResponse = (getMessagesApiV1AdminAutomationMessagesGetResponseSuccess | getMessagesApiV1AdminAutomationMessagesGetResponseError)
+
+export const getGetMessagesApiV1AdminAutomationMessagesGetUrl = (params?: GetMessagesApiV1AdminAutomationMessagesGetParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/admin/automation/messages?${stringifiedParams}` : `/api/v1/admin/automation/messages`
+}
+
+export const getMessagesApiV1AdminAutomationMessagesGet = async (params?: GetMessagesApiV1AdminAutomationMessagesGetParams, options?: RequestInit): Promise<getMessagesApiV1AdminAutomationMessagesGetResponse> => {
+
+  return customInstance<getMessagesApiV1AdminAutomationMessagesGetResponse>(getGetMessagesApiV1AdminAutomationMessagesGetUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMessagesApiV1AdminAutomationMessagesGetQueryKey = (params?: GetMessagesApiV1AdminAutomationMessagesGetParams,) => {
+    return [
+    `/api/v1/admin/automation/messages`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetMessagesApiV1AdminAutomationMessagesGetQueryOptions = <TData = Awaited<ReturnType<typeof getMessagesApiV1AdminAutomationMessagesGet>>, TError = ErrorType<HTTPValidationError>>(params?: GetMessagesApiV1AdminAutomationMessagesGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMessagesApiV1AdminAutomationMessagesGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMessagesApiV1AdminAutomationMessagesGetQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMessagesApiV1AdminAutomationMessagesGet>>> = ({ signal }) => getMessagesApiV1AdminAutomationMessagesGet(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMessagesApiV1AdminAutomationMessagesGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetMessagesApiV1AdminAutomationMessagesGetQueryResult = NonNullable<Awaited<ReturnType<typeof getMessagesApiV1AdminAutomationMessagesGet>>>
+export type GetMessagesApiV1AdminAutomationMessagesGetQueryError = ErrorType<HTTPValidationError>
+
+
+export function useGetMessagesApiV1AdminAutomationMessagesGet<TData = Awaited<ReturnType<typeof getMessagesApiV1AdminAutomationMessagesGet>>, TError = ErrorType<HTTPValidationError>>(
+ params: undefined |  GetMessagesApiV1AdminAutomationMessagesGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMessagesApiV1AdminAutomationMessagesGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMessagesApiV1AdminAutomationMessagesGet>>,
+          TError,
+          Awaited<ReturnType<typeof getMessagesApiV1AdminAutomationMessagesGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMessagesApiV1AdminAutomationMessagesGet<TData = Awaited<ReturnType<typeof getMessagesApiV1AdminAutomationMessagesGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: GetMessagesApiV1AdminAutomationMessagesGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMessagesApiV1AdminAutomationMessagesGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMessagesApiV1AdminAutomationMessagesGet>>,
+          TError,
+          Awaited<ReturnType<typeof getMessagesApiV1AdminAutomationMessagesGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMessagesApiV1AdminAutomationMessagesGet<TData = Awaited<ReturnType<typeof getMessagesApiV1AdminAutomationMessagesGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: GetMessagesApiV1AdminAutomationMessagesGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMessagesApiV1AdminAutomationMessagesGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取 Agent 留言列表
+ */
+
+export function useGetMessagesApiV1AdminAutomationMessagesGet<TData = Awaited<ReturnType<typeof getMessagesApiV1AdminAutomationMessagesGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: GetMessagesApiV1AdminAutomationMessagesGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMessagesApiV1AdminAutomationMessagesGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetMessagesApiV1AdminAutomationMessagesGetQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 获取 Agent 留言详情
+ */
+export type getMessageApiV1AdminAutomationMessagesMessageIdGetResponse200 = {
+  data: AgentMessageRead
+  status: 200
+}
+
+export type getMessageApiV1AdminAutomationMessagesMessageIdGetResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type getMessageApiV1AdminAutomationMessagesMessageIdGetResponseSuccess = (getMessageApiV1AdminAutomationMessagesMessageIdGetResponse200) & {
+  headers: Headers;
+};
+export type getMessageApiV1AdminAutomationMessagesMessageIdGetResponseError = (getMessageApiV1AdminAutomationMessagesMessageIdGetResponse422) & {
+  headers: Headers;
+};
+
+export type getMessageApiV1AdminAutomationMessagesMessageIdGetResponse = (getMessageApiV1AdminAutomationMessagesMessageIdGetResponseSuccess | getMessageApiV1AdminAutomationMessagesMessageIdGetResponseError)
+
+export const getGetMessageApiV1AdminAutomationMessagesMessageIdGetUrl = (messageId: string,) => {
+
+
+
+
+  return `/api/v1/admin/automation/messages/${messageId}`
+}
+
+export const getMessageApiV1AdminAutomationMessagesMessageIdGet = async (messageId: string, options?: RequestInit): Promise<getMessageApiV1AdminAutomationMessagesMessageIdGetResponse> => {
+
+  return customInstance<getMessageApiV1AdminAutomationMessagesMessageIdGetResponse>(getGetMessageApiV1AdminAutomationMessagesMessageIdGetUrl(messageId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMessageApiV1AdminAutomationMessagesMessageIdGetQueryKey = (messageId: string,) => {
+    return [
+    `/api/v1/admin/automation/messages/${messageId}`
+    ] as const;
+    }
+
+
+export const getGetMessageApiV1AdminAutomationMessagesMessageIdGetQueryOptions = <TData = Awaited<ReturnType<typeof getMessageApiV1AdminAutomationMessagesMessageIdGet>>, TError = ErrorType<HTTPValidationError>>(messageId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMessageApiV1AdminAutomationMessagesMessageIdGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMessageApiV1AdminAutomationMessagesMessageIdGetQueryKey(messageId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMessageApiV1AdminAutomationMessagesMessageIdGet>>> = ({ signal }) => getMessageApiV1AdminAutomationMessagesMessageIdGet(messageId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(messageId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMessageApiV1AdminAutomationMessagesMessageIdGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetMessageApiV1AdminAutomationMessagesMessageIdGetQueryResult = NonNullable<Awaited<ReturnType<typeof getMessageApiV1AdminAutomationMessagesMessageIdGet>>>
+export type GetMessageApiV1AdminAutomationMessagesMessageIdGetQueryError = ErrorType<HTTPValidationError>
+
+
+export function useGetMessageApiV1AdminAutomationMessagesMessageIdGet<TData = Awaited<ReturnType<typeof getMessageApiV1AdminAutomationMessagesMessageIdGet>>, TError = ErrorType<HTTPValidationError>>(
+ messageId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMessageApiV1AdminAutomationMessagesMessageIdGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMessageApiV1AdminAutomationMessagesMessageIdGet>>,
+          TError,
+          Awaited<ReturnType<typeof getMessageApiV1AdminAutomationMessagesMessageIdGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMessageApiV1AdminAutomationMessagesMessageIdGet<TData = Awaited<ReturnType<typeof getMessageApiV1AdminAutomationMessagesMessageIdGet>>, TError = ErrorType<HTTPValidationError>>(
+ messageId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMessageApiV1AdminAutomationMessagesMessageIdGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMessageApiV1AdminAutomationMessagesMessageIdGet>>,
+          TError,
+          Awaited<ReturnType<typeof getMessageApiV1AdminAutomationMessagesMessageIdGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMessageApiV1AdminAutomationMessagesMessageIdGet<TData = Awaited<ReturnType<typeof getMessageApiV1AdminAutomationMessagesMessageIdGet>>, TError = ErrorType<HTTPValidationError>>(
+ messageId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMessageApiV1AdminAutomationMessagesMessageIdGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取 Agent 留言详情
+ */
+
+export function useGetMessageApiV1AdminAutomationMessagesMessageIdGet<TData = Awaited<ReturnType<typeof getMessageApiV1AdminAutomationMessagesMessageIdGet>>, TError = ErrorType<HTTPValidationError>>(
+ messageId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMessageApiV1AdminAutomationMessagesMessageIdGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetMessageApiV1AdminAutomationMessagesMessageIdGetQueryOptions(messageId,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

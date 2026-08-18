@@ -5,15 +5,13 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type ReadExcerptsApiV1SiteExcerptsGetParams = {
+export type GetMessagesApiV1AdminAutomationMessagesGetParams = {
+workflow_key?: string | null;
+execution_mode?: 'live' | 'dry_run' | null;
+cursor?: string | null;
 /**
  * @minimum 1
  * @maximum 100
  */
 limit?: number;
-/**
- * @minimum 0
- */
-offset?: number;
-category?: string | null;
 };

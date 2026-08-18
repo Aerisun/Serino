@@ -28,6 +28,8 @@ export interface ContentAdminRead {
   updated_at: string;
   /** Content category */
   category?: string | null;
+  /** Post kind: manuscript or note */
+  kind?: 'manuscript' | 'note' | null;
   /** Author mood (diary-specific) */
   mood?: string | null;
   /** Weather description (diary-specific) */

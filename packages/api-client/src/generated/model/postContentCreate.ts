@@ -4,6 +4,7 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { PostContentCreateKind } from './postContentCreateKind';
 import type { PostContentCreateVisibility } from './postContentCreateVisibility';
 
 export interface PostContentCreate {
@@ -39,6 +40,8 @@ export interface PostContentCreate {
   is_pinned?: boolean;
   /** Sort order among pinned items */
   pin_order?: number;
+  /** Whether this post is a manuscript or note */
+  kind?: PostContentCreateKind;
   /** Whether this public post is excluded from RSS */
   exclude_from_rss?: boolean;
   /** Whether viewing this public post requires approval */
