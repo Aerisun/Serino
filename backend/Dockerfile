@@ -41,7 +41,8 @@ RUN uv sync --frozen --no-dev --no-editable
 
 RUN groupadd -r aerisun && useradd -m -d /home/aerisun -r -g aerisun -u 1001 aerisun \
     && mkdir -p /home/aerisun/.cache/uv \
-    && chown -R aerisun:aerisun /app /home/aerisun
+    && mkdir -p /srv/aerisun/caddy-routes \
+    && chown -R aerisun:aerisun /app /home/aerisun /srv/aerisun/caddy-routes
 
 USER aerisun
 

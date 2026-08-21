@@ -27,6 +27,7 @@ def _build_admin_router() -> APIRouter:
         PostContentCreate,
         PostContentUpdate,
     )
+    from .service_forwards import router as service_forwards_router
     from .site_config import router as site_config_router
     from .social import router as social_router
     from .subscriptions import router as subscriptions_router
@@ -71,6 +72,7 @@ def _build_admin_router() -> APIRouter:
     admin_router.include_router(social_router)
     admin_router.include_router(moderation_router)
     admin_router.include_router(assets_router)
+    admin_router.include_router(service_forwards_router)
     admin_router.include_router(diagnostics_router)
     admin_router.include_router(system_router)
     admin_router.include_router(integrations_router)

@@ -2047,6 +2047,43 @@ def test_caddy_routes_serino_before_local_extensions_and_returns_real_404():
     assert "mkdir -p /etc/caddy/routes.d" in web_dockerfile_text
 
 
+def test_service_forward_runtime_uses_private_caddy_admin_reload():
+    development_compose_text = read_project_file("docker-compose.yml")
+    release_compose_text = read_project_file("docker-compose.release.yml")
+    web_dockerfile_text = read_project_file("Dockerfile.caddy")
+    common_text = read_project_file("installer/lib/common.sh")
+    service_text = read_project_file("backend/src/aerisun/domain/service_forwards/service.py")
+
+    release_api_block = release_compose_text.split("  api:\n", 1)[1].split("\n  waline:\n", 1)[0]
+    release_caddy_block = release_compose_text.split("  caddy:\n", 1)[1]
+    assert "AERISUN_CADDY_ROUTES_DIR: /srv/aerisun/caddy-routes" in release_api_block
+    assert "AERISUN_CADDY_ADMIN_URL: http://127.0.0.1:2019" in release_api_block
+    assert "${SERINO_CADDY_ROUTES_DIR:-/etc/serino/routes.d}:/srv/aerisun/caddy-routes" in release_api_block
+    assert "${SERINO_CADDY_ROUTES_DIR:-/etc/serino/routes.d}:/etc/caddy/routes.d:ro" in release_caddy_block
+    assert "2019:2019" not in release_compose_text
+
+    development_api_block = development_compose_text.split("  api:\n", 1)[1].split("\n  waline:\n", 1)[0]
+    development_caddy_block = development_compose_text.split("  caddy:\n", 1)[1]
+    assert "AERISUN_CADDY_ADMIN_URL: http://caddy:2019" in development_api_block
+    assert "caddy_routes:/srv/aerisun/caddy-routes" in development_api_block
+    assert "source: caddy_routes" in development_caddy_block
+    assert "target: /etc/caddy/routes.d" in development_caddy_block
+    assert "nocopy: true" in development_caddy_block
+    assert "CADDY_ADMIN: 0.0.0.0:2019" in development_caddy_block
+    assert "2019:2019" not in development_compose_text
+
+    assert "COPY scripts/caddy-entrypoint.sh" not in web_dockerfile_text
+    assert 'admin_url.rstrip("/") + "/load"' in service_text
+    assert 'content="import /etc/caddy/Caddyfile\\n"' in service_text
+    assert '"Content-Type": "text/caddyfile"' in service_text
+    assert '"Cache-Control": "must-revalidate"' in service_text
+    assert "mkdir -p /srv/aerisun/caddy-routes" in read_project_file("backend/Dockerfile")
+    assert (
+        'run_as_root install -d -o root -g "${SERINO_SERVICE_GROUP}" -m 0770 "${SERINO_CADDY_ROUTES_DIR}"'
+        in common_text
+    )
+
+
 def test_local_caddy_route_library_validates_and_renders_routes(tmp_path: Path):
     routes_lib = PROJECT_ROOT / "installer/lib/routes.sh"
     assert routes_lib.exists()

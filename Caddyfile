@@ -170,7 +170,7 @@ http://127.0.0.1:8081 {
 			file_server
 		}
 
-		# 本机扩展路由由 sercli 管理，普通升级不会覆盖。
+		# 扩展路由由 Serino 服务转发与 sercli 共同管理，普通升级不会覆盖。
 		import routes.d/*.caddy
 
 		handle {

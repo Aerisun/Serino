@@ -11,6 +11,7 @@ from aerisun.domain.exceptions import (
     PayloadTooLarge,
     PermissionDenied,
     ResourceNotFound,
+    ServiceUnavailable,
     StateConflict,
     ValidationError,
 )
@@ -22,6 +23,7 @@ _STATUS_MAP: dict[type[DomainError], int] = {
     ValidationError: 422,
     StateConflict: 409,
     PayloadTooLarge: 413,
+    ServiceUnavailable: 503,
 }
 
 

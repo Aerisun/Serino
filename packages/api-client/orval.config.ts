@@ -16,6 +16,7 @@ export default defineConfig({
           "admin-social",
           "admin-moderation",
           "admin-assets",
+          "admin-service-forwards",
           "admin-system",
           "admin-network",
           "admin-integrations",

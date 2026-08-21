@@ -86,6 +86,14 @@ vi.mock("@/pages/more/objectStorageApi", () => ({
   retryObjectStorageSyncRecord: (...args: unknown[]) => api.retrySyncRecord(...args),
 }));
 
+vi.mock("@/pages/assets/serviceForwardApi", () => ({
+  listServiceForwards: () => Promise.resolve([]),
+  createServiceForward: vi.fn(),
+  updateServiceForward: vi.fn(),
+  deleteServiceForward: vi.fn(),
+  testServiceForward: vi.fn(),
+}));
+
 vi.mock("@/lib/managedAssetUpload", () => ({
   uploadManagedAsset: vi.fn(),
 }));
@@ -168,6 +176,39 @@ afterEach(() => {
 });
 
 describe("AssetsPage public slug", () => {
+  it("opens service forwarding from a deep link and replaces upload with add", () => {
+    renderAssetsPage("/assets?view=service_forward");
+
+    expect(screen.getByRole("button", { name: "服务转发" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "新增" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /上传/ })).toBeNull();
+    expect(screen.getByText("通过当前域名访问本机或 Tailscale 网络内的服务")).toBeTruthy();
+    expect(api.listAssetsHook.mock.calls[0]?.[1]?.query?.enabled).toBe(false);
+  });
+
+  it("does not move the document vertically when revealing the selected mobile tab", () => {
+    const originalScrollIntoView = HTMLElement.prototype.scrollIntoView;
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
+      configurable: true,
+      value: scrollIntoView,
+    });
+
+    try {
+      renderAssetsPage("/assets?view=service_forward");
+      expect(scrollIntoView).not.toHaveBeenCalled();
+    } finally {
+      if (originalScrollIntoView) {
+        Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
+          configurable: true,
+          value: originalScrollIntoView,
+        });
+      } else {
+        delete (HTMLElement.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+      }
+    }
+  });
+
   it("opens the OSS sync view from a diagnostic deep link", () => {
     renderAssetsPage("/assets?view=oss_sync");
 

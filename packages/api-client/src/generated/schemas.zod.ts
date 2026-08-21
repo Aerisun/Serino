@@ -5152,6 +5152,118 @@ export const DeleteAssetEndpointApiV1AdminAssetsAssetIdDeleteParams = zod.object
 
 
 /**
+ * @summary 获取服务转发列表
+ */
+export const listServiceForwardsEndpointApiV1AdminServiceForwardsGetResponseStatusDefault = `unchecked`;
+
+export const ListServiceForwardsEndpointApiV1AdminServiceForwardsGetResponseItem = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "path": zod.string(),
+  "source": zod.enum(['local', 'tailscale', 'custom']),
+  "target_url": zod.string(),
+  "public_url": zod.string(),
+  "status": zod.enum(['unchecked', 'reachable', 'unreachable']).default(listServiceForwardsEndpointApiV1AdminServiceForwardsGetResponseStatusDefault),
+  "checked_at": zod.union([zod.string().datetime({"offset":true}),zod.null()]).optional(),
+  "status_message": zod.union([zod.string(),zod.null()]).optional()
+})
+export const ListServiceForwardsEndpointApiV1AdminServiceForwardsGetResponse = zod.array(ListServiceForwardsEndpointApiV1AdminServiceForwardsGetResponseItem)
+
+
+/**
+ * @summary 新增服务转发
+ */
+export const createServiceForwardEndpointApiV1AdminServiceForwardsPostBodyNameMax = 80;
+
+export const createServiceForwardEndpointApiV1AdminServiceForwardsPostBodySlugRegExp = new RegExp('^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$');
+export const createServiceForwardEndpointApiV1AdminServiceForwardsPostBodyPortOneMax = 65535;
+
+export const createServiceForwardEndpointApiV1AdminServiceForwardsPostBodyTargetUrlOneMax = 2048;
+
+
+
+export const CreateServiceForwardEndpointApiV1AdminServiceForwardsPostBody = zod.object({
+  "name": zod.string().min(1).max(createServiceForwardEndpointApiV1AdminServiceForwardsPostBodyNameMax),
+  "slug": zod.string().regex(createServiceForwardEndpointApiV1AdminServiceForwardsPostBodySlugRegExp),
+  "source": zod.enum(['local', 'tailscale']),
+  "port": zod.union([zod.number().min(1).max(createServiceForwardEndpointApiV1AdminServiceForwardsPostBodyPortOneMax),zod.null()]).optional(),
+  "target_url": zod.union([zod.string().max(createServiceForwardEndpointApiV1AdminServiceForwardsPostBodyTargetUrlOneMax),zod.null()]).optional()
+})
+
+
+/**
+ * @summary 更新服务转发
+ */
+export const UpdateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutParams = zod.object({
+  "route_id": zod.string()
+})
+
+export const updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutBodyNameMax = 80;
+
+export const updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutBodySlugRegExp = new RegExp('^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$');
+export const updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutBodyPortOneMax = 65535;
+
+export const updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutBodyTargetUrlOneMax = 2048;
+
+
+
+export const UpdateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutBody = zod.object({
+  "name": zod.string().min(1).max(updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutBodyNameMax),
+  "slug": zod.string().regex(updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutBodySlugRegExp),
+  "source": zod.enum(['local', 'tailscale']),
+  "port": zod.union([zod.number().min(1).max(updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutBodyPortOneMax),zod.null()]).optional(),
+  "target_url": zod.union([zod.string().max(updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutBodyTargetUrlOneMax),zod.null()]).optional()
+})
+
+export const updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutResponseStatusDefault = `unchecked`;
+
+export const UpdateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "path": zod.string(),
+  "source": zod.enum(['local', 'tailscale', 'custom']),
+  "target_url": zod.string(),
+  "public_url": zod.string(),
+  "status": zod.enum(['unchecked', 'reachable', 'unreachable']).default(updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutResponseStatusDefault),
+  "checked_at": zod.union([zod.string().datetime({"offset":true}),zod.null()]).optional(),
+  "status_message": zod.union([zod.string(),zod.null()]).optional()
+})
+
+
+/**
+ * @summary 删除服务转发
+ */
+export const DeleteServiceForwardEndpointApiV1AdminServiceForwardsRouteIdDeleteParams = zod.object({
+  "route_id": zod.string()
+})
+
+
+/**
+ * @summary 检测服务转发目标
+ */
+export const TestServiceForwardEndpointApiV1AdminServiceForwardsRouteIdTestPostParams = zod.object({
+  "route_id": zod.string()
+})
+
+export const testServiceForwardEndpointApiV1AdminServiceForwardsRouteIdTestPostResponseStatusDefault = `unchecked`;
+
+export const TestServiceForwardEndpointApiV1AdminServiceForwardsRouteIdTestPostResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "path": zod.string(),
+  "source": zod.enum(['local', 'tailscale', 'custom']),
+  "target_url": zod.string(),
+  "public_url": zod.string(),
+  "status": zod.enum(['unchecked', 'reachable', 'unreachable']).default(testServiceForwardEndpointApiV1AdminServiceForwardsRouteIdTestPostResponseStatusDefault),
+  "checked_at": zod.union([zod.string().datetime({"offset":true}),zod.null()]).optional(),
+  "status_message": zod.union([zod.string(),zod.null()]).optional()
+})
+
+
+/**
  * @summary Get System Diagnostics State
  */
 export const getSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGetQueryIncludeItemsDefault = true;

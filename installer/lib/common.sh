@@ -564,7 +564,7 @@ ensure_system_layout() {
 
   run_as_root install -d -o root -g root -m 0755 "${AERISUN_APP_ROOT}"
   run_as_root install -d -o root -g "${SERINO_SERVICE_GROUP}" -m 0750 "${SERINO_CONFIG_ROOT}"
-  run_as_root install -d -o root -g root -m 0755 "${SERINO_CADDY_ROUTES_DIR}"
+  run_as_root install -d -o root -g "${SERINO_SERVICE_GROUP}" -m 0770 "${SERINO_CADDY_ROUTES_DIR}"
   run_as_root install -d -o "${SERINO_SERVICE_USER}" -g "${SERINO_SERVICE_GROUP}" -m 0750 "${AERISUN_DATA_DIR}"
   run_as_root install -d -o root -g root -m 0755 "${SERINO_LOG_ROOT}"
   run_as_root install -d -o root -g root -m 0700 "${AERISUN_BACKUP_ROOT}"

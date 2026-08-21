@@ -14,6 +14,8 @@ services:
       AERISUN_MEDIA_DIR: ${AERISUN_MEDIA_DIR:-/srv/aerisun/store/media}
       AERISUN_SECRETS_DIR: ${AERISUN_SECRETS_DIR:-/srv/aerisun/store/secrets}
       AERISUN_BACKUP_SYNC_TMP_DIR: ${AERISUN_BACKUP_SYNC_TMP_DIR:-/srv/aerisun/store/.backup-sync-tmp}
+      AERISUN_CADDY_ROUTES_DIR: /srv/aerisun/caddy-routes
+      AERISUN_CADDY_ADMIN_URL: http://caddy:2019
       AERISUN_API_BASE_PATH: ${AERISUN_API_BASE_PATH:-/api}
       AERISUN_ADMIN_BASE_PATH: ${AERISUN_ADMIN_BASE_PATH:-/admin/}
       AERISUN_WALINE_BASE_PATH: ${AERISUN_WALINE_BASE_PATH:-/waline}
@@ -29,6 +31,7 @@ services:
       WALINE_JWT_TOKEN: ${WALINE_JWT_TOKEN}
     volumes:
       - ${AERISUN_STORE_DIR:-/srv/aerisun/store}:/srv/aerisun/store
+      - caddy_routes:/srv/aerisun/caddy-routes
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
@@ -110,12 +113,19 @@ services:
     volumes:
       - caddy_data:/data
       - caddy_config:/config
+      - type: volume
+        source: caddy_routes
+        target: /etc/caddy/routes.d
+        read_only: true
+        volume:
+          nocopy: true
     environment:
       AERISUN_DOMAIN: ${AERISUN_DOMAIN}
       AERISUN_PORT: ${AERISUN_PORT:-8000}
       AERISUN_API_BASE_PATH: ${AERISUN_API_BASE_PATH:-/api}
       AERISUN_ADMIN_BASE_PATH: ${AERISUN_ADMIN_BASE_PATH:-/admin/}
       AERISUN_WALINE_BASE_PATH: ${AERISUN_WALINE_BASE_PATH:-/waline}
+      CADDY_ADMIN: 0.0.0.0:2019
       AERISUN_FRONTEND_DIST_DIR: ${AERISUN_FRONTEND_DIST_DIR:-/srv/aerisun/frontend}
       AERISUN_ADMIN_DIST_DIR: ${AERISUN_ADMIN_DIST_DIR:-/srv/aerisun/admin}
     depends_on:
@@ -132,3 +142,4 @@ services:
 volumes:
   caddy_data:
   caddy_config:
+  caddy_routes:

@@ -39,3 +39,7 @@ class StateConflict(DomainError):
 
 class PayloadTooLarge(DomainError):
     """The uploaded payload exceeds the allowed size. → HTTP 413"""
+
+
+class ServiceUnavailable(DomainError):
+    """A required runtime service is temporarily unavailable. → HTTP 503"""

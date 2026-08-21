@@ -19,7 +19,7 @@ interface AdminSegmentedFilterProps {
   className?: string;
 }
 
-function scrollActiveItemIntoHorizontalView(
+export function scrollActiveItemIntoHorizontalView(
   node: HTMLDivElement,
   activeItem: HTMLElement,
   behavior: ScrollBehavior,

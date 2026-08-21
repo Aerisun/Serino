@@ -79,6 +79,8 @@ class Settings(BaseSettings):
     install_base_url: str = ""
     update_trusted_public_key_b64: str = ""
     backup_sync_tmp_dir: Path = PROJECT_ROOT / ".store" / ".backup-sync-tmp"
+    caddy_routes_dir: Path = PROJECT_ROOT / ".store" / "caddy-routes"
+    caddy_admin_url: str = ""
     backup_sync_default_site_slug: str = "aerisun"
     backup_sync_default_interval_minutes: int = 1440
     backup_sync_default_max_retention_count: int = 80
@@ -187,6 +189,7 @@ class Settings(BaseSettings):
         self.waline_db_path = under_store(self.waline_db_path, "waline.db")
         self.workflow_db_path = under_store(self.workflow_db_path, "langgraph.db")
         self.backup_sync_tmp_dir = under_store(self.backup_sync_tmp_dir, ".backup-sync-tmp")
+        self.caddy_routes_dir = under_store(self.caddy_routes_dir, "caddy-routes")
         return self
 
     @property
@@ -205,6 +208,7 @@ class Settings(BaseSettings):
         self.codex_home.expanduser().resolve().mkdir(mode=0o700, parents=True, exist_ok=True)
         self.codex_workspace_dir.expanduser().resolve().mkdir(mode=0o700, parents=True, exist_ok=True)
         self.backup_sync_tmp_dir.expanduser().resolve().mkdir(parents=True, exist_ok=True)
+        self.caddy_routes_dir.expanduser().resolve().mkdir(parents=True, exist_ok=True)
         self.db_path.expanduser().resolve().parent.mkdir(parents=True, exist_ok=True)
         self.waline_db_path.expanduser().resolve().parent.mkdir(parents=True, exist_ok=True)
         self.workflow_db_path.expanduser().resolve().parent.mkdir(parents=True, exist_ok=True)

@@ -212,6 +212,8 @@ import type {
   ResumeBasicsAdminRead,
   ResumeBasicsCreate,
   ResumeBasicsUpdate,
+  ServiceForwardRead,
+  ServiceForwardWrite,
   SiteAdminEmailIdentityBindRequest,
   SiteAdminIdentityAdminRead,
   SiteAuthConfigAdminRead,
@@ -12409,6 +12411,471 @@ export const useDeleteAssetEndpointApiV1AdminAssetsAssetIdDelete = <TError = Err
         TContext
       > => {
       return useMutation(getDeleteAssetEndpointApiV1AdminAssetsAssetIdDeleteMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 获取服务转发列表
+ */
+export type listServiceForwardsEndpointApiV1AdminServiceForwardsGetResponse200 = {
+  data: ServiceForwardRead[]
+  status: 200
+}
+
+export type listServiceForwardsEndpointApiV1AdminServiceForwardsGetResponseSuccess = (listServiceForwardsEndpointApiV1AdminServiceForwardsGetResponse200) & {
+  headers: Headers;
+};
+;
+
+export type listServiceForwardsEndpointApiV1AdminServiceForwardsGetResponse = (listServiceForwardsEndpointApiV1AdminServiceForwardsGetResponseSuccess)
+
+export const getListServiceForwardsEndpointApiV1AdminServiceForwardsGetUrl = () => {
+
+
+
+
+  return `/api/v1/admin/service-forwards`
+}
+
+export const listServiceForwardsEndpointApiV1AdminServiceForwardsGet = async ( options?: RequestInit): Promise<listServiceForwardsEndpointApiV1AdminServiceForwardsGetResponse> => {
+
+  return customInstance<listServiceForwardsEndpointApiV1AdminServiceForwardsGetResponse>(getListServiceForwardsEndpointApiV1AdminServiceForwardsGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListServiceForwardsEndpointApiV1AdminServiceForwardsGetQueryKey = () => {
+    return [
+    `/api/v1/admin/service-forwards`
+    ] as const;
+    }
+
+
+export const getListServiceForwardsEndpointApiV1AdminServiceForwardsGetQueryOptions = <TData = Awaited<ReturnType<typeof listServiceForwardsEndpointApiV1AdminServiceForwardsGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listServiceForwardsEndpointApiV1AdminServiceForwardsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListServiceForwardsEndpointApiV1AdminServiceForwardsGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listServiceForwardsEndpointApiV1AdminServiceForwardsGet>>> = ({ signal }) => listServiceForwardsEndpointApiV1AdminServiceForwardsGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listServiceForwardsEndpointApiV1AdminServiceForwardsGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListServiceForwardsEndpointApiV1AdminServiceForwardsGetQueryResult = NonNullable<Awaited<ReturnType<typeof listServiceForwardsEndpointApiV1AdminServiceForwardsGet>>>
+export type ListServiceForwardsEndpointApiV1AdminServiceForwardsGetQueryError = ErrorType<unknown>
+
+
+export function useListServiceForwardsEndpointApiV1AdminServiceForwardsGet<TData = Awaited<ReturnType<typeof listServiceForwardsEndpointApiV1AdminServiceForwardsGet>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listServiceForwardsEndpointApiV1AdminServiceForwardsGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listServiceForwardsEndpointApiV1AdminServiceForwardsGet>>,
+          TError,
+          Awaited<ReturnType<typeof listServiceForwardsEndpointApiV1AdminServiceForwardsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListServiceForwardsEndpointApiV1AdminServiceForwardsGet<TData = Awaited<ReturnType<typeof listServiceForwardsEndpointApiV1AdminServiceForwardsGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listServiceForwardsEndpointApiV1AdminServiceForwardsGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listServiceForwardsEndpointApiV1AdminServiceForwardsGet>>,
+          TError,
+          Awaited<ReturnType<typeof listServiceForwardsEndpointApiV1AdminServiceForwardsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListServiceForwardsEndpointApiV1AdminServiceForwardsGet<TData = Awaited<ReturnType<typeof listServiceForwardsEndpointApiV1AdminServiceForwardsGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listServiceForwardsEndpointApiV1AdminServiceForwardsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取服务转发列表
+ */
+
+export function useListServiceForwardsEndpointApiV1AdminServiceForwardsGet<TData = Awaited<ReturnType<typeof listServiceForwardsEndpointApiV1AdminServiceForwardsGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listServiceForwardsEndpointApiV1AdminServiceForwardsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListServiceForwardsEndpointApiV1AdminServiceForwardsGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 新增服务转发
+ */
+export type createServiceForwardEndpointApiV1AdminServiceForwardsPostResponse201 = {
+  data: ServiceForwardRead
+  status: 201
+}
+
+export type createServiceForwardEndpointApiV1AdminServiceForwardsPostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type createServiceForwardEndpointApiV1AdminServiceForwardsPostResponseSuccess = (createServiceForwardEndpointApiV1AdminServiceForwardsPostResponse201) & {
+  headers: Headers;
+};
+export type createServiceForwardEndpointApiV1AdminServiceForwardsPostResponseError = (createServiceForwardEndpointApiV1AdminServiceForwardsPostResponse422) & {
+  headers: Headers;
+};
+
+export type createServiceForwardEndpointApiV1AdminServiceForwardsPostResponse = (createServiceForwardEndpointApiV1AdminServiceForwardsPostResponseSuccess | createServiceForwardEndpointApiV1AdminServiceForwardsPostResponseError)
+
+export const getCreateServiceForwardEndpointApiV1AdminServiceForwardsPostUrl = () => {
+
+
+
+
+  return `/api/v1/admin/service-forwards`
+}
+
+export const createServiceForwardEndpointApiV1AdminServiceForwardsPost = async (serviceForwardWrite: ServiceForwardWrite, options?: RequestInit): Promise<createServiceForwardEndpointApiV1AdminServiceForwardsPostResponse> => {
+
+  return customInstance<createServiceForwardEndpointApiV1AdminServiceForwardsPostResponse>(getCreateServiceForwardEndpointApiV1AdminServiceForwardsPostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      serviceForwardWrite,)
+  }
+);}
+
+
+
+
+export const getCreateServiceForwardEndpointApiV1AdminServiceForwardsPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createServiceForwardEndpointApiV1AdminServiceForwardsPost>>, TError,{data: BodyType<ServiceForwardWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof createServiceForwardEndpointApiV1AdminServiceForwardsPost>>, TError,{data: BodyType<ServiceForwardWrite>}, TContext> => {
+
+const mutationKey = ['createServiceForwardEndpointApiV1AdminServiceForwardsPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createServiceForwardEndpointApiV1AdminServiceForwardsPost>>, {data: BodyType<ServiceForwardWrite>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createServiceForwardEndpointApiV1AdminServiceForwardsPost(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateServiceForwardEndpointApiV1AdminServiceForwardsPostMutationResult = NonNullable<Awaited<ReturnType<typeof createServiceForwardEndpointApiV1AdminServiceForwardsPost>>>
+    export type CreateServiceForwardEndpointApiV1AdminServiceForwardsPostMutationBody = BodyType<ServiceForwardWrite>
+    export type CreateServiceForwardEndpointApiV1AdminServiceForwardsPostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 新增服务转发
+ */
+export const useCreateServiceForwardEndpointApiV1AdminServiceForwardsPost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createServiceForwardEndpointApiV1AdminServiceForwardsPost>>, TError,{data: BodyType<ServiceForwardWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createServiceForwardEndpointApiV1AdminServiceForwardsPost>>,
+        TError,
+        {data: BodyType<ServiceForwardWrite>},
+        TContext
+      > => {
+      return useMutation(getCreateServiceForwardEndpointApiV1AdminServiceForwardsPostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 更新服务转发
+ */
+export type updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutResponse200 = {
+  data: ServiceForwardRead
+  status: 200
+}
+
+export type updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutResponseSuccess = (updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutResponse200) & {
+  headers: Headers;
+};
+export type updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutResponseError = (updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutResponse422) & {
+  headers: Headers;
+};
+
+export type updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutResponse = (updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutResponseSuccess | updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutResponseError)
+
+export const getUpdateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutUrl = (routeId: string,) => {
+
+
+
+
+  return `/api/v1/admin/service-forwards/${routeId}`
+}
+
+export const updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPut = async (routeId: string,
+    serviceForwardWrite: ServiceForwardWrite, options?: RequestInit): Promise<updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutResponse> => {
+
+  return customInstance<updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutResponse>(getUpdateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutUrl(routeId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      serviceForwardWrite,)
+  }
+);}
+
+
+
+
+export const getUpdateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPut>>, TError,{routeId: string;data: BodyType<ServiceForwardWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPut>>, TError,{routeId: string;data: BodyType<ServiceForwardWrite>}, TContext> => {
+
+const mutationKey = ['updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPut'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPut>>, {routeId: string;data: BodyType<ServiceForwardWrite>}> = (props) => {
+          const {routeId,data} = props ?? {};
+
+          return  updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPut(routeId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutMutationResult = NonNullable<Awaited<ReturnType<typeof updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPut>>>
+    export type UpdateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutMutationBody = BodyType<ServiceForwardWrite>
+    export type UpdateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 更新服务转发
+ */
+export const useUpdateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPut = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPut>>, TError,{routeId: string;data: BodyType<ServiceForwardWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPut>>,
+        TError,
+        {routeId: string;data: BodyType<ServiceForwardWrite>},
+        TContext
+      > => {
+      return useMutation(getUpdateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 删除服务转发
+ */
+export type deleteServiceForwardEndpointApiV1AdminServiceForwardsRouteIdDeleteResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deleteServiceForwardEndpointApiV1AdminServiceForwardsRouteIdDeleteResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type deleteServiceForwardEndpointApiV1AdminServiceForwardsRouteIdDeleteResponseSuccess = (deleteServiceForwardEndpointApiV1AdminServiceForwardsRouteIdDeleteResponse204) & {
+  headers: Headers;
+};
+export type deleteServiceForwardEndpointApiV1AdminServiceForwardsRouteIdDeleteResponseError = (deleteServiceForwardEndpointApiV1AdminServiceForwardsRouteIdDeleteResponse422) & {
+  headers: Headers;
+};
+
+export type deleteServiceForwardEndpointApiV1AdminServiceForwardsRouteIdDeleteResponse = (deleteServiceForwardEndpointApiV1AdminServiceForwardsRouteIdDeleteResponseSuccess | deleteServiceForwardEndpointApiV1AdminServiceForwardsRouteIdDeleteResponseError)
+
+export const getDeleteServiceForwardEndpointApiV1AdminServiceForwardsRouteIdDeleteUrl = (routeId: string,) => {
+
+
+
+
+  return `/api/v1/admin/service-forwards/${routeId}`
+}
+
+export const deleteServiceForwardEndpointApiV1AdminServiceForwardsRouteIdDelete = async (routeId: string, options?: RequestInit): Promise<deleteServiceForwardEndpointApiV1AdminServiceForwardsRouteIdDeleteResponse> => {
+
+  return customInstance<deleteServiceForwardEndpointApiV1AdminServiceForwardsRouteIdDeleteResponse>(getDeleteServiceForwardEndpointApiV1AdminServiceForwardsRouteIdDeleteUrl(routeId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteServiceForwardEndpointApiV1AdminServiceForwardsRouteIdDeleteMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteServiceForwardEndpointApiV1AdminServiceForwardsRouteIdDelete>>, TError,{routeId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteServiceForwardEndpointApiV1AdminServiceForwardsRouteIdDelete>>, TError,{routeId: string}, TContext> => {
+
+const mutationKey = ['deleteServiceForwardEndpointApiV1AdminServiceForwardsRouteIdDelete'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteServiceForwardEndpointApiV1AdminServiceForwardsRouteIdDelete>>, {routeId: string}> = (props) => {
+          const {routeId} = props ?? {};
+
+          return  deleteServiceForwardEndpointApiV1AdminServiceForwardsRouteIdDelete(routeId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteServiceForwardEndpointApiV1AdminServiceForwardsRouteIdDeleteMutationResult = NonNullable<Awaited<ReturnType<typeof deleteServiceForwardEndpointApiV1AdminServiceForwardsRouteIdDelete>>>
+
+    export type DeleteServiceForwardEndpointApiV1AdminServiceForwardsRouteIdDeleteMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 删除服务转发
+ */
+export const useDeleteServiceForwardEndpointApiV1AdminServiceForwardsRouteIdDelete = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteServiceForwardEndpointApiV1AdminServiceForwardsRouteIdDelete>>, TError,{routeId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteServiceForwardEndpointApiV1AdminServiceForwardsRouteIdDelete>>,
+        TError,
+        {routeId: string},
+        TContext
+      > => {
+      return useMutation(getDeleteServiceForwardEndpointApiV1AdminServiceForwardsRouteIdDeleteMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 检测服务转发目标
+ */
+export type testServiceForwardEndpointApiV1AdminServiceForwardsRouteIdTestPostResponse200 = {
+  data: ServiceForwardRead
+  status: 200
+}
+
+export type testServiceForwardEndpointApiV1AdminServiceForwardsRouteIdTestPostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type testServiceForwardEndpointApiV1AdminServiceForwardsRouteIdTestPostResponseSuccess = (testServiceForwardEndpointApiV1AdminServiceForwardsRouteIdTestPostResponse200) & {
+  headers: Headers;
+};
+export type testServiceForwardEndpointApiV1AdminServiceForwardsRouteIdTestPostResponseError = (testServiceForwardEndpointApiV1AdminServiceForwardsRouteIdTestPostResponse422) & {
+  headers: Headers;
+};
+
+export type testServiceForwardEndpointApiV1AdminServiceForwardsRouteIdTestPostResponse = (testServiceForwardEndpointApiV1AdminServiceForwardsRouteIdTestPostResponseSuccess | testServiceForwardEndpointApiV1AdminServiceForwardsRouteIdTestPostResponseError)
+
+export const getTestServiceForwardEndpointApiV1AdminServiceForwardsRouteIdTestPostUrl = (routeId: string,) => {
+
+
+
+
+  return `/api/v1/admin/service-forwards/${routeId}/test`
+}
+
+export const testServiceForwardEndpointApiV1AdminServiceForwardsRouteIdTestPost = async (routeId: string, options?: RequestInit): Promise<testServiceForwardEndpointApiV1AdminServiceForwardsRouteIdTestPostResponse> => {
+
+  return customInstance<testServiceForwardEndpointApiV1AdminServiceForwardsRouteIdTestPostResponse>(getTestServiceForwardEndpointApiV1AdminServiceForwardsRouteIdTestPostUrl(routeId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getTestServiceForwardEndpointApiV1AdminServiceForwardsRouteIdTestPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof testServiceForwardEndpointApiV1AdminServiceForwardsRouteIdTestPost>>, TError,{routeId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof testServiceForwardEndpointApiV1AdminServiceForwardsRouteIdTestPost>>, TError,{routeId: string}, TContext> => {
+
+const mutationKey = ['testServiceForwardEndpointApiV1AdminServiceForwardsRouteIdTestPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof testServiceForwardEndpointApiV1AdminServiceForwardsRouteIdTestPost>>, {routeId: string}> = (props) => {
+          const {routeId} = props ?? {};
+
+          return  testServiceForwardEndpointApiV1AdminServiceForwardsRouteIdTestPost(routeId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type TestServiceForwardEndpointApiV1AdminServiceForwardsRouteIdTestPostMutationResult = NonNullable<Awaited<ReturnType<typeof testServiceForwardEndpointApiV1AdminServiceForwardsRouteIdTestPost>>>
+
+    export type TestServiceForwardEndpointApiV1AdminServiceForwardsRouteIdTestPostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 检测服务转发目标
+ */
+export const useTestServiceForwardEndpointApiV1AdminServiceForwardsRouteIdTestPost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof testServiceForwardEndpointApiV1AdminServiceForwardsRouteIdTestPost>>, TError,{routeId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof testServiceForwardEndpointApiV1AdminServiceForwardsRouteIdTestPost>>,
+        TError,
+        {routeId: string},
+        TContext
+      > => {
+      return useMutation(getTestServiceForwardEndpointApiV1AdminServiceForwardsRouteIdTestPostMutationOptions(options), queryClient);
     }
     /**
  * @summary Get System Diagnostics State

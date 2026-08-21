@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Textarea } from "@/components/ui/Textarea";
 import { NativeSelect } from "@/components/ui/NativeSelect";
+import { scrollActiveItemIntoHorizontalView } from "@/components/ui/AdminSegmentedFilter";
 import {
   Cloud,
   Copy,
@@ -30,10 +31,12 @@ import {
   Link as LinkIcon,
   MessageCircle,
   Pencil,
+  Plus,
   Settings,
   Trash2,
   Upload,
   UserRound,
+  Waypoints,
   Zap,
 } from "lucide-react";
 import { canCompressImage, prepareImageUploadFile } from "@serino/utils/image-upload";
@@ -47,13 +50,14 @@ import {
   retryObjectStorageSyncRecord,
   type ObjectStorageSyncRecordRead,
 } from "@/pages/more/objectStorageApi";
+import { ServiceForwardingView } from "@/pages/assets/ServiceForwardingView";
 import { toast } from "sonner";
 import type { AssetAdminRead } from "@serino/api-client/models";
 
-type AssetViewMode = AssetScope | "oss_sync";
+type AssetViewMode = AssetScope | "oss_sync" | "service_forward";
 
 function assetViewModeFromQuery(value: string | null): AssetViewMode {
-  return value === "article" || value === "visitor" || value === "system" || value === "oss_sync"
+  return value === "article" || value === "visitor" || value === "system" || value === "oss_sync" || value === "service_forward"
     ? value
     : "user";
 }
@@ -77,6 +81,7 @@ export default function AssetsPage() {
   const [search, setSearch] = useState("");
   const [searchDebounced, setSearchDebounced] = useState("");
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [serviceForwardCreateOpen, setServiceForwardCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState<AssetAdminRead | null>(null);
   const [visibility, setVisibility] = useState<"internal" | "public">("internal");
@@ -93,8 +98,11 @@ export default function AssetsPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const viewTabsRef = useRef<HTMLDivElement>(null);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isSyncView = viewMode === "oss_sync";
+  const isServiceForwardView = viewMode === "service_forward";
+  const isAssetView = !isSyncView && !isServiceForwardView;
   const previewBaseHref = useHref("/assets/preview");
 
   useEffect(() => {
@@ -108,15 +116,29 @@ export default function AssetsPage() {
     setViewMode((current) => (current === nextViewMode ? current : nextViewMode));
   }, [searchParams]);
 
+  useEffect(() => {
+    const tabViewport = viewTabsRef.current;
+    if (!tabViewport) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      const activeTab = tabViewport.querySelector<HTMLElement>('[aria-pressed="true"]');
+      if (activeTab) {
+        scrollActiveItemIntoHorizontalView(tabViewport, activeTab, "smooth");
+      }
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [viewMode]);
+
   const { data: raw, isLoading } = useListAssetsApiV1AdminAssetsGet(
     {
       page,
       q: searchDebounced || undefined,
-      scope: isSyncView ? undefined : viewMode,
+      scope: isAssetView ? viewMode : undefined,
     },
     {
       query: {
-        enabled: !isSyncView,
+        enabled: isAssetView,
       },
     },
   );
@@ -124,6 +146,7 @@ export default function AssetsPage() {
   const { data: objectStorageConfig } = useQuery({
     queryKey: ["admin", "object-storage-config"],
     queryFn: getObjectStorageConfig,
+    enabled: !isServiceForwardView,
     refetchOnWindowFocus: false,
   });
   const { data: syncRecords, isLoading: isSyncRecordsLoading } = useQuery({
@@ -205,7 +228,7 @@ export default function AssetsPage() {
       }
       return next;
     }, { replace: true });
-    if (value !== "oss_sync") {
+    if (value !== "oss_sync" && value !== "service_forward") {
       setScope(value);
       setCategory(CATEGORY_OPTIONS[value][0]);
     }
@@ -326,24 +349,35 @@ export default function AssetsPage() {
     <div>
       <PageHeader
         title={t("assets.title")}
-        description={t("assets.description")}
+        description={
+          isServiceForwardView ? t("serviceForwards.pageDescription") : t("assets.description")
+        }
         actions={
           <div className="flex items-center gap-2">
-            {objectStorageConfig?.enabled && objectStorageConfig.last_health_ok ? (
+            {!isServiceForwardView && objectStorageConfig?.enabled && objectStorageConfig.last_health_ok ? (
               <div className="inline-flex h-10 items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/10 px-3 text-sm font-medium text-amber-700 dark:text-amber-300">
                 <Zap className="h-4 w-4" />
                 {t("assets.ossAccelerationEnabled")}
               </div>
             ) : null}
-            <Button onClick={() => setUploadOpen(true)}>
-              <Upload className="mr-2 h-4 w-4" /> {t("assets.upload")}
-            </Button>
+            {isServiceForwardView ? (
+              <Button onClick={() => setServiceForwardCreateOpen(true)}>
+                <Plus className="mr-2 h-4 w-4" /> {t("serviceForwards.add")}
+              </Button>
+            ) : (
+              <Button onClick={() => setUploadOpen(true)}>
+                <Upload className="mr-2 h-4 w-4" /> {t("assets.upload")}
+              </Button>
+            )}
           </div>
         }
       />
       <div className="mb-4 space-y-3">
-        <div className="overflow-x-auto pb-1">
-          <div className="flex min-w-max items-center gap-2" aria-label={t("assets.scope")}>
+        <div ref={viewTabsRef} className="overflow-x-auto pb-1">
+          <div
+            className="flex min-w-max items-center gap-2"
+            aria-label={t("assets.scope")}
+          >
             {scopeTabs.map(({ value, label, icon: Icon }) => (
               <Button
                 key={value}
@@ -360,6 +394,16 @@ export default function AssetsPage() {
             <span className="mx-1 h-6 w-px bg-border/70" aria-hidden="true" />
             <Button
               type="button"
+              variant={isServiceForwardView ? "default" : "ghost"}
+              aria-pressed={isServiceForwardView}
+              onClick={() => handleViewModeChange("service_forward")}
+              className="h-10 rounded-full px-4"
+            >
+              <Waypoints className="mr-2 h-4 w-4" />
+              {t("assets.scopeServiceForward")}
+            </Button>
+            <Button
+              type="button"
               variant={isSyncView ? "default" : "ghost"}
               aria-pressed={isSyncView}
               onClick={() => handleViewModeChange("oss_sync")}
@@ -370,13 +414,13 @@ export default function AssetsPage() {
             </Button>
           </div>
         </div>
-        <div className="w-full max-w-md">
+        {!isServiceForwardView ? <div className="w-full max-w-md">
             <Input
               value={search}
               onChange={(e) => handleSearch(e.target.value)}
               placeholder={t("assets.searchPlaceholder")}
             />
-        </div>
+        </div> : null}
       </div>
       <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
         <DialogContent className="max-w-xl rounded-2xl" hideCloseButton={false}>
@@ -595,8 +639,13 @@ export default function AssetsPage() {
           </div>
         </DialogContent>
       </Dialog>
-      <div className="border rounded-lg">
-        {isSyncView ? (
+      <div className={cn(!isServiceForwardView && "border rounded-lg")}>
+        {isServiceForwardView ? (
+          <ServiceForwardingView
+            createOpen={serviceForwardCreateOpen}
+            onCreateOpenChange={setServiceForwardCreateOpen}
+          />
+        ) : isSyncView ? (
           <DataTable<ObjectStorageSyncRecordRead>
             columns={[
               {
