@@ -272,6 +272,8 @@ main() {
     )" &&
     install_release_payload "${bundle_dir}" &&
     reload_installer_libraries &&
+    ensure_system_layout &&
+    rebuild_caddy_route_dispatcher &&
     validate_registered_caddy_routes &&
     set_env_value "${AERISUN_ENV_FILE}" "AERISUN_IMAGE_REGISTRY" "${active_registry}" &&
     set_env_value "${AERISUN_ENV_FILE}" "AERISUN_IMAGE_TAG" "${target_image_tag}" &&

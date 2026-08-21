@@ -125,6 +125,7 @@ def test_installer_scripts_are_source_safe() -> None:
 source installer/install.sh
 source installer/upgrade.sh
 source installer/uninstall.sh
+source installer/prepare-runtime.sh
 source scripts/release-smoke-gate.sh
 printf 'ok\\n'
 """
@@ -1183,6 +1184,8 @@ seed_persistent_uptime_marker() { :; }
     }
 install_release_payload() { record install_release_payload; }
 reload_installer_libraries() { record reload_installer_libraries; }
+ensure_system_layout() { record ensure_system_layout; }
+rebuild_caddy_route_dispatcher() { record rebuild_caddy_route_dispatcher; }
 validate_registered_caddy_routes() { :; }
 set_env_value() { record "set_env_value:$2=$3"; }
 normalize_production_env_file() { record normalize_production_env_file; }
@@ -1221,6 +1224,8 @@ main v2.0.0
         "backup_current_installation:/var/backups/serino/upgrade-20260408112233",
         "install_release_payload",
         "reload_installer_libraries",
+        "ensure_system_layout",
+        "rebuild_caddy_route_dispatcher",
         "set_env_value:AERISUN_IMAGE_REGISTRY=registry.example.com/next",
         "set_env_value:AERISUN_IMAGE_TAG=v2.0.0",
         "set_env_value:AERISUN_RELEASE_VERSION=v2.0.0",
@@ -1284,6 +1289,8 @@ resolve_active_registry() {
 }
 install_release_payload() { record install_release_payload; }
 reload_installer_libraries() { record reload_installer_libraries; }
+ensure_system_layout() { :; }
+rebuild_caddy_route_dispatcher() { :; }
 validate_registered_caddy_routes() { :; }
 set_env_value() { record "set_env_value:$2=$3"; }
 normalize_production_env_file() { record normalize_production_env_file; }
@@ -1368,6 +1375,8 @@ backup_current_installation() { :; }
 resolve_active_registry() { printf '%s' "$1"; }
 install_release_payload() { :; }
 reload_installer_libraries() { :; }
+ensure_system_layout() { :; }
+rebuild_caddy_route_dispatcher() { :; }
 validate_registered_caddy_routes() { :; }
 set_env_value() { record "set_env_value:$2=$3"; }
 normalize_production_env_file() { :; }

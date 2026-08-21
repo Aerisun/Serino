@@ -8,6 +8,7 @@ Requires=docker.service
 Type=oneshot
 RemainAfterExit=yes
 WorkingDirectory=__AERISUN_APP_ROOT__
+ExecStartPre=__AERISUN_APP_ROOT__/installer/prepare-runtime.sh
 ExecStart=/bin/bash -lc 'export COMPOSE_PROJECT_NAME=__AERISUN_COMPOSE_PROJECT_NAME__; exec docker compose -f __AERISUN_RENDERED_COMPOSE_FILE__ up -d --remove-orphans'
 ExecStop=/bin/bash -lc 'export COMPOSE_PROJECT_NAME=__AERISUN_COMPOSE_PROJECT_NAME__; exec docker compose -f __AERISUN_RENDERED_COMPOSE_FILE__ down'
 ExecReload=/bin/bash -lc 'export COMPOSE_PROJECT_NAME=__AERISUN_COMPOSE_PROJECT_NAME__; exec docker compose -f __AERISUN_RENDERED_COMPOSE_FILE__ up -d --remove-orphans'

@@ -727,6 +727,7 @@ install_release_payload() {
   run_as_root chmod 0755 \
     "${AERISUN_INSTALLER_DEST}/install.sh" \
     "${AERISUN_INSTALLER_DEST}/doctor.sh" \
+    "${AERISUN_INSTALLER_DEST}/prepare-runtime.sh" \
     "${AERISUN_INSTALLER_DEST}/route.sh" \
     "${AERISUN_INSTALLER_DEST}/uninstall.sh" \
     "${AERISUN_INSTALLER_DEST}/upgrade.sh" \

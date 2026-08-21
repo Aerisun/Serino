@@ -1200,6 +1200,8 @@ run_as_root() {{
 
 install_proxy_firewall_systemd_dropin() {{ :; }}
 install_systemd_units '{PROJECT_ROOT}'
+printf '%s\\n' "==primary=="
+cat '{systemd_dir}/serino.service'
 printf '%s\\n' "==service=="
 cat '{systemd_dir}/serino-updater.service'
 printf '%s\\n' "==timer=="
@@ -1209,6 +1211,7 @@ cat '{systemd_dir}/serino-updater.path'
 """
     )
 
+    assert f"ExecStartPre={tmp_path}/app/installer/prepare-runtime.sh" in completed
     assert "ExecStart=" + str(tmp_path / "bin" / "sercli") + " updater run" in completed
     assert "OnCalendar=hourly" in completed
     assert f"DirectoryNotEmpty={tmp_path}/data/update/requests" in completed
@@ -2136,6 +2139,110 @@ render_caddy_route_config '/files' 'http://127.0.0.1:9000'
     assert "strip_prefix" not in rendered
 
 
+def test_local_caddy_route_library_builds_longest_path_first_dispatcher(tmp_path: Path):
+    routes_dir = tmp_path / "routes"
+    routes_dir.mkdir()
+    parent_path = routes_dir / "route-parent.caddy"
+    child_path = routes_dir / "route-child.caddy"
+    parent_path.write_text(
+        "# serino-route-path: /model\nhandle @parent {\n    reverse_proxy http://127.0.0.1:8001\n}\n",
+        encoding="utf-8",
+    )
+    child_path.write_text(
+        "# serino-route-path: /model/embedding/v1\nhandle @child {\n    reverse_proxy http://127.0.0.1:8002\n}\n",
+        encoding="utf-8",
+    )
+
+    output = run_installer_bash(
+        f"""
+source installer/lib/common.sh
+source installer/lib/routes.sh
+
+SERINO_CADDY_ROUTES_DIR='{routes_dir}'
+run_as_root() {{
+  if [[ "$1" == "install" ]]; then
+    shift
+    local -a args=()
+    while [[ "$#" -gt 0 ]]; do
+      case "$1" in
+        -o|-g)
+          shift 2
+          ;;
+        *)
+          args+=("$1")
+          shift
+          ;;
+      esac
+    done
+    command install "${{args[@]}}"
+    return
+  fi
+  "$@"
+}}
+if ! declare -F rebuild_caddy_route_dispatcher >/dev/null; then
+  printf 'missing-dispatcher-builder\n'
+  exit 0
+fi
+rebuild_caddy_route_dispatcher
+cat "${{SERINO_CADDY_ROUTES_DIR}}/active/routes.caddy"
+"""
+    )
+
+    assert "missing-dispatcher-builder" not in output
+    assert output.index("# serino-route-path: /model/embedding/v1") < output.index("# serino-route-path: /model\n")
+    assert parent_path.exists()
+    assert child_path.exists()
+
+
+def test_local_caddy_route_dispatcher_reports_install_failure(tmp_path: Path):
+    routes_dir = tmp_path / "routes"
+    routes_dir.mkdir()
+    (routes_dir / "route-files.caddy").write_text(
+        "# serino-route-path: /files\nhandle @files {\n    reverse_proxy http://127.0.0.1:9000\n}\n",
+        encoding="utf-8",
+    )
+
+    output = run_installer_bash(
+        f"""
+source installer/lib/common.sh
+source installer/lib/routes.sh
+
+SERINO_CADDY_ROUTES_DIR='{routes_dir}'
+run_as_root() {{
+  if [[ "$1" == "install" ]]; then
+    return 1
+  fi
+  "$@"
+}}
+if rebuild_caddy_route_dispatcher; then
+  printf 'unexpected-success\n'
+else
+  printf 'install-failed\n'
+fi
+"""
+    )
+
+    assert output.strip() == "install-failed"
+    assert not (routes_dir / "active" / "routes.caddy").exists()
+
+
+def test_prepare_runtime_repairs_layout_and_builds_dispatcher_before_start(tmp_path: Path):
+    routes_dir = tmp_path / "routes"
+    output = run_installer_bash(
+        f"""
+source installer/prepare-runtime.sh
+
+SERINO_CADDY_ROUTES_DIR='{routes_dir}'
+ensure_system_layout() {{ printf 'ensure-layout\\n'; }}
+rebuild_caddy_route_dispatcher() {{ printf 'rebuild-dispatcher\\n'; }}
+
+main
+"""
+    )
+
+    assert output.strip().splitlines() == ["ensure-layout", "rebuild-dispatcher"]
+
+
 def test_local_caddy_route_library_rejects_unsafe_inputs(tmp_path: Path):
     routes_lib = PROJECT_ROOT / "installer/lib/routes.sh"
     assert routes_lib.exists()
@@ -2357,6 +2464,7 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     docker_text = read_project_file("installer/lib/docker.sh")
     env_text = read_project_file("installer/lib/env.sh")
     service_text = read_project_file("installer/systemd/serino.service")
+    prepare_runtime_text = read_project_file("installer/prepare-runtime.sh")
     upgrade_service_text = read_project_file("installer/systemd/serino-upgrade.service")
     updater_text = read_project_file("installer/updater.sh")
     updater_service_text = read_project_file("installer/systemd/serino-updater.service")
@@ -2438,6 +2546,10 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     assert 'AERISUN_WEB_IMAGE_NAME="${AERISUN_WEB_IMAGE_NAME:-serino-web}"' in common_text
     assert 'AERISUN_WALINE_IMAGE_NAME="${AERISUN_WALINE_IMAGE_NAME:-serino-waline}"' in common_text
     assert "run_as_root chown -R root:root" in common_text
+    assert '"${AERISUN_INSTALLER_DEST}/prepare-runtime.sh"' in common_text
+    assert "ExecStartPre=__AERISUN_APP_ROOT__/installer/prepare-runtime.sh" in service_text
+    assert 'source "${SCRIPT_DIR}/lib/common.sh"' in prepare_runtime_text
+    assert 'source "${SCRIPT_DIR}/lib/routes.sh"' in prepare_runtime_text
     assert "ensure_update_runtime_layout() {" in common_text
     assert "resolve_backend_healthcheck_url() {" in env_text
     assert "resolve_release_version_value() {" in env_text
