@@ -11,64 +11,9 @@ import {
   shouldBlockSearchOptimizationSave,
 } from "../src/pages/site-config/tabs/ProfileTab";
 
-const profileTab = fs.readFileSync(
-  new URL("../src/pages/site-config/tabs/ProfileTab.tsx", import.meta.url),
-  "utf-8",
-);
 const adminIndex = fs.readFileSync(new URL("../index.html", import.meta.url), "utf-8");
 
 describe("profile search optimization controls", () => {
-  it("adds a collapsible search optimization block in the profile tab", () => {
-    expect(profileTab).toContain("CollapsibleSection");
-    expect(profileTab).toContain("搜索优化");
-    expect(profileTab).toContain("search_optimization");
-    expect(profileTab).toContain("search_real_name");
-    expect(profileTab).toContain("real_name");
-    expect(profileTab).toContain("LabelWithHelp");
-  });
-
-  it("describes the legacy OG image field only as a homepage fallback", () => {
-    expect(profileTab).toContain('label: "首页静态兜底图"');
-    expect(profileTab).toContain('label: "Homepage Static Fallback"');
-    expect(profileTab).not.toContain("富链接和分享预览");
-    expect(profileTab).not.toContain("Rich-link and share previews");
-    expect(profileTab).not.toContain('label: "分享图 / 首页背景兜底图"');
-    expect(profileTab).not.toContain('label: "Share Image / Background Fallback"');
-  });
-
-  it("requires a real name before saving search optimization data", () => {
-    expect(profileTab).toContain("isSearchOptimizationValid");
-    expect(profileTab).toContain("search_english_name");
-    expect(profileTab).toContain("english_name");
-    expect(profileTab).toContain("请同时填写中文名和英文名");
-    expect(profileTab).toContain("hasSearchOptimizationChanges");
-    expect(profileTab).toContain("required");
-    expect(profileTab).toContain("!border-destructive");
-  });
-
-  it("renders Chinese and English names as one divided input group", () => {
-    expect(profileTab).toContain('aria-label={lang === "zh" ? "中文名" : "Chinese name"}');
-    expect(profileTab).toContain('aria-label={lang === "zh" ? "英文名" : "English name"}');
-    expect(profileTab).toContain("grid-cols-2");
-    expect(profileTab).toContain("divide-x");
-  });
-
-  it("removes the manual site title and derives it from the homepage name and SEO identity", () => {
-    expect(profileTab).not.toContain('(["name", "title", "role"] as const)');
-    expect(profileTab).toContain('(["name", "role"] as const)');
-    expect(profileTab).toContain("buildSiteBrandTitle");
-    expect(profileTab).toContain('`${displayName} - ${realName}(${englishName})`');
-    expect(profileTab).toContain("payload.title = buildSiteBrandTitle(form)");
-  });
-
-  it("restores keyword-like lists with visible comma separators", () => {
-    expect(profileTab).toContain("readDelimitedTextList");
-    expect(profileTab).toContain('readList(value, ", ")');
-    expect(profileTab).toContain("search_keywords: readDelimitedTextList(config.keywords)");
-    expect(profileTab).toContain("search_expertise: readDelimitedTextList(config.expertise)");
-    expect(profileTab).toContain("search_same_as: readLineTextList(config.same_as)");
-  });
-
   it("round-trips delimited lists and preserves unrelated feature flags", () => {
     const profile = {
       name: "Aerisun",

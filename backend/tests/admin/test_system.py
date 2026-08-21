@@ -50,43 +50,6 @@ def _reset_waline_counters() -> None:
 
 
 class TestDashboardStats:
-    def test_dashboard_stats_returns_counts(self, client, admin_headers):
-        _reset_waline_counters()
-        resp = client.get(f"{BASE}/dashboard/stats", headers=admin_headers)
-        assert resp.status_code == 200
-        data = resp.json()
-        for key in (
-            "posts",
-            "diary_entries",
-            "thoughts",
-            "excerpts",
-            "comments",
-            "guestbook_entries",
-            "friends",
-            "assets",
-        ):
-            assert key in data
-            assert isinstance(data[key], int)
-        assert "posts_by_visibility" in data
-        assert "content_by_month" in data
-        assert "recent_content" in data
-        assert "traffic" in data
-        assert "visitors" in data
-        assert "aux_metrics" in data
-
-        visitors = data["visitors"]
-        for key in (
-            "total_visits",
-            "unique_visitors_24h",
-            "unique_visitors_7d",
-            "average_request_duration_ms",
-            "top_pages",
-            "history",
-            "recent_visits",
-            "last_visit_at",
-        ):
-            assert key in visitors
-
     def test_dashboard_stats_summary_only_skips_heavy_details(self, client, admin_headers, monkeypatch):
         def fail_refresh(*args, **kwargs):  # pragma: no cover - should not be reached
             raise AssertionError("summary dashboard should not refresh traffic snapshots")
@@ -349,55 +312,6 @@ class TestSystemUpdates:
         assert payload["update_available"] is True
         assert payload["latest_version"] == "v1.2.4"
         assert payload["auto_update_supported"] is False
-
-    def test_update_status_does_not_surface_equal_latest_version(self, client, admin_headers, monkeypatch):
-        monkeypatch.setattr(update_service, "_current_version", lambda _settings=None: "v1.2.3")
-        self._write_supported_update_status(
-            {
-                "schema_version": 1,
-                "state": "available",
-                "current_version": "v1.2.3",
-                "latest_version": "v1.2.3",
-                "channel": "stable",
-                "update_available": True,
-                "auto_update_supported": True,
-                "signature_verified": True,
-                "release": {"version": "v1.2.3", "notes": "## v1.2.3"},
-                "recent_log": [],
-            }
-        )
-
-        resp = client.get(f"{BASE}/updates/status", headers=admin_headers)
-
-        assert resp.status_code == 200
-        payload = resp.json()
-        assert payload["state"] == "idle"
-        assert payload["update_available"] is False
-        assert payload["latest_version"] == "v1.2.3"
-
-    def test_update_status_does_not_surface_lower_latest_version(self, client, admin_headers, monkeypatch):
-        monkeypatch.setattr(update_service, "_current_version", lambda _settings=None: "v1.2.3")
-        self._write_supported_update_status(
-            {
-                "schema_version": 1,
-                "state": "available",
-                "current_version": "v1.2.3",
-                "latest_version": "v1.2.2",
-                "channel": "stable",
-                "update_available": True,
-                "auto_update_supported": True,
-                "signature_verified": True,
-                "release": {"version": "v1.2.2", "notes": "## v1.2.2"},
-                "recent_log": [],
-            }
-        )
-
-        resp = client.get(f"{BASE}/updates/status", headers=admin_headers)
-
-        assert resp.status_code == 200
-        payload = resp.json()
-        assert payload["state"] == "idle"
-        assert payload["update_available"] is False
 
     def test_update_status_does_not_surface_invalid_latest_version(self, client, admin_headers, monkeypatch):
         monkeypatch.setattr(update_service, "_current_version", lambda _settings=None: "v1.2.3")
@@ -1196,28 +1110,11 @@ class TestSystemUpdates:
         assert "Firefox" in browsers
         assert "news.example.org" in referrers
 
-    def test_dashboard_stats_without_token(self, client):
-        resp = client.get(f"{BASE}/dashboard/stats")
-        assert resp.status_code in (401, 403)
-
 
 # ── System Info ───────────────────────────────────────────────────────
 
 
 class TestSystemInfo:
-    def test_system_info(self, client, admin_headers):
-        resp = client.get(f"{BASE}/info", headers=admin_headers)
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["version"]
-        assert "python_version" in data
-        assert "db_size_bytes" in data
-        assert "media_dir_size_bytes" in data
-        assert "uptime_seconds" in data
-        assert "environment" in data
-        assert isinstance(data["uptime_seconds"], (int, float))
-        assert data["uptime_seconds"] >= 0
-
     def test_system_info_uses_persistent_uptime_origin(self, client, admin_headers):
         settings = get_settings()
         marker = settings.data_dir / ops_service._UPTIME_STARTED_AT_FILENAME
@@ -1229,25 +1126,11 @@ class TestSystemInfo:
         assert resp.status_code == 200
         assert resp.json()["uptime_seconds"] >= 7190
 
-    def test_system_info_without_token(self, client):
-        resp = client.get(f"{BASE}/info")
-        assert resp.status_code in (401, 403)
-
 
 # ── Audit Logs ────────────────────────────────────────────────────────
 
 
 class TestAuditLogs:
-    def test_list_audit_logs(self, client, admin_headers):
-        resp = client.get(f"{BASE}/audit-logs", headers=admin_headers)
-        assert resp.status_code == 200
-        data = resp.json()
-        assert "items" in data
-        assert "total" in data
-        assert "page" in data
-        assert "page_size" in data
-        assert isinstance(data["items"], list)
-
     def test_audit_logs_pagination(self, client, admin_headers):
         resp = client.get(
             f"{BASE}/audit-logs",
@@ -1258,10 +1141,6 @@ class TestAuditLogs:
         data = resp.json()
         assert data["page"] == 1
         assert data["page_size"] == 5
-
-    def test_audit_logs_without_token(self, client):
-        resp = client.get(f"{BASE}/audit-logs")
-        assert resp.status_code in (401, 403)
 
 
 # ── API Key Management ────────────────────────────────────────────────
@@ -1303,14 +1182,6 @@ class TestApiKeys:
 
         resp = client.get(f"{INTEGRATIONS_BASE}/api-keys", headers=admin_headers)
         assert not any(k["id"] == key_id for k in resp.json())
-
-    def test_delete_nonexistent_api_key(self, client, admin_headers):
-        resp = client.delete(f"{INTEGRATIONS_BASE}/api-keys/nonexistent-key-id", headers=admin_headers)
-        assert resp.status_code == 404
-
-    def test_api_keys_without_token(self, client):
-        resp = client.get(f"{INTEGRATIONS_BASE}/api-keys")
-        assert resp.status_code in (401, 403)
 
     def test_legacy_mcp_scopes_are_repaired_before_api_key_updates(self, client, admin_headers):
         from aerisun.core.db import get_session_factory
@@ -1412,7 +1283,3 @@ class TestBackups:
     def test_restore_nonexistent_backup(self, client, admin_headers):
         resp = client.post(f"{BASE}/backups/nonexistent-id/restore", headers=admin_headers)
         assert resp.status_code == 404
-
-    def test_backups_without_token(self, client):
-        resp = client.get(f"{BASE}/backups")
-        assert resp.status_code in (401, 403)

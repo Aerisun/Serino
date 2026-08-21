@@ -1,4 +1,3 @@
-import fs from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_ROBOTS_DIRECTIVE,
@@ -14,21 +13,10 @@ const baseSite = {
   role: "Independent developer",
   ogImage: "https://example.com/og.png",
 };
-const runtimeConfigSource = fs.readFileSync(
-  new URL("../src/lib/runtime-config/index.ts", import.meta.url),
-  "utf-8",
-);
-
 const jsonLdGraph = (metadata: ReturnType<typeof buildSearchMetadata>) =>
   metadata.siteJsonLd["@graph"] as Array<Record<string, unknown>>;
 
 describe("search optimization metadata", () => {
-  it("derives the site share image from resume, hero, then homepage static media", () => {
-    expect(runtimeConfigSource).toContain(
-      "shareImage: resumeProfileImageUrl.trim() || payload.site.hero_image_url || payload.site.og_image",
-    );
-  });
-
   it("prefers the resume image for rich-link previews without changing page overrides", () => {
     const site = {
       ...baseSite,

@@ -90,33 +90,31 @@ def test_selected_preset_cannot_expand_key_scopes(seeded_session) -> None:
     assert "tool:get_site_config" not in resolved.enabled_capability_ids
 
 
-@pytest.mark.parametrize(
-    "stored_config",
-    [
+def test_malformed_persisted_config_fails_closed(seeded_session) -> None:
+    stored_configs = [
         {"selected_preset": "unknown"},
         {"enabled_capability_ids": ["tool:not-registered"]},
         {"selected_preset": "readonly", "extra": True},
         {"enabled_capability_ids": "tool:list_posts"},
-    ],
-)
-def test_malformed_persisted_config_fails_closed(seeded_session, stored_config) -> None:
+    ]
     key, _raw_key = _create_key(
         seeded_session,
         "malformed-config",
         [AGENT_CONNECT, CONTENT_READ],
     )
-    key.mcp_config = stored_config
-    seeded_session.commit()
+    for stored_config in stored_configs:
+        key.mcp_config = stored_config
+        seeded_session.commit()
 
-    resolved = resolve_mcp_config(
-        seeded_session,
-        list_registered_mcp_capabilities(),
-        api_key=key,
-    )
+        resolved = resolve_mcp_config(
+            seeded_session,
+            list_registered_mcp_capabilities(),
+            api_key=key,
+        )
 
-    assert resolved.enabled_capability_ids == []
-    assert resolved.selected_preset == "custom"
-    assert resolved.is_customized is True
+        assert resolved.enabled_capability_ids == []
+        assert resolved.selected_preset == "custom"
+        assert resolved.is_customized is True
 
 
 def test_admin_update_saves_minimal_explicit_capability_config(client, admin_headers) -> None:
@@ -208,9 +206,8 @@ def test_admin_update_accepts_an_explicit_empty_capability_list(client, admin_he
     assert response.json()["selected_preset"] == "custom"
 
 
-@pytest.mark.parametrize(
-    ("query", "body", "expected_detail"),
-    [
+def test_admin_update_rejects_invalid_per_key_config(client, admin_headers) -> None:
+    cases = [
         ({}, {"selected_preset": "readonly"}, "api_key_id is required"),
         (
             {"api_key_id": "{key_id}"},
@@ -228,32 +225,25 @@ def test_admin_update_accepts_an_explicit_empty_capability_list(client, admin_he
             {"enabled_capability_ids": ["tool:get_site_config"]},
             "not available to this API key",
         ),
-    ],
-)
-def test_admin_update_rejects_invalid_per_key_config(
-    client,
-    admin_headers,
-    query,
-    body,
-    expected_detail,
-) -> None:
+    ]
     key_id, _raw_key = _create_key_over_http(
         client,
         admin_headers,
         "invalid-config-key",
         [AGENT_CONNECT, CONTENT_READ],
     )
-    resolved_query = {name: value.format(key_id=key_id) for name, value in query.items()}
+    for query, body, expected_detail in cases:
+        resolved_query = {name: value.format(key_id=key_id) for name, value in query.items()}
 
-    response = client.put(
-        MCP_CONFIG_URL,
-        params=resolved_query,
-        json=body,
-        headers=admin_headers,
-    )
+        response = client.put(
+            MCP_CONFIG_URL,
+            params=resolved_query,
+            json=body,
+            headers=admin_headers,
+        )
 
-    assert response.status_code == 422
-    assert expected_detail in response.json()["detail"]
+        assert response.status_code == 422
+        assert expected_detail in response.json()["detail"]
 
 
 def test_admin_update_rejects_removed_or_unknown_configuration_fields(client, admin_headers) -> None:

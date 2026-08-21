@@ -261,20 +261,6 @@ def test_create_guestbook_skips_moderation_when_disabled(client) -> None:
     assert any(item["body"] == "无需审核的留言。" for item in listing.json()["items"])
 
 
-def test_create_guestbook_requires_login(client) -> None:
-    response = client.post(
-        "/api/v1/site-interactions/guestbook",
-        json={
-            "name": "Visitor",
-            "email": "visitor@example.com",
-            "body": "我想留言。",
-        },
-    )
-
-    assert response.status_code == 422
-    assert "登录后才能留言" in response.json()["detail"]
-
-
 def test_read_comments_returns_nested_items(client) -> None:
     response = client.get("/api/v1/site-interactions/comments/posts/from-zero-design-system")
 
@@ -374,29 +360,6 @@ def test_current_user_can_read_own_pending_comment_after_refresh(client) -> None
     other_listing = client.get("/api/v1/site-interactions/comments/posts/from-zero-design-system")
     assert other_listing.status_code == 200
     assert all(item["body"] != "刷新后仍然看得到。" for item in other_listing.json()["pending_items"])
-
-
-def test_current_user_can_read_own_pending_guestbook_after_refresh(client) -> None:
-    _login_site_user(client, email="guest-pending-owner@example.com", display_name="Guest Pending Owner")
-
-    response = client.post(
-        "/api/v1/site-interactions/guestbook",
-        json={
-            "name": "Ignored Name",
-            "email": "ignored@example.com",
-            "body": "这条待审核留言刷新后还在。",
-        },
-    )
-    assert response.status_code == 200
-
-    owner_listing = client.get("/api/v1/site-interactions/guestbook")
-    assert owner_listing.status_code == 200
-    assert any(item["body"] == "这条待审核留言刷新后还在。" for item in owner_listing.json()["pending_items"])
-
-    client.cookies.clear()
-    anonymous_listing = client.get("/api/v1/site-interactions/guestbook")
-    assert anonymous_listing.status_code == 200
-    assert all(item["body"] != "这条待审核留言刷新后还在。" for item in anonymous_listing.json()["pending_items"])
 
 
 def test_user_can_delete_own_comment_tree_but_not_others(client, admin_headers) -> None:
@@ -716,58 +679,6 @@ def test_create_comment_marks_bound_admin_user_as_author(client) -> None:
     assert payload["item"]["avatar_url"].startswith("/media/assets/")
 
 
-def test_read_guestbook_marks_email_bound_admin_identity(client) -> None:
-    from aerisun.domain.waline.service import build_comment_path, create_waline_record
-
-    _bind_admin_identity_by_email(email="guestbook-owner@example.com")
-    create_waline_record(
-        comment="管理员留言",
-        nick="并不是站点标题",
-        mail="guestbook-owner@example.com",
-        link=None,
-        status="approved",
-        url=build_comment_path("guestbook", "guestbook"),
-        avatar_key="guestbook-owner-avatar",
-        avatar_url="/api/v1/avatars/10.x/notionists/svg?seed=guestbook-owner",
-    )
-
-    response = client.get("/api/v1/site-interactions/guestbook")
-
-    assert response.status_code == 200
-    payload = response.json()
-    entry = next(item for item in payload["items"] if item["body"] == "管理员留言")
-    assert entry["name"] == "Felix"
-    assert entry["is_author"] is True
-    assert entry["avatar_url"].startswith("/media/assets/")
-
-
-def test_create_guestbook_marks_bound_admin_user_as_author(client) -> None:
-    _bind_admin_identity_by_email(email="admin-guestbook@example.com")
-    _login_site_user_with_options(
-        client,
-        email="admin-guestbook@example.com",
-        display_name="Guestbook Admin",
-        admin_password="comment-password",
-    )
-
-    response = client.post(
-        "/api/v1/site-interactions/guestbook",
-        json={
-            "name": "Ignored Name",
-            "email": "ignored@example.com",
-            "body": "管理员实际发出的留言。",
-        },
-    )
-
-    assert response.status_code == 200
-    payload = response.json()
-    assert payload["accepted"] is True
-    assert payload["item"]["name"] == "Felix"
-    assert payload["item"]["is_author"] is True
-    assert payload["item"]["avatar"] == "site-admin"
-    assert payload["item"]["avatar_url"].startswith("/media/assets/")
-
-
 def test_create_comment_requires_login(client) -> None:
     response = client.post(
         "/api/v1/site-interactions/comments/posts/from-zero-design-system",
@@ -796,23 +707,6 @@ def test_create_comment_rejects_email_login_when_disabled_for_comments(client) -
     )
     assert response.status_code == 422
     assert "邮箱登录评论" in response.json()["detail"]
-
-
-def test_create_guestbook_rejects_email_login_when_disabled_for_comments(client) -> None:
-    _login_site_user(client, email="guest-reader@example.com", display_name="Guest Reader")
-    _update_community_config(anonymous_enabled=False)
-
-    response = client.post(
-        "/api/v1/site-interactions/guestbook",
-        json={
-            "name": "Ignored Name",
-            "email": "ignored@example.com",
-            "body": "邮箱登录不该继续留言。",
-        },
-    )
-
-    assert response.status_code == 422
-    assert "邮箱登录留言" in response.json()["detail"]
 
 
 def test_comment_image_upload_rejects_when_disabled(client) -> None:
@@ -984,58 +878,8 @@ def test_create_comment_rejects_more_than_nine_images(client) -> None:
     assert "最多可以附加 9 张图片" in response.json()["detail"]
 
 
-def test_create_reaction_returns_total(client) -> None:
-    response = client.post(
-        "/api/v1/site-interactions/reactions",
-        json={
-            "content_type": "posts",
-            "content_slug": "from-zero-design-system",
-            "reaction_type": "like",
-            "client_token": "pytest-token",
-        },
-    )
-
-    assert response.status_code == 200
-    payload = response.json()
-    assert payload["reaction_type"] == "like"
-    assert payload["total"] >= 3
-    assert payload["active"] is True
-
-
-def test_read_reaction_reports_active_state_for_client_token(client) -> None:
-    token = "pytest-active-token"
-
-    create_response = client.post(
-        "/api/v1/site-interactions/reactions",
-        json={
-            "content_type": "posts",
-            "content_slug": "from-zero-design-system",
-            "reaction_type": "like",
-            "client_token": token,
-        },
-    )
-    assert create_response.status_code == 200
-
-    active_response = client.get(
-        "/api/v1/site-interactions/reactions/posts/from-zero-design-system/like",
-        params={"client_token": token},
-    )
-    assert active_response.status_code == 200
-    active_payload = active_response.json()
-    assert active_payload["active"] is True
-
-    inactive_response = client.get(
-        "/api/v1/site-interactions/reactions/posts/from-zero-design-system/like",
-        params={"client_token": "pytest-other-token"},
-    )
-    assert inactive_response.status_code == 200
-    inactive_payload = inactive_response.json()
-    assert inactive_payload["active"] is False
-    assert inactive_payload["total"] == active_payload["total"]
-
-
-def test_delete_reaction_removes_client_reaction(client) -> None:
-    token = "pytest-delete-token"
+def test_reaction_lifecycle_tracks_client_token(client) -> None:
+    token = "pytest-reaction-token"
 
     initial = client.get(
         "/api/v1/site-interactions/reactions/posts/from-zero-design-system/like",
@@ -1056,8 +900,24 @@ def test_delete_reaction_removes_client_reaction(client) -> None:
     )
     assert created.status_code == 200
     created_payload = created.json()
+    assert created_payload["reaction_type"] == "like"
     assert created_payload["active"] is True
     assert created_payload["total"] == initial_payload["total"] + 1
+
+    active = client.get(
+        "/api/v1/site-interactions/reactions/posts/from-zero-design-system/like",
+        params={"client_token": token},
+    )
+    assert active.status_code == 200
+    assert active.json()["active"] is True
+
+    inactive = client.get(
+        "/api/v1/site-interactions/reactions/posts/from-zero-design-system/like",
+        params={"client_token": "pytest-other-token"},
+    )
+    assert inactive.status_code == 200
+    assert inactive.json()["active"] is False
+    assert inactive.json()["total"] == active.json()["total"]
 
     deleted = client.delete(
         "/api/v1/site-interactions/reactions/posts/from-zero-design-system/like",

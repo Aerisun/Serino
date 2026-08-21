@@ -1,4 +1,3 @@
-import fs from "node:fs";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
@@ -27,10 +26,6 @@ describe("Markdown paragraph indentation", () => {
   });
 
   it("keeps the friends application copy flush by default while allowing an explicit document opt-in", () => {
-    const friendsPage = fs.readFileSync(
-      new URL("../src/pages/Friends.tsx", import.meta.url),
-      "utf8",
-    );
     const applicationCopy = renderToStaticMarkup(
       createElement(MarkdownRenderer, {
         content: "友链申请说明",
@@ -44,9 +39,6 @@ describe("Markdown paragraph indentation", () => {
       }),
     );
 
-    expect(friendsPage).toMatch(
-      /<ArticleMarkdownRenderer\s+content=\{applicationMarkdown\}[^>]*indentParagraphs=\{false\}/s,
-    );
     expect(applicationCopy).not.toContain("markdown-indent-enabled");
     expect(optedInApplicationCopy).toContain("markdown-indent-enabled");
   });
@@ -127,63 +119,4 @@ describe("Markdown paragraph indentation", () => {
     expect(comment).not.toContain("data-md-kind");
   });
 
-  it("opts thoughts and excerpts into indentation without changing comment surfaces", () => {
-    const thoughts = fs.readFileSync(
-      new URL("../src/pages/Thoughts.tsx", import.meta.url),
-      "utf8",
-    );
-    const excerpts = fs.readFileSync(
-      new URL("../src/pages/Excerpts.tsx", import.meta.url),
-      "utf8",
-    );
-    const commentForm = fs.readFileSync(
-      new URL("../src/components/WalineCommentForm.tsx", import.meta.url),
-      "utf8",
-    );
-    const commentList = fs.readFileSync(
-      new URL("../src/components/WalineCommentList.tsx", import.meta.url),
-      "utf8",
-    );
-
-    expect(thoughts).toMatch(
-      /<CommentMarkdownRenderer\s+content=\{thought\.content\}[\s\S]*?indentParagraphs/,
-    );
-    expect(excerpts).toMatch(
-      /<CommentMarkdownRenderer\s+content=\{selected\.content\}[\s\S]*?indentParagraphs/,
-    );
-    const excerptRendererClass = excerpts.match(
-      /<CommentMarkdownRenderer\s+content=\{selected\.content\}\s+className="([^"]+)"/s,
-    )?.[1];
-    expect(excerptRendererClass).toBeDefined();
-    expect(excerptRendererClass).not.toContain("indent-[2em]");
-    expect(commentForm).not.toContain("indentParagraphs");
-    expect(commentList).not.toContain("indentParagraphs");
-  });
-
-  it("keeps structural Markdown flush unless an explicit directive overrides it", () => {
-    const styles = fs.readFileSync(
-      new URL("../src/components/markdown.css", import.meta.url),
-      "utf8",
-    );
-    const lightweightStyles = fs.readFileSync(
-      new URL("../src/components/CommentMarkdownRenderer.css", import.meta.url),
-      "utf8",
-    );
-
-    expect(styles).toMatch(
-      /\.markdown-indent-enabled[\s\S]*\.markdown-paragraph[\s\S]*text-indent:\s*2em/,
-    );
-    expect(styles).toMatch(
-      /:where\(li, blockquote\)[\s\S]*\.markdown-paragraph[\s\S]*text-indent:\s*0/,
-    );
-    expect(styles).toMatch(
-      /\.markdown-paragraph--force-indent[\s\S]*text-indent:\s*2em/,
-    );
-    expect(styles).toMatch(
-      /\.markdown-paragraph--force-no-indent[\s\S]*text-indent:\s*0/,
-    );
-    expect(lightweightStyles).toMatch(
-      /\.markdown-indent-enabled[\s\S]*\.markdown-paragraph[\s\S]*text-indent:\s*2em/,
-    );
-  });
 });

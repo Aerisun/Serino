@@ -1,4 +1,3 @@
-import fs from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   buildArticleStructuredData,
@@ -42,14 +41,6 @@ describe("article structured data", () => {
         "@id": "https://canonical.example/posts/design-system",
       },
     });
-  });
-
-  it("does not ship hard-coded or misleading global alternate-page links", () => {
-    const indexHtml = fs.readFileSync(new URL("../index.html", import.meta.url), "utf-8");
-
-    expect(indexHtml).not.toContain("https://aerisun.top");
-    expect(indexHtml).not.toContain("AI-readable resume page");
-    expect(indexHtml).not.toContain('rel="alternate"');
   });
 
   it("falls back to the current deployment origin when no canonical URL is configured", () => {

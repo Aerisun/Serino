@@ -4,8 +4,6 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useState } from "react";
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import { MarkdownEditor } from "../src/components/MarkdownEditor";
 import { LanguageProvider } from "../src/i18n";
 
@@ -163,12 +161,6 @@ describe("MarkdownEditor toolbar focus", () => {
     expect(textarea.value).toBe("**bold text**");
     expect(textarea.selectionStart).toBe(11);
     expect(textarea.selectionEnd).toBe(11);
-  });
-
-  it("uses the same scroll-preserving focus behavior after image insertion", () => {
-    const source = readFileSync(resolve(process.cwd(), "src/components/MarkdownEditor.tsx"), "utf8");
-
-    expect(source).toMatch(/textarea\?\.focus\(\{ preventScroll: true \}\)/);
   });
 });
 

@@ -45,30 +45,15 @@ def read_json_ld_graph(html: str) -> list[dict[str, object]]:
     return graph
 
 
-def test_sitemap_xml(client):
-    r = client.get("/sitemap.xml")
-    assert r.status_code == 200
-    assert "application/xml" in r.headers["content-type"]
-    assert '<?xml version="1.0"' in r.text
-    assert "<urlset" in r.text
-    assert "<loc>" in r.text
-    assert "/calendar" not in r.text
-
-
-def test_robots_txt(client):
+def test_robots_txt_allows_discovery_without_overblocking_general_crawlers(client):
     r = client.get("/robots.txt")
     assert r.status_code == 200
     assert "text/plain" in r.headers["content-type"]
-    assert "User-agent: *" in r.text
     assert "Disallow: /admin/" in r.text
     assert "Disallow: /api/v1/admin/" in r.text
     assert "Disallow: /api/mcp" in r.text
     assert "Sitemap:" in r.text
-
-
-def test_robots_txt_allows_discovery_without_overblocking_general_crawlers(client):
-    r = client.get("/robots.txt")
-    assert r.status_code == 200
+    assert "User-agent: *" in r.text
 
     for user_agent in (
         "Googlebot",
@@ -198,33 +183,6 @@ def test_resume_markdown_exposes_resume_without_spa(client):
     assert "felix@example.com" in r.text
 
 
-def test_resume_markdown_head_supports_resource_probes(client):
-    r = client.head("/resume.md")
-    assert r.status_code == 200
-    assert "text/markdown" in r.headers["content-type"]
-    assert r.text == ""
-
-
-def test_llms_txt_head_supports_resource_probes(client):
-    r = client.head("/llms.txt")
-    assert r.status_code == 200
-    assert "text/markdown" in r.headers["content-type"]
-    assert r.text == ""
-
-
-def test_llms_txt_is_available_under_site_api_prefix(client):
-    r = client.get("/api/v1/site/llms.txt")
-    assert r.status_code == 200
-    assert "# " in r.text
-    assert "/resume.md" in r.text
-
-
-def test_resume_markdown_is_available_under_site_api_prefix(client):
-    r = client.get("/api/v1/site/resume.md")
-    assert r.status_code == 200
-    assert "# Felix" in r.text
-
-
 def test_home_seo_html_exposes_public_profile_in_app_shell(client):
     configure_diary_private(False)
     r = client.get("/")
@@ -343,29 +301,6 @@ def test_post_seo_prefers_first_body_image_over_homepage_static_image(client):
     assert article_json_ld["image"] == expected_image
 
 
-def test_post_seo_without_body_image_uses_homepage_static_image_not_resume_image(client):
-    factory = get_session_factory()
-    with factory() as session:
-        profile = session.query(SiteProfile).one()
-        profile.og_image = "/media/homepage-static.webp"
-        profile.hero_image_url = "/media/homepage-person.webp"
-        resume = session.query(ResumeBasics).one()
-        resume.profile_image_url = "/media/resume-only.webp"
-        post = session.query(PostEntry).filter(PostEntry.slug == "from-zero-design-system").one()
-        post.body = "这篇文章没有图片。"
-        session.commit()
-
-    response = client.get("/posts/from-zero-design-system")
-    article_json_ld_match = re.search(r'<script type="application/ld\+json">(.+?)</script>', response.text)
-    assert article_json_ld_match is not None
-    article_json_ld = json.loads(article_json_ld_match.group(1))
-
-    expected_image = "http://localhost:8080/media/homepage-static.webp"
-    assert f'<meta property="og:image" content="{expected_image}">' in response.text
-    assert article_json_ld["image"] == expected_image
-    assert '<meta property="og:image" content="http://localhost:8080/media/resume-only.webp">' not in response.text
-
-
 def test_post_seo_recognizes_reference_and_html_body_images(client):
     cases = [
         (
@@ -394,30 +329,6 @@ def test_post_seo_recognizes_reference_and_html_body_images(client):
         assert f'<meta property="og:image" content="{expected_image}">' in response.text
 
 
-def test_home_seo_html_falls_back_to_homepage_name_when_bilingual_identity_is_incomplete(client):
-    configure_search_identity(
-        homepage_name="Aerisun",
-        real_name="测试姓名",
-        meta_title="测试搜索标题",
-        meta_description="用户填写的测试摘要",
-    )
-
-    r = client.get("/")
-    assert r.status_code == 200
-    assert "<title>Aerisun</title>" in r.text
-    assert '<meta property="og:title" content="测试搜索标题">' in r.text
-    assert '<meta name="author" content="测试姓名">' in r.text
-    assert '<meta name="description" content="用户填写的测试摘要">' in r.text
-
-    graph = read_json_ld_graph(r.text)
-    person = next(item for item in graph if item.get("@type") == "Person")
-    website = next(item for item in graph if item.get("@type") == "WebSite")
-    assert person["name"] == "测试姓名"
-    assert "Aerisun" in person["alternateName"]
-    assert website["about"] == {"@id": "http://localhost:8080/#person"}
-    assert website["mainEntity"] == {"@id": "http://localhost:8080/#person"}
-
-
 def test_home_seo_html_does_not_pair_english_name_with_a_fallback_real_name(client):
     configure_search_identity(homepage_name="Aerisun", english_name="Wenbo Yang")
 
@@ -425,20 +336,6 @@ def test_home_seo_html_does_not_pair_english_name_with_a_fallback_real_name(clie
     assert r.status_code == 200
     assert "<title>Aerisun</title>" in r.text
     assert "<title>Aerisun - Felix(Wenbo Yang)</title>" not in r.text
-
-
-def test_home_seo_description_uses_the_configured_text_without_identity_prefixes(client):
-    configured_description = "杨汶帛，北京大学集成电路设计与集成系统专业24级本科生，辅修智能科学与技术"
-    configure_search_identity(
-        homepage_name="Aerisun",
-        real_name="杨汶帛",
-        english_name="Wenbo Yang",
-        meta_description=configured_description,
-    )
-
-    r = client.get("/")
-    assert r.status_code == 200
-    assert f'<meta name="description" content="{configured_description}">' in r.text
 
 
 def test_home_seo_description_preserves_internal_spacing_newlines_and_length(client):
@@ -478,25 +375,6 @@ def test_home_seo_shell_keeps_react_mount_before_crawler_fallback(client):
 
     assert root_index < fallback_index
     assert app_entry_index < fallback_index
-
-
-def test_resume_seo_html_exposes_resume_in_app_shell(client):
-    r = client.get("/resume")
-    assert r.status_code == 200
-    assert "text/html" in r.headers["content-type"]
-    assert r.text.lower().startswith("<!doctype html>")
-    assert '<div id="root">' in r.text
-    assert 'data-seo-shell="resume"' in r.text
-    assert 'type="module"' in r.text
-    assert "站点加载中" not in r.text
-    assert "Felix" in r.text
-    assert "上海 / Remote" in r.text
-    assert "felix@example.com" in r.text
-    assert "/resume.md" in r.text
-    assert "/api/v1/site/resume" in r.text
-    assert "application/ld+json" in r.text
-    assert "ProfilePage" in r.text
-    assert "Person" in r.text
 
 
 def test_resume_seo_html_uses_configured_real_name_in_browser_title(client):

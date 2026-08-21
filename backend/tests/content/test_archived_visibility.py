@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import bcrypt
-import pytest
 
 from aerisun.core.db import get_session_factory
 from aerisun.domain.diary_access.service import DIARY_PRIVATE_FEATURE_FLAG
@@ -105,65 +104,60 @@ def _create_private_item(client, admin_headers: dict[str, str], *, content_type:
     return created
 
 
-@pytest.mark.parametrize(("content_type", "list_path"), LIST_CASES)
-def test_public_content_lists_hide_private_items(client, admin_headers, content_type: str, list_path: str) -> None:
-    slug = f"private-{content_type}-hidden"
-    _create_private_item(client, admin_headers, content_type=content_type, slug=slug)
+def test_public_content_lists_hide_private_items(client, admin_headers) -> None:
+    slugs = {}
+    for content_type, _ in LIST_CASES:
+        slug = f"private-{content_type}-hidden"
+        _create_private_item(client, admin_headers, content_type=content_type, slug=slug)
+        slugs[content_type] = slug
 
-    response = client.get(list_path)
+    for content_type, list_path in LIST_CASES:
+        response = client.get(list_path)
+        assert response.status_code == 200
+        assert all(item["slug"] != slugs[content_type] for item in response.json()["items"])
 
-    assert response.status_code == 200
-    assert all(item["slug"] != slug for item in response.json()["items"])
 
-
-@pytest.mark.parametrize(("content_type", "list_path"), LIST_CASES)
-def test_admin_elevated_site_user_can_see_private_items_in_lists(
-    client,
-    admin_headers,
-    content_type: str,
-    list_path: str,
-) -> None:
-    slug = f"private-{content_type}-visible"
-    _create_private_item(client, admin_headers, content_type=content_type, slug=slug)
+def test_admin_elevated_site_user_can_see_private_items_in_lists(client, admin_headers) -> None:
+    slugs = {}
+    for content_type, _ in LIST_CASES:
+        slug = f"private-{content_type}-visible"
+        _create_private_item(client, admin_headers, content_type=content_type, slug=slug)
+        slugs[content_type] = slug
     _seed_bound_admin_email()
     _login_as_site_admin(client)
 
-    response = client.get(list_path)
-
-    assert response.status_code == 200
-    private_item = next(item for item in response.json()["items"] if item["slug"] == slug)
-    assert "status" not in private_item
-    assert private_item["visibility"] == "private"
-
-
-@pytest.mark.parametrize(("content_type", "detail_path"), DETAIL_CASES)
-def test_public_content_details_hide_private_items(client, admin_headers, content_type: str, detail_path: str) -> None:
-    if content_type == "diary":
-        _set_diary_private_enabled(False)
-    slug = f"private-{content_type}-detail-hidden"
-    _create_private_item(client, admin_headers, content_type=content_type, slug=slug)
-
-    response = client.get(detail_path.format(slug=slug))
-
-    assert response.status_code == 404
+    for content_type, list_path in LIST_CASES:
+        response = client.get(list_path)
+        assert response.status_code == 200
+        private_item = next(item for item in response.json()["items"] if item["slug"] == slugs[content_type])
+        assert "status" not in private_item
+        assert private_item["visibility"] == "private"
 
 
-@pytest.mark.parametrize(("content_type", "detail_path"), DETAIL_CASES)
-def test_admin_elevated_site_user_can_open_private_details(
-    client,
-    admin_headers,
-    content_type: str,
-    detail_path: str,
-) -> None:
-    slug = f"private-{content_type}-detail-visible"
-    _create_private_item(client, admin_headers, content_type=content_type, slug=slug)
+def test_public_content_details_hide_private_items(client, admin_headers) -> None:
+    _set_diary_private_enabled(False)
+    slugs = {}
+    for content_type, _ in DETAIL_CASES:
+        slug = f"private-{content_type}-detail-hidden"
+        _create_private_item(client, admin_headers, content_type=content_type, slug=slug)
+        slugs[content_type] = slug
+
+    for content_type, detail_path in DETAIL_CASES:
+        assert client.get(detail_path.format(slug=slugs[content_type])).status_code == 404
+
+
+def test_admin_elevated_site_user_can_open_private_details(client, admin_headers) -> None:
+    slugs = {}
+    for content_type, _ in DETAIL_CASES:
+        slug = f"private-{content_type}-detail-visible"
+        _create_private_item(client, admin_headers, content_type=content_type, slug=slug)
+        slugs[content_type] = slug
     _seed_bound_admin_email()
     _login_as_site_admin(client)
 
-    response = client.get(detail_path.format(slug=slug))
-
-    assert response.status_code == 200
-    payload = response.json()
-    assert payload["slug"] == slug
-    assert "status" not in payload
-    assert payload["visibility"] == "private"
+    for content_type, detail_path in DETAIL_CASES:
+        response = client.get(detail_path.format(slug=slugs[content_type]))
+        assert response.status_code == 200
+        assert response.json()["slug"] == slugs[content_type]
+        assert "status" not in response.json()
+        assert response.json()["visibility"] == "private"

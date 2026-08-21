@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from shutil import copytree
 
 import pytest
 
@@ -71,6 +72,13 @@ def seed_runtime_data() -> None:
     from aerisun.domain.automation.runtime_registry import get_automation_runtime
 
     seed_development_data()
+    get_automation_runtime().start()
+
+
+def clone_seeded_runtime_data(source_store_dir: Path, target_store_dir: Path) -> None:
+    from aerisun.domain.automation.runtime_registry import get_automation_runtime
+
+    copytree(source_store_dir, target_store_dir)
     get_automation_runtime().start()
 
 

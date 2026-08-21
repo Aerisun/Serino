@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import pytest
-
 from aerisun.core.db import get_session_factory
 from aerisun.core.settings import get_settings
 from aerisun.domain.content.feed_service import build_posts_rss_xml
@@ -30,73 +28,64 @@ def _make_payload(content_type: str, suffix: str) -> dict:
     }
 
 
-@pytest.mark.parametrize(
-    ("path", "channel_section", "slug", "item_path"),
-    [
+def test_public_content_feeds_return_rss_xml(client) -> None:
+    cases = [
         ("/feeds/articles.xml", "Articles", "from-zero-design-system", "/posts/from-zero-design-system"),
         ("/feeds/diary.xml", "Diary", "spring-equinox-and-warm-light", "/diary/spring-equinox-and-warm-light"),
         ("/feeds/thoughts.xml", "Thoughts", "spacing-rhythm-note", "/thoughts#spacing-rhythm-note"),
         ("/feeds/excerpts.xml", "Excerpts", "good-design-note", "/excerpts#good-design-note"),
-    ],
-)
-def test_public_content_feeds_return_rss_xml(
-    client, path: str, channel_section: str, slug: str, item_path: str
-) -> None:
-    if path == "/feeds/diary.xml":
-        _set_diary_private_enabled(False)
+    ]
+    _set_diary_private_enabled(False)
     site_url = (get_settings().site_url or "https://example.com").rstrip("/")
     with get_session_factory()() as session:
         site_name = session.query(SiteProfile).one().name
 
-    response = client.get(path)
+    for path, channel_section, slug, item_path in cases:
+        response = client.get(path)
+        assert response.status_code == 200
+        assert response.headers["content-type"].startswith("application/rss+xml")
+        assert f"<title>{site_name} {channel_section}</title>" in response.text
+        assert slug in response.text
+        assert f"{site_url}{item_path}" in response.text
 
-    assert response.status_code == 200
-    assert response.headers["content-type"].startswith("application/rss+xml")
-    assert f"<title>{site_name} {channel_section}</title>" in response.text
-    assert slug in response.text
-    assert f"{site_url}{item_path}" in response.text
 
-
-@pytest.mark.parametrize("alias_path", ["/rss.xml", "/feed.xml", "/feeds.xml"])
-def test_articles_feed_aliases_redirect_to_canonical_feed(client, alias_path: str) -> None:
-    alias_response = client.get(alias_path, follow_redirects=False)
-
-    assert alias_response.status_code == 308
-    assert alias_response.headers["location"] == "/feeds/articles.xml"
+def test_articles_feed_aliases_redirect_to_canonical_feed(client) -> None:
+    for alias_path in ("/rss.xml", "/feed.xml", "/feeds.xml"):
+        alias_response = client.get(alias_path, follow_redirects=False)
+        assert alias_response.status_code == 308
+        assert alias_response.headers["location"] == "/feeds/articles.xml"
 
 
 def test_legacy_posts_feed_is_not_available(client) -> None:
     assert client.get("/feeds/posts.xml").status_code == 404
 
 
-@pytest.mark.parametrize(
-    ("content_type", "feed_path"),
-    [
+def test_feed_only_includes_public_content(client, admin_headers) -> None:
+    cases = [
         ("posts", "/feeds/articles.xml"),
         ("diary", "/feeds/diary.xml"),
         ("thoughts", "/feeds/thoughts.xml"),
         ("excerpts", "/feeds/excerpts.xml"),
-    ],
-)
-def test_feed_only_includes_public_content(client, admin_headers, content_type: str, feed_path: str) -> None:
-    if content_type == "diary":
-        _set_diary_private_enabled(False)
-    public_payload = _make_payload(content_type, "-public")
+    ]
+    _set_diary_private_enabled(False)
+    payloads = {}
+    for content_type, _ in cases:
+        public_payload = _make_payload(content_type, "-public")
+        private_payload = {**_make_payload(content_type, "-private"), "visibility": "private"}
+        assert (
+            client.post(f"{ADMIN_BASE}/{content_type}/", json=public_payload, headers=admin_headers).status_code == 201
+        )
+        assert (
+            client.post(f"{ADMIN_BASE}/{content_type}/", json=private_payload, headers=admin_headers).status_code == 201
+        )
+        payloads[content_type] = (public_payload, private_payload)
 
-    private_payload = _make_payload(content_type, "-private")
-    private_payload["visibility"] = "private"
-
-    public_resp = client.post(f"{ADMIN_BASE}/{content_type}/", json=public_payload, headers=admin_headers)
-    assert public_resp.status_code == 201
-
-    private_resp = client.post(f"{ADMIN_BASE}/{content_type}/", json=private_payload, headers=admin_headers)
-    assert private_resp.status_code == 201
-
-    response = client.get(feed_path)
-
-    assert response.status_code == 200
-    assert public_payload["slug"] in response.text
-    assert private_payload["slug"] not in response.text
+    for content_type, feed_path in cases:
+        response = client.get(feed_path)
+        public_payload, private_payload = payloads[content_type]
+        assert response.status_code == 200
+        assert public_payload["slug"] in response.text
+        assert private_payload["slug"] not in response.text
 
 
 def test_posts_feed_excludes_public_posts_marked_for_rss_exclusion(client, admin_headers) -> None:

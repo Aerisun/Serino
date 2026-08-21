@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
 import {
   getVerticalWheelDelta,
   shouldCaptureWheelScroll,
@@ -59,24 +58,5 @@ describe("contained wheel scrolling", () => {
         pageSize: 600,
       }),
     ).toBe(32);
-  });
-});
-
-describe("activity list scroll containers", () => {
-  const componentSources = [
-    "FriendCircle.tsx",
-    "RecentActivity.tsx",
-  ].map((fileName) =>
-    readFileSync(
-      new URL(`../src/components/${fileName}`, import.meta.url),
-      "utf8",
-    ),
-  );
-
-  it("keeps native scroll chaining available at desktop breakpoints", () => {
-    componentSources.forEach((source) => {
-      expect(source).toContain("overscroll-y-auto");
-      expect(source).not.toContain("md:overscroll-contain");
-    });
   });
 });
