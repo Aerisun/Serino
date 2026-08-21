@@ -273,7 +273,11 @@ build_local_images() {
 }
 
 prepare_smoke_store_dir() {
-  mkdir -p "${TMP_STORE_DIR}/media" "${TMP_STORE_DIR}/secrets" "${TMP_STORE_DIR}/.backup-sync-tmp"
+  mkdir -p \
+    "${TMP_STORE_DIR}/media" \
+    "${TMP_STORE_DIR}/secrets" \
+    "${TMP_STORE_DIR}/.backup-sync-tmp" \
+    "${TMP_STORE_DIR}/caddy-routes"
   chmod -R 0777 "${TMP_STORE_DIR}"
 }
 
@@ -332,6 +336,7 @@ WALINE_PORT=${WALINE_PORT}
 AERISUN_SENTRY_DSN=
 VITE_SENTRY_DSN=
 AERISUN_STORE_BIND_DIR=${TMP_STORE_DIR}
+SERINO_CADDY_ROUTES_DIR=${TMP_STORE_DIR}/caddy-routes
 AERISUN_IMAGE_REGISTRY=${LOCAL_IMAGE_REGISTRY}
 AERISUN_IMAGE_TAG=${SMOKE_TAG}
 EOF

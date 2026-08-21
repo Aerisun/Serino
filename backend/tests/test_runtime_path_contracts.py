@@ -1954,10 +1954,10 @@ def test_deploy_contract_reuses_shared_env_keys():
     assert "WALINE_JWT_TOKEN=smoke-0123456789abcdef0123456789abcdef" in smoke_text
     assert "AERISUN_DATA_BACKFILL_ENABLED" not in smoke_text
     assert 'TMP_STORE_DIR="$(mktemp -d "${PROJECT_DIR}/.docker-smoke-store.XXXXXX")"' in smoke_text
-    assert (
-        'mkdir -p "${TMP_STORE_DIR}/media" "${TMP_STORE_DIR}/secrets" "${TMP_STORE_DIR}/.backup-sync-tmp"' in smoke_text
-    )
+    for smoke_store_path in ("media", "secrets", ".backup-sync-tmp", "caddy-routes"):
+        assert f'"${{TMP_STORE_DIR}}/{smoke_store_path}"' in smoke_text
     assert 'chmod -R 0777 "${TMP_STORE_DIR}"' in smoke_text
+    assert "SERINO_CADDY_ROUTES_DIR=${TMP_STORE_DIR}/caddy-routes" in smoke_text
 
     assert 'healthcheck_path="${AERISUN_HEALTHCHECK_PATH:-/api/v1/site/readyz}"' in dev_smoke_text
     assert 'admin_base_path="${AERISUN_ADMIN_BASE_PATH:-/admin/}"' in dev_smoke_text

@@ -103,7 +103,10 @@ def test_admin_open_url_returns_internal_file_directly_to_browser(client, admin_
     assert response.headers["content-type"].startswith("application/pdf")
 
     token = preview_tokens[0]
-    tampered_url = f"{parsed.path}?preview_token={token[:-1]}{'a' if token[-1] != 'a' else 'b'}"
+    version, encoded_payload, signature = token.split(".", maxsplit=2)
+    replacement = "a" if encoded_payload[0] != "a" else "b"
+    tampered_token = f"{version}.{replacement}{encoded_payload[1:]}.{signature}"
+    tampered_url = f"{parsed.path}?preview_token={tampered_token}"
     assert (
         client.get(
             tampered_url,
