@@ -5176,7 +5176,10 @@ export const ListServiceForwardsEndpointApiV1AdminServiceForwardsGetResponse = z
  */
 export const createServiceForwardEndpointApiV1AdminServiceForwardsPostBodyNameMax = 80;
 
-export const createServiceForwardEndpointApiV1AdminServiceForwardsPostBodySlugRegExp = new RegExp('^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$');
+export const createServiceForwardEndpointApiV1AdminServiceForwardsPostBodySlugMax = 255;
+
+
+export const createServiceForwardEndpointApiV1AdminServiceForwardsPostBodySlugRegExp = new RegExp('^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\/[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)\*$');
 export const createServiceForwardEndpointApiV1AdminServiceForwardsPostBodyPortOneMax = 65535;
 
 export const createServiceForwardEndpointApiV1AdminServiceForwardsPostBodyTargetUrlOneMax = 2048;
@@ -5185,7 +5188,7 @@ export const createServiceForwardEndpointApiV1AdminServiceForwardsPostBodyTarget
 
 export const CreateServiceForwardEndpointApiV1AdminServiceForwardsPostBody = zod.object({
   "name": zod.string().min(1).max(createServiceForwardEndpointApiV1AdminServiceForwardsPostBodyNameMax),
-  "slug": zod.string().regex(createServiceForwardEndpointApiV1AdminServiceForwardsPostBodySlugRegExp),
+  "slug": zod.string().max(createServiceForwardEndpointApiV1AdminServiceForwardsPostBodySlugMax).regex(createServiceForwardEndpointApiV1AdminServiceForwardsPostBodySlugRegExp),
   "source": zod.enum(['local', 'tailscale']),
   "port": zod.union([zod.number().min(1).max(createServiceForwardEndpointApiV1AdminServiceForwardsPostBodyPortOneMax),zod.null()]).optional(),
   "target_url": zod.union([zod.string().max(createServiceForwardEndpointApiV1AdminServiceForwardsPostBodyTargetUrlOneMax),zod.null()]).optional()
@@ -5201,7 +5204,10 @@ export const UpdateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutPara
 
 export const updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutBodyNameMax = 80;
 
-export const updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutBodySlugRegExp = new RegExp('^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$');
+export const updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutBodySlugMax = 255;
+
+
+export const updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutBodySlugRegExp = new RegExp('^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\/[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)\*$');
 export const updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutBodyPortOneMax = 65535;
 
 export const updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutBodyTargetUrlOneMax = 2048;
@@ -5210,7 +5216,7 @@ export const updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutBody
 
 export const UpdateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutBody = zod.object({
   "name": zod.string().min(1).max(updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutBodyNameMax),
-  "slug": zod.string().regex(updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutBodySlugRegExp),
+  "slug": zod.string().max(updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutBodySlugMax).regex(updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutBodySlugRegExp),
   "source": zod.enum(['local', 'tailscale']),
   "port": zod.union([zod.number().min(1).max(updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutBodyPortOneMax),zod.null()]).optional(),
   "target_url": zod.union([zod.string().max(updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutBodyTargetUrlOneMax),zod.null()]).optional()

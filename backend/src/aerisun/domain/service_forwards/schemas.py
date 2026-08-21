@@ -13,7 +13,10 @@ class ServiceForwardWrite(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
     name: str = Field(min_length=1, max_length=80)
-    slug: str = Field(pattern=r"^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$")
+    slug: str = Field(
+        max_length=255,
+        pattern=r"^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:/[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*$",
+    )
     source: ServiceForwardSource
     port: int | None = Field(default=None, ge=1, le=65535)
     target_url: str | None = Field(default=None, max_length=2048)

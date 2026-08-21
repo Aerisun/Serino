@@ -152,22 +152,25 @@ describe("ServiceForwardingView", () => {
     renderView(true);
 
     await user.type(screen.getByRole("textbox", { name: "服务备注名" }), "家中面板");
-    await user.type(screen.getByRole("textbox", { name: "slug" }), "home");
+    await user.type(
+      screen.getByRole("textbox", { name: "slug" }),
+      "/model/embedding/v1/",
+    );
     await user.selectOptions(screen.getByRole("combobox", { name: "来源" }), "tailscale");
 
     expect(screen.queryByRole("spinbutton", { name: "端口" })).toBeNull();
     await user.type(
       screen.getByRole("textbox", { name: "Tailscale 服务网址" }),
-      "https://lab.tail246500.ts.net/embedding/v1",
+      "https://lab.tail246500.ts.net/model/embedding/v1",
     );
     await user.click(screen.getByRole("button", { name: "创建" }));
 
     await waitFor(() => {
       expect(api.create).toHaveBeenCalledWith({
         name: "家中面板",
-        slug: "home",
+        slug: "model/embedding/v1",
         source: "tailscale",
-        target_url: "https://lab.tail246500.ts.net/embedding/v1",
+        target_url: "https://lab.tail246500.ts.net/model/embedding/v1",
       });
     });
   });

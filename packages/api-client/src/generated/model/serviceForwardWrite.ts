@@ -12,7 +12,10 @@ export interface ServiceForwardWrite {
      * @maxLength 80
      */
   name: string;
-  /** @pattern ^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$ */
+  /**
+     * @maxLength 255
+     * @pattern ^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:/[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*$
+     */
   slug: string;
   source: ServiceForwardWriteSource;
   port?: number | null;

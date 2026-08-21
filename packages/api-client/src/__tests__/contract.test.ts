@@ -11,6 +11,7 @@ import {
   MeApiV1AdminAuthMeGetResponse,
   ListPostsResponse,
   ListSessionsEndpointApiV1AdminAuthSessionsGetResponse,
+  CreateServiceForwardEndpointApiV1AdminServiceForwardsPostBody,
 } from "../generated/schemas.zod";
 import { FIXTURES_DIR, fixturesDirectoryExists, loadFixture } from "./contract-helpers";
 
@@ -85,6 +86,25 @@ describe("API Contract Validation", () => {
     };
 
     expect(data.items.some((post) => typeof post.exclude_from_rss === "boolean")).toBe(true);
+  });
+
+  it("accepts a multi-segment service forwarding slug", () => {
+    const result = CreateServiceForwardEndpointApiV1AdminServiceForwardsPostBody.safeParse({
+      name: "Embedding API",
+      slug: "model/embedding/v1",
+      source: "tailscale",
+      target_url: "https://lab.tail246500.ts.net/model/embedding/v1",
+    });
+
+    expect(result.success).toBe(true);
+    expect(
+      CreateServiceForwardEndpointApiV1AdminServiceForwardsPostBody.safeParse({
+        name: "Invalid API",
+        slug: "model//embedding",
+        source: "local",
+        port: 8000,
+      }).success,
+    ).toBe(false);
   });
 
   // Warn about fixtures without schemas

@@ -20,6 +20,7 @@ from aerisun.core.settings import BACKEND_ROOT, get_settings
 from aerisun.core.task_manager import TaskManager
 from aerisun.domain.automation.runtime_registry import get_automation_runtime
 from aerisun.domain.ops.service import start_visit_record_worker, stop_visit_record_worker
+from aerisun.domain.service_forwards.service import ensure_route_dispatcher
 
 logger = logging.getLogger("aerisun.bootstrap")
 
@@ -95,6 +96,7 @@ async def lifespan(_app):
     background_task: asyncio.Task[None] | None = None
 
     settings.ensure_directories()
+    ensure_route_dispatcher(settings)
     setup_logging(settings)
     _refresh_bootstrap_seed_on_reload_if_needed()
     check_insecure_defaults(settings)

@@ -42,6 +42,47 @@ def test_admin_can_create_and_list_local_service_forward(client, admin_headers) 
     assert list_response.json() == [created]
 
 
+def test_admin_allows_parent_and_child_routes_with_child_dispatched_first(client, admin_headers) -> None:
+    parent_response = client.post(
+        "/api/v1/admin/service-forwards",
+        headers=admin_headers,
+        json={"name": "Model API", "slug": "model", "source": "local", "port": 8001},
+    )
+    child_response = client.post(
+        "/api/v1/admin/service-forwards",
+        headers=admin_headers,
+        json={
+            "name": "Embedding API",
+            "slug": "model/embedding/v1",
+            "source": "tailscale",
+            "target_url": "https://lab.tail246500.ts.net/model/embedding/v1",
+        },
+    )
+
+    assert parent_response.status_code == 201
+    assert child_response.status_code == 201
+    dispatcher = (get_settings().caddy_routes_dir / "active" / "routes.caddy").read_text(encoding="utf-8")
+    assert dispatcher.index("# serino-route-path: /model/embedding/v1") < dispatcher.index(
+        "# serino-route-path: /model\n"
+    )
+
+
+def test_service_forward_dispatcher_can_be_rebuilt_during_startup(client) -> None:
+    from aerisun.domain.service_forwards.service import ensure_route_dispatcher
+
+    settings = get_settings()
+    route_path = settings.caddy_routes_dir / "route-existing.caddy"
+    route_path.write_text(
+        "# serino-route-path: /existing\nhandle @existing {\n    reverse_proxy http://127.0.0.1:9000\n}\n",
+        encoding="utf-8",
+    )
+
+    ensure_route_dispatcher(settings)
+
+    dispatcher = settings.caddy_routes_dir / "active" / "routes.caddy"
+    assert "# serino-route-path: /existing" in dispatcher.read_text(encoding="utf-8")
+
+
 def test_service_forward_admin_endpoints_require_authentication(client) -> None:
     response = client.get("/api/v1/admin/service-forwards")
 
@@ -109,6 +150,22 @@ def test_service_forward_renderer_strips_slug_and_preserves_streams() -> None:
     assert "uri strip_prefix /local-panel" in local_rendered
 
 
+def test_service_forward_renderer_supports_nested_public_path() -> None:
+    route_id, target_url, rendered = render_route_file(
+        ServiceForwardWrite(
+            name="Embedding API",
+            slug="model/embedding/v1",
+            source="tailscale",
+            target_url="https://lab.tail246500.ts.net/model/embedding/v1",
+        )
+    )
+
+    assert route_id == _route_id("model/embedding/v1")
+    assert target_url == "https://lab.tail246500.ts.net/model/embedding/v1"
+    assert "path /model/embedding/v1 /model/embedding/v1/*" in rendered
+    assert "uri replace /model/embedding/v1 /model/embedding/v1 1" in rendered
+
+
 def test_caddy_reload_uses_the_fixed_caddyfile_import(monkeypatch) -> None:
     from aerisun.domain.service_forwards import service
 
@@ -157,6 +214,10 @@ def test_caddy_reload_uses_the_fixed_caddyfile_import(monkeypatch) -> None:
         (
             {"name": "API", "slug": "api", "source": "local", "port": 9000},
             "SLUG /api 已由 Serino 使用",
+        ),
+        (
+            {"name": "Private API", "slug": "api/private", "source": "local", "port": 9000},
+            "SLUG /api/private 已由 Serino 使用",
         ),
         (
             {
@@ -252,6 +313,7 @@ def test_create_rolls_back_file_when_caddy_reload_fails(client, admin_headers, m
     assert response.status_code == 503
     assert response.json()["detail"] == "Caddy 未能加载服务转发配置，已恢复原配置"
     assert client.get("/api/v1/admin/service-forwards", headers=admin_headers).json() == []
+    assert not (get_settings().caddy_routes_dir / "active" / "routes.caddy").exists()
 
 
 def test_update_and_delete_restore_the_previous_route_when_reload_fails(
@@ -266,6 +328,8 @@ def test_update_and_delete_restore_the_previous_route_when_reload_fails(
         headers=admin_headers,
         json={"name": "Panel", "slug": "panel", "source": "local", "port": 8080},
     ).json()
+    dispatcher_path = get_settings().caddy_routes_dir / "active" / "routes.caddy"
+    original_dispatcher = dispatcher_path.read_bytes()
 
     def fail_reload(_settings) -> None:
         raise RuntimeError("caddy rejected config")
@@ -280,6 +344,7 @@ def test_update_and_delete_restore_the_previous_route_when_reload_fails(
 
     assert update_response.status_code == 503
     assert client.get("/api/v1/admin/service-forwards", headers=admin_headers).json() == [created]
+    assert dispatcher_path.read_bytes() == original_dispatcher
 
     delete_response = client.delete(
         f"/api/v1/admin/service-forwards/{created['id']}",
@@ -288,3 +353,4 @@ def test_update_and_delete_restore_the_previous_route_when_reload_fails(
 
     assert delete_response.status_code == 503
     assert client.get("/api/v1/admin/service-forwards", headers=admin_headers).json() == [created]
+    assert dispatcher_path.read_bytes() == original_dispatcher

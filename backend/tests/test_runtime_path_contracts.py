@@ -2014,7 +2014,8 @@ def test_caddy_routes_serino_before_local_extensions_and_returns_real_404():
     web_dockerfile_text = read_project_file("Dockerfile.caddy")
 
     assert "route {" in caddy_text
-    assert "import routes.d/*.caddy" in caddy_text
+    assert "import /etc/caddy/routes.d/active/*.caddy" in caddy_text
+    assert "import /etc/caddy/routes.d/*.caddy" not in caddy_text
     assert "respond 404" in caddy_text
     assert caddy_text.count("try_files {path} /index.html") == 1
     assert "try_files /index.html" in caddy_text
@@ -2028,8 +2029,8 @@ def test_caddy_routes_serino_before_local_extensions_and_returns_real_404():
         in caddy_text
     )
     assert "path /preview" in caddy_text
-    assert caddy_text.index("@apiRoutes") < caddy_text.index("import routes.d/*.caddy")
-    assert caddy_text.index("import routes.d/*.caddy") < caddy_text.index("respond 404")
+    assert caddy_text.index("@apiRoutes") < caddy_text.index("import /etc/caddy/routes.d/active/*.caddy")
+    assert caddy_text.index("import /etc/caddy/routes.d/active/*.caddy") < caddy_text.index("respond 404")
 
     assert "${SERINO_CADDY_ROUTES_DIR:-/etc/serino/routes.d}:/etc/caddy/routes.d:ro" in release_compose_text
     api_block = release_compose_text.split("  api:\n", 1)[1].split("\n  waline:\n", 1)[0]
@@ -2199,7 +2200,11 @@ run_as_root() {{
   "$@"
 }}
 validate_caddy_route_configuration() {{
-  printf 'validate\\n'
+  if grep -q '# serino-route-path: /files' "${{SERINO_CADDY_ROUTES_DIR}}/active/routes.caddy" 2>/dev/null; then
+    printf 'validate:files\\n'
+  else
+    printf 'validate:empty\\n'
+  fi
 }}
 reload_caddy_route_configuration_if_running() {{
   printf 'reload\\n'
@@ -2216,14 +2221,79 @@ cmd_route_list
     )
 
     assert output == [
-        "validate",
+        "validate:files",
         "reload",
         "- https://example.com/files → http://127.0.0.1:9000",
-        "validate",
+        "validate:empty",
         "reload",
         "未配置其他服务转发。",
     ]
     assert not list(routes_dir.glob("route-*.caddy"))
+
+
+def test_route_command_restores_dispatcher_snapshot_when_rollback_rebuild_fails(tmp_path: Path):
+    routes_dir = tmp_path / "routes"
+    routes_dir.mkdir()
+    (routes_dir / "route-existing.caddy").write_text(
+        "# serino-route-path: /files\nhandle @files {\n    reverse_proxy http://127.0.0.1:9000\n}\n",
+        encoding="utf-8",
+    )
+    failed_dispatcher = tmp_path / "failed-dispatcher.caddy"
+    failed_dispatcher.write_text(
+        "# serino-route-path: /other\nhandle @other {\n    reverse_proxy http://127.0.0.1:9001\n}\n"
+        "# serino-route-path: /files\nhandle @files {\n    reverse_proxy http://127.0.0.1:9000\n}\n",
+        encoding="utf-8",
+    )
+
+    output = run_installer_bash(
+        f"""
+source installer/route.sh
+
+SERINO_CADDY_ROUTES_DIR='{routes_dir}'
+AERISUN_SITE_URL='https://example.com'
+run_as_root() {{
+  if [[ "$1" == "install" ]]; then
+    shift
+    local -a args=()
+    while [[ "$#" -gt 0 ]]; do
+      case "$1" in
+        -o|-g)
+          shift 2
+          ;;
+        *)
+          args+=("$1")
+          shift
+          ;;
+      esac
+    done
+    command install "${{args[@]}}"
+    return
+  fi
+  "$@"
+}}
+
+rebuild_caddy_route_dispatcher
+rebuild_calls=0
+rebuild_caddy_route_dispatcher() {{
+  rebuild_calls=$((rebuild_calls + 1))
+  if [[ "${{rebuild_calls}}" -gt 1 ]]; then
+    touch "${{SERINO_CADDY_ROUTES_DIR}}/rollback-rebuild-failed"
+    return 1
+  fi
+  command cp '{failed_dispatcher}' "${{SERINO_CADDY_ROUTES_DIR}}/active/routes.caddy"
+}}
+validate_caddy_route_configuration() {{ :; }}
+reload_caddy_route_configuration_if_running() {{ return 1; }}
+
+( cmd_route_add /other http://127.0.0.1:9001 ) || true
+cat "${{SERINO_CADDY_ROUTES_DIR}}/active/routes.caddy"
+"""
+    )
+
+    assert "# serino-route-path: /files" in output
+    assert "# serino-route-path: /other" not in output
+    assert not (routes_dir / "rollback-rebuild-failed").exists()
+    assert [path.name for path in routes_dir.glob("route-*.caddy")] == ["route-existing.caddy"]
 
 
 def test_route_command_rejects_reserved_and_duplicate_paths(tmp_path: Path):

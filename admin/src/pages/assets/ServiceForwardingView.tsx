@@ -155,13 +155,14 @@ export function ServiceForwardingView({
   };
 
   const submit = () => {
-    if (!draft.name.trim() || !draft.slug.trim()) {
+    const normalizedSlug = draft.slug.trim().toLowerCase().replace(/^\/+|\/+$/g, "");
+    if (!draft.name.trim() || !normalizedSlug) {
       toast.error(t("serviceForwards.requiredFields"));
       return;
     }
     const commonPayload = {
       name: draft.name.trim(),
-      slug: draft.slug.trim().toLowerCase(),
+      slug: normalizedSlug,
       source: draft.source,
     };
     if (draft.source === "local") {
@@ -353,14 +354,14 @@ export function ServiceForwardingView({
                 <Input
                   id="service-forward-slug"
                   value={draft.slug}
-                  maxLength={63}
+                  maxLength={255}
                   onChange={(event) =>
                     setDraft((current) => ({
                       ...current,
-                      slug: event.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""),
+                      slug: event.target.value.toLowerCase().replace(/[^a-z0-9/-]/g, ""),
                     }))
                   }
-                  placeholder="grafana"
+                  placeholder="model/embedding/v1"
                 />
               </div>
             </div>
