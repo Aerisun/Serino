@@ -19,6 +19,7 @@ DiagnosticActionTarget = Literal[
     "backup_settings",
     "backup_runs",
     "mcp",
+    "service_forwards",
 ]
 
 

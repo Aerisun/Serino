@@ -28,6 +28,7 @@ const ACTION_ROUTES: Partial<Record<SystemDiagnosticItemRead["action_target"], s
   backup_settings: "/system/backups",
   backup_runs: "/system/backups?section=records&records=runs",
   mcp: "/integrations/mcp/settings",
+  service_forwards: "/assets?view=service_forward",
 };
 
 const SYSTEM_GUIDANCE_KEYS: Record<string, string> = {
@@ -45,6 +46,7 @@ const CHECK_LABEL_KEYS: Record<string, string> = {
   proxy: "diagnostics.check.proxy",
   backup: "diagnostics.check.backup",
   mcp: "diagnostics.check.mcp",
+  service_forwards: "diagnostics.check.serviceForwards",
   diagnostic_runner: "diagnostics.check.runner",
 };
 

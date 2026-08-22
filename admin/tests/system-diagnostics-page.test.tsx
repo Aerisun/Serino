@@ -159,6 +159,31 @@ describe("DiagnosticsPage", () => {
     expect(screen.queryByRole("heading", { name: "未启用或已跳过" })).toBeNull();
   });
 
+  it("links the service forwarding diagnostic card to the resource page", async () => {
+    api.get.mockResolvedValueOnce({
+      data: {
+        ...api.state,
+        items: [
+          {
+            key: "service_forwards",
+            status: "warning",
+            summary: "有 1 个服务转发不可访问",
+            action_target: "service_forwards",
+            duration_ms: 20,
+          },
+        ],
+      },
+      status: 200,
+      headers: new Headers(),
+    });
+    renderPage();
+
+    const card = (await screen.findByText("有 1 个服务转发不可访问")).closest("article");
+    expect(within(card as HTMLElement).getByRole("link", { name: "前往处理：服务转发" }).getAttribute("href")).toBe(
+      "/assets?view=service_forward",
+    );
+  });
+
   it("keeps the previous result visible while a new check is running", async () => {
     api.get.mockResolvedValueOnce({
       data: { ...api.state, execution_status: "running", is_running: true },

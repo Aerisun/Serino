@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import threading
 from datetime import timedelta
 from pathlib import Path
 from types import SimpleNamespace
@@ -25,6 +26,7 @@ from aerisun.domain.ops.diagnostics import (
     check_model_api,
     check_object_storage,
     check_proxy,
+    check_service_forwards,
     check_smtp,
     check_storage,
     collect_system_diagnostics,
@@ -38,6 +40,7 @@ from aerisun.domain.ops.models import BackupQueueItem, SystemDiagnosticState
 from aerisun.domain.ops.schemas import BackupSyncConfigTestRead
 from aerisun.domain.outbound_proxy.schemas import OutboundProxyConfigUpdate
 from aerisun.domain.outbound_proxy.service import update_outbound_proxy_config
+from aerisun.domain.service_forwards.schemas import ServiceForwardRead
 from aerisun.domain.site_config.models import SiteProfile
 from aerisun.domain.subscription.service import get_subscription_config_orm
 
@@ -76,6 +79,23 @@ def _persist_completed_diagnostic_snapshot(
     seeded_session.commit()
 
 
+def _service_forward(
+    route_id: str,
+    *,
+    name: str,
+    source: str,
+) -> ServiceForwardRead:
+    return ServiceForwardRead(
+        id=route_id,
+        name=name,
+        slug=route_id,
+        path=f"/{route_id}",
+        source=source,  # type: ignore[arg-type]
+        target_url=f"http://127.0.0.1:{8000 + len(route_id)}",
+        public_url=f"https://site.example/{route_id}",
+    )
+
+
 def test_aggregate_diagnostics_ignores_skipped_items_for_overall_health() -> None:
     summary = aggregate_diagnostic_items(
         [
@@ -107,6 +127,101 @@ def test_diagnostic_results_include_a_stable_translation_key() -> None:
 
     assert result.summary_key == "diagnostics.result.databaseHealthy"
     assert result.summary_params == {}
+
+
+def test_service_forward_diagnostic_skips_when_no_rules_are_configured(monkeypatch) -> None:
+    monkeypatch.setattr("aerisun.domain.ops.diagnostics.list_service_forwards", lambda: [])
+
+    result = check_service_forwards()
+
+    assert result.status == "skipped"
+    assert result.summary_key == "diagnostics.result.serviceForwardsDisabled"
+    assert result.action_target == "service_forwards"
+
+
+def test_service_forward_diagnostic_checks_every_source_and_aggregates_partial_failures(monkeypatch) -> None:
+    import aerisun.domain.ops.diagnostics as diagnostics
+
+    rules = [
+        _service_forward("local-panel", name="本机面板", source="local"),
+        _service_forward("embedding", name="Embedding 服务", source="tailscale"),
+        _service_forward("legacy", name="旧规则", source="custom"),
+    ]
+    statuses = {"local-panel": "reachable", "embedding": "unreachable", "legacy": "reachable"}
+    calls: list[str] = []
+
+    def fake_probe(route_id: str):
+        calls.append(route_id)
+        route = next(rule for rule in rules if rule.id == route_id)
+        return route.model_copy(update={"status": statuses[route_id]})
+
+    monkeypatch.setattr(diagnostics, "list_service_forwards", lambda: rules)
+    monkeypatch.setattr(diagnostics, "test_service_forward", fake_probe)
+
+    result = check_service_forwards()
+
+    assert sorted(calls) == ["embedding", "legacy", "local-panel"]
+    assert result.status == "warning"
+    assert result.summary_key == "diagnostics.result.serviceForwardsDegraded"
+    assert result.summary_params == {"count": 1}
+    assert result.detail == "Embedding 服务"
+    assert result.action_target == "service_forwards"
+
+
+def test_service_forward_diagnostic_limits_concurrent_probes_and_reports_healthy(monkeypatch) -> None:
+    import aerisun.domain.ops.diagnostics as diagnostics
+
+    rules = [_service_forward(f"service-{index}", name=f"服务 {index}", source="local") for index in range(5)]
+    lock = threading.Lock()
+    four_probes_started = threading.Event()
+    active_probes = 0
+    peak_concurrent_probes = 0
+
+    def fake_probe(route_id: str) -> ServiceForwardRead:
+        nonlocal active_probes, peak_concurrent_probes
+        with lock:
+            active_probes += 1
+            peak_concurrent_probes = max(peak_concurrent_probes, active_probes)
+            if active_probes == 4:
+                four_probes_started.set()
+        assert four_probes_started.wait(timeout=1)
+        with lock:
+            active_probes -= 1
+        return next(rule for rule in rules if rule.id == route_id).model_copy(update={"status": "reachable"})
+
+    monkeypatch.setattr(diagnostics, "list_service_forwards", lambda: rules)
+    monkeypatch.setattr(diagnostics, "test_service_forward", fake_probe)
+
+    result = check_service_forwards()
+
+    assert peak_concurrent_probes == 4
+    assert result.status == "healthy"
+    assert result.summary_key == "diagnostics.result.serviceForwardsHealthy"
+    assert result.summary_params == {"count": 5}
+
+
+def test_service_forward_diagnostic_fails_when_every_rule_is_unreachable(monkeypatch) -> None:
+    import aerisun.domain.ops.diagnostics as diagnostics
+
+    rules = [
+        _service_forward("first", name="第一个服务", source="local"),
+        _service_forward("second", name="第二个服务", source="tailscale"),
+    ]
+    monkeypatch.setattr(diagnostics, "list_service_forwards", lambda: rules)
+    monkeypatch.setattr(
+        diagnostics,
+        "test_service_forward",
+        lambda route_id: next(rule for rule in rules if rule.id == route_id).model_copy(
+            update={"status": "unreachable"}
+        ),
+    )
+
+    result = check_service_forwards()
+
+    assert result.status == "failed"
+    assert result.summary_key == "diagnostics.result.serviceForwardsUnavailable"
+    assert result.summary_params == {"count": 2}
+    assert result.detail == "第一个服务；第二个服务"
 
 
 def test_collector_isolates_failures_without_persisting_or_logging_raw_exception_text(

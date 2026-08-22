@@ -6,6 +6,7 @@ import shutil
 import tempfile
 import time
 from collections.abc import Callable, Sequence
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -63,6 +64,8 @@ from aerisun.domain.outbound_proxy.service import (
 from aerisun.domain.outbound_proxy.service import (
     test_outbound_proxy_config as run_outbound_proxy_test,
 )
+from aerisun.domain.service_forwards.schemas import ServiceForwardRead
+from aerisun.domain.service_forwards.service import list_service_forwards, test_service_forward
 from aerisun.domain.site_config.service import mcp_public_access_enabled
 from aerisun.domain.subscription.models import ContentSubscriptionConfig
 from aerisun.domain.subscription.schemas import ContentSubscriptionConfigAdminRead
@@ -77,6 +80,7 @@ logger = logging.getLogger("aerisun.diagnostics")
 MODEL_DIAGNOSTIC_TIMEOUT_SECONDS = 15
 BACKUP_MINIMUM_FRESHNESS_MINUTES = 120
 DIAGNOSTIC_RESULT_STALE_AFTER = timedelta(hours=36)
+SERVICE_FORWARD_DIAGNOSTIC_MAX_WORKERS = 4
 _DETAIL_LIMIT = 400
 _SENSITIVE_ASSIGNMENT_RE = re.compile(
     r"(?i)(api[_-]?key|password|secret|refresh[_-]?token|access[_-]?token|authorization)"
@@ -884,6 +888,77 @@ def check_mcp() -> SystemDiagnosticItemRead:
     )
 
 
+def _probe_service_forward_for_diagnostic(route: ServiceForwardRead) -> ServiceForwardRead:
+    try:
+        return test_service_forward(route.id)
+    except Exception as exc:
+        logger.warning(
+            "Service forwarding diagnostic probe failed: %s (%s)",
+            route.id,
+            type(exc).__name__,
+        )
+        return route.model_copy(
+            update={
+                "status": "unreachable",
+                "status_message": "日常诊断无法连接目标服务",
+            }
+        )
+
+
+def check_service_forwards() -> SystemDiagnosticItemRead:
+    started_at = time.perf_counter()
+    routes = list_service_forwards()
+    if not routes:
+        return _item(
+            key="service_forwards",
+            status="skipped",
+            summary="未配置服务转发",
+            summary_key="diagnostics.result.serviceForwardsDisabled",
+            action_target="service_forwards",
+            started_at=started_at,
+        )
+
+    worker_count = min(SERVICE_FORWARD_DIAGNOSTIC_MAX_WORKERS, len(routes))
+    with ThreadPoolExecutor(max_workers=worker_count, thread_name_prefix="service-forward-diagnostic") as executor:
+        futures = [executor.submit(_probe_service_forward_for_diagnostic, route) for route in routes]
+        results = [future.result() for future in futures]
+
+    unreachable_names = [route.name for route in results if route.status != "reachable"]
+    unreachable_count = len(unreachable_names)
+    detail = _safe_detail("；".join(unreachable_names)) or None
+    if unreachable_count == 0:
+        return _item(
+            key="service_forwards",
+            status="healthy",
+            summary=f"{len(results)} 个服务转发均可访问",
+            summary_key="diagnostics.result.serviceForwardsHealthy",
+            summary_params={"count": len(results)},
+            action_target="service_forwards",
+            started_at=started_at,
+        )
+    if unreachable_count == len(results):
+        return _item(
+            key="service_forwards",
+            status="failed",
+            summary=f"全部 {unreachable_count} 个服务转发均不可访问",
+            summary_key="diagnostics.result.serviceForwardsUnavailable",
+            summary_params={"count": unreachable_count},
+            detail=detail,
+            action_target="service_forwards",
+            started_at=started_at,
+        )
+    return _item(
+        key="service_forwards",
+        status="warning",
+        summary=f"有 {unreachable_count} 个服务转发不可访问",
+        summary_key="diagnostics.result.serviceForwardsDegraded",
+        summary_params={"count": unreachable_count},
+        detail=detail,
+        action_target="service_forwards",
+        started_at=started_at,
+    )
+
+
 def _default_definitions() -> tuple[DiagnosticCheckDefinition, ...]:
     return (
         DiagnosticCheckDefinition("database", "system", check_database),
@@ -894,6 +969,7 @@ def _default_definitions() -> tuple[DiagnosticCheckDefinition, ...]:
         DiagnosticCheckDefinition("proxy", "proxy", check_proxy),
         DiagnosticCheckDefinition("backup", "backup_settings", check_backup),
         DiagnosticCheckDefinition("mcp", "mcp", check_mcp),
+        DiagnosticCheckDefinition("service_forwards", "service_forwards", check_service_forwards),
     )
 
 
