@@ -254,12 +254,20 @@ compose_api_task_background() {
 
   local compose_runner=""
   local compose_file=""
+  local unit_name=""
   compose_runner="$(resolve_compose_runner)"
   compose_file="$(runtime_compose_file)"
+  SERINO_BACKGROUND_MIGRATION_UNIT_SEQUENCE="$((${SERINO_BACKGROUND_MIGRATION_UNIT_SEQUENCE:-0} + 1))"
+  unit_name="${SERINO_SYSTEMD_BACKGROUND_MIGRATION_UNIT_PREFIX}-$(date +%s%N)-${BASHPID}-${SERINO_BACKGROUND_MIGRATION_UNIT_SEQUENCE}.service"
 
   run_as_root mkdir -p "${SERINO_LOG_ROOT}"
 
-  run_as_root bash -lc '
+  run_as_root systemd-run \
+    "--unit=${unit_name}" \
+    --collect \
+    --no-block \
+    --property=Type=exec \
+    /bin/bash -lc '
     env_file="$1"
     compose_file="$2"
     project_name="$3"
@@ -281,15 +289,139 @@ compose_api_task_background() {
     export COMPOSE_PROJECT_NAME="${project_name}"
 
     if [[ "${compose_runner}" == "docker-compose" ]]; then
-      nohup docker-compose -f "${compose_file}" run --rm --no-deps -T api /bin/bash "/app/backend/scripts/${task}" "$@" >>"${logfile}" 2>&1 </dev/null &
-    else
-      nohup docker compose -f "${compose_file}" run --rm --no-deps -T api /bin/bash "/app/backend/scripts/${task}" "$@" >>"${logfile}" 2>&1 </dev/null &
+      exec docker-compose -f "${compose_file}" run --rm --no-deps -T api /bin/bash "/app/backend/scripts/${task}" "$@" >>"${logfile}" 2>&1
     fi
+
+    exec docker compose -f "${compose_file}" run --rm --no-deps -T api /bin/bash "/app/backend/scripts/${task}" "$@" >>"${logfile}" 2>&1
   ' bash "${AERISUN_ENV_FILE}" "${compose_file}" "${AERISUN_COMPOSE_PROJECT_NAME}" "${compose_runner}" "${logfile}" "${task}" "$@"
 }
 
 daemon_reload() {
   run_as_root systemctl daemon-reload
+}
+
+list_active_serino_background_migration_units() {
+  local rows=""
+
+  rows="$(
+    run_as_root systemctl list-units \
+      --all \
+      --plain \
+      --no-legend \
+      --type=service \
+      --state=activating,running,deactivating \
+      "${SERINO_SYSTEMD_BACKGROUND_MIGRATION_UNIT_PREFIX}-*.service"
+  )" || return 1
+  printf '%s\n' "${rows}" | awk 'NF {print $1}'
+}
+
+serino_managed_compose_projects() {
+  printf '%s\n' "${AERISUN_COMPOSE_PROJECT_NAME}"
+  if [[ "${AERISUN_COMPOSE_PROJECT_NAME}" != "aerisun" ]]; then
+    printf '%s\n' "aerisun"
+  fi
+}
+
+docker_list_serino_project_containers() {
+  local include_stopped="$1"
+  local oneoff_only="$2"
+  local output_format="$3"
+  local projects=""
+  local project=""
+  local project_rows=""
+  local rows=""
+  local -a list_args=(container ls)
+  local -a project_args=()
+
+  [[ "${include_stopped}" == "true" ]] && list_args+=(-a)
+  projects="$(serino_managed_compose_projects)"
+
+  while IFS= read -r project; do
+    [[ -n "${project}" ]] || continue
+    project_args=("${list_args[@]}" --filter "label=com.docker.compose.project=${project}")
+    if [[ "${oneoff_only}" == "true" ]]; then
+      project_args+=(--filter 'label=com.docker.compose.oneoff=True')
+    fi
+    project_args+=(--format "${output_format}")
+    project_rows="$(
+      run_as_root docker "${project_args[@]}"
+    )" || return 1
+    if [[ -n "${project_rows}" ]]; then
+      [[ -z "${rows}" ]] || rows+=$'\n'
+      rows+="${project_rows}"
+    fi
+  done <<<"${projects}"
+
+  printf '%s\n' "${rows}" | awk 'NF && !seen[$0]++'
+}
+
+list_running_serino_oneoff_container_ids() {
+  docker_list_serino_project_containers false true '{{.ID}}'
+}
+
+list_running_serino_project_container_ids() {
+  docker_list_serino_project_containers false false '{{.ID}}'
+}
+
+list_serino_project_container_ids() {
+  docker_list_serino_project_containers true false '{{.ID}}'
+}
+
+wait_for_serino_background_migration_units() {
+  local timeout="${1:-${SERINO_BACKGROUND_MIGRATION_WAIT_TIMEOUT}}"
+  local started_at="${SECONDS}"
+  local units=""
+  local container_ids=""
+
+  [[ "${timeout}" =~ ^[0-9]+$ ]] || return 1
+
+  while true; do
+    if ! units="$(list_active_serino_background_migration_units)"; then
+      return 1
+    fi
+    if ! container_ids="$(list_running_serino_oneoff_container_ids)"; then
+      return 1
+    fi
+    [[ -z "${units}" && -z "${container_ids}" ]] && return 0
+    if ((SECONDS - started_at >= timeout)); then
+      return 1
+    fi
+    sleep 2
+  done
+}
+
+stop_serino_background_migration_units() {
+  local units=""
+  local remaining_units=""
+  local unit=""
+  local container_ids=""
+  local remaining_container_ids=""
+  local container_id=""
+
+  if ! units="$(list_active_serino_background_migration_units)"; then
+    return 1
+  fi
+
+  while IFS= read -r unit; do
+    [[ -n "${unit}" ]] || continue
+    run_as_root systemctl stop "${unit}" >/dev/null 2>&1 || true
+  done <<<"${units}"
+
+  if ! container_ids="$(list_running_serino_oneoff_container_ids)"; then
+    return 1
+  fi
+  while IFS= read -r container_id; do
+    [[ -n "${container_id}" ]] || continue
+    run_as_root docker container stop "${container_id}" >/dev/null 2>&1 || true
+  done <<<"${container_ids}"
+
+  if ! remaining_units="$(list_active_serino_background_migration_units)"; then
+    return 1
+  fi
+  if ! remaining_container_ids="$(list_running_serino_oneoff_container_ids)"; then
+    return 1
+  fi
+  [[ -z "${remaining_units}" && -z "${remaining_container_ids}" ]]
 }
 
 enable_serino_service() {
@@ -323,18 +455,33 @@ service_is_active() {
 }
 
 stop_and_remove_serino_units() {
+  local -a units=(
+    "${SERINO_SYSTEMD_UNIT}"
+    "${SERINO_SYSTEMD_UPDATER_PATH}"
+    "${SERINO_SYSTEMD_UPDATER_TIMER}"
+    "${SERINO_SYSTEMD_UPDATER_SERVICE}"
+    "${SERINO_SYSTEMD_UPGRADE_TIMER}"
+    "${SERINO_SYSTEMD_UPGRADE_SERVICE}"
+    aerisun.service
+    aerisun-upgrade.timer
+    aerisun-upgrade.service
+  )
+  local running_container_ids=""
   local unit=""
-  for unit in \
-    "${SERINO_SYSTEMD_UNIT}" \
-    "${SERINO_SYSTEMD_UPDATER_PATH}" \
-    "${SERINO_SYSTEMD_UPDATER_TIMER}" \
-    "${SERINO_SYSTEMD_UPDATER_SERVICE}" \
-    "${SERINO_SYSTEMD_UPGRADE_TIMER}" \
-    "${SERINO_SYSTEMD_UPGRADE_SERVICE}" \
-    aerisun.service \
-    aerisun-upgrade.timer \
-    aerisun-upgrade.service; do
+
+  stop_serino_background_migration_units || return 1
+  for unit in "${units[@]}"; do
     run_as_root systemctl disable --now "${unit}" >/dev/null 2>&1 || true
+  done
+  for unit in "${units[@]}"; do
+    systemd_unit_is_safely_inactive "${unit}" || return 1
+  done
+  if ! running_container_ids="$(list_running_serino_project_container_ids)"; then
+    return 1
+  fi
+  [[ -z "${running_container_ids}" ]] || return 1
+
+  for unit in "${units[@]}"; do
     if [[ -f "/etc/systemd/system/${unit}" ]]; then
       run_as_root rm -f "/etc/systemd/system/${unit}"
     fi
@@ -345,7 +492,23 @@ stop_and_remove_serino_units() {
   daemon_reload >/dev/null 2>&1 || true
 }
 
+systemd_unit_is_safely_inactive() {
+  local unit="$1"
+  local active_state=""
+
+  active_state="$(
+    run_as_root systemctl show \
+      --property=ActiveState \
+      --value \
+      "${unit}"
+  )" || return 1
+
+  [[ "${active_state}" == "inactive" || "${active_state}" == "failed" ]]
+}
+
 teardown_release_stack() {
+  local remaining_container_ids=""
+
   if command_exists docker && path_is_file "${AERISUN_COMPOSE_FILE}" && path_is_file "${AERISUN_ENV_FILE}"; then
     compose down --volumes --remove-orphans >/dev/null 2>&1 || true
   fi
@@ -358,15 +521,23 @@ teardown_release_stack() {
       aerisun-api-1 \
       aerisun-waline-1 \
       aerisun-caddy-1 >/dev/null 2>&1 || true
-    run_as_root docker volume rm -f \
-      "${AERISUN_COMPOSE_PROJECT_NAME}_caddy_data" \
-      "${AERISUN_COMPOSE_PROJECT_NAME}_caddy_config" >/dev/null 2>&1 || true
-    run_as_root docker network rm "${AERISUN_COMPOSE_PROJECT_NAME}_default" >/dev/null 2>&1 || true
-    run_as_root docker volume rm -f \
-      "aerisun_caddy_data" \
-      "aerisun_caddy_config" >/dev/null 2>&1 || true
-    run_as_root docker network rm "aerisun_default" >/dev/null 2>&1 || true
   fi
+
+  command_exists docker || return 0
+  cleanup_stale_serino_oneoff_containers || return 1
+  if ! remaining_container_ids="$(list_serino_project_container_ids)"; then
+    return 1
+  fi
+  [[ -z "${remaining_container_ids}" ]] || return 1
+
+  run_as_root docker volume rm -f \
+    "${AERISUN_COMPOSE_PROJECT_NAME}_caddy_data" \
+    "${AERISUN_COMPOSE_PROJECT_NAME}_caddy_config" >/dev/null 2>&1 || true
+  run_as_root docker network rm "${AERISUN_COMPOSE_PROJECT_NAME}_default" >/dev/null 2>&1 || true
+  run_as_root docker volume rm -f \
+    "aerisun_caddy_data" \
+    "aerisun_caddy_config" >/dev/null 2>&1 || true
+  run_as_root docker network rm "aerisun_default" >/dev/null 2>&1 || true
 }
 
 remove_serino_local_images() {
@@ -382,6 +553,142 @@ remove_serino_local_images() {
   [[ -n "${image_ids}" ]] || return 0
   # shellcheck disable=SC2086
   run_as_root docker image rm -f ${image_ids} >/dev/null 2>&1 || true
+}
+
+release_image_refs_to_remove() {
+  local current_tag="$1"
+  shift
+
+  python3 -c '
+import re
+import sys
+
+pattern = re.compile(r"^v?([0-9]+)\.([0-9]+)\.([0-9]+)$")
+
+
+def parse_version(value):
+    match = pattern.fullmatch(value)
+    if match is None:
+        return None
+    return tuple(int(part) for part in match.groups())
+
+
+current_tag = sys.argv[1]
+repositories = set(sys.argv[2:])
+current_version = parse_version(current_tag)
+if current_version is None:
+    raise SystemExit(1)
+
+rows = []
+repositories_by_version = {}
+for raw_line in sys.stdin:
+    line = raw_line.rstrip("\n")
+    repository, separator, tag = line.partition("|")
+    if not separator or repository not in repositories:
+        continue
+    version = parse_version(tag)
+    if version is None:
+        continue
+    rows.append((repository, tag, version))
+    repositories_by_version.setdefault(version, set()).add(repository)
+
+previous_candidates = [
+    version
+    for version, version_repositories in repositories_by_version.items()
+    if version_repositories == repositories and version < current_version
+]
+previous_version = max(previous_candidates) if previous_candidates else None
+
+seen = set()
+for repository, tag, version in rows:
+    image_ref = f"{repository}:{tag}"
+    if image_ref in seen:
+        continue
+    seen.add(image_ref)
+    if version < current_version and version != previous_version:
+        print(image_ref)
+' "${current_tag}" "$@"
+}
+
+cleanup_old_release_images() {
+  command_exists docker || return 0
+
+  local -a repositories=(
+    "${AERISUN_IMAGE_REGISTRY}/${AERISUN_API_IMAGE_NAME}"
+    "${AERISUN_IMAGE_REGISTRY}/${AERISUN_WEB_IMAGE_NAME}"
+    "${AERISUN_IMAGE_REGISTRY}/${AERISUN_WALINE_IMAGE_NAME}"
+  )
+  local repository=""
+  local image_rows=""
+  local repository_rows=""
+  local image_refs=""
+  local image_ref=""
+  local status=0
+
+  for repository in "${repositories[@]}"; do
+    repository_rows="$(
+      run_as_root docker image ls \
+        --format '{{.Repository}}|{{.Tag}}' \
+        "${repository}"
+    )" || return 1
+    if [[ -n "${repository_rows}" ]]; then
+      if [[ -n "${image_rows}" ]]; then
+        image_rows+=$'\n'
+      fi
+      image_rows+="${repository_rows}"
+    fi
+  done
+
+  [[ -n "${image_rows}" ]] || return 0
+  if ! image_refs="$(
+    printf '%s\n' "${image_rows}" \
+      | release_image_refs_to_remove "${AERISUN_IMAGE_TAG}" "${repositories[@]}"
+  )"; then
+    return 1
+  fi
+
+  while IFS= read -r image_ref; do
+    [[ -n "${image_ref}" ]] || continue
+    if ! run_as_root docker image rm "${image_ref}"; then
+      status=1
+    fi
+  done <<<"${image_refs}"
+
+  return "${status}"
+}
+
+cleanup_stale_serino_oneoff_containers() {
+  command_exists docker || return 0
+
+  local container_rows=""
+  local container_id=""
+  local container_state=""
+  local status=0
+
+  container_rows="$(docker_list_serino_project_containers true true '{{.ID}}|{{.State}}')" || return 1
+
+  while IFS='|' read -r container_id container_state; do
+    [[ -n "${container_id}" ]] || continue
+    case "${container_state}" in
+      created|exited|dead)
+        if ! run_as_root docker container rm "${container_id}"; then
+          status=1
+        fi
+        ;;
+    esac
+  done <<<"${container_rows}"
+
+  return "${status}"
+}
+
+cleanup_release_runtime_artifacts() {
+  log_info "🧹 正在清理已停止的升级临时容器与过期镜像..."
+  if ! cleanup_stale_serino_oneoff_containers; then
+    log_warn "部分已停止的 Serino 临时容器暂时无法清理，后续升级会再次尝试。"
+  fi
+  if ! cleanup_old_release_images; then
+    log_warn "部分旧版 Serino 镜像暂时无法清理；仍被容器引用的镜像已保留，后续升级会再次尝试。"
+  fi
 }
 
 print_service_start_failure_diagnostics() {
@@ -865,6 +1172,10 @@ rollback_release_data_migration_external_copies() {
 
 schedule_release_background_data_migrations() {
   local logfile="${SERINO_LOG_ROOT}/data-migrations-background.log"
+  # Older upgrade.sh versions reload this library before invoking this hook.
+  # Keeping cleanup here makes the first upgrade to the fixed installer clean
+  # existing artifacts without waiting for another release.
+  cleanup_release_runtime_artifacts
   log_info "🛰️ 正在调度后台数据迁移..."
   compose_api_task_quiet_success "data-migrate.sh" schedule --mode background
   compose_api_task_background "${logfile}" "data-migrate.sh" apply --mode background

@@ -4,6 +4,7 @@ import base64
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import tarfile
@@ -132,6 +133,670 @@ printf 'ok\\n'
     )
 
     assert completed.stdout.strip() == "ok"
+
+
+def test_cleanup_old_release_images_keeps_current_and_previous_complete_release() -> None:
+    completed = run_project_bash(
+        """
+source installer/lib/docker.sh
+
+AERISUN_IMAGE_REGISTRY='registry.example.com/serino'
+AERISUN_API_IMAGE_NAME='serino-api'
+AERISUN_WEB_IMAGE_NAME='serino-web'
+AERISUN_WALINE_IMAGE_NAME='serino-waline'
+AERISUN_IMAGE_TAG='1.11.2'
+
+command_exists() { return 0; }
+run_as_root() {
+  if [[ "$1 $2 $3" == "docker image ls" ]]; then
+    case "${!#}" in
+      registry.example.com/serino/serino-api)
+        printf '%s\n' \
+          'registry.example.com/serino/serino-api|2.0.0' \
+          'registry.example.com/serino/serino-api|1.11.2' \
+          'registry.example.com/serino/serino-api|1.11.1' \
+          'registry.example.com/serino/serino-api|1.11.0' \
+          'registry.example.com/serino/serino-api|canary'
+        ;;
+      registry.example.com/serino/serino-web)
+        printf '%s\n' \
+          'registry.example.com/serino/serino-web|1.11.2' \
+          'registry.example.com/serino/serino-web|1.11.1' \
+          'registry.example.com/serino/serino-web|1.11.0'
+        ;;
+      registry.example.com/serino/serino-waline)
+        printf '%s\n' \
+          'registry.example.com/serino/serino-waline|1.11.2' \
+          'registry.example.com/serino/serino-waline|1.11.1' \
+          'registry.example.com/serino/serino-waline|1.10.0'
+        ;;
+    esac
+    return 0
+  fi
+
+  if [[ "$1 $2 $3" == "docker image rm" ]]; then
+    printf 'remove:%s\n' "$4"
+    return 0
+  fi
+
+  return 1
+}
+
+cleanup_old_release_images
+"""
+    )
+
+    assert completed.stdout.strip().splitlines() == [
+        "remove:registry.example.com/serino/serino-api:1.11.0",
+        "remove:registry.example.com/serino/serino-web:1.11.0",
+        "remove:registry.example.com/serino/serino-waline:1.10.0",
+    ]
+
+
+def test_release_image_retention_normalizes_optional_v_prefix() -> None:
+    completed = run_project_bash(
+        """
+source installer/lib/docker.sh
+
+printf '%s\n' \
+  'registry.example.com/serino/serino-api|v1.11.1' \
+  'registry.example.com/serino/serino-web|1.11.1' \
+  'registry.example.com/serino/serino-waline|v1.11.1' \
+  'registry.example.com/serino/serino-api|1.10.0' \
+  'registry.example.com/serino/serino-web|1.10.0' \
+  'registry.example.com/serino/serino-waline|1.10.0' \
+  | release_image_refs_to_remove \
+      '1.11.2' \
+      'registry.example.com/serino/serino-api' \
+      'registry.example.com/serino/serino-web' \
+      'registry.example.com/serino/serino-waline'
+"""
+    )
+
+    assert completed.stdout.strip().splitlines() == [
+        "registry.example.com/serino/serino-api:1.10.0",
+        "registry.example.com/serino/serino-web:1.10.0",
+        "registry.example.com/serino/serino-waline:1.10.0",
+    ]
+
+
+def test_cleanup_old_release_images_continues_after_a_referenced_image_conflict() -> None:
+    completed = run_project_bash(
+        """
+source installer/lib/docker.sh
+
+AERISUN_IMAGE_REGISTRY='registry.example.com/serino'
+AERISUN_API_IMAGE_NAME='serino-api'
+AERISUN_WEB_IMAGE_NAME='serino-web'
+AERISUN_WALINE_IMAGE_NAME='serino-waline'
+AERISUN_IMAGE_TAG='1.11.2'
+
+command_exists() { return 0; }
+run_as_root() {
+  if [[ "$1 $2 $3" == "docker image ls" ]]; then
+    case "${!#}" in
+      registry.example.com/serino/serino-api)
+        printf '%s\n' \
+          'registry.example.com/serino/serino-api|1.11.2' \
+          'registry.example.com/serino/serino-api|1.11.1' \
+          'registry.example.com/serino/serino-api|1.10.0'
+        ;;
+      registry.example.com/serino/serino-web)
+        printf '%s\n' \
+          'registry.example.com/serino/serino-web|1.11.2' \
+          'registry.example.com/serino/serino-web|1.11.1' \
+          'registry.example.com/serino/serino-web|1.10.0'
+        ;;
+      registry.example.com/serino/serino-waline)
+        printf '%s\n' \
+          'registry.example.com/serino/serino-waline|1.11.2' \
+          'registry.example.com/serino/serino-waline|1.11.1' \
+          'registry.example.com/serino/serino-waline|1.10.0'
+        ;;
+    esac
+    return 0
+  fi
+
+  if [[ "$1 $2 $3" == "docker image rm" ]]; then
+    printf 'remove:%s\n' "$4"
+    [[ "$4" != *'/serino-api:1.10.0' ]]
+    return
+  fi
+
+  return 1
+}
+
+cleanup_old_release_images
+""",
+        check=False,
+    )
+
+    assert completed.returncode == 1
+    assert completed.stdout.strip().splitlines() == [
+        "remove:registry.example.com/serino/serino-api:1.10.0",
+        "remove:registry.example.com/serino/serino-web:1.10.0",
+        "remove:registry.example.com/serino/serino-waline:1.10.0",
+    ]
+
+
+def test_cleanup_stale_serino_oneoff_containers_only_removes_non_running_project_tasks() -> None:
+    completed = run_project_bash(
+        """
+source installer/lib/docker.sh
+
+AERISUN_COMPOSE_PROJECT_NAME='serino'
+
+command_exists() { return 0; }
+run_as_root() {
+  if [[ "$1 $2 $3" == "docker container ls" ]]; then
+    [[ "$*" == *'label=com.docker.compose.oneoff=True'* ]] || return 1
+    if [[ "$*" == *'label=com.docker.compose.project=aerisun'* ]]; then
+      return 0
+    fi
+    [[ "$*" == *'label=com.docker.compose.project=serino'* ]] || return 1
+    printf '%s\n' \
+      'created-id|created' \
+      'running-id|running' \
+      'exited-id|exited' \
+      'dead-id|dead'
+    return 0
+  fi
+
+  if [[ "$1 $2 $3" == "docker container rm" ]]; then
+    printf 'remove:%s\n' "$4"
+    return 0
+  fi
+
+  return 1
+}
+
+cleanup_stale_serino_oneoff_containers
+"""
+    )
+
+    assert completed.stdout.strip().splitlines() == [
+        "remove:created-id",
+        "remove:exited-id",
+        "remove:dead-id",
+    ]
+
+
+def test_compose_api_task_background_uses_an_independent_systemd_service() -> None:
+    completed = run_project_bash(
+        """
+source installer/lib/docker.sh
+
+AERISUN_ENV_FILE='/etc/serino/serino.env'
+AERISUN_COMPOSE_PROJECT_NAME='serino'
+SERINO_LOG_ROOT='/var/log/serino'
+SERINO_SYSTEMD_BACKGROUND_MIGRATION_UNIT_PREFIX='serino-data-migrations-background'
+
+resolve_compose_runner() { printf 'docker'; }
+runtime_compose_file() { printf '/opt/serino/docker-compose.runtime.yml'; }
+date() { printf '1234567890'; }
+run_as_root() {
+  printf 'run_as_root'
+  printf ' <%s>' "$@"
+  printf '\n'
+}
+
+compose_api_task_background \
+  '/var/log/serino/data-migrations-background.log' \
+  'data-migrate.sh' \
+  apply --mode background
+compose_api_task_background \
+  '/var/log/serino/data-migrations-background.log' \
+  'data-migrate.sh' \
+  apply --mode background
+"""
+    )
+
+    output = completed.stdout
+    lines = output.strip().splitlines()
+    assert lines[0] == "run_as_root <mkdir> <-p> </var/log/serino>"
+    assert " <systemd-run>" in output
+    assert " <--collect>" in output
+    assert " <--no-block>" in output
+    assert "exec docker compose" in output
+    assert '>>"${logfile}" 2>&1' in output
+    assert "nohup" not in output
+    unit_names = re.findall(r"<--unit=([^>]+)>", output)
+    assert len(unit_names) == 2
+    assert len(set(unit_names)) == 2
+    assert all(name.startswith("serino-data-migrations-background-") for name in unit_names)
+    assert all(name.endswith(".service") for name in unit_names)
+
+
+def test_uninstall_cleanup_stops_all_background_migration_units(tmp_path: Path) -> None:
+    record_file = tmp_path / "systemctl-calls"
+    list_marker = tmp_path / "background-units-listed"
+    oneoff_marker = tmp_path / "background-oneoffs-listed"
+    completed = run_project_bash(
+        f"""
+source installer/lib/common.sh
+source installer/lib/docker.sh
+
+run_as_root() {{
+  printf 'run_as_root' >>'{record_file}'
+  printf ' <%s>' "$@" >>'{record_file}'
+  printf '\n' >>'{record_file}'
+  if [[ "$1 $2" == 'systemctl list-units' && ! -f '{list_marker}' ]]; then
+    touch '{list_marker}'
+    printf '%s\n' \
+      'serino-data-migrations-background-100-1-1.service loaded active running first' \
+      'serino-data-migrations-background-200-2-1.service loaded active running second'
+  elif [[ "$1 $2 $3" == 'docker container ls' && "$*" == *'com.docker.compose.oneoff=True'* && ! -f '{oneoff_marker}' ]]; then
+    touch '{oneoff_marker}'
+    printf '%s\n' 'running-oneoff-id'
+  elif [[ "$1 $2" == 'systemctl show' ]]; then
+    printf '%s\n' 'inactive'
+  fi
+}}
+daemon_reload() {{ :; }}
+
+stop_and_remove_serino_units || exit $?
+cat '{record_file}'
+"""
+    )
+
+    assert "run_as_root <systemctl> <stop> <serino-data-migrations-background-100-1-1.service>" in completed.stdout
+    assert "run_as_root <systemctl> <stop> <serino-data-migrations-background-200-2-1.service>" in completed.stdout
+    assert "run_as_root <docker> <container> <stop> <running-oneoff-id>" in completed.stdout
+
+
+def test_normal_service_stop_does_not_interrupt_background_migrations(tmp_path: Path) -> None:
+    record_file = tmp_path / "systemctl-calls"
+    completed = run_project_bash(
+        f"""
+source installer/lib/common.sh
+source installer/lib/docker.sh
+
+run_as_root() {{
+  printf '<%s>' "$@" >>'{record_file}'
+  printf '\n' >>'{record_file}'
+}}
+
+stop_serino_service
+cat '{record_file}'
+"""
+    )
+
+    assert completed.stdout.strip().splitlines() == ["<systemctl><stop><serino.service>"]
+
+
+def test_upgrade_waits_until_background_migrations_finish(tmp_path: Path) -> None:
+    list_marker = tmp_path / "background-units-listed"
+    completed = run_project_bash(
+        f"""
+source installer/lib/common.sh
+source installer/lib/docker.sh
+
+list_active_serino_background_migration_units() {{
+  if [[ ! -f '{list_marker}' ]]; then
+    touch '{list_marker}'
+    printf '%s\n' 'serino-data-migrations-background-100-1-1.service'
+  fi
+}}
+list_running_serino_oneoff_container_ids() {{ :; }}
+sleep() {{ printf 'sleep:%s\n' "$1"; }}
+
+wait_for_serino_background_migration_units 10
+printf 'finished\n'
+"""
+    )
+
+    assert completed.stdout.strip().splitlines() == ["sleep:2", "finished"]
+
+
+def test_upgrade_background_migration_wait_times_out_without_interrupting() -> None:
+    completed = run_project_bash(
+        """
+source installer/lib/common.sh
+source installer/lib/docker.sh
+
+list_active_serino_background_migration_units() {
+  printf '%s\n' 'serino-data-migrations-background-100-1-1.service'
+}
+list_running_serino_oneoff_container_ids() { :; }
+sleep() { printf 'unexpected-sleep\n'; }
+
+if wait_for_serino_background_migration_units 0; then
+  printf 'unexpected-success\n'
+else
+  printf 'timed-out\n'
+fi
+"""
+    )
+
+    assert completed.stdout.strip() == "timed-out"
+
+
+def test_upgrade_waits_for_orphaned_running_oneoff_container(tmp_path: Path) -> None:
+    list_marker = tmp_path / "oneoff-containers-listed"
+    completed = run_project_bash(
+        f"""
+source installer/lib/common.sh
+source installer/lib/docker.sh
+
+list_active_serino_background_migration_units() {{ :; }}
+list_running_serino_oneoff_container_ids() {{
+  if [[ ! -f '{list_marker}' ]]; then
+    touch '{list_marker}'
+    printf '%s\n' 'orphaned-oneoff-id'
+  fi
+}}
+sleep() {{ printf 'sleep:%s\n' "$1"; }}
+
+wait_for_serino_background_migration_units 10
+printf 'finished\n'
+"""
+    )
+
+    assert completed.stdout.strip().splitlines() == ["sleep:2", "finished"]
+
+
+def test_destructive_unit_cleanup_rejects_an_active_main_service() -> None:
+    completed = run_project_bash(
+        """
+source installer/lib/common.sh
+source installer/lib/docker.sh
+
+stop_serino_background_migration_units() { :; }
+run_as_root() {
+  if [[ "$1 $2" == 'systemctl show' ]]; then
+    if [[ "${!#}" == 'serino.service' ]]; then
+      printf 'active\n'
+    else
+      printf 'inactive\n'
+    fi
+  fi
+}
+daemon_reload() { :; }
+
+if stop_and_remove_serino_units; then
+  printf 'unexpected-success\n'
+else
+  printf 'blocked\n'
+fi
+"""
+    )
+
+    assert completed.stdout.strip() == "blocked"
+
+
+def test_destructive_unit_cleanup_rejects_running_project_containers() -> None:
+    completed = run_project_bash(
+        """
+source installer/lib/common.sh
+source installer/lib/docker.sh
+
+stop_serino_background_migration_units() { :; }
+systemd_unit_is_safely_inactive() { :; }
+list_running_serino_project_container_ids() { printf '%s\n' 'running-api-id'; }
+run_as_root() { :; }
+daemon_reload() { :; }
+
+if stop_and_remove_serino_units; then
+  printf 'unexpected-success\n'
+else
+  printf 'blocked\n'
+fi
+"""
+    )
+
+    assert completed.stdout.strip() == "blocked"
+
+
+def test_stack_teardown_rejects_a_remaining_project_container() -> None:
+    completed = run_project_bash(
+        """
+source installer/lib/common.sh
+source installer/lib/docker.sh
+
+command_exists() { :; }
+path_is_file() { return 1; }
+run_as_root() {
+  if [[ "$1 $2 $3 $4" == 'docker container ls -a' ]]; then
+    printf '%s\n' 'remaining-container-id'
+  fi
+}
+
+if teardown_release_stack; then
+  printf 'unexpected-success\n'
+else
+  printf 'blocked\n'
+fi
+"""
+    )
+
+    assert completed.stdout.strip() == "blocked"
+
+
+def test_destructive_teardown_stops_and_removes_a_legacy_oneoff(tmp_path: Path) -> None:
+    container_state = tmp_path / "legacy-oneoff-state"
+    container_state.write_text("running", encoding="utf-8")
+    completed = run_project_bash(
+        f"""
+source installer/lib/common.sh
+source installer/lib/docker.sh
+
+command_exists() {{ :; }}
+path_is_file() {{ return 1; }}
+list_active_serino_background_migration_units() {{ :; }}
+run_as_root() {{
+  if [[ "$1 $2 $3" == 'docker container ls' ]]; then
+    [[ "$*" == *'label=com.docker.compose.project=aerisun'* ]] || return 0
+    state="$(cat '{container_state}')"
+    if [[ "$*" == *' -a '* ]]; then
+      if [[ "$state" != 'removed' ]]; then
+        if [[ "$*" == *'com.docker.compose.oneoff=True'* ]]; then
+          printf 'legacy-oneoff-id|%s\n' "$state"
+        else
+          printf '%s\n' 'legacy-oneoff-id'
+        fi
+      fi
+    elif [[ "$state" == 'running' ]]; then
+      printf '%s\n' 'legacy-oneoff-id'
+    fi
+    return 0
+  fi
+  if [[ "$1 $2 $3" == 'docker container stop' && "$4" == 'legacy-oneoff-id' ]]; then
+    printf '%s\n' 'stop:legacy-oneoff-id'
+    printf '%s' 'exited' >'{container_state}'
+    return 0
+  fi
+  if [[ "$1 $2 $3" == 'docker container rm' && "$4" == 'legacy-oneoff-id' ]]; then
+    printf '%s\n' 'remove:legacy-oneoff-id'
+    printf '%s' 'removed' >'{container_state}'
+    return 0
+  fi
+  return 0
+}}
+
+stop_serino_background_migration_units
+teardown_release_stack
+printf 'state:%s\n' "$(cat '{container_state}')"
+"""
+    )
+
+    assert completed.stdout.strip().splitlines() == [
+        "remove:legacy-oneoff-id",
+        "state:removed",
+    ]
+
+
+def test_uninstall_stops_before_teardown_when_background_migrations_cannot_stop() -> None:
+    completed = run_project_bash(
+        """
+source installer/uninstall.sh
+
+require_supported_linux() { :; }
+require_root_or_sudo() { :; }
+path_is_file() { return 1; }
+print_caddy_route_uninstall_warning() { :; }
+confirm_uninstall() { :; }
+print_last_diagnostics() { :; }
+stop_and_remove_serino_units() { return 1; }
+teardown_release_stack() { printf 'teardown_release_stack\n'; }
+remove_serino_local_images() { printf 'remove_serino_local_images\n'; }
+purge_service_account() { printf 'purge_service_account\n'; }
+purge_installation_paths() { printf 'purge_installation_paths\n'; }
+die() {
+  printf 'die:%s\n' "$*"
+  exit 1
+}
+
+main --force
+""",
+        check=False,
+    )
+
+    assert completed.returncode == 1
+    assert completed.stdout.strip() == "die:后台数据迁移仍在运行或无法确认已经停止，已取消卸载以保护数据。"
+
+
+def test_uninstall_does_not_purge_when_stack_teardown_is_incomplete() -> None:
+    completed = run_project_bash(
+        """
+source installer/uninstall.sh
+
+require_supported_linux() { :; }
+require_root_or_sudo() { :; }
+path_is_file() { return 1; }
+print_caddy_route_uninstall_warning() { :; }
+confirm_uninstall() { :; }
+print_last_diagnostics() { :; }
+stop_and_remove_serino_units() { :; }
+teardown_release_stack() { printf 'teardown_release_stack\n'; return 1; }
+remove_serino_local_images() { printf 'unexpected-remove_serino_local_images\n'; }
+purge_service_account() { printf 'unexpected-purge_service_account\n'; }
+purge_installation_paths() { printf 'unexpected-purge_installation_paths\n'; }
+die() {
+  printf 'die:%s\n' "$*"
+  exit 1
+}
+
+main --force
+""",
+        check=False,
+    )
+
+    assert completed.returncode == 1
+    assert completed.stdout.strip().splitlines() == [
+        "teardown_release_stack",
+        "die:Serino 容器未能全部停止并移除，已取消卸载以保护数据。",
+    ]
+
+
+def test_overwrite_install_stops_all_units_before_teardown() -> None:
+    completed = run_project_bash(
+        """
+source installer/install.sh
+
+legacy_installation_paths() { :; }
+current_installation_paths() { printf '%s\n' '/opt/serino'; }
+confirm_overwrite_installation() { printf 'confirm_overwrite_installation\n'; }
+stop_and_remove_serino_units() { printf 'stop_and_remove_serino_units\n'; }
+teardown_release_stack() { printf 'teardown_release_stack\n'; }
+remove_serino_local_images() { printf 'remove_serino_local_images\n'; }
+purge_service_account() { printf 'purge_service_account\n'; }
+purge_installation_paths() { printf 'purge_installation_paths\n'; }
+
+prepare_install_target
+"""
+    )
+
+    assert completed.stdout.strip().splitlines() == [
+        "confirm_overwrite_installation",
+        "stop_and_remove_serino_units",
+        "teardown_release_stack",
+        "remove_serino_local_images",
+        "purge_service_account",
+        "purge_installation_paths",
+    ]
+
+
+def test_overwrite_install_does_not_purge_when_stack_teardown_is_incomplete() -> None:
+    completed = run_project_bash(
+        """
+source installer/install.sh
+
+legacy_installation_paths() { :; }
+current_installation_paths() { printf '%s\n' '/opt/serino'; }
+confirm_overwrite_installation() { :; }
+stop_and_remove_serino_units() { :; }
+teardown_release_stack() { printf 'teardown_release_stack\n'; return 1; }
+remove_serino_local_images() { printf 'unexpected-remove_serino_local_images\n'; }
+purge_service_account() { printf 'unexpected-purge_service_account\n'; }
+purge_installation_paths() { printf 'unexpected-purge_installation_paths\n'; }
+die() {
+  printf 'die:%s\n' "$*"
+  exit 1
+}
+
+prepare_install_target
+""",
+        check=False,
+    )
+
+    assert completed.returncode == 1
+    assert completed.stdout.strip().splitlines() == [
+        "teardown_release_stack",
+        "die:Serino 容器未能全部停止并移除，已取消覆盖安装以保护数据。",
+    ]
+
+
+def test_failed_install_keeps_installation_when_background_migrations_cannot_stop() -> None:
+    completed = run_project_bash(
+        """
+source installer/install.sh
+
+AERISUN_INSTALL_CLEANUP_ARMED=1
+log_warn() { printf 'warn:%s\n' "$*"; }
+log_error() { printf 'error:%s\n' "$*"; }
+stop_and_remove_serino_units() { printf 'stop_and_remove_serino_units\n'; return 1; }
+teardown_release_stack() { printf 'unexpected-teardown_release_stack\n'; }
+remove_serino_local_images() { printf 'unexpected-remove_serino_local_images\n'; }
+purge_service_account() { printf 'unexpected-purge_service_account\n'; }
+purge_installation_paths() { printf 'unexpected-purge_installation_paths\n'; }
+
+cleanup_failed_installation || printf 'cleanup-deferred:%s\n' "$AERISUN_INSTALL_CLEANUP_ARMED"
+"""
+    )
+
+    assert completed.stdout.strip().splitlines() == [
+        "warn:安装未完成，正在清理本次安装留下的残留。",
+        "stop_and_remove_serino_units",
+        "error:后台数据迁移仍在运行或无法确认已经停止；为保护数据，已保留当前安装现场。",
+        "cleanup-deferred:0",
+    ]
+
+
+def test_legacy_upgrade_post_commit_hook_cleans_runtime_artifacts_before_scheduling() -> None:
+    completed = run_project_bash(
+        """
+source installer/lib/common.sh
+source installer/lib/docker.sh
+
+log_info() { :; }
+log_warn() { printf 'warn:%s\n' "$*"; }
+cleanup_stale_serino_oneoff_containers() { printf 'cleanup_stale_serino_oneoff_containers\n'; }
+cleanup_old_release_images() { printf 'cleanup_old_release_images\n'; }
+compose_api_task_quiet_success() { printf 'schedule:%s\n' "$*"; }
+compose_api_task_background() { printf 'background:%s\n' "$*"; }
+
+# Older upgrade.sh versions dynamically call this function after reloading the
+# newly installed docker.sh, so it is the backward-compatible post-commit hook.
+schedule_release_background_data_migrations
+"""
+    )
+
+    assert completed.stdout.strip().splitlines() == [
+        "cleanup_stale_serino_oneoff_containers",
+        "cleanup_old_release_images",
+        "schedule:data-migrate.sh schedule --mode background",
+        "background:/var/log/serino/data-migrations-background.log data-migrate.sh apply --mode background",
+    ]
 
 
 def test_uninstall_warning_lists_real_public_routes() -> None:
@@ -1175,6 +1840,7 @@ load_release_manifest() {
 download_release_asset() { record "download_release_asset:$1"; }
 tar() { record "tar:$*"; }
 validate_target_registered_caddy_routes() { :; }
+wait_for_serino_background_migration_units() { record wait_for_serino_background_migration_units; }
 date() { printf '20260408112233'; }
 seed_persistent_uptime_marker() { :; }
     stop_serino_service() { record stop_serino_service; }
@@ -1198,6 +1864,8 @@ run_release_data_migrations() {
   record "run_release_data_migrations:$1"
   return 1
 }
+cleanup_stale_serino_oneoff_containers() { record cleanup_stale_serino_oneoff_containers; }
+cleanup_old_release_images() { record cleanup_old_release_images; }
 enable_serino_service() { record enable_serino_service; }
 wait_for_release_ready() { record wait_for_release_ready; }
 print_service_start_failure_diagnostics() { record print_service_start_failure_diagnostics; }
@@ -1220,6 +1888,7 @@ main v2.0.0
         "load_release_manifest:v2.0.0",
         "download_release_asset:v2.0.0",
         "tar:-xzf /tmp/bundle/aerisun-installer-bundle.tar.gz -C /tmp/bundle",
+        "wait_for_serino_background_migration_units",
         "stop_serino_service",
         "backup_current_installation:/var/backups/serino/upgrade-20260408112233",
         "install_release_payload",
@@ -1280,6 +1949,7 @@ load_release_manifest() {
 download_release_asset() { record "download_release_asset:$1"; }
 tar() { record "tar:$*"; }
 validate_target_registered_caddy_routes() { :; }
+wait_for_serino_background_migration_units() { record wait_for_serino_background_migration_units; }
 date() { printf '20260408112233'; }
 seed_persistent_uptime_marker() { :; }
 stop_serino_service() { record stop_serino_service; }
@@ -1305,6 +1975,8 @@ run_release_migrations() { record run_release_migrations; }
 run_release_data_migrations() { record "run_release_data_migrations:$1"; }
 enable_serino_service() { record enable_serino_service; }
 wait_for_release_ready() { record wait_for_release_ready; }
+cleanup_stale_serino_oneoff_containers() { record cleanup_stale_serino_oneoff_containers; }
+cleanup_old_release_images() { record cleanup_old_release_images; }
 schedule_release_background_data_migrations() { record schedule_release_background_data_migrations; }
 
 main v2.0.0
@@ -1317,6 +1989,7 @@ main v2.0.0
         "load_release_manifest:v2.0.0",
         "download_release_asset:v2.0.0",
         "tar:-xzf /tmp/bundle/aerisun-installer-bundle.tar.gz -C /tmp/bundle",
+        "wait_for_serino_background_migration_units",
         "stop_serino_service",
         "backup_current_installation:/var/backups/serino/upgrade-20260408112233",
         "install_release_payload",
@@ -1368,6 +2041,7 @@ load_release_manifest() {
 download_release_asset() { record "download_release_asset:$1"; }
 tar() { record "tar:$*"; }
 validate_target_registered_caddy_routes() { :; }
+wait_for_serino_background_migration_units() { :; }
 date() { printf '20260408112233'; }
 seed_persistent_uptime_marker() { :; }
 stop_serino_service() { :; }

@@ -256,6 +256,11 @@ main() {
   tar -xzf "${bundle_file}" -C "${bundle_dir}"
   validate_target_registered_caddy_routes "${bundle_dir}"
 
+  log_info "⏳ 正在等待已有后台数据迁移安全结束..."
+  if ! wait_for_serino_background_migration_units; then
+    die "后台数据迁移仍在运行或状态无法确认，本次升级尚未中断服务。请稍后重试。"
+  fi
+
   backup_dir="$(make_root_temp_dir_in_dir "${AERISUN_BACKUP_ROOT}" "upgrade-$(date +%Y%m%d%H%M%S).XXXXXX")"
   UPGRADE_ROLLBACK_BACKUP_DIR="${backup_dir}"
   seed_persistent_uptime_marker || true
@@ -303,6 +308,7 @@ main() {
     die "新版本已经启动并通过健康检查，但旧资源副本清理未完成。为避免误删或不安全回滚，站点保持在新版本；请修复 OSS 或文件权限后执行 sercli migrate data --mode blocking 重试清理。"
   fi
   UPGRADE_ROLLBACK_STAGE=""
+
   schedule_release_background_data_migrations || true
 
   log_info "升级完成：${version}"
