@@ -277,9 +277,16 @@ cleanup_failed_installation() {
   set +e
 
   log_warn "安装未完成，正在清理本次安装留下的残留。"
-  stop_serino_service
-  teardown_release_stack
-  stop_and_remove_serino_units
+  if ! stop_and_remove_serino_units; then
+    log_error "后台数据迁移仍在运行或无法确认已经停止；为保护数据，已保留当前安装现场。"
+    AERISUN_INSTALL_CLEANUP_ARMED=0
+    return 1
+  fi
+  if ! teardown_release_stack; then
+    log_error "Serino 容器未能全部停止并移除；为保护数据，已保留当前安装现场。"
+    AERISUN_INSTALL_CLEANUP_ARMED=0
+    return 1
+  fi
   remove_serino_local_images
   purge_service_account
   purge_installation_paths
@@ -303,9 +310,12 @@ prepare_install_target() {
 
   confirm_overwrite_installation "${detected_paths}" "${legacy_paths}" "${current_paths}"
   log_warn "你已选择覆盖安装，正在彻底清理现有 Serino 安装与残留。"
-  stop_serino_service
-  teardown_release_stack
-  stop_and_remove_serino_units
+  if ! stop_and_remove_serino_units; then
+    die "后台数据迁移仍在运行或无法确认已经停止，已取消覆盖安装以保护数据。"
+  fi
+  if ! teardown_release_stack; then
+    die "Serino 容器未能全部停止并移除，已取消覆盖安装以保护数据。"
+  fi
   remove_serino_local_images
   purge_service_account
   purge_installation_paths

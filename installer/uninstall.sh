@@ -78,8 +78,12 @@ main() {
   print_caddy_route_uninstall_warning
   confirm_uninstall "${1:-}"
   print_last_diagnostics
-  stop_and_remove_serino_units
-  teardown_release_stack
+  if ! stop_and_remove_serino_units; then
+    die "后台数据迁移仍在运行或无法确认已经停止，已取消卸载以保护数据。"
+  fi
+  if ! teardown_release_stack; then
+    die "Serino 容器未能全部停止并移除，已取消卸载以保护数据。"
+  fi
   remove_serino_local_images
   purge_service_account
   purge_installation_paths
