@@ -14,7 +14,7 @@ export interface ServiceForwardWrite {
   name: string;
   /**
      * @maxLength 255
-     * @pattern ^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:/[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*$
+     * @pattern ^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*(?:/[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*)*$
      */
   slug: string;
   source: ServiceForwardWriteSource;

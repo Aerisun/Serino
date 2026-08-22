@@ -18,4 +18,5 @@ export const SystemDiagnosticItemReadActionTarget = {
   backup_settings: 'backup_settings',
   backup_runs: 'backup_runs',
   mcp: 'mcp',
+  service_forwards: 'service_forwards',
 } as const;

@@ -33828,7 +33828,7 @@
           "slug": {
             "type": "string",
             "maxLength": 255,
-            "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:/[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*$",
+            "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*(?:/[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*)*$",
             "title": "Slug"
           },
           "source": {
@@ -35550,7 +35550,8 @@
               "object_storage_sync",
               "backup_settings",
               "backup_runs",
-              "mcp"
+              "mcp",
+              "service_forwards"
             ],
             "title": "Action Target"
           },

@@ -5179,7 +5179,7 @@ export const createServiceForwardEndpointApiV1AdminServiceForwardsPostBodyNameMa
 export const createServiceForwardEndpointApiV1AdminServiceForwardsPostBodySlugMax = 255;
 
 
-export const createServiceForwardEndpointApiV1AdminServiceForwardsPostBodySlugRegExp = new RegExp('^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\/[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)\*$');
+export const createServiceForwardEndpointApiV1AdminServiceForwardsPostBodySlugRegExp = new RegExp('^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)\*(?:\/[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)\*)\*$');
 export const createServiceForwardEndpointApiV1AdminServiceForwardsPostBodyPortOneMax = 65535;
 
 export const createServiceForwardEndpointApiV1AdminServiceForwardsPostBodyTargetUrlOneMax = 2048;
@@ -5207,7 +5207,7 @@ export const updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutBody
 export const updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutBodySlugMax = 255;
 
 
-export const updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutBodySlugRegExp = new RegExp('^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\/[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)\*$');
+export const updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutBodySlugRegExp = new RegExp('^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)\*(?:\/[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)\*)\*$');
 export const updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutBodyPortOneMax = 65535;
 
 export const updateServiceForwardEndpointApiV1AdminServiceForwardsRouteIdPutBodyTargetUrlOneMax = 2048;
@@ -5312,7 +5312,7 @@ export const GetSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGetResponse = z
   "detail": zod.union([zod.string(),zod.null()]).optional(),
   "detail_key": zod.union([zod.string(),zod.null()]).optional(),
   "detail_params": zod.record(zod.string(), zod.union([zod.string(),zod.number()])).optional(),
-  "action_target": zod.enum(['system', 'model_api', 'smtp', 'proxy', 'object_storage', 'object_storage_sync', 'backup_settings', 'backup_runs', 'mcp']),
+  "action_target": zod.enum(['system', 'model_api', 'smtp', 'proxy', 'object_storage', 'object_storage_sync', 'backup_settings', 'backup_runs', 'mcp', 'service_forwards']),
   "duration_ms": zod.union([zod.number().min(getSystemDiagnosticsStateApiV1AdminSystemDiagnosticsGetResponseItemsItemDurationMsOneMin),zod.null()]).optional(),
   "checked_at": zod.union([zod.string().datetime({"offset":true}),zod.null()]).optional()
 })).optional(),
