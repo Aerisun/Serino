@@ -7,6 +7,8 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 ServiceForwardSource = Literal["local", "tailscale"]
 ServiceForwardStatus = Literal["unchecked", "reachable", "unreachable"]
+_SLUG_LABEL_PATTERN = r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?"
+_SLUG_SEGMENT_PATTERN = rf"{_SLUG_LABEL_PATTERN}(?:\.{_SLUG_LABEL_PATTERN})*"
 
 
 class ServiceForwardWrite(BaseModel):
@@ -15,7 +17,7 @@ class ServiceForwardWrite(BaseModel):
     name: str = Field(min_length=1, max_length=80)
     slug: str = Field(
         max_length=255,
-        pattern=r"^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:/[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*$",
+        pattern=rf"^{_SLUG_SEGMENT_PATTERN}(?:/{_SLUG_SEGMENT_PATTERN})*$",
     )
     source: ServiceForwardSource
     port: int | None = Field(default=None, ge=1, le=65535)

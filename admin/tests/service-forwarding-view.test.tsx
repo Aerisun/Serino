@@ -121,6 +121,20 @@ describe("ServiceForwardingView", () => {
     expect(api.toastSuccess).toHaveBeenCalledWith("服务可以访问");
   });
 
+  it("does not repeat the forwarding source below a service name", async () => {
+    api.list.mockResolvedValueOnce([
+      {
+        ...api.rules[0],
+        source: "tailscale",
+        target_url: "https://lab.tail246500.ts.net/model/v1",
+      },
+    ]);
+    renderView();
+
+    expect(await screen.findByText("代码服务")).toBeTruthy();
+    expect(screen.queryByText("Tailscale")).toBeNull();
+  });
+
   it("creates a local forwarding rule without exposing auth settings", async () => {
     const user = userEvent.setup();
     const { onCreateOpenChange } = renderView(true);
@@ -161,7 +175,7 @@ describe("ServiceForwardingView", () => {
     expect(screen.queryByRole("spinbutton", { name: "端口" })).toBeNull();
     await user.type(
       screen.getByRole("textbox", { name: "Tailscale 服务网址" }),
-      "https://lab.tail246500.ts.net/model/embedding/v1",
+      "https://lab.tail246500.ts.net/model/v1",
     );
     await user.click(screen.getByRole("button", { name: "创建" }));
 
@@ -170,7 +184,25 @@ describe("ServiceForwardingView", () => {
         name: "家中面板",
         slug: "model/embedding/v1",
         source: "tailscale",
-        target_url: "https://lab.tail246500.ts.net/model/embedding/v1",
+        target_url: "https://lab.tail246500.ts.net/model/v1",
+      });
+    });
+  });
+
+  it("keeps dots in a file-like slug", async () => {
+    const user = userEvent.setup();
+    renderView(true);
+
+    await user.type(screen.getByRole("textbox", { name: "服务备注名" }), "Clash 配置");
+    await user.type(screen.getByRole("textbox", { name: "slug" }), "clash.yaml");
+    await user.click(screen.getByRole("button", { name: "创建" }));
+
+    await waitFor(() => {
+      expect(api.create).toHaveBeenCalledWith({
+        name: "Clash 配置",
+        slug: "clash.yaml",
+        source: "local",
+        port: 3000,
       });
     });
   });

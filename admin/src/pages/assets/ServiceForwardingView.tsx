@@ -233,9 +233,6 @@ export function ServiceForwardingView({
                 <div className="truncate font-medium" title={rule.name}>
                   {rule.name}
                 </div>
-                <div className="mt-1 text-xs text-muted-foreground">
-                  {t(`serviceForwards.source.${rule.source}`)}
-                </div>
               </div>
             ),
           },
@@ -358,7 +355,7 @@ export function ServiceForwardingView({
                   onChange={(event) =>
                     setDraft((current) => ({
                       ...current,
-                      slug: event.target.value.toLowerCase().replace(/[^a-z0-9/-]/g, ""),
+                      slug: event.target.value.toLowerCase().replace(/[^a-z0-9./-]/g, ""),
                     }))
                   }
                   placeholder="model/embedding/v1"

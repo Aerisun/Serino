@@ -88,23 +88,28 @@ describe("API Contract Validation", () => {
     expect(data.items.some((post) => typeof post.exclude_from_rss === "boolean")).toBe(true);
   });
 
-  it("accepts a multi-segment service forwarding slug", () => {
-    const result = CreateServiceForwardEndpointApiV1AdminServiceForwardsPostBody.safeParse({
-      name: "Embedding API",
-      slug: "model/embedding/v1",
-      source: "tailscale",
-      target_url: "https://lab.tail246500.ts.net/model/embedding/v1",
-    });
+  it("accepts file-like service forwarding slugs and rejects malformed paths", () => {
+    for (const slug of ["model/embedding/v1", "clash.yaml", "proxy/clash.yaml"]) {
+      expect(
+        CreateServiceForwardEndpointApiV1AdminServiceForwardsPostBody.safeParse({
+          name: "Embedding API",
+          slug,
+          source: "tailscale",
+          target_url: "https://lab.tail246500.ts.net/model/v1",
+        }).success,
+      ).toBe(true);
+    }
 
-    expect(result.success).toBe(true);
-    expect(
-      CreateServiceForwardEndpointApiV1AdminServiceForwardsPostBody.safeParse({
-        name: "Invalid API",
-        slug: "model//embedding",
-        source: "local",
-        port: 8000,
-      }).success,
-    ).toBe(false);
+    for (const slug of ["model//embedding", ".clash.yaml", "clash.", "clash..yaml", "proxy/.clash.yaml"]) {
+      expect(
+        CreateServiceForwardEndpointApiV1AdminServiceForwardsPostBody.safeParse({
+          name: "Invalid API",
+          slug,
+          source: "local",
+          port: 8000,
+        }).success,
+      ).toBe(false);
+    }
   });
 
   // Warn about fixtures without schemas

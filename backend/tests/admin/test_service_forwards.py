@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 
 import pytest
+from pydantic import ValidationError as PydanticValidationError
 
 from aerisun.core.settings import get_settings
 from aerisun.domain.service_forwards.schemas import ServiceForwardWrite
@@ -55,7 +56,7 @@ def test_admin_allows_parent_and_child_routes_with_child_dispatched_first(client
             "name": "Embedding API",
             "slug": "model/embedding/v1",
             "source": "tailscale",
-            "target_url": "https://lab.tail246500.ts.net/model/embedding/v1",
+            "target_url": "https://lab.tail246500.ts.net/model/v1",
         },
     )
 
@@ -156,14 +157,31 @@ def test_service_forward_renderer_supports_nested_public_path() -> None:
             name="Embedding API",
             slug="model/embedding/v1",
             source="tailscale",
-            target_url="https://lab.tail246500.ts.net/model/embedding/v1",
+            target_url="https://lab.tail246500.ts.net/model/v1",
         )
     )
 
     assert route_id == _route_id("model/embedding/v1")
-    assert target_url == "https://lab.tail246500.ts.net/model/embedding/v1"
+    assert target_url == "https://lab.tail246500.ts.net/model/v1"
     assert "path /model/embedding/v1 /model/embedding/v1/*" in rendered
-    assert "uri replace /model/embedding/v1 /model/embedding/v1 1" in rendered
+    assert "uri replace /model/embedding/v1 /model/v1 1" in rendered
+
+
+@pytest.mark.parametrize("slug", ("clash.yaml", "proxy/clash.yaml"))
+def test_service_forward_renderer_supports_file_like_public_paths(slug: str) -> None:
+    route_id, target_url, rendered = render_route_file(
+        ServiceForwardWrite(name="Clash config", slug=slug, source="local", port=9090)
+    )
+
+    assert route_id == _route_id(slug)
+    assert target_url == "http://127.0.0.1:9090"
+    assert f"path /{slug} /{slug}/*" in rendered
+
+
+@pytest.mark.parametrize("slug", (".clash.yaml", "clash.", "clash..yaml", "proxy/.clash.yaml"))
+def test_service_forward_rejects_unsafe_file_like_public_paths(slug: str) -> None:
+    with pytest.raises(PydanticValidationError):
+        ServiceForwardWrite(name="Clash config", slug=slug, source="local", port=9090)
 
 
 def test_caddy_reload_uses_the_fixed_caddyfile_import(monkeypatch) -> None:
