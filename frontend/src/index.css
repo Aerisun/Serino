@@ -987,11 +987,6 @@
 
 }
 
-.content-detail-markdown.prose :where(strong, b) {
-  color: hsl(var(--foreground) / 0.96);
-  font-weight: 700;
-}
-
 .post-updated-at {
   font-family: "Instrument Serif", "Noto Serif SC", serif;
   font-size: 1.08em;

@@ -168,6 +168,7 @@ const copyTextToClipboard = async (value: string) => {
 
 let activeCopyToastElement: HTMLDivElement | null = null;
 let activeCopyToastTimer: number | null = null;
+const activeMarkdownTargetArrivalTimers = new WeakMap<HTMLElement, number>();
 
 const showCopyToast = (message: string) => {
   if (typeof document === "undefined") {
@@ -217,6 +218,21 @@ const navigateToMarkdownTarget = (href: string) => {
     block: "center",
   });
   window.history.pushState(null, "", href);
+
+  const activeTimer = activeMarkdownTargetArrivalTimers.get(target);
+  if (activeTimer !== undefined) {
+    window.clearTimeout(activeTimer);
+  }
+
+  target.classList.remove("markdown-target-arrival");
+  void target.offsetWidth;
+  target.classList.add("markdown-target-arrival");
+  const arrivalTimer = window.setTimeout(() => {
+    target.classList.remove("markdown-target-arrival");
+    activeMarkdownTargetArrivalTimers.delete(target);
+  }, 900);
+  activeMarkdownTargetArrivalTimers.set(target, arrivalTimer);
+
   return true;
 };
 
@@ -686,7 +702,10 @@ function MarkdownDetailsBlock({ summary, children }: { summary: string; children
     : getText("markdown.expand", "展开内容");
 
   return (
-    <div className={`markdown-details ${open ? "is-open" : ""}`}>
+    <div
+      className={`markdown-details ${open ? "is-open" : ""}`}
+      data-toc-exclude="true"
+    >
       <button
         type="button"
         className="markdown-details-summary"
@@ -997,6 +1016,13 @@ function MarkdownAnchor({ children, href, className, ...props }: MarkdownAnchorP
   const isHashLink = href?.startsWith("#");
   const isFootnoteBackref = Boolean(props["data-footnote-backref"]);
   const isFootnoteRef = Boolean(props["data-footnote-ref"]);
+  const isHeadingAnchor = className?.split(/\s+/).includes("markdown-heading-anchor");
+  const isInlineReference = Boolean(
+    isHashLink && !isHeadingAnchor && !isFootnoteBackref && !isFootnoteRef,
+  );
+  const isInlineLink = Boolean(
+    href && !isHeadingAnchor && !isInlineReference && !isFootnoteBackref && !isFootnoteRef,
+  );
   const footnoteBackLabel = getText("markdown.footnoteBack", "返回引用");
 
   const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
@@ -1012,7 +1038,9 @@ function MarkdownAnchor({ children, href, className, ...props }: MarkdownAnchorP
     <a
       href={href}
       className={[
-        "transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.92)]",
+        isInlineLink ? "markdown-inline-link" : "",
+        isInlineLink && isExternal ? "markdown-inline-link--external" : "",
+        isInlineReference ? "markdown-inline-reference" : "",
         isFootnoteBackref ? "markdown-footnote-backref" : "",
         isFootnoteRef ? "markdown-footnote-ref-link" : "",
         className ?? "",
@@ -1024,7 +1052,29 @@ function MarkdownAnchor({ children, href, className, ...props }: MarkdownAnchorP
       onClick={handleClick}
       {...props}
     >
+      {isInlineReference ? (
+        <Link2
+          className="markdown-inline-reference-icon"
+          aria-hidden="true"
+          strokeWidth={2}
+        />
+      ) : null}
       {children}
+      {isInlineLink ? (
+        isExternal ? (
+          <ExternalLink
+            className="markdown-inline-link-icon markdown-inline-link-icon--external"
+            aria-hidden="true"
+            strokeWidth={2}
+          />
+        ) : (
+          <Link2
+            className="markdown-inline-link-icon"
+            aria-hidden="true"
+            strokeWidth={2}
+          />
+        )
+      ) : null}
     </a>
   );
 }
@@ -1202,6 +1252,7 @@ const components = {
   blockquote: ({ children, ...props }: ComponentPropsWithoutRef<"blockquote">) => (
     <blockquote
       className="border-l-2 border-[rgb(var(--shiro-accent-rgb)/0.34)]"
+      data-toc-exclude="true"
       {...props}
     >
       {children}
@@ -1228,7 +1279,13 @@ export default function MarkdownRenderer({
           rehypeKatex,
           [rehypeHighlight, rehypeHighlightOptions],
           rehypeSlug,
-          [rehypeAutolinkHeadings, { behavior: "wrap" }],
+          [
+            rehypeAutolinkHeadings,
+            {
+              behavior: "wrap",
+              properties: { className: ["markdown-heading-anchor"] },
+            },
+          ],
         ]}
         components={components}
       >

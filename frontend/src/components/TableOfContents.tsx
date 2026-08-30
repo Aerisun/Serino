@@ -16,6 +16,11 @@ interface TableOfContentsProps {
   content: unknown[];
 }
 
+const TOC_HEADING_SELECTOR = "h1, h2, h3, h4";
+const TOC_EXCLUDE_SELECTOR = '[data-toc-exclude="true"]';
+const isTableOfContentsHeading = (element: HTMLHeadingElement) =>
+  !element.closest(TOC_EXCLUDE_SELECTOR);
+
 const TableOfContents = ({ containerRef, content }: TableOfContentsProps) => {
   const { t } = useFrontendI18n();
   const [headings, setHeadings] = useState<Heading[]>([]);
@@ -41,16 +46,16 @@ const TableOfContents = ({ containerRef, content }: TableOfContentsProps) => {
     const parseHeadings = () => {
       const container = containerRef.current;
       const scoped = Array.from(
-        container?.querySelectorAll<HTMLHeadingElement>("h1, h2, h3, h4") ?? [],
-      );
+        container?.querySelectorAll<HTMLHeadingElement>(TOC_HEADING_SELECTOR) ?? [],
+      ).filter(isTableOfContentsHeading);
       const fallback =
         scoped.length > 0
           ? scoped
           : Array.from(
               document.querySelectorAll<HTMLHeadingElement>(
-                "article h1, article h2, article h3, article h4",
+                `article ${TOC_HEADING_SELECTOR.split(", ").join(", article ")}`,
               ),
-            );
+            ).filter(isTableOfContentsHeading);
 
       const items: Heading[] = fallback.map((el, index) => {
         if (!el.id) el.id = `heading-${index}`;
