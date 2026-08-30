@@ -1153,6 +1153,9 @@ def sign_asset_download_url(session: Session, asset: Asset) -> str | None:
     expires_in = int(config.public_download_expire_seconds or 600)
     token_base_url = str(config.public_base_url or "").strip().rstrip("/")
     token_key = str(config.cdn_token_key or "").strip()
+    if asset.visibility == "public" and token_base_url and not token_key:
+        quoted_path = quote(f"/{object_key.lstrip('/')}", safe="/-._~")
+        return f"{token_base_url}{quoted_path}"
     if token_base_url and token_key:
         quoted_path = quote(f"/{object_key.lstrip('/')}", safe="/-._~")
         deadline = int(time.time()) + max(expires_in, 30)

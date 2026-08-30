@@ -10,6 +10,7 @@ from copy import deepcopy
 from datetime import datetime
 from html.parser import HTMLParser
 from ipaddress import ip_address
+from pathlib import Path
 from threading import Condition, Lock, Thread
 from time import monotonic, sleep
 from typing import Any, Literal
@@ -20,10 +21,24 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from aerisun.core.time import shanghai_now
-from aerisun.domain.exceptions import ResourceNotFound, ValidationError
+from aerisun.domain.exceptions import ResourceNotFound, StateConflict, ValidationError
+from aerisun.domain.media.models import Asset
 from aerisun.domain.site_config import repository as repo
+from aerisun.domain.site_config.background_music import (
+    is_background_music_asset_playable,
+    validate_background_music_asset,
+)
 from aerisun.domain.site_config.identity import build_site_brand_title, read_search_identity_names
+from aerisun.domain.site_config.models import BackgroundMusicConfig, BackgroundMusicTrack
 from aerisun.domain.site_config.schemas import (
+    BackgroundMusicAdminRead,
+    BackgroundMusicRead,
+    BackgroundMusicTrackAdminRead,
+    BackgroundMusicTrackCreate,
+    BackgroundMusicTrackRead,
+    BackgroundMusicTrackReorder,
+    BackgroundMusicTrackUpdate,
+    BackgroundMusicUpdate,
     CommunityConfigAdminRead,
     CommunityConfigRead,
     LinkPreviewRead,
@@ -81,6 +96,188 @@ _LINK_PREVIEW_CACHE: dict[str, tuple[float, LinkPreviewRead]] = {}
 _LINK_PREVIEW_CACHE_LOCK = Lock()
 _BOOTSTRAP_REVISION_GENERATED_AT: dict[str, datetime] = {}
 _BOOTSTRAP_REVISION_LOCK = Lock()
+
+
+def _normalize_music_mode(value: str | None) -> Literal["sequential", "random"]:
+    return "random" if str(value or "").strip().lower() == "random" else "sequential"
+
+
+def _music_stream_url(asset: Asset) -> str:
+    return f"/media/{str(asset.resource_key).lstrip('/')}"
+
+
+def _get_or_create_background_music_config(session: Session) -> BackgroundMusicConfig:
+    config = repo.find_background_music_config(session)
+    if config is not None:
+        return config
+    config = BackgroundMusicConfig(enabled=False, playback_mode="sequential")
+    session.add(config)
+    session.commit()
+    session.refresh(config)
+    return config
+
+
+def _background_music_track_admin_read(
+    track: BackgroundMusicTrack,
+    asset: Asset,
+) -> BackgroundMusicTrackAdminRead:
+    return BackgroundMusicTrackAdminRead(
+        id=track.id,
+        asset_id=asset.id,
+        title=track.title,
+        file_name=asset.file_name,
+        byte_size=asset.byte_size,
+        mime_type=asset.mime_type,
+        stream_url=_music_stream_url(asset),
+        order_index=track.order_index,
+        is_enabled=track.is_enabled,
+        created_at=track.created_at,
+        updated_at=track.updated_at,
+    )
+
+
+def get_background_music_admin(session: Session) -> BackgroundMusicAdminRead:
+    config = _get_or_create_background_music_config(session)
+    return BackgroundMusicAdminRead(
+        enabled=bool(config.enabled),
+        playback_mode=_normalize_music_mode(config.playback_mode),
+        tracks=[
+            _background_music_track_admin_read(track, asset)
+            for track, asset in repo.find_background_music_tracks(session)
+        ],
+    )
+
+
+def get_background_music_public(session: Session) -> BackgroundMusicRead:
+    config = _get_or_create_background_music_config(session)
+    tracks = [
+        BackgroundMusicTrackRead(
+            id=track.id,
+            title=track.title,
+            stream_url=_music_stream_url(asset),
+        )
+        for track, asset in repo.find_background_music_tracks(session, enabled_only=True)
+        if is_background_music_asset_playable(asset)
+    ]
+    return BackgroundMusicRead(
+        enabled=bool(config.enabled and tracks),
+        playback_mode=_normalize_music_mode(config.playback_mode),
+        tracks=tracks,
+    )
+
+
+def update_background_music_admin(
+    session: Session,
+    payload: BackgroundMusicUpdate,
+) -> BackgroundMusicAdminRead:
+    config = _get_or_create_background_music_config(session)
+    updates = payload.model_dump(exclude_unset=True)
+    next_enabled = bool(updates.get("enabled", config.enabled))
+    if next_enabled:
+        playable = any(
+            track.is_enabled and is_background_music_asset_playable(asset)
+            for track, asset in repo.find_background_music_tracks(session)
+        )
+        if not playable:
+            raise ValidationError("至少添加并启用一首可播放曲目后才能开启背景音乐")
+    if "enabled" in updates:
+        config.enabled = next_enabled
+    if updates.get("playback_mode") is not None:
+        config.playback_mode = _normalize_music_mode(str(updates["playback_mode"]))
+    session.commit()
+    session.refresh(config)
+    return get_background_music_admin(session)
+
+
+def create_background_music_track_admin(
+    session: Session,
+    payload: BackgroundMusicTrackCreate,
+) -> BackgroundMusicTrackAdminRead:
+    asset = session.get(Asset, payload.asset_id)
+    if asset is None:
+        raise ResourceNotFound("音乐资源不存在")
+    validate_background_music_asset(asset)
+    if any(track.asset_id == asset.id for track, _asset in repo.find_background_music_tracks(session)):
+        raise StateConflict("该音乐资源已经在播放列表中")
+    title = str(payload.title or "").strip() or Path(asset.file_name).stem.strip()
+    if not title:
+        raise ValidationError("歌名不能为空")
+    title = title[:160]
+    current = repo.find_background_music_tracks(session)
+    track = BackgroundMusicTrack(
+        asset_id=asset.id,
+        title=title,
+        order_index=len(current),
+        is_enabled=True,
+    )
+    session.add(track)
+    session.commit()
+    session.refresh(track)
+    return _background_music_track_admin_read(track, asset)
+
+
+def update_background_music_track_admin(
+    session: Session,
+    track_id: str,
+    payload: BackgroundMusicTrackUpdate,
+) -> BackgroundMusicTrackAdminRead:
+    found = repo.find_background_music_track(session, track_id)
+    if found is None:
+        raise ResourceNotFound("音乐曲目不存在")
+    track, asset = found
+    updates = payload.model_dump(exclude_unset=True)
+    if "title" in updates:
+        title = str(updates["title"] or "").strip()
+        if not title:
+            raise ValidationError("歌名不能为空")
+        track.title = title[:160]
+    if "is_enabled" in updates:
+        track.is_enabled = bool(updates["is_enabled"])
+    session.flush()
+    config = _get_or_create_background_music_config(session)
+    if config.enabled and not any(
+        item.is_enabled and is_background_music_asset_playable(item_asset)
+        for item, item_asset in repo.find_background_music_tracks(session)
+    ):
+        config.enabled = False
+    session.commit()
+    session.refresh(track)
+    return _background_music_track_admin_read(track, asset)
+
+
+def reorder_background_music_tracks_admin(
+    session: Session,
+    payload: BackgroundMusicTrackReorder,
+) -> BackgroundMusicAdminRead:
+    rows = repo.find_background_music_tracks(session)
+    by_id = {track.id: track for track, _asset in rows}
+    if len(payload.track_ids) != len(set(payload.track_ids)) or set(payload.track_ids) != set(by_id):
+        raise ValidationError("排序列表必须完整且不能包含重复曲目")
+    for order_index, track_id in enumerate(payload.track_ids):
+        by_id[track_id].order_index = order_index
+    session.commit()
+    return get_background_music_admin(session)
+
+
+def delete_background_music_track_admin(session: Session, track_id: str) -> None:
+    from aerisun.domain.media.service import delete_asset
+
+    found = repo.find_background_music_track(session, track_id)
+    if found is None:
+        raise ResourceNotFound("音乐曲目不存在")
+    track, asset = found
+    asset_id = asset.id
+    session.delete(track)
+    session.flush()
+    remaining = repo.find_background_music_tracks(session)
+    for order_index, (item, _item_asset) in enumerate(remaining):
+        item.order_index = order_index
+    config = _get_or_create_background_music_config(session)
+    if config.enabled and not any(
+        item.is_enabled and is_background_music_asset_playable(item_asset) for item, item_asset in remaining
+    ):
+        config.enabled = False
+    delete_asset(session, asset_id)
 
 
 class _LinkPreviewHTMLParser(HTMLParser):
@@ -794,10 +991,12 @@ def get_site_bootstrap(session: Session) -> SiteBootstrapRead:
     site = get_site_config(session)
     pages = get_page_copy(session)
     resume = get_resume(session)
+    background_music = get_background_music_public(session)
     bootstrap_seed = {
         "site": site.model_dump(mode="json"),
         "pages": pages.model_dump(mode="json"),
         "resume": resume.model_dump(mode="json"),
+        "background_music": background_music.model_dump(mode="json"),
     }
     revision = hashlib.sha256(
         json.dumps(
@@ -820,6 +1019,7 @@ def get_site_bootstrap(session: Session) -> SiteBootstrapRead:
         site=site,
         pages=pages,
         resume=resume,
+        background_music=background_music,
     )
 
 

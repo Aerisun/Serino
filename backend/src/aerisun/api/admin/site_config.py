@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session
@@ -11,10 +11,16 @@ from aerisun.domain.ops.config_revisions import capture_config_resource, create_
 from aerisun.domain.site_config.models import NavItem, PageCopy, Poem, SocialLink
 from aerisun.domain.site_config.service import (
     attach_site_profile_id,
+    create_background_music_track_admin,
+    delete_background_music_track_admin,
+    get_background_music_admin,
     get_community_config_admin,
     get_site_profile_admin,
+    reorder_background_music_tracks_admin,
     reorder_nav_items_admin,
     site_profile_scoped_query,
+    update_background_music_admin,
+    update_background_music_track_admin,
     update_community_config_admin,
     update_site_profile_admin,
 )
@@ -22,6 +28,12 @@ from aerisun.domain.site_config.service import (
 from .content import build_crud_router
 from .deps import get_current_admin
 from .schemas import (
+    BackgroundMusicAdminRead,
+    BackgroundMusicTrackAdminRead,
+    BackgroundMusicTrackCreate,
+    BackgroundMusicTrackReorder,
+    BackgroundMusicTrackUpdate,
+    BackgroundMusicUpdate,
     CommunityConfigAdminRead,
     CommunityConfigUpdate,
     NavItemAdminRead,
@@ -42,6 +54,77 @@ from .schemas import (
 )
 
 router = APIRouter(prefix="/site-config", tags=["admin-site-config"])
+
+
+@router.get("/background-music", response_model=BackgroundMusicAdminRead, summary="获取背景音乐配置")
+def get_background_music(
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> Any:
+    return get_background_music_admin(session)
+
+
+@router.put("/background-music", response_model=BackgroundMusicAdminRead, summary="更新背景音乐配置")
+def update_background_music(
+    payload: BackgroundMusicUpdate,
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> Any:
+    return update_background_music_admin(session, payload)
+
+
+@router.post(
+    "/background-music/tracks",
+    response_model=BackgroundMusicTrackAdminRead,
+    status_code=status.HTTP_201_CREATED,
+    summary="添加背景音乐曲目",
+)
+def create_background_music_track(
+    payload: BackgroundMusicTrackCreate,
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> Any:
+    return create_background_music_track_admin(session, payload)
+
+
+@router.put(
+    "/background-music/tracks/reorder",
+    response_model=BackgroundMusicAdminRead,
+    summary="重排背景音乐曲目",
+)
+def reorder_background_music_tracks(
+    payload: BackgroundMusicTrackReorder,
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> Any:
+    return reorder_background_music_tracks_admin(session, payload)
+
+
+@router.patch(
+    "/background-music/tracks/{track_id}",
+    response_model=BackgroundMusicTrackAdminRead,
+    summary="更新背景音乐曲目",
+)
+def update_background_music_track(
+    track_id: str,
+    payload: BackgroundMusicTrackUpdate,
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> Any:
+    return update_background_music_track_admin(session, track_id, payload)
+
+
+@router.delete(
+    "/background-music/tracks/{track_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="删除背景音乐曲目",
+)
+def delete_background_music_track(
+    track_id: str,
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> None:
+    delete_background_music_track_admin(session, track_id)
 
 
 @router.get("/profile", response_model=SiteProfileAdminRead, summary="获取站点资料")

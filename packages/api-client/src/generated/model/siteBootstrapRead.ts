@@ -4,6 +4,7 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { BackgroundMusicRead } from './backgroundMusicRead';
 import type { PageCollectionRead } from './pageCollectionRead';
 import type { ResumeRead } from './resumeRead';
 import type { SiteConfigRead } from './siteConfigRead';
@@ -19,4 +20,6 @@ export interface SiteBootstrapRead {
   pages: PageCollectionRead;
   /** Resume basics bundle */
   resume: ResumeRead;
+  /** Background music playlist */
+  background_music: BackgroundMusicRead;
 }

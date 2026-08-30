@@ -15,7 +15,7 @@ from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, T
 from aerisun.domain.engagement.models import Comment, GuestbookEntry
 from aerisun.domain.media.paths import AssetScope
 from aerisun.domain.ops.models import AuditLog, ConfigRevision
-from aerisun.domain.site_config.models import PageCopy, ResumeBasics, SiteProfile, SocialLink
+from aerisun.domain.site_config.models import BackgroundMusicTrack, PageCopy, ResumeBasics, SiteProfile, SocialLink
 from aerisun.domain.social.models import Friend
 from aerisun.domain.subscription.models import ContentNotification
 
@@ -252,6 +252,11 @@ def collect_registered_references(
                 )
     references.sort(key=lambda item: (item.asset_id, item.table, item.column, item.row_id, item.matched_url))
     return references
+
+
+def collect_direct_asset_reference_locations(session: Session, asset_id: str) -> list[str]:
+    track_ids = session.scalars(select(BackgroundMusicTrack.id).where(BackgroundMusicTrack.asset_id == asset_id)).all()
+    return [f"background_music_tracks.asset_id row={track_id}" for track_id in sorted(track_ids)]
 
 
 def rewrite_registered_references(session: Session, replacements: Mapping[str, str]) -> int:

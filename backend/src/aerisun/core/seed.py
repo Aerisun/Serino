@@ -45,6 +45,8 @@ from aerisun.domain.site_auth.models import (
     SiteUserSession,
 )
 from aerisun.domain.site_config.models import (
+    BackgroundMusicConfig,
+    BackgroundMusicTrack,
     CommunityConfig,
     NavItem,
     PageCopy,
@@ -719,6 +721,8 @@ def _clear_seed_data(session: Session) -> None:
     _logger = logging.getLogger("aerisun.seed")
     _logger.info("Force reseed: clearing existing seed data...")
     for model in [
+        BackgroundMusicTrack,
+        BackgroundMusicConfig,
         ContentCategory,
         Comment,
         GuestbookEntry,

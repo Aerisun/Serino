@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from sqlalchemy import JSON, Boolean, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, Boolean, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from aerisun.core.base import Base, TimestampMixin, uuid_str
@@ -27,6 +27,30 @@ class SiteProfile(Base, TimestampMixin):
     poem_hitokoto_types: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
     poem_hitokoto_keywords: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
     feature_flags: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
+
+
+class BackgroundMusicConfig(Base, TimestampMixin):
+    __tablename__ = "background_music_config"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    playback_mode: Mapped[str] = mapped_column(String(24), nullable=False, default="sequential")
+
+
+class BackgroundMusicTrack(Base, TimestampMixin):
+    __tablename__ = "background_music_tracks"
+    __table_args__ = (Index("ix_background_music_tracks_order_index", "order_index"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    asset_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("assets.id", ondelete="RESTRICT"),
+        nullable=False,
+        unique=True,
+    )
+    title: Mapped[str] = mapped_column(String(160), nullable=False)
+    order_index: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    is_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
 
 class NavItem(Base, TimestampMixin):

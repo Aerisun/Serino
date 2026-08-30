@@ -32,7 +32,13 @@ from aerisun.core.seed_steps.content import insert_missing_page_copies
 from aerisun.core.seed_steps.system_assets import seed_core_system_asset_urls
 from aerisun.core.seed_steps.waline import clear_waline_seed_data
 from aerisun.core.settings import get_settings
-from aerisun.domain.site_config.models import Poem, ResumeBasics, SiteProfile, SocialLink
+from aerisun.domain.site_config.models import (
+    BackgroundMusicConfig,
+    Poem,
+    ResumeBasics,
+    SiteProfile,
+    SocialLink,
+)
 from aerisun.domain.waline.service import connect_waline_db
 
 PRODUCTION_BASELINE_ID = "2026_04_production_baseline_v1"
@@ -51,6 +57,11 @@ def has_production_baseline(session) -> bool:
 def _ensure_waline_schema() -> None:
     with connect_waline_db(get_settings().waline_db_path):
         return
+
+
+def _seed_background_music_config(session) -> None:
+    if is_empty(session, BackgroundMusicConfig):
+        session.add(BackgroundMusicConfig(enabled=False, playback_mode="sequential"))
 
 
 def _apply_reference_baseline(session, *, force: bool = False) -> None:
@@ -84,6 +95,7 @@ def _apply_reference_baseline(session, *, force: bool = False) -> None:
         _seed_nav_items(session, site_id=current_site.id)
 
     _seed_community_config(session, force=force)
+    _seed_background_music_config(session)
     _seed_site_auth_config(session, force=force)
     _seed_subscription_config_from_settings(session, force=force)
     _seed_agent_model_config(session, force=force)

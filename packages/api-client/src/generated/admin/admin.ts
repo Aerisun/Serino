@@ -64,6 +64,12 @@ import type {
   AssetUploadCompleteWrite,
   AssetUploadPlanRead,
   AssetUploadPlanWrite,
+  BackgroundMusicAdminRead,
+  BackgroundMusicTrackAdminRead,
+  BackgroundMusicTrackCreate,
+  BackgroundMusicTrackReorder,
+  BackgroundMusicTrackUpdate,
+  BackgroundMusicUpdate,
   BackupBootstrapClaimCreate,
   BackupBootstrapClaimRead,
   BackupCommitRead,
@@ -4034,6 +4040,561 @@ export const usePostGenerateDiaryPoemApiV1AdminDiaryGeneratePoemPost = <TError =
         TContext
       > => {
       return useMutation(getPostGenerateDiaryPoemApiV1AdminDiaryGeneratePoemPostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 获取背景音乐配置
+ */
+export type getBackgroundMusicApiV1AdminSiteConfigBackgroundMusicGetResponse200 = {
+  data: BackgroundMusicAdminRead
+  status: 200
+}
+
+export type getBackgroundMusicApiV1AdminSiteConfigBackgroundMusicGetResponseSuccess = (getBackgroundMusicApiV1AdminSiteConfigBackgroundMusicGetResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getBackgroundMusicApiV1AdminSiteConfigBackgroundMusicGetResponse = (getBackgroundMusicApiV1AdminSiteConfigBackgroundMusicGetResponseSuccess)
+
+export const getGetBackgroundMusicApiV1AdminSiteConfigBackgroundMusicGetUrl = () => {
+
+
+
+
+  return `/api/v1/admin/site-config/background-music`
+}
+
+export const getBackgroundMusicApiV1AdminSiteConfigBackgroundMusicGet = async ( options?: RequestInit): Promise<getBackgroundMusicApiV1AdminSiteConfigBackgroundMusicGetResponse> => {
+
+  return customInstance<getBackgroundMusicApiV1AdminSiteConfigBackgroundMusicGetResponse>(getGetBackgroundMusicApiV1AdminSiteConfigBackgroundMusicGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetBackgroundMusicApiV1AdminSiteConfigBackgroundMusicGetQueryKey = () => {
+    return [
+    `/api/v1/admin/site-config/background-music`
+    ] as const;
+    }
+
+
+export const getGetBackgroundMusicApiV1AdminSiteConfigBackgroundMusicGetQueryOptions = <TData = Awaited<ReturnType<typeof getBackgroundMusicApiV1AdminSiteConfigBackgroundMusicGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBackgroundMusicApiV1AdminSiteConfigBackgroundMusicGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetBackgroundMusicApiV1AdminSiteConfigBackgroundMusicGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBackgroundMusicApiV1AdminSiteConfigBackgroundMusicGet>>> = ({ signal }) => getBackgroundMusicApiV1AdminSiteConfigBackgroundMusicGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBackgroundMusicApiV1AdminSiteConfigBackgroundMusicGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetBackgroundMusicApiV1AdminSiteConfigBackgroundMusicGetQueryResult = NonNullable<Awaited<ReturnType<typeof getBackgroundMusicApiV1AdminSiteConfigBackgroundMusicGet>>>
+export type GetBackgroundMusicApiV1AdminSiteConfigBackgroundMusicGetQueryError = ErrorType<unknown>
+
+
+export function useGetBackgroundMusicApiV1AdminSiteConfigBackgroundMusicGet<TData = Awaited<ReturnType<typeof getBackgroundMusicApiV1AdminSiteConfigBackgroundMusicGet>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBackgroundMusicApiV1AdminSiteConfigBackgroundMusicGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getBackgroundMusicApiV1AdminSiteConfigBackgroundMusicGet>>,
+          TError,
+          Awaited<ReturnType<typeof getBackgroundMusicApiV1AdminSiteConfigBackgroundMusicGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetBackgroundMusicApiV1AdminSiteConfigBackgroundMusicGet<TData = Awaited<ReturnType<typeof getBackgroundMusicApiV1AdminSiteConfigBackgroundMusicGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBackgroundMusicApiV1AdminSiteConfigBackgroundMusicGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getBackgroundMusicApiV1AdminSiteConfigBackgroundMusicGet>>,
+          TError,
+          Awaited<ReturnType<typeof getBackgroundMusicApiV1AdminSiteConfigBackgroundMusicGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetBackgroundMusicApiV1AdminSiteConfigBackgroundMusicGet<TData = Awaited<ReturnType<typeof getBackgroundMusicApiV1AdminSiteConfigBackgroundMusicGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBackgroundMusicApiV1AdminSiteConfigBackgroundMusicGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取背景音乐配置
+ */
+
+export function useGetBackgroundMusicApiV1AdminSiteConfigBackgroundMusicGet<TData = Awaited<ReturnType<typeof getBackgroundMusicApiV1AdminSiteConfigBackgroundMusicGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBackgroundMusicApiV1AdminSiteConfigBackgroundMusicGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetBackgroundMusicApiV1AdminSiteConfigBackgroundMusicGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 更新背景音乐配置
+ */
+export type updateBackgroundMusicApiV1AdminSiteConfigBackgroundMusicPutResponse200 = {
+  data: BackgroundMusicAdminRead
+  status: 200
+}
+
+export type updateBackgroundMusicApiV1AdminSiteConfigBackgroundMusicPutResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type updateBackgroundMusicApiV1AdminSiteConfigBackgroundMusicPutResponseSuccess = (updateBackgroundMusicApiV1AdminSiteConfigBackgroundMusicPutResponse200) & {
+  headers: Headers;
+};
+export type updateBackgroundMusicApiV1AdminSiteConfigBackgroundMusicPutResponseError = (updateBackgroundMusicApiV1AdminSiteConfigBackgroundMusicPutResponse422) & {
+  headers: Headers;
+};
+
+export type updateBackgroundMusicApiV1AdminSiteConfigBackgroundMusicPutResponse = (updateBackgroundMusicApiV1AdminSiteConfigBackgroundMusicPutResponseSuccess | updateBackgroundMusicApiV1AdminSiteConfigBackgroundMusicPutResponseError)
+
+export const getUpdateBackgroundMusicApiV1AdminSiteConfigBackgroundMusicPutUrl = () => {
+
+
+
+
+  return `/api/v1/admin/site-config/background-music`
+}
+
+export const updateBackgroundMusicApiV1AdminSiteConfigBackgroundMusicPut = async (backgroundMusicUpdate: BackgroundMusicUpdate, options?: RequestInit): Promise<updateBackgroundMusicApiV1AdminSiteConfigBackgroundMusicPutResponse> => {
+
+  return customInstance<updateBackgroundMusicApiV1AdminSiteConfigBackgroundMusicPutResponse>(getUpdateBackgroundMusicApiV1AdminSiteConfigBackgroundMusicPutUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      backgroundMusicUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateBackgroundMusicApiV1AdminSiteConfigBackgroundMusicPutMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateBackgroundMusicApiV1AdminSiteConfigBackgroundMusicPut>>, TError,{data: BodyType<BackgroundMusicUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateBackgroundMusicApiV1AdminSiteConfigBackgroundMusicPut>>, TError,{data: BodyType<BackgroundMusicUpdate>}, TContext> => {
+
+const mutationKey = ['updateBackgroundMusicApiV1AdminSiteConfigBackgroundMusicPut'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateBackgroundMusicApiV1AdminSiteConfigBackgroundMusicPut>>, {data: BodyType<BackgroundMusicUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateBackgroundMusicApiV1AdminSiteConfigBackgroundMusicPut(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateBackgroundMusicApiV1AdminSiteConfigBackgroundMusicPutMutationResult = NonNullable<Awaited<ReturnType<typeof updateBackgroundMusicApiV1AdminSiteConfigBackgroundMusicPut>>>
+    export type UpdateBackgroundMusicApiV1AdminSiteConfigBackgroundMusicPutMutationBody = BodyType<BackgroundMusicUpdate>
+    export type UpdateBackgroundMusicApiV1AdminSiteConfigBackgroundMusicPutMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 更新背景音乐配置
+ */
+export const useUpdateBackgroundMusicApiV1AdminSiteConfigBackgroundMusicPut = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateBackgroundMusicApiV1AdminSiteConfigBackgroundMusicPut>>, TError,{data: BodyType<BackgroundMusicUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateBackgroundMusicApiV1AdminSiteConfigBackgroundMusicPut>>,
+        TError,
+        {data: BodyType<BackgroundMusicUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateBackgroundMusicApiV1AdminSiteConfigBackgroundMusicPutMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 添加背景音乐曲目
+ */
+export type createBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksPostResponse201 = {
+  data: BackgroundMusicTrackAdminRead
+  status: 201
+}
+
+export type createBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksPostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type createBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksPostResponseSuccess = (createBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksPostResponse201) & {
+  headers: Headers;
+};
+export type createBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksPostResponseError = (createBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksPostResponse422) & {
+  headers: Headers;
+};
+
+export type createBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksPostResponse = (createBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksPostResponseSuccess | createBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksPostResponseError)
+
+export const getCreateBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksPostUrl = () => {
+
+
+
+
+  return `/api/v1/admin/site-config/background-music/tracks`
+}
+
+export const createBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksPost = async (backgroundMusicTrackCreate: BackgroundMusicTrackCreate, options?: RequestInit): Promise<createBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksPostResponse> => {
+
+  return customInstance<createBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksPostResponse>(getCreateBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksPostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      backgroundMusicTrackCreate,)
+  }
+);}
+
+
+
+
+export const getCreateBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksPost>>, TError,{data: BodyType<BackgroundMusicTrackCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof createBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksPost>>, TError,{data: BodyType<BackgroundMusicTrackCreate>}, TContext> => {
+
+const mutationKey = ['createBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksPost>>, {data: BodyType<BackgroundMusicTrackCreate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksPost(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksPostMutationResult = NonNullable<Awaited<ReturnType<typeof createBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksPost>>>
+    export type CreateBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksPostMutationBody = BodyType<BackgroundMusicTrackCreate>
+    export type CreateBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksPostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 添加背景音乐曲目
+ */
+export const useCreateBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksPost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksPost>>, TError,{data: BodyType<BackgroundMusicTrackCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksPost>>,
+        TError,
+        {data: BodyType<BackgroundMusicTrackCreate>},
+        TContext
+      > => {
+      return useMutation(getCreateBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksPostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 重排背景音乐曲目
+ */
+export type reorderBackgroundMusicTracksApiV1AdminSiteConfigBackgroundMusicTracksReorderPutResponse200 = {
+  data: BackgroundMusicAdminRead
+  status: 200
+}
+
+export type reorderBackgroundMusicTracksApiV1AdminSiteConfigBackgroundMusicTracksReorderPutResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type reorderBackgroundMusicTracksApiV1AdminSiteConfigBackgroundMusicTracksReorderPutResponseSuccess = (reorderBackgroundMusicTracksApiV1AdminSiteConfigBackgroundMusicTracksReorderPutResponse200) & {
+  headers: Headers;
+};
+export type reorderBackgroundMusicTracksApiV1AdminSiteConfigBackgroundMusicTracksReorderPutResponseError = (reorderBackgroundMusicTracksApiV1AdminSiteConfigBackgroundMusicTracksReorderPutResponse422) & {
+  headers: Headers;
+};
+
+export type reorderBackgroundMusicTracksApiV1AdminSiteConfigBackgroundMusicTracksReorderPutResponse = (reorderBackgroundMusicTracksApiV1AdminSiteConfigBackgroundMusicTracksReorderPutResponseSuccess | reorderBackgroundMusicTracksApiV1AdminSiteConfigBackgroundMusicTracksReorderPutResponseError)
+
+export const getReorderBackgroundMusicTracksApiV1AdminSiteConfigBackgroundMusicTracksReorderPutUrl = () => {
+
+
+
+
+  return `/api/v1/admin/site-config/background-music/tracks/reorder`
+}
+
+export const reorderBackgroundMusicTracksApiV1AdminSiteConfigBackgroundMusicTracksReorderPut = async (backgroundMusicTrackReorder: BackgroundMusicTrackReorder, options?: RequestInit): Promise<reorderBackgroundMusicTracksApiV1AdminSiteConfigBackgroundMusicTracksReorderPutResponse> => {
+
+  return customInstance<reorderBackgroundMusicTracksApiV1AdminSiteConfigBackgroundMusicTracksReorderPutResponse>(getReorderBackgroundMusicTracksApiV1AdminSiteConfigBackgroundMusicTracksReorderPutUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      backgroundMusicTrackReorder,)
+  }
+);}
+
+
+
+
+export const getReorderBackgroundMusicTracksApiV1AdminSiteConfigBackgroundMusicTracksReorderPutMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reorderBackgroundMusicTracksApiV1AdminSiteConfigBackgroundMusicTracksReorderPut>>, TError,{data: BodyType<BackgroundMusicTrackReorder>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof reorderBackgroundMusicTracksApiV1AdminSiteConfigBackgroundMusicTracksReorderPut>>, TError,{data: BodyType<BackgroundMusicTrackReorder>}, TContext> => {
+
+const mutationKey = ['reorderBackgroundMusicTracksApiV1AdminSiteConfigBackgroundMusicTracksReorderPut'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reorderBackgroundMusicTracksApiV1AdminSiteConfigBackgroundMusicTracksReorderPut>>, {data: BodyType<BackgroundMusicTrackReorder>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  reorderBackgroundMusicTracksApiV1AdminSiteConfigBackgroundMusicTracksReorderPut(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReorderBackgroundMusicTracksApiV1AdminSiteConfigBackgroundMusicTracksReorderPutMutationResult = NonNullable<Awaited<ReturnType<typeof reorderBackgroundMusicTracksApiV1AdminSiteConfigBackgroundMusicTracksReorderPut>>>
+    export type ReorderBackgroundMusicTracksApiV1AdminSiteConfigBackgroundMusicTracksReorderPutMutationBody = BodyType<BackgroundMusicTrackReorder>
+    export type ReorderBackgroundMusicTracksApiV1AdminSiteConfigBackgroundMusicTracksReorderPutMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 重排背景音乐曲目
+ */
+export const useReorderBackgroundMusicTracksApiV1AdminSiteConfigBackgroundMusicTracksReorderPut = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reorderBackgroundMusicTracksApiV1AdminSiteConfigBackgroundMusicTracksReorderPut>>, TError,{data: BodyType<BackgroundMusicTrackReorder>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof reorderBackgroundMusicTracksApiV1AdminSiteConfigBackgroundMusicTracksReorderPut>>,
+        TError,
+        {data: BodyType<BackgroundMusicTrackReorder>},
+        TContext
+      > => {
+      return useMutation(getReorderBackgroundMusicTracksApiV1AdminSiteConfigBackgroundMusicTracksReorderPutMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 更新背景音乐曲目
+ */
+export type updateBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdPatchResponse200 = {
+  data: BackgroundMusicTrackAdminRead
+  status: 200
+}
+
+export type updateBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdPatchResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type updateBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdPatchResponseSuccess = (updateBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdPatchResponse200) & {
+  headers: Headers;
+};
+export type updateBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdPatchResponseError = (updateBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdPatchResponse422) & {
+  headers: Headers;
+};
+
+export type updateBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdPatchResponse = (updateBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdPatchResponseSuccess | updateBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdPatchResponseError)
+
+export const getUpdateBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdPatchUrl = (trackId: string,) => {
+
+
+
+
+  return `/api/v1/admin/site-config/background-music/tracks/${trackId}`
+}
+
+export const updateBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdPatch = async (trackId: string,
+    backgroundMusicTrackUpdate: BackgroundMusicTrackUpdate, options?: RequestInit): Promise<updateBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdPatchResponse> => {
+
+  return customInstance<updateBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdPatchResponse>(getUpdateBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdPatchUrl(trackId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      backgroundMusicTrackUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdPatchMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdPatch>>, TError,{trackId: string;data: BodyType<BackgroundMusicTrackUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdPatch>>, TError,{trackId: string;data: BodyType<BackgroundMusicTrackUpdate>}, TContext> => {
+
+const mutationKey = ['updateBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdPatch'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdPatch>>, {trackId: string;data: BodyType<BackgroundMusicTrackUpdate>}> = (props) => {
+          const {trackId,data} = props ?? {};
+
+          return  updateBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdPatch(trackId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdPatchMutationResult = NonNullable<Awaited<ReturnType<typeof updateBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdPatch>>>
+    export type UpdateBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdPatchMutationBody = BodyType<BackgroundMusicTrackUpdate>
+    export type UpdateBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdPatchMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 更新背景音乐曲目
+ */
+export const useUpdateBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdPatch = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdPatch>>, TError,{trackId: string;data: BodyType<BackgroundMusicTrackUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdPatch>>,
+        TError,
+        {trackId: string;data: BodyType<BackgroundMusicTrackUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdPatchMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 删除背景音乐曲目
+ */
+export type deleteBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdDeleteResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deleteBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdDeleteResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type deleteBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdDeleteResponseSuccess = (deleteBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdDeleteResponse204) & {
+  headers: Headers;
+};
+export type deleteBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdDeleteResponseError = (deleteBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdDeleteResponse422) & {
+  headers: Headers;
+};
+
+export type deleteBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdDeleteResponse = (deleteBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdDeleteResponseSuccess | deleteBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdDeleteResponseError)
+
+export const getDeleteBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdDeleteUrl = (trackId: string,) => {
+
+
+
+
+  return `/api/v1/admin/site-config/background-music/tracks/${trackId}`
+}
+
+export const deleteBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdDelete = async (trackId: string, options?: RequestInit): Promise<deleteBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdDeleteResponse> => {
+
+  return customInstance<deleteBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdDeleteResponse>(getDeleteBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdDeleteUrl(trackId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdDeleteMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdDelete>>, TError,{trackId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdDelete>>, TError,{trackId: string}, TContext> => {
+
+const mutationKey = ['deleteBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdDelete'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdDelete>>, {trackId: string}> = (props) => {
+          const {trackId} = props ?? {};
+
+          return  deleteBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdDelete(trackId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdDeleteMutationResult = NonNullable<Awaited<ReturnType<typeof deleteBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdDelete>>>
+
+    export type DeleteBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdDeleteMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 删除背景音乐曲目
+ */
+export const useDeleteBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdDelete = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdDelete>>, TError,{trackId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdDelete>>,
+        TError,
+        {trackId: string},
+        TContext
+      > => {
+      return useMutation(getDeleteBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdDeleteMutationOptions(options), queryClient);
     }
     /**
  * @summary 获取站点资料

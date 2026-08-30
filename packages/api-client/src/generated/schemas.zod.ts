@@ -210,7 +210,16 @@ export const ReadBootstrapApiV1SiteBootstrapGetResponse = zod.object({
   "location": zod.string().default(readBootstrapApiV1SiteBootstrapGetResponseResumeLocationDefault).describe('Current base location'),
   "email": zod.string().default(readBootstrapApiV1SiteBootstrapGetResponseResumeEmailDefault).describe('Primary contact email'),
   "profile_image_url": zod.string().default(readBootstrapApiV1SiteBootstrapGetResponseResumeProfileImageUrlDefault).describe('Profile image URL')
-}).describe('Resume basics bundle')
+}).describe('Resume basics bundle'),
+  "background_music": zod.object({
+  "enabled": zod.boolean().describe('Whether the public music player is available'),
+  "playback_mode": zod.enum(['sequential', 'random']).describe('Playlist traversal mode'),
+  "tracks": zod.array(zod.object({
+  "id": zod.string().describe('Stable track identifier'),
+  "title": zod.string().describe('Track title shown by the player'),
+  "stream_url": zod.string().describe('Canonical immutable media URL')
+})).optional().describe('Playable ordered tracks')
+}).describe('Background music playlist')
 })
 
 
@@ -2770,6 +2779,138 @@ export const PostGenerateDiaryPoemApiV1AdminDiaryGeneratePoemPostBody = zod.obje
 
 export const PostGenerateDiaryPoemApiV1AdminDiaryGeneratePoemPostResponse = zod.object({
   "poem": zod.string().describe('生成的诗句')
+})
+
+
+/**
+ * @summary 获取背景音乐配置
+ */
+export const GetBackgroundMusicApiV1AdminSiteConfigBackgroundMusicGetResponse = zod.object({
+  "enabled": zod.boolean().describe('Configured master switch'),
+  "playback_mode": zod.enum(['sequential', 'random']).describe('Playlist traversal mode'),
+  "tracks": zod.array(zod.object({
+  "id": zod.string().describe('Stable track identifier'),
+  "asset_id": zod.string().describe('Referenced managed asset identifier'),
+  "title": zod.string().describe('Track title shown by the player'),
+  "file_name": zod.string().describe('Original uploaded filename'),
+  "byte_size": zod.union([zod.number(),zod.null()]).describe('Uploaded file size'),
+  "mime_type": zod.union([zod.string(),zod.null()]).describe('Uploaded media type'),
+  "stream_url": zod.string().describe('Canonical immutable media URL'),
+  "order_index": zod.number().describe('Playlist order'),
+  "is_enabled": zod.boolean().describe('Whether the track may be played publicly'),
+  "created_at": zod.string().datetime({"offset":true}).describe('Creation timestamp'),
+  "updated_at": zod.string().datetime({"offset":true}).describe('Last update timestamp')
+})).optional().describe('All configured tracks')
+})
+
+
+/**
+ * @summary 更新背景音乐配置
+ */
+export const UpdateBackgroundMusicApiV1AdminSiteConfigBackgroundMusicPutBody = zod.object({
+  "enabled": zod.union([zod.boolean(),zod.null()]).optional().describe('Configured master switch'),
+  "playback_mode": zod.union([zod.enum(['sequential', 'random']),zod.null()]).optional().describe('Playlist traversal mode')
+})
+
+export const UpdateBackgroundMusicApiV1AdminSiteConfigBackgroundMusicPutResponse = zod.object({
+  "enabled": zod.boolean().describe('Configured master switch'),
+  "playback_mode": zod.enum(['sequential', 'random']).describe('Playlist traversal mode'),
+  "tracks": zod.array(zod.object({
+  "id": zod.string().describe('Stable track identifier'),
+  "asset_id": zod.string().describe('Referenced managed asset identifier'),
+  "title": zod.string().describe('Track title shown by the player'),
+  "file_name": zod.string().describe('Original uploaded filename'),
+  "byte_size": zod.union([zod.number(),zod.null()]).describe('Uploaded file size'),
+  "mime_type": zod.union([zod.string(),zod.null()]).describe('Uploaded media type'),
+  "stream_url": zod.string().describe('Canonical immutable media URL'),
+  "order_index": zod.number().describe('Playlist order'),
+  "is_enabled": zod.boolean().describe('Whether the track may be played publicly'),
+  "created_at": zod.string().datetime({"offset":true}).describe('Creation timestamp'),
+  "updated_at": zod.string().datetime({"offset":true}).describe('Last update timestamp')
+})).optional().describe('All configured tracks')
+})
+
+
+/**
+ * @summary 添加背景音乐曲目
+ */
+export const createBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksPostBodyAssetIdMax = 36;
+
+export const createBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksPostBodyTitleOneMax = 160;
+
+
+
+export const CreateBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksPostBody = zod.object({
+  "asset_id": zod.string().min(1).max(createBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksPostBodyAssetIdMax),
+  "title": zod.union([zod.string().max(createBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksPostBodyTitleOneMax),zod.null()]).optional()
+})
+
+
+/**
+ * @summary 重排背景音乐曲目
+ */
+
+
+
+export const ReorderBackgroundMusicTracksApiV1AdminSiteConfigBackgroundMusicTracksReorderPutBody = zod.object({
+  "track_ids": zod.array(zod.string()).min(1)
+})
+
+export const ReorderBackgroundMusicTracksApiV1AdminSiteConfigBackgroundMusicTracksReorderPutResponse = zod.object({
+  "enabled": zod.boolean().describe('Configured master switch'),
+  "playback_mode": zod.enum(['sequential', 'random']).describe('Playlist traversal mode'),
+  "tracks": zod.array(zod.object({
+  "id": zod.string().describe('Stable track identifier'),
+  "asset_id": zod.string().describe('Referenced managed asset identifier'),
+  "title": zod.string().describe('Track title shown by the player'),
+  "file_name": zod.string().describe('Original uploaded filename'),
+  "byte_size": zod.union([zod.number(),zod.null()]).describe('Uploaded file size'),
+  "mime_type": zod.union([zod.string(),zod.null()]).describe('Uploaded media type'),
+  "stream_url": zod.string().describe('Canonical immutable media URL'),
+  "order_index": zod.number().describe('Playlist order'),
+  "is_enabled": zod.boolean().describe('Whether the track may be played publicly'),
+  "created_at": zod.string().datetime({"offset":true}).describe('Creation timestamp'),
+  "updated_at": zod.string().datetime({"offset":true}).describe('Last update timestamp')
+})).optional().describe('All configured tracks')
+})
+
+
+/**
+ * @summary 更新背景音乐曲目
+ */
+export const UpdateBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdPatchParams = zod.object({
+  "track_id": zod.string()
+})
+
+export const updateBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdPatchBodyTitleOneMax = 160;
+
+
+
+export const UpdateBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdPatchBody = zod.object({
+  "title": zod.union([zod.string().max(updateBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdPatchBodyTitleOneMax),zod.null()]).optional(),
+  "is_enabled": zod.union([zod.boolean(),zod.null()]).optional()
+})
+
+export const UpdateBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdPatchResponse = zod.object({
+  "id": zod.string().describe('Stable track identifier'),
+  "asset_id": zod.string().describe('Referenced managed asset identifier'),
+  "title": zod.string().describe('Track title shown by the player'),
+  "file_name": zod.string().describe('Original uploaded filename'),
+  "byte_size": zod.union([zod.number(),zod.null()]).describe('Uploaded file size'),
+  "mime_type": zod.union([zod.string(),zod.null()]).describe('Uploaded media type'),
+  "stream_url": zod.string().describe('Canonical immutable media URL'),
+  "order_index": zod.number().describe('Playlist order'),
+  "is_enabled": zod.boolean().describe('Whether the track may be played publicly'),
+  "created_at": zod.string().datetime({"offset":true}).describe('Creation timestamp'),
+  "updated_at": zod.string().datetime({"offset":true}).describe('Last update timestamp')
+})
+
+
+/**
+ * @summary 删除背景音乐曲目
+ */
+export const DeleteBackgroundMusicTrackApiV1AdminSiteConfigBackgroundMusicTracksTrackIdDeleteParams = zod.object({
+  "track_id": zod.string()
 })
 
 

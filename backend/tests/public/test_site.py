@@ -82,6 +82,11 @@ def test_read_site_bootstrap_returns_aggregated_payload(client) -> None:
     assert payload["site"]["site"]["title"] == "Felix"
     assert payload["pages"]["items"]
     assert payload["resume"]["title"]
+    assert payload["background_music"] == {
+        "enabled": False,
+        "playback_mode": "sequential",
+        "tracks": [],
+    }
 
 
 def test_read_site_bootstrap_script_assigns_window_payload(client) -> None:

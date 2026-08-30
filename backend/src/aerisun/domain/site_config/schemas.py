@@ -82,6 +82,18 @@ class SiteConfigRead(ModelBase):
     navigation: list[NavItemRead] = Field(default_factory=list, description="Navigation menu items")
 
 
+class BackgroundMusicTrackRead(ModelBase):
+    id: str = Field(description="Stable track identifier")
+    title: str = Field(description="Track title shown by the player")
+    stream_url: str = Field(description="Canonical immutable media URL")
+
+
+class BackgroundMusicRead(ModelBase):
+    enabled: bool = Field(description="Whether the public music player is available")
+    playback_mode: Literal["sequential", "random"] = Field(description="Playlist traversal mode")
+    tracks: list[BackgroundMusicTrackRead] = Field(default_factory=list, description="Playable ordered tracks")
+
+
 class SitePoemPreviewRead(ModelBase):
     mode: Literal["custom", "hitokoto"] = Field(description="Resolved poem source mode")
     content: str = Field(description="Poem content shown on the homepage")
@@ -171,6 +183,49 @@ class SiteBootstrapRead(ModelBase):
     site: SiteConfigRead = Field(description="Site profile and navigation bundle")
     pages: PageCollectionRead = Field(description="Page copy bundle")
     resume: ResumeRead = Field(description="Resume basics bundle")
+    background_music: BackgroundMusicRead = Field(description="Background music playlist")
+
+
+class BackgroundMusicTrackAdminRead(ModelBase):
+    id: str = Field(description="Stable track identifier")
+    asset_id: str = Field(description="Referenced managed asset identifier")
+    title: str = Field(description="Track title shown by the player")
+    file_name: str = Field(description="Original uploaded filename")
+    byte_size: int | None = Field(description="Uploaded file size")
+    mime_type: str | None = Field(description="Uploaded media type")
+    stream_url: str = Field(description="Canonical immutable media URL")
+    order_index: int = Field(description="Playlist order")
+    is_enabled: bool = Field(description="Whether the track may be played publicly")
+    created_at: datetime = Field(description="Creation timestamp")
+    updated_at: datetime = Field(description="Last update timestamp")
+
+
+class BackgroundMusicAdminRead(ModelBase):
+    enabled: bool = Field(description="Configured master switch")
+    playback_mode: Literal["sequential", "random"] = Field(description="Playlist traversal mode")
+    tracks: list[BackgroundMusicTrackAdminRead] = Field(default_factory=list, description="All configured tracks")
+
+
+class BackgroundMusicUpdate(BaseModel):
+    enabled: bool | None = Field(default=None, description="Configured master switch")
+    playback_mode: Literal["sequential", "random"] | None = Field(
+        default=None,
+        description="Playlist traversal mode",
+    )
+
+
+class BackgroundMusicTrackCreate(BaseModel):
+    asset_id: str = Field(min_length=1, max_length=36)
+    title: str | None = Field(default=None, max_length=160)
+
+
+class BackgroundMusicTrackUpdate(BaseModel):
+    title: str | None = Field(default=None, max_length=160)
+    is_enabled: bool | None = None
+
+
+class BackgroundMusicTrackReorder(BaseModel):
+    track_ids: list[str] = Field(min_length=1)
 
 
 # ---------------------------------------------------------------------------

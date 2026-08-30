@@ -4,7 +4,10 @@ from sqlalchemy import select
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
+from aerisun.domain.media.models import Asset
 from aerisun.domain.site_config.models import (
+    BackgroundMusicConfig,
+    BackgroundMusicTrack,
     CommunityConfig,
     NavItem,
     PageCopy,
@@ -13,6 +16,37 @@ from aerisun.domain.site_config.models import (
     SiteProfile,
     SocialLink,
 )
+
+
+def find_background_music_config(session: Session) -> BackgroundMusicConfig | None:
+    return session.scalars(select(BackgroundMusicConfig).order_by(BackgroundMusicConfig.created_at.asc())).first()
+
+
+def find_background_music_tracks(
+    session: Session,
+    *,
+    enabled_only: bool = False,
+) -> list[tuple[BackgroundMusicTrack, Asset]]:
+    statement = (
+        select(BackgroundMusicTrack, Asset)
+        .join(Asset, Asset.id == BackgroundMusicTrack.asset_id)
+        .order_by(BackgroundMusicTrack.order_index.asc(), BackgroundMusicTrack.created_at.asc())
+    )
+    if enabled_only:
+        statement = statement.where(BackgroundMusicTrack.is_enabled.is_(True))
+    return [(track, asset) for track, asset in session.execute(statement).all()]
+
+
+def find_background_music_track(
+    session: Session,
+    track_id: str,
+) -> tuple[BackgroundMusicTrack, Asset] | None:
+    row = session.execute(
+        select(BackgroundMusicTrack, Asset)
+        .join(Asset, Asset.id == BackgroundMusicTrack.asset_id)
+        .where(BackgroundMusicTrack.id == track_id)
+    ).first()
+    return None if row is None else (row[0], row[1])
 
 
 def find_site_profile(session: Session) -> SiteProfile | None:

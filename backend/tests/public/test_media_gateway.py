@@ -54,6 +54,22 @@ def test_media_gateway_serves_public_asset_from_canonical_url_on_direct_navigati
     assert response.status_code == 200
     assert response.content == b"public"
     assert "content-disposition" not in response.headers
+    assert response.headers["cache-control"] == "public, max-age=31536000, immutable"
+    assert response.headers["accept-ranges"] == "bytes"
+
+
+def test_media_gateway_supports_ranges_for_canonical_public_asset(client) -> None:
+    _create_asset(asset_id="public-range", visibility="public", content=b"0123456789")
+
+    response = client.get(
+        "/media/assets/public-range.txt",
+        headers={"Range": "bytes=3-6"},
+    )
+
+    assert response.status_code == 206
+    assert response.content == b"3456"
+    assert response.headers["content-range"] == "bytes 3-6/10"
+    assert response.headers["cache-control"] == "public, max-age=31536000, immutable"
 
 
 def test_media_gateway_serves_internal_asset_as_same_origin_subresource(client) -> None:
@@ -129,6 +145,7 @@ def test_media_gateway_serves_public_slug_but_never_internal_slug(client) -> Non
 
     assert public_response.status_code == 200
     assert public_response.content == b"public slug"
+    assert "immutable" not in public_response.headers.get("cache-control", "")
     assert internal_response.status_code == 404
 
 

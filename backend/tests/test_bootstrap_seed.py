@@ -11,7 +11,13 @@ from aerisun.core.settings import get_settings
 from aerisun.domain.content.models import PostEntry
 from aerisun.domain.media.models import Asset
 from aerisun.domain.ops.models import AuditLog, ConfigRevision, TrafficDailySnapshot
-from aerisun.domain.site_config.models import CommunityConfig, PageCopy, ResumeBasics, SiteProfile
+from aerisun.domain.site_config.models import (
+    BackgroundMusicConfig,
+    CommunityConfig,
+    PageCopy,
+    ResumeBasics,
+    SiteProfile,
+)
 from aerisun.domain.social.models import Friend
 from aerisun.domain.waline.service import connect_waline_db
 
@@ -49,6 +55,7 @@ def test_apply_production_baseline_only_initializes_safe_scaffold(tmp_path, monk
         session_factory = get_session_factory()
         with session_factory() as session:
             community = session.query(CommunityConfig).one()
+            background_music = session.query(BackgroundMusicConfig).one()
             assert session.query(PageCopy).count() > 0
             assert session.query(PostEntry).count() == 0
             assert session.query(Friend).count() == 0
@@ -56,6 +63,8 @@ def test_apply_production_baseline_only_initializes_safe_scaffold(tmp_path, monk
             assert community.image_uploader is False
             assert community.comment_image_rate_limit_count == 18
             assert community.comment_image_rate_limit_window_minutes == 30
+            assert background_music.enabled is False
+            assert background_music.playback_mode == "sequential"
             page_widths = {
                 page.page_key: page.max_width
                 for page in session.query(PageCopy)

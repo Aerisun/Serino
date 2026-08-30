@@ -5462,6 +5462,269 @@
         ]
       }
     },
+    "/api/v1/admin/site-config/background-music": {
+      "get": {
+        "tags": [
+          "admin",
+          "admin-site-config"
+        ],
+        "summary": "获取背景音乐配置",
+        "operationId": "get_background_music_api_v1_admin_site_config_background_music_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackgroundMusicAdminRead"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "admin",
+          "admin-site-config"
+        ],
+        "summary": "更新背景音乐配置",
+        "operationId": "update_background_music_api_v1_admin_site_config_background_music_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackgroundMusicUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackgroundMusicAdminRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/site-config/background-music/tracks": {
+      "post": {
+        "tags": [
+          "admin",
+          "admin-site-config"
+        ],
+        "summary": "添加背景音乐曲目",
+        "operationId": "create_background_music_track_api_v1_admin_site_config_background_music_tracks_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackgroundMusicTrackCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackgroundMusicTrackAdminRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/site-config/background-music/tracks/reorder": {
+      "put": {
+        "tags": [
+          "admin",
+          "admin-site-config"
+        ],
+        "summary": "重排背景音乐曲目",
+        "operationId": "reorder_background_music_tracks_api_v1_admin_site_config_background_music_tracks_reorder_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackgroundMusicTrackReorder"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackgroundMusicAdminRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/site-config/background-music/tracks/{track_id}": {
+      "patch": {
+        "tags": [
+          "admin",
+          "admin-site-config"
+        ],
+        "summary": "更新背景音乐曲目",
+        "operationId": "update_background_music_track_api_v1_admin_site_config_background_music_tracks__track_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "track_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Track Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackgroundMusicTrackUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackgroundMusicTrackAdminRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "admin",
+          "admin-site-config"
+        ],
+        "summary": "删除背景音乐曲目",
+        "operationId": "delete_background_music_track_api_v1_admin_site_config_background_music_tracks__track_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "track_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Track Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/site-config/profile": {
       "get": {
         "tags": [
@@ -22289,6 +22552,293 @@
         ],
         "title": "AuditLogRead"
       },
+      "BackgroundMusicAdminRead": {
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "description": "Configured master switch"
+          },
+          "playback_mode": {
+            "type": "string",
+            "enum": [
+              "sequential",
+              "random"
+            ],
+            "title": "Playback Mode",
+            "description": "Playlist traversal mode"
+          },
+          "tracks": {
+            "items": {
+              "$ref": "#/components/schemas/BackgroundMusicTrackAdminRead"
+            },
+            "type": "array",
+            "title": "Tracks",
+            "description": "All configured tracks"
+          }
+        },
+        "type": "object",
+        "required": [
+          "enabled",
+          "playback_mode"
+        ],
+        "title": "BackgroundMusicAdminRead"
+      },
+      "BackgroundMusicRead": {
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "description": "Whether the public music player is available"
+          },
+          "playback_mode": {
+            "type": "string",
+            "enum": [
+              "sequential",
+              "random"
+            ],
+            "title": "Playback Mode",
+            "description": "Playlist traversal mode"
+          },
+          "tracks": {
+            "items": {
+              "$ref": "#/components/schemas/BackgroundMusicTrackRead"
+            },
+            "type": "array",
+            "title": "Tracks",
+            "description": "Playable ordered tracks"
+          }
+        },
+        "type": "object",
+        "required": [
+          "enabled",
+          "playback_mode"
+        ],
+        "title": "BackgroundMusicRead"
+      },
+      "BackgroundMusicTrackAdminRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Stable track identifier"
+          },
+          "asset_id": {
+            "type": "string",
+            "title": "Asset Id",
+            "description": "Referenced managed asset identifier"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "description": "Track title shown by the player"
+          },
+          "file_name": {
+            "type": "string",
+            "title": "File Name",
+            "description": "Original uploaded filename"
+          },
+          "byte_size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Byte Size",
+            "description": "Uploaded file size"
+          },
+          "mime_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mime Type",
+            "description": "Uploaded media type"
+          },
+          "stream_url": {
+            "type": "string",
+            "title": "Stream Url",
+            "description": "Canonical immutable media URL"
+          },
+          "order_index": {
+            "type": "integer",
+            "title": "Order Index",
+            "description": "Playlist order"
+          },
+          "is_enabled": {
+            "type": "boolean",
+            "title": "Is Enabled",
+            "description": "Whether the track may be played publicly"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At",
+            "description": "Last update timestamp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "asset_id",
+          "title",
+          "file_name",
+          "byte_size",
+          "mime_type",
+          "stream_url",
+          "order_index",
+          "is_enabled",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "BackgroundMusicTrackAdminRead"
+      },
+      "BackgroundMusicTrackCreate": {
+        "properties": {
+          "asset_id": {
+            "type": "string",
+            "maxLength": 36,
+            "minLength": 1,
+            "title": "Asset Id"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 160
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "type": "object",
+        "required": [
+          "asset_id"
+        ],
+        "title": "BackgroundMusicTrackCreate"
+      },
+      "BackgroundMusicTrackRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Stable track identifier"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "description": "Track title shown by the player"
+          },
+          "stream_url": {
+            "type": "string",
+            "title": "Stream Url",
+            "description": "Canonical immutable media URL"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "stream_url"
+        ],
+        "title": "BackgroundMusicTrackRead"
+      },
+      "BackgroundMusicTrackReorder": {
+        "properties": {
+          "track_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Track Ids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "track_ids"
+        ],
+        "title": "BackgroundMusicTrackReorder"
+      },
+      "BackgroundMusicTrackUpdate": {
+        "properties": {
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 160
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "is_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Enabled"
+          }
+        },
+        "type": "object",
+        "title": "BackgroundMusicTrackUpdate"
+      },
+      "BackgroundMusicUpdate": {
+        "properties": {
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enabled",
+            "description": "Configured master switch"
+          },
+          "playback_mode": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "sequential",
+                  "random"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Playback Mode",
+            "description": "Playlist traversal mode"
+          }
+        },
+        "type": "object",
+        "title": "BackgroundMusicUpdate"
+      },
       "BackupBootstrapClaimCreate": {
         "properties": {
           "remote_host": {
@@ -34392,6 +34942,10 @@
           "resume": {
             "$ref": "#/components/schemas/ResumeRead",
             "description": "Resume basics bundle"
+          },
+          "background_music": {
+            "$ref": "#/components/schemas/BackgroundMusicRead",
+            "description": "Background music playlist"
           }
         },
         "type": "object",
@@ -34400,7 +34954,8 @@
           "generated_at",
           "site",
           "pages",
-          "resume"
+          "resume",
+          "background_music"
         ],
         "title": "SiteBootstrapRead"
       },

@@ -51,6 +51,7 @@ from aerisun.domain.media.preview_access import create_asset_preview_grant
 from aerisun.domain.media.references import (
     ACTIVE_REFERENCE_FIELDS,
     build_legacy_url_variants,
+    collect_direct_asset_reference_locations,
     collect_registered_references,
 )
 from aerisun.domain.media.schemas import (
@@ -62,6 +63,7 @@ from aerisun.domain.media.schemas import (
     AssetUploadPlanWrite,
 )
 from aerisun.domain.site_config import repository as site_config_repo
+from aerisun.domain.site_config.background_music import validate_background_music_upload
 from aerisun.domain.waline.service import collect_waline_asset_references
 
 logger = logging.getLogger(__name__)
@@ -282,6 +284,14 @@ def upload_asset(
     normalized_category = _normalize_category(category)
     normalized_note = _normalize_note(note)
     normalized_public_slug = _normalize_public_slug(public_slug)
+    validate_background_music_upload(
+        file_name=file_name,
+        byte_size=len(content),
+        mime_type=mime_type,
+        visibility=normalized_visibility,
+        scope=normalized_scope,
+        category=normalized_category,
+    )
     sha = hashlib.sha256(content).hexdigest()
     existing = repo.find_asset_by_fingerprint(
         session,
@@ -377,6 +387,14 @@ def prepare_asset_upload(session: Session, payload: AssetUploadPlanWrite) -> Ass
     normalized_category = _normalize_category(payload.category)
     normalized_note = _normalize_note(payload.note)
     normalized_public_slug = _normalize_public_slug(payload.public_slug)
+    validate_background_music_upload(
+        file_name=payload.file_name,
+        byte_size=payload.byte_size,
+        mime_type=payload.mime_type,
+        visibility=normalized_visibility,
+        scope=normalized_scope,
+        category=normalized_category,
+    )
     existing = repo.find_asset_by_fingerprint(
         session,
         sha256=payload.sha256.lower(),
@@ -709,6 +727,7 @@ def _active_asset_reference_locations(session: Session, asset: Asset) -> list[st
         f"waline.wl_comment row={reference.row_id}"
         for reference in collect_waline_asset_references(settings.waline_db_path, url_to_asset_id)
     )
+    locations.update(collect_direct_asset_reference_locations(session, asset.id))
     return sorted(locations)
 
 

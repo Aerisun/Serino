@@ -36,6 +36,15 @@ def _serve_local_asset(asset: Asset) -> Response:
     return FileResponse(local_path, media_type=asset.mime_type)
 
 
+def _is_canonical_asset_request(resource_key: str, asset: Asset) -> bool:
+    return resource_key.strip().lstrip("/") == str(asset.resource_key).strip().lstrip("/")
+
+
+def _apply_immutable_public_cache(response: Response) -> Response:
+    response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+    return response
+
+
 def _origin(value: str) -> tuple[str, str, int | None] | None:
     parsed = urlsplit(str(value or "").strip())
     if parsed.scheme not in {"http", "https"} or not parsed.hostname:
@@ -93,4 +102,6 @@ def serve_media(
         response = _serve_local_asset(asset)
     if asset.visibility == "internal":
         return _apply_internal_response_headers(response)
+    if _is_canonical_asset_request(resource_key, asset) and not urlsplit(str(redirect_url or "")).query:
+        return _apply_immutable_public_cache(response)
     return response

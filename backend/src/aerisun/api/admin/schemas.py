@@ -71,6 +71,12 @@ from aerisun.domain.post_access.schemas import (  # noqa: F401
     PostAccessStateRead,
 )
 from aerisun.domain.site_config.schemas import (  # noqa: F401
+    BackgroundMusicAdminRead,
+    BackgroundMusicTrackAdminRead,
+    BackgroundMusicTrackCreate,
+    BackgroundMusicTrackReorder,
+    BackgroundMusicTrackUpdate,
+    BackgroundMusicUpdate,
     CommunityConfigAdminRead,
     CommunityConfigUpdate,
     CommunitySurfaceUpdate,

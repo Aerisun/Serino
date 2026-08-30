@@ -10,7 +10,7 @@ from alembic.script import ScriptDirectory
 from aerisun.core.db import dispose_engine, run_database_migrations
 from aerisun.core.settings import get_settings
 
-CURRENT_SCHEMA_HEAD = "0027_remove_thought_categories"
+CURRENT_SCHEMA_HEAD = "0028_background_music"
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
 
@@ -71,6 +71,15 @@ def _get_alembic_revision(path: Path) -> str | None:
         connection.close()
 
 
+def _get_background_music_config(path: Path) -> tuple[int, str] | None:
+    connection = sqlite3.connect(path)
+    try:
+        row = connection.execute("SELECT enabled, playback_mode FROM background_music_config LIMIT 1").fetchone()
+        return None if row is None else (int(row[0]), str(row[1]))
+    finally:
+        connection.close()
+
+
 def test_active_alembic_history_is_reset_to_single_production_baseline_head() -> None:
     config = Config(str(BACKEND_ROOT / "alembic.ini"))
     config.set_main_option("script_location", str(BACKEND_ROOT / "alembic"))
@@ -107,6 +116,7 @@ def test_active_alembic_history_is_reset_to_single_production_baseline_head() ->
         "0025_post_manuscript_note_kind.py",
         "0026_manuscript_note_page_config.py",
         "0027_remove_thought_categories.py",
+        "0028_background_music.py",
     ]
     assert not (BACKEND_ROOT / "alembic" / "legacy_versions").exists()
 
@@ -173,6 +183,18 @@ def test_run_database_migrations_creates_baseline_schema_and_journal(tmp_path, m
     } <= _get_indexes(db_path, "agent_runs")
     assert "uq_agent_run_steps_run_sequence" in _get_indexes(db_path, "agent_run_steps")
     assert "system_diagnostic_state" in tables
+    assert "background_music_config" in tables
+    assert "background_music_tracks" in tables
+    assert {"enabled", "playback_mode"} <= _get_columns(db_path, "background_music_config")
+    assert {"asset_id", "title", "order_index", "is_enabled"} <= _get_columns(
+        db_path,
+        "background_music_tracks",
+    )
+    assert "ix_background_music_tracks_order_index" in _get_indexes(
+        db_path,
+        "background_music_tracks",
+    )
+    assert _get_background_music_config(db_path) == (0, "sequential")
     assert {
         "run_id",
         "execution_status",
