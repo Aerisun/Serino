@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
+import {
+  buildImageTransitionKeyframes,
+  buildInterruptedCloseTransition,
+  type ImageTransitionFrame,
+} from "@/lib/image-lightbox-transition";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
 import "./ImageLightbox.css";
 
@@ -13,8 +18,8 @@ interface ImageLightboxProps {
 }
 
 const clamp = (value: number, limit: number) => Math.min(limit, Math.max(-limit, value));
-const OPEN_TRANSITION_DURATION = 320;
-const CLOSE_TRANSITION_DURATION = 260;
+const OPEN_TRANSITION_DURATION = 280;
+const CLOSE_TRANSITION_DURATION = 220;
 const TRANSITION_EASING = "cubic-bezier(0.22, 0.61, 0.36, 1)";
 
 const constrainImageOffset = (
@@ -38,46 +43,46 @@ const isVisibleRect = (rect: DOMRect) => {
     && rect.top < window.innerHeight;
 };
 
-const createTransitionImage = (sourceImage: HTMLImageElement, sourceRect: DOMRect) => {
-  const styles = window.getComputedStyle(sourceImage);
+const getRenderedBorderRadius = (image: HTMLImageElement, rect: DOMRect) => {
+  const radius = Number.parseFloat(window.getComputedStyle(image).borderTopLeftRadius);
+  if (!Number.isFinite(radius)) return 0;
+  const scaleX = image.offsetWidth > 0 ? rect.width / image.offsetWidth : 1;
+  const scaleY = image.offsetHeight > 0 ? rect.height / image.offsetHeight : 1;
+  return radius * Math.min(scaleX, scaleY);
+};
+
+const createTransitionImage = (
+  previewImage: HTMLImageElement,
+  previewRect: DOMRect,
+  initialFrame: ImageTransitionFrame,
+) => {
   const transitionImage = document.createElement("img");
-  transitionImage.src = sourceImage.currentSrc || sourceImage.src;
+  transitionImage.src = previewImage.currentSrc || previewImage.src;
   transitionImage.alt = "";
   transitionImage.setAttribute("aria-hidden", "true");
   transitionImage.decoding = "async";
   Object.assign(transitionImage.style, {
     position: "fixed",
-    top: `${sourceRect.top}px`,
-    left: `${sourceRect.left}px`,
-    width: `${sourceRect.width}px`,
-    height: `${sourceRect.height}px`,
+    top: `${previewRect.top}px`,
+    left: `${previewRect.left}px`,
+    width: `${previewRect.width}px`,
+    height: `${previewRect.height}px`,
     maxWidth: "none",
     maxHeight: "none",
     margin: "0",
-    borderRadius: styles.borderRadius,
-    objectFit: styles.objectFit,
-    objectPosition: styles.objectPosition,
+    borderRadius: "0",
+    objectFit: "fill",
+    objectPosition: "center",
     pointerEvents: "none",
     transformOrigin: "top left",
-    willChange: "transform",
+    transform: initialFrame.transform,
+    clipPath: initialFrame.clipPath,
+    willChange: "transform, clip-path",
     contain: "paint",
     zIndex: "1201",
   });
   document.body.appendChild(transitionImage);
   return transitionImage;
-};
-
-const getTransitionKeyframes = (from: DOMRect, to: DOMRect): Keyframe[] => {
-  const translateX = to.left - from.left;
-  const translateY = to.top - from.top;
-  const scaleX = to.width / from.width;
-  const scaleY = to.height / from.height;
-  const targetTransform = `translate3d(${translateX}px, ${translateY}px, 0) scale(${scaleX}, ${scaleY})`;
-
-  return [
-    { transform: "translate3d(0, 0, 0) scale(1)" },
-    { transform: targetTransform },
-  ];
 };
 
 export default function ImageLightbox({
@@ -165,17 +170,60 @@ export default function ImageLightbox({
   }, [restoreOriginImage]);
 
   const playImageTransition = useCallback((
+    previewImage: HTMLImageElement,
     sourceImage: HTMLImageElement,
-    from: DOMRect,
-    to: DOMRect,
+    originRect: DOMRect,
+    previewRect: DOMRect,
+    direction: "open" | "close",
     duration: number,
     onFinished: () => void,
     retainTransitionImage = false,
+    resumeActiveTransition = false,
   ) => {
-    const transitionImage = createTransitionImage(sourceImage, from);
+    const keyframes = buildImageTransitionKeyframes({
+      originRect,
+      previewRect,
+      objectPosition: window.getComputedStyle(sourceImage).objectPosition,
+      originBorderRadius: getRenderedBorderRadius(sourceImage, originRect),
+      previewBorderRadius: getRenderedBorderRadius(previewImage, previewRect),
+    });
+    if (!keyframes) {
+      removeTransitionImage();
+      onFinished();
+      return;
+    }
+
+    let animationFrames = keyframes[direction];
+    let animationDuration = duration;
+    let transitionImage: HTMLImageElement;
+    const activeTransitionImage = resumeActiveTransition ? transitionImageRef.current : null;
+    const activeTransitionAnimation = resumeActiveTransition ? transitionAnimationRef.current : null;
+
+    if (activeTransitionImage && activeTransitionAnimation) {
+      const currentStyle = window.getComputedStyle(activeTransitionImage);
+      const interrupted = buildInterruptedCloseTransition({
+        currentFrame: {
+          transform: currentStyle.transform,
+          clipPath: currentStyle.clipPath,
+        },
+        originFrame: keyframes.close[1],
+        openProgress: activeTransitionAnimation.effect?.getComputedTiming().progress ?? null,
+        fullDuration: duration,
+      });
+      activeTransitionAnimation.cancel();
+      animationFrames = interrupted.keyframes;
+      animationDuration = interrupted.duration;
+      transitionImage = activeTransitionImage;
+      transitionImage.style.transform = animationFrames[0].transform;
+      transitionImage.style.clipPath = animationFrames[0].clipPath;
+    } else {
+      const initialFrame = animationFrames[0];
+      transitionImage = createTransitionImage(previewImage, previewRect, initialFrame);
+    }
+
     transitionImageRef.current = transitionImage;
-    const animation = transitionImage.animate(getTransitionKeyframes(from, to), {
-      duration,
+    const animation = transitionImage.animate(animationFrames, {
+      duration: animationDuration,
       easing: TRANSITION_EASING,
       fill: "forwards",
     });
@@ -193,7 +241,7 @@ export default function ImageLightbox({
         }
         onFinished();
       });
-  }, []);
+  }, [removeTransitionImage]);
 
   const finishClose = useCallback(() => {
     restoreOriginImage();
@@ -230,10 +278,14 @@ export default function ImageLightbox({
       window.cancelAnimationFrame(revealFrameRef.current);
       revealFrameRef.current = null;
     }
-    removeTransitionImage();
+    const resumeActiveTransition = Boolean(
+      transitionImageRef.current && transitionAnimationRef.current,
+    );
+    if (!resumeActiveTransition) removeTransitionImage();
 
     const targetImage = imageRef.current;
     if (prefersReducedMotion || !originImage || !targetImage || !originImage.isConnected) {
+      removeTransitionImage();
       fadeOutAndClose();
       return;
     }
@@ -241,13 +293,24 @@ export default function ImageLightbox({
     const from = targetImage.getBoundingClientRect();
     const to = originImage.getBoundingClientRect();
     if (!isVisibleRect(from) || !isVisibleRect(to)) {
+      removeTransitionImage();
       fadeOutAndClose();
       return;
     }
 
     hideOriginImage(originImage);
     setImageReady(false);
-    playImageTransition(targetImage, from, to, CLOSE_TRANSITION_DURATION, finishClose);
+    playImageTransition(
+      targetImage,
+      originImage,
+      to,
+      from,
+      "close",
+      CLOSE_TRANSITION_DURATION,
+      finishClose,
+      false,
+      resumeActiveTransition,
+    );
   }, [fadeOutAndClose, finishClose, hideOriginImage, originImage, playImageTransition, prefersReducedMotion, removeTransitionImage]);
 
   useEffect(() => {
@@ -344,9 +407,18 @@ export default function ImageLightbox({
 
     hideOriginImage(originImage);
     setOpening(true);
-    playImageTransition(originImage, from, to, OPEN_TRANSITION_DURATION, () => {
-      setImageReady(true);
-    }, true);
+    playImageTransition(
+      targetImage,
+      originImage,
+      from,
+      to,
+      "open",
+      OPEN_TRANSITION_DURATION,
+      () => {
+        setImageReady(true);
+      },
+      true,
+    );
     setImageLoaded(true);
   }, [hideOriginImage, originImage, playImageTransition, prefersReducedMotion]);
 
@@ -416,7 +488,13 @@ export default function ImageLightbox({
         <div className="aerisun-image-lightbox__viewport" onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerEnd} onPointerCancel={handlePointerEnd}>
           <img ref={imageRef} src={src} alt={alt} draggable={false} onLoad={handlePreviewImageLoad} onError={() => setImageLoaded(true)} onDragStart={(event) => event.preventDefault()} className={`aerisun-image-lightbox__image ${opening ? "is-opening" : ""} ${imageReady ? "is-ready" : ""} ${zoom > 1 ? "is-zoomed" : ""} ${dragging ? "is-dragging" : ""}`} style={{ transform: `translate3d(${offset.x}px, ${offset.y}px, 0) scale(${zoom})` }} />
         </div>
-        {showCaption && text ? <figcaption className="aerisun-image-lightbox__caption">{text}</figcaption> : null}
+        {showCaption && text ? (
+          <figcaption
+            className={`aerisun-image-lightbox__caption ${imageReady && !closing ? "is-visible" : ""}`}
+          >
+            {text}
+          </figcaption>
+        ) : null}
       </figure>
     </div>,
     document.body,
