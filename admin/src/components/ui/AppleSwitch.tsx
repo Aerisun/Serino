@@ -14,6 +14,7 @@ interface AppleSwitchProps {
   descriptionClassName?: string;
   className?: string;
   disabled?: boolean;
+  switchDisabled?: boolean;
   expandableDivider?: boolean;
 }
 
@@ -30,9 +31,11 @@ export function AppleSwitch({
   descriptionClassName,
   className,
   disabled = false,
+  switchDisabled = false,
   expandableDivider = true,
 }: AppleSwitchProps) {
   const labelId = useId();
+  const expandableId = useId();
 
   return (
     <div
@@ -77,7 +80,7 @@ export function AppleSwitch({
             aria-label={ariaLabel}
             aria-labelledby={!ariaLabel && label ? labelId : undefined}
             onClick={() => onCheckedChange(!checked)}
-            disabled={disabled}
+            disabled={disabled || switchDisabled}
             className={cn(
               "relative inline-flex h-8 w-14 shrink-0 items-center overflow-hidden rounded-full border transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/70 focus-visible:ring-offset-2 after:pointer-events-none after:absolute after:content-['']",
               checked
@@ -98,6 +101,9 @@ export function AppleSwitch({
 
       {expandableContent ? (
         <div
+          id={expandableId}
+          aria-hidden={!expandableOpen}
+          inert={!expandableOpen ? true : undefined}
           className={cn(
             "overflow-hidden transition-[max-height,opacity,margin,padding] duration-200 ease-in-out",
             expandableOpen

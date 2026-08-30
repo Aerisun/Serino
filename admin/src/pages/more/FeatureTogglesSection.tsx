@@ -23,6 +23,7 @@ import { Textarea } from "@/components/ui/Textarea";
 import { useI18n } from "@/i18n";
 import { extractApiErrorMessage } from "@/lib/api-error";
 import { cn } from "@/lib/utils";
+import { PersonalizationTab } from "@/pages/site-config/tabs/PersonalizationTab";
 
 const FEATURE_FLAGS = [
   "toc",
@@ -759,6 +760,8 @@ export function FeatureTogglesSection() {
 
             <CollapsibleSection title={t("siteConfig.personalization")}>
               <div className="space-y-4">
+                <PersonalizationTab />
+
                 {personalizationFlags.map((flag) => (
                   <AppleSwitch
                     key={flag.key}

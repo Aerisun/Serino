@@ -37,7 +37,6 @@ const CommunityTab = lazy(() =>
     default: module.CommunityTab,
   })),
 );
-
 export default function SiteConfigPage() {
   const { t } = useI18n();
   const { section } = useParams();
