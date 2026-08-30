@@ -136,6 +136,9 @@ const BackToTop = () => {
   const shouldAvoidTocButton = Array.from(
     document.querySelectorAll<HTMLElement>("[data-toc-mobile-button]"),
   ).some((node) => node.offsetParent !== null);
+  const shouldAvoidMusicButton = Array.from(
+    document.querySelectorAll<HTMLElement>("[data-mobile-music-control]"),
+  ).some((node) => node.offsetParent !== null);
 
   return createPortal(
     <AnimatePresence>
@@ -159,6 +162,8 @@ const BackToTop = () => {
           style={{
             right: shouldAvoidTocButton
               ? "max(4.25rem, calc(env(safe-area-inset-right) + 4.25rem))"
+              : shouldAvoidMusicButton
+                ? "max(4.25rem, calc(env(safe-area-inset-right) + 4.25rem))"
               : "max(1.5rem, calc(env(safe-area-inset-right) + 1rem))",
             bottom: shouldAvoidTocButton
               ? "max(1rem, calc(env(safe-area-inset-bottom) + 1rem))"

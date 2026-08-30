@@ -229,3 +229,38 @@ export const CalendarDays = (props: IconProps) => (
     <path d="M16 14h.01" />
   </BaseIcon>
 );
+
+export const Play = ({ className, ...props }: IconProps) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true" {...props}>
+    <path d="M7.8 5.4a1.15 1.15 0 0 1 1.76-.97l9.14 6.6a1.2 1.2 0 0 1 0 1.94l-9.14 6.6a1.15 1.15 0 0 1-1.76-.97V5.4z" />
+  </svg>
+);
+
+export const Pause = ({ className, ...props }: IconProps) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true" {...props}>
+    <rect x="6.5" y="4.5" width="4" height="15" rx="1.25" />
+    <rect x="13.5" y="4.5" width="4" height="15" rx="1.25" />
+  </svg>
+);
+
+export const SkipBack = (props: IconProps) => (
+  <BaseIcon {...props} fill="currentColor" strokeWidth={1.4}>
+    <path d="M6 5v14" />
+    <path d="M18.2 6.1a1 1 0 0 0-1.55-.84l-7.1 5.9a1.1 1.1 0 0 0 0 1.68l7.1 5.9a1 1 0 0 0 1.55-.84V6.1z" stroke="none" />
+  </BaseIcon>
+);
+
+export const SkipForward = (props: IconProps) => (
+  <BaseIcon {...props} fill="currentColor" strokeWidth={1.4}>
+    <path d="M18 5v14" />
+    <path d="M5.8 6.1a1 1 0 0 1 1.55-.84l7.1 5.9a1.1 1.1 0 0 1 0 1.68l-7.1 5.9a1 1 0 0 1-1.55-.84V6.1z" stroke="none" />
+  </BaseIcon>
+);
+
+export const Music2 = (props: IconProps) => (
+  <BaseIcon {...props}>
+    <path d="M9 18V5l10-2v13" />
+    <ellipse cx="6" cy="18" rx="3" ry="2" />
+    <ellipse cx="16" cy="16" rx="3" ry="2" />
+  </BaseIcon>
+);

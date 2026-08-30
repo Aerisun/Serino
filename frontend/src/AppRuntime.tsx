@@ -31,6 +31,8 @@ import {
   readPersistedQueryState,
   shouldPersistQueryKey,
 } from "@/lib/query-cache";
+import { MusicPlayerProvider } from "@/contexts/MusicPlayerContext";
+import MobileMusicControl from "@/components/MobileMusicControl";
 
 const Index = lazy(() => import("./pages/Index"));
 const Posts = lazy(() => import("./pages/Posts"));
@@ -295,50 +297,53 @@ function AppContent() {
 
   return (
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-      <SiteAuthProvider>
-        <ShiroAccentController />
-        <QueryCachePersistence />
-        <ContentFreshnessManager />
-        <PageViewTracker />
-        {readingProgressActive ? <ReadingProgress /> : null}
-        <ErrorBoundary>
-          <Suspense
-            fallback={
-              <div className="flex h-screen items-center justify-center">
-                <div className="h-8 w-8 animate-spin rounded-full border-4 border-current border-t-transparent opacity-60" />
-              </div>
-            }
-          >
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/posts" element={<Posts key="manuscript" />} />
-              <Route path="/posts/:id" element={<PostDetail />} />
-              <Route path="/notes" element={<Posts key="note" kind="note" />} />
-              <Route path="/notes/:id" element={<PostDetail kind="note" />} />
-              <Route path="/friends" element={<Friends />} />
-              <Route path="/thoughts" element={<Thoughts />} />
-              <Route path="/diary" element={<Diary />} />
-              <Route path="/diary/:id" element={<DiaryDetail />} />
-              <Route path="/excerpts" element={<Excerpts />} />
-              <Route path="/resume" element={<Resume />} />
-              <Route path="/guestbook" element={<Guestbook />} />
-              <Route path="/calendar" element={<CalendarPage />} />
-              <Route path="/preview" element={<Preview />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+      <MusicPlayerProvider>
+        <SiteAuthProvider>
+          <ShiroAccentController />
+          <QueryCachePersistence />
+          <ContentFreshnessManager />
+          <PageViewTracker />
+          {readingProgressActive ? <ReadingProgress /> : null}
+          <ErrorBoundary>
+            <Suspense
+              fallback={
+                <div className="flex h-screen items-center justify-center">
+                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-current border-t-transparent opacity-60" />
+                </div>
+              }
+            >
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/posts" element={<Posts key="manuscript" />} />
+                <Route path="/posts/:id" element={<PostDetail />} />
+                <Route path="/notes" element={<Posts key="note" kind="note" />} />
+                <Route path="/notes/:id" element={<PostDetail kind="note" />} />
+                <Route path="/friends" element={<Friends />} />
+                <Route path="/thoughts" element={<Thoughts />} />
+                <Route path="/diary" element={<Diary />} />
+                <Route path="/diary/:id" element={<DiaryDetail />} />
+                <Route path="/excerpts" element={<Excerpts />} />
+                <Route path="/resume" element={<Resume />} />
+                <Route path="/guestbook" element={<Guestbook />} />
+                <Route path="/calendar" element={<CalendarPage />} />
+                <Route path="/preview" element={<Preview />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
+          </ErrorBoundary>
+          <Suspense fallback={null}>
+            {searchOpen ? <SearchModal open={searchOpen} onClose={closeSearch} /> : null}
+            {subscribeOpen ? (
+              <SubscribeModal
+                open={subscribeOpen}
+                onClose={closeSubscribe}
+                enabled={featureFlags.content_subscription}
+              />
+            ) : null}
           </Suspense>
-        </ErrorBoundary>
-        <Suspense fallback={null}>
-          {searchOpen ? <SearchModal open={searchOpen} onClose={closeSearch} /> : null}
-          {subscribeOpen ? (
-            <SubscribeModal
-              open={subscribeOpen}
-              onClose={closeSubscribe}
-              enabled={featureFlags.content_subscription}
-            />
-          ) : null}
-        </Suspense>
-      </SiteAuthProvider>
+        </SiteAuthProvider>
+        <MobileMusicControl />
+      </MusicPlayerProvider>
     </BrowserRouter>
   );
 }

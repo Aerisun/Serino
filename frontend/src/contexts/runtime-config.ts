@@ -46,3 +46,7 @@ export function usePageConfig() {
 export function useFeatureFlags() {
   return useRuntimeConfig().site.featureFlags;
 }
+
+export function useBackgroundMusicConfig() {
+  return useRuntimeConfig().backgroundMusic;
+}

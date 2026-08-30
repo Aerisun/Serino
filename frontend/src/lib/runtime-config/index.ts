@@ -91,6 +91,12 @@ type BackendResumeResponse = {
   profile_image_url: string;
 };
 
+type BackendBackgroundMusicResponse = {
+  enabled?: unknown;
+  playback_mode?: unknown;
+  tracks?: unknown;
+};
+
 // ---------------------------------------------------------------------------
 // Frontend types
 // ---------------------------------------------------------------------------
@@ -114,6 +120,18 @@ export interface PageMotionConfig {
 
 export interface PageConfig {
   [key: string]: unknown;
+}
+
+export interface BackgroundMusicTrack {
+  id: string;
+  title: string;
+  streamUrl: string;
+}
+
+export interface BackgroundMusicConfig {
+  enabled: boolean;
+  playbackMode: "sequential" | "random";
+  tracks: BackgroundMusicTrack[];
 }
 
 export interface RuntimeConfigSnapshot {
@@ -142,6 +160,7 @@ export interface RuntimeConfigSnapshot {
     featureFlags: Record<string, boolean>;
     searchOptimization: SearchOptimizationConfig;
   };
+  backgroundMusic: BackgroundMusicConfig;
   pages: Record<string, PageConfig>;
 }
 
@@ -151,6 +170,7 @@ export interface RuntimeBootstrapResponse {
   site: BackendSiteResponse;
   pages: BackendPagesResponse;
   resume: BackendResumeResponse;
+  background_music?: BackendBackgroundMusicResponse;
 }
 
 export interface CachedRuntimeBootstrap {
@@ -391,11 +411,36 @@ const normalizeResumeConfig = (payload: BackendResumeResponse): PageConfig => {
   };
 };
 
+export const normalizeBackgroundMusicConfig = (
+  payload: BackendBackgroundMusicResponse | undefined,
+): BackgroundMusicConfig => {
+  const rawTracks = Array.isArray(payload?.tracks) ? payload.tracks : [];
+  const seenIds = new Set<string>();
+  const tracks = rawTracks.flatMap((rawTrack) => {
+    if (!rawTrack || typeof rawTrack !== "object") return [];
+    const track = rawTrack as Record<string, unknown>;
+    const id = typeof track.id === "string" ? track.id.trim() : "";
+    const title = typeof track.title === "string" ? track.title.trim() : "";
+    const streamUrl = typeof track.stream_url === "string" ? track.stream_url.trim() : "";
+    if (!id || !title || !streamUrl || seenIds.has(id)) return [];
+    seenIds.add(id);
+    return [{ id, title, streamUrl }];
+  });
+
+  const playbackMode = payload?.playback_mode === "random" ? "random" : "sequential";
+  return {
+    enabled: payload?.enabled === true && tracks.length > 0,
+    playbackMode,
+    tracks,
+  };
+};
+
 const normalizeRuntimeConfigSnapshot = (
   payload: {
     site: BackendSiteResponse;
     pages: BackendPagesResponse;
     resume: BackendResumeResponse;
+    background_music?: BackendBackgroundMusicResponse;
   },
   source: RuntimeConfigSnapshot["source"],
   meta?: { revision?: string; generatedAt?: string },
@@ -408,6 +453,7 @@ const normalizeRuntimeConfigSnapshot = (
     revision: meta?.revision,
     generatedAt: meta?.generatedAt,
     site: normalizeSiteConfig(payload.site, payload.resume.profile_image_url),
+    backgroundMusic: normalizeBackgroundMusicConfig(payload.background_music),
     pages: normalizedPages,
   };
 };
@@ -487,6 +533,7 @@ export function getInitialRuntimeConfigSnapshot(): RuntimeConfigSnapshot | null 
         site: windowBootstrap.site,
         pages: windowBootstrap.pages,
         resume: windowBootstrap.resume,
+        background_music: windowBootstrap.background_music,
       },
       "bootstrap",
       {
@@ -506,6 +553,7 @@ export function getInitialRuntimeConfigSnapshot(): RuntimeConfigSnapshot | null 
       site: cachedBootstrap.payload.site,
       pages: cachedBootstrap.payload.pages,
       resume: cachedBootstrap.payload.resume,
+      background_music: cachedBootstrap.payload.background_music,
     },
     "cached",
     {
@@ -535,6 +583,7 @@ async function loadRuntimeBootstrap(): Promise<RuntimeConfigSnapshot> {
       site: payload.site,
       pages: payload.pages,
       resume: payload.resume,
+      background_music: payload.background_music,
     },
     "remote",
     {

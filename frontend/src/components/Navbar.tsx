@@ -28,6 +28,7 @@ import { useSiteConfig } from "@/contexts/runtime-config";
 import { preloadInternalHref } from "@/lib/route-preload";
 import type { NavItem } from "@/lib/runtime-config";
 import { RetryableAvatarImage } from "@/components/RetryableAvatarImage";
+import MusicNavControl from "@/components/MusicNavControl";
 
 type NavbarGlassVariant = "default" | "hero";
 
@@ -865,6 +866,7 @@ const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
         </div>
 
         <div className="relative flex items-center gap-2 mr-1 md:mr-0 md:justify-self-end">
+          <MusicNavControl glassVariant={glassVariant} />
           <motion.button
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent("aerisun:open-subscribe"))}
